@@ -9,9 +9,13 @@ import {
   login,
   redirectPathForRole,
 } from "@/lib/api";
+import { useLocale } from "@/components/locale-provider";
+import { getSiteCopy } from "@/lib/site-copy";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).login;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,9 +32,9 @@ export default function LoginPage() {
       setError(
         err instanceof ApiError
           ? err.code === "invalid_credentials"
-            ? "Неверный email или пароль"
+            ? copy.invalid
             : err.code
-          : "Ошибка входа",
+          : copy.failed,
       );
     } finally {
       setBusy(false);
@@ -41,8 +45,8 @@ export default function LoginPage() {
     <div className="auth-page">
       <SiteHeader />
       <div className="auth-card">
-        <h1>Войти</h1>
-        <p>Кабинет ресторана или панель модерации.</p>
+        <h1>{copy.title}</h1>
+        <p>{copy.body}</p>
         <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
           <div className="field">
             <label htmlFor="email">Email</label>
@@ -56,7 +60,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="field">
-            <label htmlFor="password">Пароль</label>
+            <label htmlFor="password">{copy.password}</label>
             <input
               id="password"
               type="password"
@@ -68,15 +72,15 @@ export default function LoginPage() {
           </div>
           {error && <p className="auth-error">{error}</p>}
           <button type="submit" className="btn btn-gold btn-block" disabled={busy}>
-            {busy ? "Вход…" : "Войти"}
+            {busy ? copy.busy : copy.action}
           </button>
         </form>
         <div className="auth-hint">
-          Админ (демо):{" "}
+          {copy.demo}{" "}
           <code>admin@foodassistant.local</code> / <code>admin123</code>
         </div>
         <p className="auth-links">
-          Нет аккаунта? <Link href="/register">Регистрация</Link>
+          {copy.noAccount} <Link href="/register">{copy.register}</Link>
         </p>
       </div>
     </div>

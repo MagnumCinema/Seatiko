@@ -6,17 +6,12 @@ import { FormEvent, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { useLocale } from "@/components/locale-provider";
 import { ApiError, register } from "@/lib/api";
-
-const ownerSteps = [
-  "Создайте защищённый аккаунт владельца",
-  "Заполните профиль и поставьте точку на карте",
-  "Отправьте заведение на проверку платформы",
-  "После публикации принимайте брони в кабинете",
-];
+import { getSiteCopy } from "@/lib/site-copy";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { locale } = useLocale();
+  const copy = getSiteCopy(locale).register;
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -41,9 +36,9 @@ export default function RegisterPage() {
       setError(
         err instanceof ApiError
           ? err.code === "email_taken"
-            ? "Этот email уже зарегистрирован"
+            ? copy.taken
             : err.code
-          : "Не удалось создать аккаунт. Попробуйте ещё раз.",
+          : copy.failed,
       );
     } finally {
       setBusy(false);
@@ -55,15 +50,12 @@ export default function RegisterPage() {
       <SiteHeader />
       <main className="owner-register-shell">
         <section className="owner-register-story">
-          <span className="owner-kicker">FoodAssistant для бизнеса</span>
-          <h1>Ваш ресторан — на карте города и в телефоне гостя.</h1>
-          <p>
-            От первой заявки до бронирований — один понятный кабинет владельца.
-            Регистрация для гостей доступна в мобильном приложении.
-          </p>
+          <span className="owner-kicker">{copy.kicker}</span>
+          <h1>{copy.title}</h1>
+          <p>{copy.body}</p>
 
           <ol className="owner-register-steps">
-            {ownerSteps.map((step, index) => (
+            {copy.steps.map((step, index) => (
               <li key={step}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <p>{step}</p>
@@ -72,23 +64,20 @@ export default function RegisterPage() {
           </ol>
 
           <div className="owner-register-trust">
-            <strong>Проверка 1–3 рабочих дня</strong>
-            <span>История действий сохраняется автоматически</span>
+            <strong>{copy.review}</strong>
+            <span>{copy.history}</span>
           </div>
         </section>
 
         <section className="auth-card owner-register-card">
-          <span className="owner-kicker">Аккаунт владельца</span>
-          <h2>Подключить ресторан</h2>
-          <p>
-            Сначала создаём личный доступ. Данные ресторана вы заполните следующим
-            шагом в кабинете.
-          </p>
+          <span className="owner-kicker">{copy.account}</span>
+          <h2>{copy.connect}</h2>
+          <p>{copy.intro}</p>
 
           <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
             <div className="owner-form-row">
               <div className="field">
-                <label htmlFor="first_name">Имя</label>
+                <label htmlFor="first_name">{copy.first}</label>
                 <input
                   id="first_name"
                   required
@@ -103,7 +92,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div className="field">
-                <label htmlFor="last_name">Фамилия</label>
+                <label htmlFor="last_name">{copy.last}</label>
                 <input
                   id="last_name"
                   required
@@ -119,7 +108,7 @@ export default function RegisterPage() {
               </div>
             </div>
             <div className="field">
-              <label htmlFor="email">Рабочий email</label>
+              <label htmlFor="email">{copy.email}</label>
               <input
                 id="email"
                 type="email"
@@ -133,14 +122,14 @@ export default function RegisterPage() {
               />
             </div>
             <div className="field">
-              <label htmlFor="password">Пароль</label>
+              <label htmlFor="password">{copy.password}</label>
               <input
                 id="password"
                 type="password"
                 required
                 minLength={6}
                 autoComplete="new-password"
-                placeholder="Не менее 6 символов"
+                placeholder={copy.passwordHint}
                 value={form.password}
                 onChange={(e) =>
                   setForm((current) => ({
@@ -151,8 +140,7 @@ export default function RegisterPage() {
               />
             </div>
             <p className="owner-form-legal">
-              Создавая аккаунт, вы подтверждаете, что имеете право представлять
-              заведение и предоставлять данные для публикации.
+              {copy.legal}
             </p>
             {error && <p className="auth-error">{error}</p>}
             <button
@@ -160,11 +148,11 @@ export default function RegisterPage() {
               className="btn btn-gold btn-block"
               disabled={busy}
             >
-              {busy ? "Создаём кабинет…" : "Продолжить в кабинет"}
+              {busy ? copy.creating : copy.continue}
             </button>
           </form>
           <p className="auth-links">
-            Уже есть аккаунт? <Link href="/login">Войти</Link>
+            {copy.exists} <Link href="/login">{copy.login}</Link>
           </p>
         </section>
       </main>

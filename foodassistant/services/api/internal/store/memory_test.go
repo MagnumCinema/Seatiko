@@ -32,6 +32,7 @@ func TestRestaurantApplicationAuditAndReservationProjection(t *testing.T) {
 	cuisine := []string{"moldovan"}
 	phone := "+37360000000"
 	email := "restaurant@example.com"
+	website := "https://restaurant.example.com"
 	hours := "Пн–Вс 10:00–23:00"
 	lat, lng := 47.7617, 27.9288
 	priceLevel, averageCheck := 2, 350
@@ -42,6 +43,7 @@ func TestRestaurantApplicationAuditAndReservationProjection(t *testing.T) {
 		Cuisine:      &cuisine,
 		Phone:        &phone,
 		Email:        &email,
+		Website:      &website,
 		HoursText:    &hours,
 		Lat:          &lat,
 		Lng:          &lng,
@@ -69,6 +71,13 @@ func TestRestaurantApplicationAuditAndReservationProjection(t *testing.T) {
 	}
 	if application.VenueID == nil {
 		t.Fatal("published application has no venue id")
+	}
+	venue, err := store.GetVenue(*application.VenueID)
+	if err != nil {
+		t.Fatalf("get published venue: %v", err)
+	}
+	if venue.Website != website {
+		t.Fatalf("published venue website = %q, want %q", venue.Website, website)
 	}
 
 	activity, err := store.ListApplicationActivity(owner.ID, application.ID)
@@ -123,6 +132,25 @@ func TestRestaurantApplicationRequiresCompleteProfile(t *testing.T) {
 
 	if _, err = store.SubmitApplication(owner.ID, application.ID); !errors.Is(err, ErrBadRequest) {
 		t.Fatalf("submit incomplete application error = %v, want ErrBadRequest", err)
+	}
+}
+
+func TestRestaurantApplicationRejectsInvalidWebsite(t *testing.T) {
+	store := NewMemory()
+	owner := registerTestUser(t, store, "invalid-site@example.com", models.RoleRestaurant)
+	application, err := store.CreateApplication(owner.ID)
+	if err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	invalidWebsite := "restaurant.example.com"
+	if _, err = store.UpdateApplication(owner.ID, application.ID, ApplicationUpdate{Website: &invalidWebsite}); !errors.Is(err, ErrBadRequest) {
+		t.Fatalf("invalid website error = %v, want ErrBadRequest", err)
+	}
+
+	emptyWebsite := ""
+	if _, err = store.UpdateApplication(owner.ID, application.ID, ApplicationUpdate{Website: &emptyWebsite}); err != nil {
+		t.Fatalf("empty optional website should be accepted: %v", err)
 	}
 }
 

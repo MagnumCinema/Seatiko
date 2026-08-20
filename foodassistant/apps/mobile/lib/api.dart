@@ -92,6 +92,7 @@ class Venue {
     required this.openNow,
     required this.freeTables,
     required this.imageUrl,
+    this.website = '',
     this.alcoholLicenseValid = false,
     this.sessionStartBeforeMin = 60,
     this.releaseBeforeMin = 15,
@@ -111,6 +112,7 @@ class Venue {
   final bool openNow;
   final int freeTables;
   final String imageUrl;
+  final String website;
   final bool alcoholLicenseValid;
   final int sessionStartBeforeMin;
   final int releaseBeforeMin;
@@ -132,6 +134,7 @@ class Venue {
         openNow: json['open_now'] as bool? ?? false,
         freeTables: json['free_tables'] as int? ?? 0,
         imageUrl: json['image_url'] as String? ?? '',
+        website: json['website'] as String? ?? '',
         alcoholLicenseValid: json['alcohol_license_valid'] as bool? ?? false,
         sessionStartBeforeMin: json['session_start_before_min'] as int? ?? 60,
         releaseBeforeMin: json['release_before_min'] as int? ?? 15,

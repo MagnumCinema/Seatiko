@@ -26,6 +26,12 @@ const SOURCE_ID = "foodassistant-venues";
 const CLUSTER_LAYER_ID = "foodassistant-clusters";
 const VENUE_LAYER_ID = "foodassistant-venue-pins";
 
+const mapCopy = {
+  ru: { unavailable: "Карта временно недоступна", unavailableBody: "Рестораны и свободные столы остаются доступными в списке справа.", openExternal: "Открыть Бельцы на OpenStreetMap", online: "заведений онлайн", aria: "Интерактивная карта ресторанов Бельц", loadingMap: "Загружаем карту Бельц…", loadingVenues: "Загружаем заведения", updated: "OpenStreetMap · обновляется автоматически", nearby: "Рядом с вами", cityVenues: "Рестораны Бельц", open: "Открыто сейчас", closed: "Сейчас закрыто", free: "свободных столов", tables: "столов", empty: "После публикации рестораны автоматически появятся здесь.", action: "Выбрать стол в ресторане" },
+  en: { unavailable: "Map temporarily unavailable", unavailableBody: "Restaurants and available tables are still listed on the right.", openExternal: "Open Bălți in OpenStreetMap", online: "venues online", aria: "Interactive map of Bălți restaurants", loadingMap: "Loading Bălți map…", loadingVenues: "Loading venues", updated: "OpenStreetMap · updates automatically", nearby: "Near you", cityVenues: "Bălți restaurants", open: "Open now", closed: "Closed now", free: "tables available", tables: "tables", empty: "Restaurants appear here automatically after publication.", action: "Choose a restaurant table" },
+  ro: { unavailable: "Harta este temporar indisponibilă", unavailableBody: "Restaurantele și mesele libere rămân disponibile în lista din dreapta.", openExternal: "Deschide Bălți în OpenStreetMap", online: "localuri online", aria: "Harta interactivă a restaurantelor din Bălți", loadingMap: "Se încarcă harta Bălți…", loadingVenues: "Se încarcă localurile", updated: "OpenStreetMap · se actualizează automat", nearby: "În apropiere", cityVenues: "Restaurante din Bălți", open: "Deschis acum", closed: "Închis acum", free: "mese libere", tables: "mese", empty: "Restaurantele apar automat aici după publicare.", action: "Alege masa în restaurant" },
+} as const;
+
 function venueCollection(
   venues: Venue[],
   locale: LocaleCode,
@@ -50,7 +56,8 @@ function venueCollection(
   };
 }
 
-function FreeMapFallback({ venues }: { venues: Venue[] }) {
+function FreeMapFallback({ venues, locale }: { venues: Venue[]; locale: LocaleCode }) {
+  const copy = mapCopy[locale];
   return (
     <div className="live-map-fallback" role="status">
       <div className="live-map-fallback-grid" aria-hidden>
@@ -72,21 +79,19 @@ function FreeMapFallback({ venues }: { venues: Venue[] }) {
       <div className="live-map-fallback-card">
         <span className="open-map-brand-mark">M</span>
         <div>
-          <strong>Карта временно недоступна</strong>
-          <p>
-            Рестораны и свободные столы остаются доступными в списке справа.
-          </p>
+          <strong>{copy.unavailable}</strong>
+          <p>{copy.unavailableBody}</p>
           <a
             href="https://www.openstreetmap.org/#map=14/47.7622/27.9289"
             target="_blank"
             rel="noreferrer"
           >
-            Открыть Бельцы на OpenStreetMap →
+            {copy.openExternal} →
           </a>
         </div>
       </div>
       <div className="venue-map-status">
-        <i /> {venues.length} заведений онлайн
+        <i /> {venues.length} {copy.online}
       </div>
     </div>
   );
@@ -94,6 +99,7 @@ function FreeMapFallback({ venues }: { venues: Venue[] }) {
 
 export function VenueMap({ compact = false }: { compact?: boolean }) {
   const { locale } = useLocale();
+  const copy = mapCopy[locale];
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const venuesRef = useRef<Venue[]>([]);
@@ -380,22 +386,22 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
     <div className={`venue-map-shell ${compact ? "compact" : ""}`}>
       <div
         className="venue-map-canvas live-map-canvas"
-        aria-label="Интерактивная карта ресторанов Бельц"
+        aria-label={copy.aria}
       >
         <div ref={mapNodeRef} className="live-map-surface" />
-        {mapState === "error" && <FreeMapFallback venues={venues} />}
+        {mapState === "error" && <FreeMapFallback venues={venues} locale={locale} />}
         {mapState === "loading" && (
           <div className="live-map-loading">
             <span />
-            <p>Загружаем карту Бельц…</p>
+            <p>{copy.loadingMap}</p>
           </div>
         )}
         {mapState === "ready" && (
           <div className="live-map-status">
             <span>
-              <i /> {loading ? "Загружаем заведения" : `${venues.length} заведений онлайн`}
+              <i /> {loading ? copy.loadingVenues : `${venues.length} ${copy.online}`}
             </span>
-            <small>OpenStreetMap · обновляется автоматически</small>
+            <small>{copy.updated}</small>
           </div>
         )}
       </div>
@@ -403,9 +409,9 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
       <div className="venue-map-panel">
         <div className="venue-map-panel-head">
           <div>
-            <span className="eyebrow">Рядом с вами</span>
+            <span className="eyebrow">{copy.nearby}</span>
             <h3>
-              {selected ? pickLocale(selected.name, locale) : "Рестораны Бельц"}
+              {selected ? pickLocale(selected.name, locale) : copy.cityVenues}
             </h3>
           </div>
           {selected && (
@@ -425,9 +431,9 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
             </div>
             <div className="venue-availability">
               <span>
-                <i /> {selected.open_now ? "Открыто сейчас" : "Сейчас закрыто"}
+                <i /> {selected.open_now ? copy.open : copy.closed}
               </span>
-              <strong>{selected.free_tables} свободных столов</strong>
+              <strong>{selected.free_tables} {copy.free}</strong>
             </div>
             {selected.website && (
               <a
@@ -442,7 +448,7 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
           </>
         ) : (
           <p className="venue-map-address">
-            После публикации рестораны автоматически появятся здесь.
+            {copy.empty}
           </p>
         )}
 
@@ -456,13 +462,13 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
             >
               <b>{index + 1}</b>
               <span>{pickLocale(venue.name, locale)}</span>
-              <small>{venue.free_tables} столов</small>
+              <small>{venue.free_tables} {copy.tables}</small>
             </button>
           ))}
         </div>
 
         <Link href="/demo" className="map-primary-action">
-          Выбрать стол в ресторане <span>→</span>
+          {copy.action} <span>→</span>
         </Link>
       </div>
     </div>

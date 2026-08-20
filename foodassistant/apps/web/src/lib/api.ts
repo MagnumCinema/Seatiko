@@ -63,7 +63,6 @@ export type Table = {
 export type User = {
   id: string;
   email: string;
-  website?: string;
   phone?: string;
   first_name: string;
   last_name: string;
@@ -85,6 +84,7 @@ export type VenueApplication = {
   cuisine: string[];
   phone: string;
   email: string;
+  website?: string;
   city_id: string;
   lat: number;
   lng: number;

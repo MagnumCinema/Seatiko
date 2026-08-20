@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
+import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import {
   ApiError,
@@ -27,6 +28,7 @@ import {
   type User,
   type VenueApplication,
 } from "@/lib/api";
+import { getSiteCopy } from "@/lib/site-copy";
 
 type Section = "overview" | "profile" | "reservations" | "activity";
 type ReservationFilter = "upcoming" | "history" | "all";
@@ -165,11 +167,15 @@ function ApplicationLocationPicker({
   lng,
   disabled,
   onChange,
+  selectedHint,
+  editHint,
 }: {
   lat: string;
   lng: string;
   disabled: boolean;
   onChange: (lat: string, lng: string) => void;
+  selectedHint: string;
+  editHint: string;
 }) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -269,9 +275,7 @@ function ApplicationLocationPicker({
       <div ref={mapNodeRef} className="owner-location-map" />
       <p>
         <span>⌖</span>
-        {disabled
-          ? "Точка ресторана на карте"
-          : "Нажмите на здание ресторана или перетащите маркер — координаты заполнятся автоматически."}
+        {disabled ? selectedHint : editHint}
       </p>
     </div>
   );
@@ -345,6 +349,8 @@ function initials(user: User) {
 
 export default function CabinetPage() {
   const router = useRouter();
+  const { locale } = useLocale();
+  const cabinetCopy = getSiteCopy(locale).cabinet;
   const [user, setUser] = useState<User | null>(null);
   const [apps, setApps] = useState<VenueApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -591,8 +597,8 @@ export default function CabinetPage() {
 
   return (
     <PanelShell
-      title="Кабинет владельца"
-      subtitle="Управление подключением и работой ресторана"
+      title={cabinetCopy.title}
+      subtitle={cabinetCopy.subtitle}
       email={user.email}
     >
       <div className="owner-dashboard">
@@ -601,12 +607,12 @@ export default function CabinetPage() {
             <span className="owner-avatar">{initials(user)}</span>
             <div>
               <strong>{user.display_name || `${user.first_name} ${user.last_name}`}</strong>
-              <span>Владелец аккаунта</span>
+              <span>{cabinetCopy.owner}</span>
             </div>
           </div>
 
           <div className="owner-venue-switcher">
-            <span>Мои заведения</span>
+            <span>{cabinetCopy.venues}</span>
             {apps.map((app) => (
               <button
                 key={app.id}
@@ -631,7 +637,7 @@ export default function CabinetPage() {
               onClick={() => void onCreate()}
             >
               <i>+</i>
-              <span>Добавить ресторан</span>
+              <span>{cabinetCopy.add}</span>
             </button>
           </div>
 
@@ -645,7 +651,7 @@ export default function CabinetPage() {
                   onClick={() => setSection(item.id)}
                 >
                   <i aria-hidden>{item.icon}</i>
-                  <span>{item.label}</span>
+                  <span>{cabinetCopy[item.id]}</span>
                   {item.id === "reservations" && futureBookings.length > 0 && (
                     <b>{futureBookings.length}</b>
                   )}
@@ -708,19 +714,19 @@ export default function CabinetPage() {
                 <div>
                   <span className="owner-kicker">
                     {section === "overview" && "Центр управления"}
-                    {section === "profile" && "Данные для гостей"}
+                    {section === "profile" && cabinetCopy.dataForGuests}
                     {section === "reservations" && "Операционная работа"}
                     {section === "activity" && "Прозрачность аккаунта"}
                   </span>
                   <h2>
                     {section === "overview" && (pickLocale(selected.name, "ru") || "Новый ресторан")}
-                    {section === "profile" && "Профиль заведения"}
+                    {section === "profile" && cabinetCopy.profile}
                     {section === "reservations" && "Бронирования"}
                     {section === "activity" && "История действий"}
                   </h2>
                 </div>
                 <div className="owner-section-status">
-                  <span>Статус</span>
+                  <span>{cabinetCopy.status}</span>
                   <StatusBadge status={selected.status} />
                 </div>
               </header>
@@ -893,25 +899,25 @@ export default function CabinetPage() {
                   <div className="owner-form-section">
                     <div className="owner-form-title">
                       <span>01</span>
-                      <div><h3>Основная информация</h3><p>Так ресторан увидят гости в приложении.</p></div>
+                      <div><h3>{cabinetCopy.basic}</h3><p>{cabinetCopy.basicHint}</p></div>
                     </div>
                     <div className="owner-form-fields">
                       <div className="field owner-field-wide">
-                        <label htmlFor="venue-name">Название ресторана *</label>
+                        <label htmlFor="venue-name">{cabinetCopy.name}</label>
                         <input id="venue-name" disabled={!canEdit} value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
                       </div>
                       <div className="field owner-field-wide">
-                        <label htmlFor="venue-description">Короткое описание *</label>
-                        <textarea id="venue-description" disabled={!canEdit} maxLength={400} placeholder="Расскажите об атмосфере и особенностях кухни" value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
+                        <label htmlFor="venue-description">{cabinetCopy.description}</label>
+                        <textarea id="venue-description" disabled={!canEdit} maxLength={400} placeholder={cabinetCopy.descriptionPlaceholder} value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
                         <small>{draft.description.length}/400</small>
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-cuisine">Кухня *</label>
-                        <input id="venue-cuisine" disabled={!canEdit} placeholder="Молдавская, европейская" value={draft.cuisine} onChange={(event) => updateDraft("cuisine", event.target.value)} />
+                        <label htmlFor="venue-cuisine">{cabinetCopy.cuisine}</label>
+                        <input id="venue-cuisine" disabled={!canEdit} placeholder={cabinetCopy.cuisinePlaceholder} value={draft.cuisine} onChange={(event) => updateDraft("cuisine", event.target.value)} />
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-hours">Часы работы *</label>
-                        <input id="venue-hours" disabled={!canEdit} placeholder="Пн–Вс 10:00–23:00" value={draft.hours_text} onChange={(event) => updateDraft("hours_text", event.target.value)} />
+                        <label htmlFor="venue-hours">{cabinetCopy.hours}</label>
+                        <input id="venue-hours" disabled={!canEdit} placeholder={cabinetCopy.hoursPlaceholder} value={draft.hours_text} onChange={(event) => updateDraft("hours_text", event.target.value)} />
                       </div>
                     </div>
                   </div>
@@ -919,25 +925,27 @@ export default function CabinetPage() {
                   <div className="owner-form-section">
                     <div className="owner-form-title">
                       <span>02</span>
-                      <div><h3>Адрес и точка на карте</h3><p>Координаты нужны для точного отображения маркера.</p></div>
+                      <div><h3>{cabinetCopy.location}</h3><p>{cabinetCopy.locationHint}</p></div>
                     </div>
                     <div className="owner-form-fields">
                       <div className="field owner-field-wide">
-                        <label htmlFor="venue-address">Адрес *</label>
-                        <input id="venue-address" disabled={!canEdit} placeholder="Бельцы, ул. Независимости, 10" value={draft.address} onChange={(event) => updateDraft("address", event.target.value)} />
+                        <label htmlFor="venue-address">{cabinetCopy.address}</label>
+                        <input id="venue-address" disabled={!canEdit} placeholder={cabinetCopy.addressPlaceholder} value={draft.address} onChange={(event) => updateDraft("address", event.target.value)} />
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-lat">Широта *</label>
+                        <label htmlFor="venue-lat">{cabinetCopy.latitude}</label>
                         <input id="venue-lat" type="number" step="0.000001" disabled={!canEdit} placeholder="47.7617" value={draft.lat} onChange={(event) => updateDraft("lat", event.target.value)} />
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-lng">Долгота *</label>
+                        <label htmlFor="venue-lng">{cabinetCopy.longitude}</label>
                         <input id="venue-lng" type="number" step="0.000001" disabled={!canEdit} placeholder="27.9288" value={draft.lng} onChange={(event) => updateDraft("lng", event.target.value)} />
                       </div>
                       <ApplicationLocationPicker
                         lat={draft.lat}
                         lng={draft.lng}
                         disabled={!canEdit}
+                        selectedHint={cabinetCopy.mapPoint}
+                        editHint={cabinetCopy.mapHint}
                         onChange={(nextLat, nextLng) => {
                           setDraft((current) =>
                             current
@@ -952,19 +960,19 @@ export default function CabinetPage() {
                   <div className="owner-form-section">
                     <div className="owner-form-title">
                       <span>03</span>
-                      <div><h3>Контакты и цены</h3><p>Контакты используются для связи по бронированиям.</p></div>
+                      <div><h3>{cabinetCopy.contacts}</h3><p>{cabinetCopy.contactsHint}</p></div>
                     </div>
                     <div className="owner-form-fields">
                       <div className="field">
-                        <label htmlFor="venue-phone">Телефон *</label>
+                        <label htmlFor="venue-phone">{cabinetCopy.phone}</label>
                         <input id="venue-phone" type="tel" disabled={!canEdit} placeholder="+373 600 00 000" value={draft.phone} onChange={(event) => updateDraft("phone", event.target.value)} />
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-email">Email заведения *</label>
+                        <label htmlFor="venue-email">{cabinetCopy.email}</label>
                         <input id="venue-email" type="email" disabled={!canEdit} value={draft.email} onChange={(event) => updateDraft("email", event.target.value)} />
                       </div>
                       <div className="field owner-field-wide">
-                        <label htmlFor="venue-website">Сайт ресторана <span className="field-optional">(если есть)</span></label>
+                        <label htmlFor="venue-website">{cabinetCopy.website} <span className="field-optional">{cabinetCopy.optional}</span></label>
                         <input
                           id="venue-website"
                           type="url"
@@ -975,18 +983,18 @@ export default function CabinetPage() {
                           value={draft.website}
                           onChange={(event) => updateDraft("website", event.target.value)}
                         />
-                        <small>Необязательное поле. Ссылка появится в карточке заведения после публикации.</small>
+                        <small>{cabinetCopy.websiteHint}</small>
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-price">Ценовой уровень</label>
+                        <label htmlFor="venue-price">{cabinetCopy.price}</label>
                         <select id="venue-price" disabled={!canEdit} value={draft.price_level} onChange={(event) => updateDraft("price_level", event.target.value)}>
-                          <option value="1">€ — демократичный</option>
-                          <option value="2">€€ — средний</option>
-                          <option value="3">€€€ — высокий</option>
+                          <option value="1">{cabinetCopy.price1}</option>
+                          <option value="2">{cabinetCopy.price2}</option>
+                          <option value="3">{cabinetCopy.price3}</option>
                         </select>
                       </div>
                       <div className="field">
-                        <label htmlFor="venue-check">Средний чек, MDL</label>
+                        <label htmlFor="venue-check">{cabinetCopy.average}</label>
                         <input id="venue-check" type="number" min="0" disabled={!canEdit} placeholder="350" value={draft.average_check} onChange={(event) => updateDraft("average_check", event.target.value)} />
                       </div>
                     </div>
@@ -995,7 +1003,7 @@ export default function CabinetPage() {
                   <div className="owner-form-section">
                     <div className="owner-form-title">
                       <span>04</span>
-                      <div><h3>Фотографии</h3><p>Добавьте фасад, интерьер и ключевые блюда. До 8 файлов.</p></div>
+                      <div><h3>{cabinetCopy.photos}</h3><p>{cabinetCopy.photosHint}</p></div>
                     </div>
                     <div className="owner-photo-area">
                       <div className="photo-grid owner-photo-grid">
@@ -1003,7 +1011,7 @@ export default function CabinetPage() {
                           <div key={url} className="photo-thumb owner-photo-thumb">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={mediaUrl(url)} alt={`Фото ресторана ${index + 1}`} />
-                            {index === 0 && <span>Обложка</span>}
+                            {index === 0 && <span>{cabinetCopy.cover}</span>}
                             {canEdit && (
                               <button type="button" aria-label="Удалить фото" onClick={() => void onRemovePhoto(url)}>×</button>
                             )}
@@ -1020,7 +1028,7 @@ export default function CabinetPage() {
                               }}
                             />
                             <span>＋</span>
-                            <strong>Добавить фото</strong>
+                            <strong>{cabinetCopy.addPhoto}</strong>
                             <small>JPG, PNG или WebP · до 5 МБ</small>
                           </label>
                         )}
@@ -1031,16 +1039,16 @@ export default function CabinetPage() {
                   {canEdit && (
                     <div className="owner-form-footer">
                       <div>
-                        <strong>{completion}% профиля заполнено</strong>
+                        <strong>{completion}% {cabinetCopy.filled}</strong>
                         <p>
                           {missingChecks.length
                             ? `Осталось: ${missingChecks.map((check) => check.label).join(", ")}.`
-                            : "Все обязательные данные и фотографии готовы."}
+                            : cabinetCopy.ready}
                         </p>
                       </div>
                       <div>
-                        <button type="button" className="panel-btn ghost" disabled={busy} onClick={() => void onSave()}>Сохранить черновик</button>
-                        <button type="button" className="panel-btn" disabled={busy || missingChecks.length > 0} onClick={() => void onSubmit()}>Отправить на модерацию</button>
+                        <button type="button" className="panel-btn ghost" disabled={busy} onClick={() => void onSave()}>{cabinetCopy.save}</button>
+                        <button type="button" className="panel-btn" disabled={busy || missingChecks.length > 0} onClick={() => void onSubmit()}>{cabinetCopy.submit}</button>
                       </div>
                     </div>
                   )}
