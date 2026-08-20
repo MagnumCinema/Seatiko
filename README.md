@@ -1,52 +1,50 @@
 # Virtual Restaurant — FoodAssistant
 
+**Один репозиторий** · **один Docker Compose** · **один вход: порт 80**
+
 Пилот: **Бельцы, Молдова**
 
-## Один Docker на весь стек
+## Запуск
 
 ```bash
-# из корня проекта
 docker compose up -d --build
 ```
 
-| Сервис | URL |
-|--------|-----|
-| Twenty CRM | http://localhost:3000 |
-| Next.js web | http://localhost:3001 |
-| Go API | http://localhost:8080 |
-| API health | http://localhost:8080/healthz |
+| Что | URL |
+|-----|-----|
+| Приложение (Next.js) | http://localhost/ |
+| API | http://localhost/api/v1/... |
+| Health | http://localhost/healthz |
+| Twenty CRM | http://crm.localhost/ |
 
-Остановить:
+`crm.localhost` обычно открывается без правки hosts (резолвится в 127.0.0.1).
 
-```bash
-docker compose down
+Остановить: `docker compose down`
+
+## Структура (один корень)
+
+```
+project1/                      ← единственный .git
+├── docker-compose.yml
+├── .env
+├── config/nginx/              ← nginx :80
+├── foodassistant/
+│   ├── apps/mobile/           ← Flutter **только Android**
+│   ├── apps/web/              ← Next.js
+│   └── services/api/          ← Go API
+├── virtual-restaurant/        ← доки + прототип
+└── twenty/                    ← исходники CRM (без своего .git)
 ```
 
-Логи:
+## Android
 
 ```bash
-docker compose logs -f api web twenty-server
+cd foodassistant/apps/mobile
+flutter run --dart-define=API_URL=http://10.0.2.2
+# устройство в Wi‑Fi:
+# flutter run --dart-define=API_URL=http://<IP-Mac>
 ```
-
-> Flutter (Android) не в Docker — запускается на эмуляторе/устройстве и ходит в API `:8080`.
-
-## Структура
-
-| Путь | Описание |
-|------|----------|
-| `docker-compose.yml` | Единый стек: CRM + API + Web |
-| `.env` | Секреты и URL (приватный репо) |
-| `foodassistant/` | Flutter, Next.js, Go |
-| `virtual-restaurant/` | Документация и прототип |
-| `twenty/` | Исходники Twenty CRM |
-
-## Стек
-
-- **Android:** Flutter  
-- **Frontend:** Next.js (`:3001`)  
-- **Backend:** Go (`:8080`)  
-- **CRM:** Twenty (`:3000`)  
 
 ## Документация
 
-См. `virtual-restaurant/docs/` и `foodassistant/README.md`.
+`virtual-restaurant/docs/` · `foodassistant/README.md`

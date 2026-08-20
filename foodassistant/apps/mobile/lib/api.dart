@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Android emulator → host nginx on port 80
 const apiBaseUrl = String.fromEnvironment(
   'API_URL',
-  defaultValue: 'http://10.0.2.2:8080',
+  defaultValue: 'http://10.0.2.2',
 );
 
 const tokenKey = 'fa_token';
