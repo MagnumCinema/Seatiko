@@ -58,6 +58,7 @@ type ApplicationUpdate struct {
 
 type MemoryStore struct {
 	mu           sync.RWMutex
+	dataFile     string
 	cities       map[string]models.City
 	venues       map[string]models.Venue
 	tables       map[string]models.Table
@@ -283,6 +284,7 @@ func (s *MemoryStore) seed() {
 			Locale:       "en",
 			Role:         models.RoleAdmin,
 			CreatedAt:    time.Now().UTC(),
+			UpdatedAt:    time.Now().UTC(),
 		}
 		s.users[admin.ID] = admin
 	}
@@ -350,6 +352,7 @@ func (s *MemoryStore) ListTables(venueID string) []models.Table {
 func (s *MemoryStore) Register(email, password, firstName, lastName, locale, role string) (models.User, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	for _, u := range s.users {
 		if strings.EqualFold(u.Email, email) {
@@ -378,6 +381,7 @@ func (s *MemoryStore) Register(email, password, firstName, lastName, locale, rol
 		display = email
 	}
 
+	now := time.Now().UTC()
 	u := models.User{
 		ID:           uuid.NewString(),
 		Email:        email,
@@ -387,7 +391,8 @@ func (s *MemoryStore) Register(email, password, firstName, lastName, locale, rol
 		DisplayName:  display,
 		Locale:       locale,
 		Role:         role,
-		CreatedAt:    time.Now().UTC(),
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 	s.users[u.ID] = u
 	return u, nil
@@ -427,6 +432,7 @@ func (s *MemoryStore) GetUser(id string) (models.User, error) {
 func (s *MemoryStore) UpdateUser(id string, patch UserProfileUpdate) (models.User, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	u, ok := s.users[id]
 	if !ok {
@@ -447,13 +453,15 @@ func (s *MemoryStore) UpdateUser(id string, patch UserProfileUpdate) (models.Use
 	if patch.Locale != nil && *patch.Locale != "" {
 		u.Locale = *patch.Locale
 	}
+	u.UpdatedAt = time.Now().UTC()
 	s.users[id] = u
 	return u, nil
 }
 
-func (s *MemoryStore) CreateReservation(userID, venueID, tableID string, guests int, reservedFor time.Time) (models.Reservation, error) {
+func (s *MemoryStore) CreateReservation(userID, venueID, tableID string, guests int, reservedFor time.Time, source ...string) (models.Reservation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	if _, ok := s.users[userID]; !ok {
 		return models.Reservation{}, ErrNotFound
@@ -472,6 +480,14 @@ func (s *MemoryStore) CreateReservation(userID, venueID, tableID string, guests 
 		return models.Reservation{}, ErrTableNotFree
 	}
 
+	reservationSource := models.ReservationSourceWeb
+	if len(source) > 0 {
+		switch strings.ToUpper(source[0]) {
+		case models.ReservationSourceAndroid, models.ReservationSourceIOS, models.ReservationSourcePhone, models.ReservationSourceWalkIn:
+			reservationSource = strings.ToUpper(source[0])
+		}
+	}
+	now := time.Now().UTC()
 	id := uuid.NewString()
 	res := models.Reservation{
 		ID:          id,
@@ -481,7 +497,9 @@ func (s *MemoryStore) CreateReservation(userID, venueID, tableID string, guests 
 		Guests:      guests,
 		ReservedFor: reservedFor,
 		Status:      models.ReservationConfirmed,
-		CreatedAt:   time.Now().UTC(),
+		Source:      reservationSource,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	rf := reservedFor
 	t.Status = models.TableReserved
@@ -496,6 +514,7 @@ func (s *MemoryStore) CreateReservation(userID, venueID, tableID string, guests 
 func (s *MemoryStore) ConfirmArrival(userID, reservationID string) (models.Reservation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	r, ok := s.reservations[reservationID]
 	if !ok {
@@ -509,6 +528,8 @@ func (s *MemoryStore) ConfirmArrival(userID, reservationID string) (models.Reser
 	}
 	now := time.Now().UTC()
 	r.ArrivalConfirmedAt = &now
+	r.Status = models.ReservationCheckedIn
+	r.UpdatedAt = now
 	s.reservations[reservationID] = r
 	return r, nil
 }
@@ -516,6 +537,7 @@ func (s *MemoryStore) ConfirmArrival(userID, reservationID string) (models.Reser
 func (s *MemoryStore) CancelReservation(userID, reservationID string) (models.Reservation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	r, ok := s.reservations[reservationID]
 	if !ok {
@@ -529,6 +551,7 @@ func (s *MemoryStore) CancelReservation(userID, reservationID string) (models.Re
 	}
 
 	r.Status = models.ReservationCancelled
+	r.UpdatedAt = time.Now().UTC()
 	s.reservations[reservationID] = r
 
 	if t, ok := s.tables[r.TableID]; ok {
@@ -558,6 +581,7 @@ func (s *MemoryStore) ListReservations(userID string) []models.Reservation {
 func (s *MemoryStore) CreateTableWatch(userID, venueID, tableID string) (models.TableWatch, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	if _, ok := s.users[userID]; !ok {
 		return models.TableWatch{}, ErrNotFound
@@ -586,6 +610,7 @@ func (s *MemoryStore) CreateTableWatch(userID, venueID, tableID string) (models.
 func (s *MemoryStore) ScanQR(userID, venueID, tableID, token string) (models.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	// MVP: accept any non-empty token (including "demo")
 	if strings.TrimSpace(token) == "" {
@@ -661,6 +686,7 @@ func (s *MemoryStore) GetSession(id string) (models.Session, error) {
 func (s *MemoryStore) CloseSession(userID, sessionID string) (models.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	sess, ok := s.sessions[sessionID]
 	if !ok {
@@ -709,6 +735,7 @@ func (s *MemoryStore) ListMenu(venueID string) ([]models.MenuItem, error) {
 func (s *MemoryStore) CreateOrder(sessionID, userID string, items []OrderItemInput) (models.Order, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	sess, ok := s.sessions[sessionID]
 	if !ok {
@@ -784,6 +811,7 @@ func (s *MemoryStore) GetOrder(id string) (models.Order, error) {
 func (s *MemoryStore) UpdateOrderStatus(orderID string, status models.OrderStatus) (models.Order, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	o, ok := s.orders[orderID]
 	if !ok {
@@ -804,6 +832,7 @@ func (s *MemoryStore) UpdateOrderStatus(orderID string, status models.OrderStatu
 func (s *MemoryStore) CreateWaiterCall(sessionID string, reason models.WaiterCallReason) (models.WaiterCall, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	sess, ok := s.sessions[sessionID]
 	if !ok {
@@ -852,6 +881,7 @@ func (s *MemoryStore) ListWaiterCalls(venueID string) ([]models.WaiterCall, erro
 func (s *MemoryStore) AcceptWaiterCall(id string) (models.WaiterCall, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	wc, ok := s.waiterCalls[id]
 	if !ok {
@@ -948,6 +978,7 @@ func (s *MemoryStore) recordActivityLocked(appID, actorID, action string, change
 func (s *MemoryStore) CreateApplication(ownerID string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	u, ok := s.users[ownerID]
 	if !ok {
@@ -1088,6 +1119,7 @@ func (s *MemoryStore) ListAllApplications(status string) []models.VenueApplicati
 func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpdate) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	app, ok := s.applications[id]
 	if !ok {
@@ -1195,6 +1227,7 @@ func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpd
 func (s *MemoryStore) AddPhoto(ownerID, appID, url string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	app, ok := s.applications[appID]
 	if !ok {
@@ -1223,6 +1256,7 @@ func (s *MemoryStore) AddPhoto(ownerID, appID, url string) (models.VenueApplicat
 func (s *MemoryStore) RemovePhoto(ownerID, appID, url string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	app, ok := s.applications[appID]
 	if !ok {
@@ -1261,6 +1295,7 @@ func (s *MemoryStore) RemovePhoto(ownerID, appID, url string) (models.VenueAppli
 func (s *MemoryStore) SubmitApplication(ownerID, id string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	app, ok := s.applications[id]
 	if !ok {
@@ -1300,6 +1335,7 @@ func applicationComplete(app models.VenueApplication) bool {
 func (s *MemoryStore) AdminSetStatus(adminID, id string, status models.ApplicationStatus, rejectReason string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	admin, ok := s.users[adminID]
 	if !ok || admin.Role != models.RoleAdmin {
@@ -1341,6 +1377,7 @@ func (s *MemoryStore) AdminSetStatus(adminID, id string, status models.Applicati
 func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
 
 	admin, ok := s.users[adminID]
 	if !ok || admin.Role != models.RoleAdmin {

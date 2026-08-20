@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
 	"github.com/foodassistant/api/internal/auth"
 	"github.com/foodassistant/api/internal/config"
+	"github.com/foodassistant/api/internal/crm"
 	"github.com/foodassistant/api/internal/handlers"
 	"github.com/foodassistant/api/internal/models"
 	"github.com/foodassistant/api/internal/store"
@@ -18,8 +20,24 @@ func main() {
 		log.Fatalf("upload dir: %v", err)
 	}
 
-	mem := store.NewMemory()
-	api := &handlers.API{Store: mem, JWTSecret: cfg.JWTSecret, UploadDir: cfg.UploadDir}
+	mem, err := store.NewPersistent(cfg.DataFile)
+	if err != nil {
+		log.Fatalf("load persistent state: %v", err)
+	}
+	var crmSyncer *crm.Syncer
+	if cfg.TwentyAPIKey != "" {
+		crmSyncer = crm.NewSyncer(
+			crm.NewClient(cfg.TwentyBaseURL, cfg.TwentyAPIKey),
+			mem,
+			cfg.TwentyWebhookSecret,
+			cfg.TwentySyncInterval,
+		)
+		go crmSyncer.Run(context.Background())
+		log.Printf("Twenty CRM synchronization enabled")
+	} else {
+		log.Printf("Twenty CRM synchronization disabled: TWENTY_API_KEY is empty")
+	}
+	api := &handlers.API{Store: mem, CRM: crmSyncer, JWTSecret: cfg.JWTSecret, UploadDir: cfg.UploadDir}
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -30,6 +48,8 @@ func main() {
 
 	v1 := r.Group("/api/v1")
 	{
+		v1.GET("/integrations/twenty/status", api.CRMStatus)
+		v1.POST("/integrations/twenty/webhook", api.TwentyWebhook)
 		v1.GET("/cities", api.ListCities)
 		v1.GET("/venues", api.ListVenues)
 		v1.GET("/venues/:id", api.GetVenue)
@@ -96,6 +116,7 @@ func main() {
 				admin.GET("/applications", api.AdminListApplications)
 				admin.POST("/applications/:id/review", api.AdminReviewApplication)
 				admin.POST("/applications/:id/publish", api.AdminPublishApplication)
+				admin.POST("/integrations/twenty/reconcile", api.ReconcileCRM)
 			}
 		}
 	}

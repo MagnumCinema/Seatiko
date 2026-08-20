@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/foodassistant/api/internal/auth"
+	"github.com/foodassistant/api/internal/crm"
 	"github.com/foodassistant/api/internal/models"
 	"github.com/foodassistant/api/internal/store"
 	"github.com/gin-gonic/gin"
@@ -17,8 +18,15 @@ import (
 
 type API struct {
 	Store     *store.MemoryStore
+	CRM       *crm.Syncer
 	JWTSecret string
 	UploadDir string
+}
+
+func (a *API) triggerCRM() {
+	if a.CRM != nil {
+		a.CRM.Trigger()
+	}
 }
 
 func (a *API) userID(c *gin.Context) string {
@@ -28,7 +36,53 @@ func (a *API) userID(c *gin.Context) string {
 }
 
 func (a *API) Health(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "service": "foodassistant-api"})
+	response := gin.H{"status": "ok", "service": "foodassistant-api"}
+	if a.CRM != nil {
+		response["crm"] = a.CRM.Status()
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+func (a *API) CRMStatus(c *gin.Context) {
+	if a.CRM == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"enabled": false, "healthy": false})
+		return
+	}
+	c.JSON(http.StatusOK, a.CRM.Status())
+}
+
+func (a *API) TwentyWebhook(c *gin.Context) {
+	if a.CRM == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "crm_disabled"})
+		return
+	}
+	payload, err := io.ReadAll(io.LimitReader(c.Request.Body, 2<<20))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	applied, err := a.CRM.HandleWebhook(
+		payload,
+		c.GetHeader("X-Twenty-Webhook-Signature"),
+		c.GetHeader("X-Twenty-Webhook-Timestamp"),
+	)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_webhook"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"accepted": true, "applied": applied})
+}
+
+func (a *API) ReconcileCRM(c *gin.Context) {
+	if a.CRM == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "crm_disabled"})
+		return
+	}
+	if err := a.CRM.Reconcile(c.Request.Context()); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "crm_sync_failed"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "synchronized"})
 }
 
 func (a *API) ListCities(c *gin.Context) {
@@ -124,6 +178,7 @@ func (a *API) Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "token_failed"})
 		return
 	}
+	a.triggerCRM()
 	c.JSON(http.StatusCreated, gin.H{"token": token, "user": u})
 }
 
@@ -180,6 +235,7 @@ func (a *API) UpdateMe(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user_not_found"})
 		return
 	}
+	a.triggerCRM()
 	c.JSON(http.StatusOK, gin.H{"user": u})
 }
 
@@ -188,6 +244,7 @@ type createReservationReq struct {
 	TableID     string    `json:"table_id" binding:"required"`
 	Guests      int       `json:"guests" binding:"required,min=1"`
 	ReservedFor time.Time `json:"reserved_for" binding:"required"`
+	Source      string    `json:"source"`
 }
 
 func (a *API) CreateReservation(c *gin.Context) {
@@ -196,9 +253,10 @@ func (a *API) CreateReservation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
 		return
 	}
-	r, err := a.Store.CreateReservation(a.userID(c), req.VenueID, req.TableID, req.Guests, req.ReservedFor)
+	r, err := a.Store.CreateReservation(a.userID(c), req.VenueID, req.TableID, req.Guests, req.ReservedFor, req.Source)
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusCreated, gin.H{"reservation": r})
 	case store.ErrTableNotFree:
 		c.JSON(http.StatusConflict, gin.H{"error": "table_not_free"})
@@ -219,6 +277,7 @@ func (a *API) ConfirmArrival(c *gin.Context) {
 	r, err := a.Store.ConfirmArrival(a.userID(c), c.Param("id"))
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusOK, gin.H{"reservation": r})
 	case store.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "reservation_not_found"})
@@ -410,6 +469,7 @@ func (a *API) CreateRestaurantApplication(c *gin.Context) {
 	app, err := a.Store.CreateApplication(a.userID(c))
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusCreated, gin.H{"application": app})
 	case store.ErrForbidden:
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
@@ -507,6 +567,7 @@ func (a *API) UpdateRestaurantApplication(c *gin.Context) {
 	})
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusOK, gin.H{"application": app})
 	case store.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
@@ -601,6 +662,7 @@ func (a *API) UploadApplicationPhoto(c *gin.Context) {
 	app, err := a.Store.AddPhoto(a.userID(c), c.Param("id"), url)
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusCreated, gin.H{"application": app, "url": url})
 	case store.ErrNotFound:
 		_ = os.Remove(dstPath)
@@ -638,6 +700,7 @@ func (a *API) RemoveApplicationPhoto(c *gin.Context) {
 			name := filepath.Base(req.URL)
 			_ = os.Remove(filepath.Join(a.UploadDir, name))
 		}
+		a.triggerCRM()
 		c.JSON(http.StatusOK, gin.H{"application": app})
 	case store.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
@@ -654,6 +717,7 @@ func (a *API) SubmitRestaurantApplication(c *gin.Context) {
 	app, err := a.Store.SubmitApplication(a.userID(c), c.Param("id"))
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusOK, gin.H{"application": app})
 	case store.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
@@ -687,6 +751,7 @@ func (a *API) AdminReviewApplication(c *gin.Context) {
 	app, err := a.Store.AdminSetStatus(a.userID(c), c.Param("id"), models.ApplicationStatus(req.Status), req.RejectReason)
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusOK, gin.H{"application": app})
 	case store.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
@@ -705,6 +770,7 @@ func (a *API) AdminPublishApplication(c *gin.Context) {
 	app, err := a.Store.PublishApplication(a.userID(c), c.Param("id"))
 	switch err {
 	case nil:
+		a.triggerCRM()
 		c.JSON(http.StatusOK, gin.H{"application": app, "venue_id": app.VenueID})
 	case store.ErrNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})

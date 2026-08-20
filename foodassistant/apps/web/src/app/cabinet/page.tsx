@@ -162,6 +162,22 @@ function clearStoredDraft(applicationId: string) {
   localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${applicationId}`);
 }
 
+function clearStoredDraftWhenPersisted(
+  applicationId: string,
+  draft: Draft,
+  application: VenueApplication,
+) {
+  const website = draft.website.trim();
+  if (website && application.website !== website) {
+    localStorage.setItem(
+      `${DRAFT_STORAGE_PREFIX}${applicationId}`,
+      JSON.stringify(draft),
+    );
+    return;
+  }
+  clearStoredDraft(applicationId);
+}
+
 function ApplicationLocationPicker({
   lat,
   lng,
@@ -502,7 +518,7 @@ export default function CabinetPage() {
     try {
       const updated = await updateApplication(selected.id, toPayload(draft));
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      clearStoredDraft(selected.id);
+      clearStoredDraftWhenPersisted(selected.id, draft, updated);
       setMsg("Изменения сохранены");
       await refreshActivity(selected.id);
     } catch (value) {
@@ -521,7 +537,7 @@ export default function CabinetPage() {
       setApps((current) => current.map((app) => (app.id === saved.id ? saved : app)));
       const updated = await submitApplication(selected.id);
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      clearStoredDraft(selected.id);
+      clearStoredDraftWhenPersisted(selected.id, draft, updated);
       setSection("overview");
       setMsg("Заявка отправлена на модерацию");
       await refreshActivity(selected.id);
@@ -545,7 +561,7 @@ export default function CabinetPage() {
       }
       const updated = await uploadApplicationPhoto(selected.id, file);
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      clearStoredDraft(selected.id);
+      if (draft) clearStoredDraftWhenPersisted(selected.id, draft, updated);
       setMsg("Фотография добавлена");
       await refreshActivity(selected.id);
     } catch (value) {

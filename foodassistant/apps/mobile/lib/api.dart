@@ -68,12 +68,12 @@ class City {
   final String country;
 
   factory City.fromJson(Map<String, dynamic> json) => City(
-        id: json['id'] as String,
-        slug: json['slug'] as String? ?? '',
-        name: LocalizedString.fromJson(json['name']),
-        available: json['available'] as bool? ?? false,
-        country: json['country'] as String? ?? '',
-      );
+    id: json['id'] as String,
+    slug: json['slug'] as String? ?? '',
+    name: LocalizedString.fromJson(json['name']),
+    available: json['available'] as bool? ?? false,
+    country: json['country'] as String? ?? '',
+  );
 }
 
 class Venue {
@@ -118,27 +118,27 @@ class Venue {
   final int releaseBeforeMin;
 
   factory Venue.fromJson(Map<String, dynamic> json) => Venue(
-        id: json['id'] as String,
-        cityId: json['city_id'] as String? ?? '',
-        name: LocalizedString.fromJson(json['name']),
-        description: LocalizedString.fromJson(json['description']),
-        cuisine: (json['cuisine'] as List<dynamic>? ?? [])
-            .map((e) => e.toString())
-            .toList(),
-        rating: (json['rating'] as num?)?.toDouble() ?? 0,
-        priceLevel: json['price_level'] as int? ?? 1,
-        address: LocalizedString.fromJson(json['address']),
-        lat: (json['lat'] as num?)?.toDouble() ?? 0,
-        lng: (json['lng'] as num?)?.toDouble() ?? 0,
-        averageCheck: json['average_check'] as int? ?? 0,
-        openNow: json['open_now'] as bool? ?? false,
-        freeTables: json['free_tables'] as int? ?? 0,
-        imageUrl: json['image_url'] as String? ?? '',
-        website: json['website'] as String? ?? '',
-        alcoholLicenseValid: json['alcohol_license_valid'] as bool? ?? false,
-        sessionStartBeforeMin: json['session_start_before_min'] as int? ?? 60,
-        releaseBeforeMin: json['release_before_min'] as int? ?? 15,
-      );
+    id: json['id'] as String,
+    cityId: json['city_id'] as String? ?? '',
+    name: LocalizedString.fromJson(json['name']),
+    description: LocalizedString.fromJson(json['description']),
+    cuisine: (json['cuisine'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList(),
+    rating: (json['rating'] as num?)?.toDouble() ?? 0,
+    priceLevel: json['price_level'] as int? ?? 1,
+    address: LocalizedString.fromJson(json['address']),
+    lat: (json['lat'] as num?)?.toDouble() ?? 0,
+    lng: (json['lng'] as num?)?.toDouble() ?? 0,
+    averageCheck: json['average_check'] as int? ?? 0,
+    openNow: json['open_now'] as bool? ?? false,
+    freeTables: json['free_tables'] as int? ?? 0,
+    imageUrl: json['image_url'] as String? ?? '',
+    website: json['website'] as String? ?? '',
+    alcoholLicenseValid: json['alcohol_license_valid'] as bool? ?? false,
+    sessionStartBeforeMin: json['session_start_before_min'] as int? ?? 60,
+    releaseBeforeMin: json['release_before_min'] as int? ?? 15,
+  );
 
   String priceLabel() => '€' * priceLevel.clamp(1, 3);
 }
@@ -169,17 +169,17 @@ class VenueTable {
   final double y;
 
   factory VenueTable.fromJson(Map<String, dynamic> json) => VenueTable(
-        id: json['id'] as String,
-        venueId: json['venue_id'] as String? ?? '',
-        number: json['number'] as int? ?? 0,
-        seats: json['seats'] as int? ?? 0,
-        status: json['status'] as String? ?? 'FREE',
-        occupiedSince: _parseTime(json['occupied_since']),
-        reservedFor: _parseTime(json['reserved_for']),
-        reservationId: json['reservation_id'] as String?,
-        x: (json['x'] as num?)?.toDouble() ?? 0.5,
-        y: (json['y'] as num?)?.toDouble() ?? 0.5,
-      );
+    id: json['id'] as String,
+    venueId: json['venue_id'] as String? ?? '',
+    number: json['number'] as int? ?? 0,
+    seats: json['seats'] as int? ?? 0,
+    status: json['status'] as String? ?? 'FREE',
+    occupiedSince: _parseTime(json['occupied_since']),
+    reservedFor: _parseTime(json['reserved_for']),
+    reservationId: json['reservation_id'] as String?,
+    x: (json['x'] as num?)?.toDouble() ?? 0.5,
+    y: (json['y'] as num?)?.toDouble() ?? 0.5,
+  );
 }
 
 class User {
@@ -204,15 +204,15 @@ class User {
   final DateTime? createdAt;
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        id: json['id'] as String,
-        email: json['email'] as String? ?? '',
-        phone: json['phone'] as String?,
-        firstName: json['first_name'] as String? ?? '',
-        lastName: json['last_name'] as String? ?? '',
-        displayName: json['display_name'] as String? ?? '',
-        locale: json['locale'] as String? ?? 'ru',
-        createdAt: _parseTime(json['created_at']),
-      );
+    id: json['id'] as String,
+    email: json['email'] as String? ?? '',
+    phone: json['phone'] as String?,
+    firstName: json['first_name'] as String? ?? '',
+    lastName: json['last_name'] as String? ?? '',
+    displayName: json['display_name'] as String? ?? '',
+    locale: json['locale'] as String? ?? 'ru',
+    createdAt: _parseTime(json['created_at']),
+  );
 }
 
 class AuthResponse {
@@ -221,9 +221,9 @@ class AuthResponse {
   final User user;
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-        token: json['token'] as String,
-        user: User.fromJson(json['user'] as Map<String, dynamic>),
-      );
+    token: json['token'] as String,
+    user: User.fromJson(json['user'] as Map<String, dynamic>),
+  );
 }
 
 class Reservation {
@@ -250,16 +250,16 @@ class Reservation {
   final DateTime? createdAt;
 
   factory Reservation.fromJson(Map<String, dynamic> json) => Reservation(
-        id: json['id'] as String,
-        userId: json['user_id'] as String? ?? '',
-        venueId: json['venue_id'] as String? ?? '',
-        tableId: json['table_id'] as String? ?? '',
-        guests: json['guests'] as int? ?? 1,
-        reservedFor: _parseTime(json['reserved_for']) ?? DateTime.now(),
-        status: json['status'] as String? ?? '',
-        arrivalConfirmedAt: _parseTime(json['arrival_confirmed_at']),
-        createdAt: _parseTime(json['created_at']),
-      );
+    id: json['id'] as String,
+    userId: json['user_id'] as String? ?? '',
+    venueId: json['venue_id'] as String? ?? '',
+    tableId: json['table_id'] as String? ?? '',
+    guests: json['guests'] as int? ?? 1,
+    reservedFor: _parseTime(json['reserved_for']) ?? DateTime.now(),
+    status: json['status'] as String? ?? '',
+    arrivalConfirmedAt: _parseTime(json['arrival_confirmed_at']),
+    createdAt: _parseTime(json['created_at']),
+  );
 }
 
 class Session {
@@ -284,15 +284,15 @@ class Session {
   final DateTime? closedAt;
 
   factory Session.fromJson(Map<String, dynamic> json) => Session(
-        id: json['id'] as String,
-        userId: json['user_id'] as String? ?? '',
-        venueId: json['venue_id'] as String? ?? '',
-        tableId: json['table_id'] as String? ?? '',
-        reservationId: json['reservation_id'] as String?,
-        status: json['status'] as String? ?? 'ACTIVE',
-        startedAt: _parseTime(json['started_at']) ?? DateTime.now(),
-        closedAt: _parseTime(json['closed_at']),
-      );
+    id: json['id'] as String,
+    userId: json['user_id'] as String? ?? '',
+    venueId: json['venue_id'] as String? ?? '',
+    tableId: json['table_id'] as String? ?? '',
+    reservationId: json['reservation_id'] as String?,
+    status: json['status'] as String? ?? 'ACTIVE',
+    startedAt: _parseTime(json['started_at']) ?? DateTime.now(),
+    closedAt: _parseTime(json['closed_at']),
+  );
 }
 
 class MenuItem {
@@ -315,14 +315,14 @@ class MenuItem {
   final bool containsAlcohol;
 
   factory MenuItem.fromJson(Map<String, dynamic> json) => MenuItem(
-        id: json['id'] as String,
-        venueId: json['venue_id'] as String? ?? '',
-        category: LocalizedString.fromJson(json['category']),
-        name: LocalizedString.fromJson(json['name']),
-        description: LocalizedString.fromJson(json['description']),
-        price: json['price'] as int? ?? 0,
-        containsAlcohol: json['contains_alcohol'] as bool? ?? false,
-      );
+    id: json['id'] as String,
+    venueId: json['venue_id'] as String? ?? '',
+    category: LocalizedString.fromJson(json['category']),
+    name: LocalizedString.fromJson(json['name']),
+    description: LocalizedString.fromJson(json['description']),
+    price: json['price'] as int? ?? 0,
+    containsAlcohol: json['contains_alcohol'] as bool? ?? false,
+  );
 }
 
 class OrderItem {
@@ -339,11 +339,11 @@ class OrderItem {
   final int price;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) => OrderItem(
-        menuItemId: json['menu_item_id'] as String? ?? '',
-        name: LocalizedString.fromJson(json['name']),
-        qty: json['qty'] as int? ?? 1,
-        price: json['price'] as int? ?? 0,
-      );
+    menuItemId: json['menu_item_id'] as String? ?? '',
+    name: LocalizedString.fromJson(json['name']),
+    qty: json['qty'] as int? ?? 1,
+    price: json['price'] as int? ?? 0,
+  );
 }
 
 class Order {
@@ -370,18 +370,18 @@ class Order {
   final DateTime? updatedAt;
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
-        id: json['id'] as String,
-        sessionId: json['session_id'] as String? ?? '',
-        userId: json['user_id'] as String? ?? '',
-        venueId: json['venue_id'] as String? ?? '',
-        items: (json['items'] as List<dynamic>? ?? [])
-            .map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        status: json['status'] as String? ?? '',
-        total: json['total'] as int? ?? 0,
-        createdAt: _parseTime(json['created_at']),
-        updatedAt: _parseTime(json['updated_at']),
-      );
+    id: json['id'] as String,
+    sessionId: json['session_id'] as String? ?? '',
+    userId: json['user_id'] as String? ?? '',
+    venueId: json['venue_id'] as String? ?? '',
+    items: (json['items'] as List<dynamic>? ?? [])
+        .map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    status: json['status'] as String? ?? '',
+    total: json['total'] as int? ?? 0,
+    createdAt: _parseTime(json['created_at']),
+    updatedAt: _parseTime(json['updated_at']),
+  );
 }
 
 class HolidayCollection {
@@ -426,13 +426,13 @@ class WaiterCall {
   final String status;
 
   factory WaiterCall.fromJson(Map<String, dynamic> json) => WaiterCall(
-        id: json['id'] as String,
-        sessionId: json['session_id'] as String? ?? '',
-        venueId: json['venue_id'] as String? ?? '',
-        tableId: json['table_id'] as String? ?? '',
-        reason: json['reason'] as String? ?? '',
-        status: json['status'] as String? ?? '',
-      );
+    id: json['id'] as String,
+    sessionId: json['session_id'] as String? ?? '',
+    venueId: json['venue_id'] as String? ?? '',
+    tableId: json['table_id'] as String? ?? '',
+    reason: json['reason'] as String? ?? '',
+    status: json['status'] as String? ?? '',
+  );
 }
 
 DateTime? _parseTime(dynamic v) {
@@ -493,12 +493,9 @@ class ApiClient {
     Map<String, String>? query,
     bool auth = false,
   }) async {
-    final uri = Uri.parse('$apiBaseUrl$path').replace(
-      queryParameters: query?.isEmpty ?? true ? null : query,
-    );
-    final headers = <String, String>{
-      'Accept': 'application/json',
-    };
+    final uri = Uri.parse('$apiBaseUrl$path')
+        .replace(queryParameters: query?.isEmpty ?? true ? null : query);
+    final headers = <String, String>{'Accept': 'application/json'};
     if (body != null) headers['Content-Type'] = 'application/json';
     if (auth) {
       final token = await getToken();
@@ -544,10 +541,7 @@ class ApiClient {
   }
 
   Future<List<Venue>> fetchVenues({String cityId = 'city-balti'}) async {
-    final data = await _request(
-      '/api/v1/venues',
-      query: {'city_id': cityId},
-    );
+    final data = await _request('/api/v1/venues', query: {'city_id': cityId});
     final list = data['venues'] as List<dynamic>? ?? [];
     return list.map((e) => Venue.fromJson(e as Map<String, dynamic>)).toList();
   }
@@ -669,6 +663,7 @@ class ApiClient {
         'table_id': tableId,
         'guests': guests,
         'reserved_for': reservedFor.toUtc().toIso8601String(),
+        'source': 'ANDROID',
       },
       auth: true,
     );

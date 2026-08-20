@@ -51,6 +51,8 @@ docker compose up -d --build
 
 **Админ:** `admin@foodassistant.local` / `admin123`
 
+Подробная пошаговая инструкция со скриншотами: [`foodassistant/README.md`](./foodassistant/README.md).
+
 Логика CRM и воронка подключения: [`virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md`](./virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md).
 
 ## Android

@@ -76,6 +76,7 @@ type User struct {
 	Locale       string    `json:"locale"`
 	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type ApplicationStatus string
@@ -137,6 +138,14 @@ const (
 	ReservationNoShow    ReservationStatus = "NO_SHOW"
 )
 
+const (
+	ReservationSourceWeb     = "WEB"
+	ReservationSourceAndroid = "ANDROID"
+	ReservationSourceIOS     = "IOS"
+	ReservationSourcePhone   = "PHONE"
+	ReservationSourceWalkIn  = "WALK_IN"
+)
+
 type Reservation struct {
 	ID                 string            `json:"id"`
 	UserID             string            `json:"user_id"`
@@ -145,8 +154,10 @@ type Reservation struct {
 	Guests             int               `json:"guests"`
 	ReservedFor        time.Time         `json:"reserved_for"`
 	Status             ReservationStatus `json:"status"`
+	Source             string            `json:"source"`
 	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
 	CreatedAt          time.Time         `json:"created_at"`
+	UpdatedAt          time.Time         `json:"updated_at"`
 }
 
 // RestaurantReservation is the owner-facing reservation projection. It only

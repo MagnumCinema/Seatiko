@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,6 +16,32 @@ func registerTestUser(t *testing.T, store *MemoryStore, email, role string) mode
 		t.Fatalf("register %s: %v", role, err)
 	}
 	return user
+}
+
+func TestPersistentStoreSurvivesRestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	first, err := NewPersistent(path)
+	if err != nil {
+		t.Fatalf("create persistent store: %v", err)
+	}
+	owner := registerTestUser(t, first, "persistent-owner@example.com", models.RoleRestaurant)
+	application, err := first.CreateApplication(owner.ID)
+	if err != nil {
+		t.Fatalf("create persistent application: %v", err)
+	}
+
+	second, err := NewPersistent(path)
+	if err != nil {
+		t.Fatalf("reload persistent store: %v", err)
+	}
+	reloadedUser, err := second.GetUser(owner.ID)
+	if err != nil || reloadedUser.Email != owner.Email {
+		t.Fatalf("reloaded user = %#v, %v", reloadedUser, err)
+	}
+	reloadedApplication, err := second.GetApplication(application.ID)
+	if err != nil || reloadedApplication.OwnerUserID != owner.ID {
+		t.Fatalf("reloaded application = %#v, %v", reloadedApplication, err)
+	}
 }
 
 func TestRestaurantApplicationAuditAndReservationProjection(t *testing.T) {

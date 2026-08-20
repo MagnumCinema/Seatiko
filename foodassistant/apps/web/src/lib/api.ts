@@ -134,6 +134,7 @@ export type Reservation = {
   guests: number;
   reserved_for: string;
   status: string;
+  source?: "WEB" | "ANDROID" | "IOS" | "PHONE" | "WALK_IN";
   arrival_confirmed_at?: string | null;
   created_at: string;
 };
@@ -575,7 +576,7 @@ export async function createReservation(input: {
 }): Promise<Reservation> {
   const data = await apiFetch<{ reservation: Reservation }>(
     "/api/v1/reservations",
-    { method: "POST", body: input },
+    { method: "POST", body: { ...input, source: "WEB" } },
   );
   return data.reservation;
 }

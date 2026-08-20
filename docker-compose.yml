@@ -22,13 +22,21 @@ services:
       dockerfile: Dockerfile
     expose:
       - "8080"
+    # Secrets are loaded only by the backend container and never exposed to web/mobile builds.
+    env_file:
+      - path: ./.env.keys
+        required: false
     volumes:
+      - api-data:/app/data
       - api-uploads:/app/data/uploads
     environment:
       ADDR: ":8080"
       JWT_SECRET: ${JWT_SECRET:-dev-foodassistant-change-me}
       APP_ENV: ${APP_ENV:-development}
       UPLOAD_DIR: /app/data/uploads
+      DATA_FILE: /app/data/foodassistant-state.json
+      TWENTY_BASE_URL: http://twenty-server:3000
+      TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
@@ -138,6 +146,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  api-data:
   api-uploads:
   twenty-db-data:
     name: twenty_db-data
