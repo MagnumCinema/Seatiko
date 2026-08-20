@@ -3,22 +3,27 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
+import { useLocale } from "@/components/locale-provider";
+import { getSiteCopy } from "@/lib/site-copy";
 
 export default function BusinessPage() {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).business;
+
   return (
     <div className="business-page business-premium">
       <SiteHeader />
       <main>
         <section className="business-hero">
           <div className="business-hero-copy">
-            <span className="eyebrow">FoodAssistant для бизнеса</span>
-            <h1>Ваш зал работает.<br /><em>Даже когда вы не в зале.</em></h1>
-            <p>Единый кабинет для публикации ресторана, броней, загрузки зала и цифрового сервиса. Больше видимости для гостей — больше контроля для команды.</p>
+            <span className="eyebrow">{copy.eyebrow}</span>
+            <h1>{copy.title}<br /><em>{copy.accent}</em></h1>
+            <p>{copy.body}</p>
             <div className="landing-ctas">
-              <Link href="/register" className="btn btn-gold">Подключить ресторан <span>→</span></Link>
-              <Link href="/login" className="btn btn-outline">Войти в кабинет</Link>
+              <Link href="/register" className="btn btn-gold">{copy.connect} <span>→</span></Link>
+              <Link href="/login" className="btn btn-outline">{copy.cabinet}</Link>
             </div>
-            <div className="business-proof"><span>✓ Без установки оборудования</span><span>✓ Запуск за 1 рабочий день</span><span>✓ Поддержка RU · RO · EN</span></div>
+            <div className="business-proof">{copy.proofs.map((proof) => <span key={proof}>✓ {proof}</span>)}</div>
           </div>
 
           <div className="dashboard-preview" aria-label="Пример кабинета ресторана">
@@ -42,22 +47,19 @@ export default function BusinessPage() {
         </section>
 
         <section className="business-benefits">
-          <div className="section-heading centered"><span className="eyebrow">Всё необходимое для роста</span><h2>Технологии остаются в фоне.<br />Гостеприимство — на первом месте.</h2></div>
+          <div className="section-heading centered"><span className="eyebrow">{copy.benefitsEyebrow}</span><h2 style={{ whiteSpace: "pre-line" }}>{copy.benefitsTitle}</h2></div>
           <div className="benefit-grid">
-            <article><span>01</span><h3>Ваш ресторан на карте</h3><p>После модерации профиль появляется у гостей с адресом, кухней, рейтингом и свободными столами.</p></article>
-            <article><span>02</span><h3>Контроль загрузки</h3><p>Понятный план зала и статусы столов помогают команде быстрее принимать решения.</p></article>
-            <article><span>03</span><h3>Цифровой сервис</h3><p>QR-меню, заказ и вызов официанта сокращают ожидание, не заменяя человеческий контакт.</p></article>
-            <article><span>04</span><h3>Возвращаемость гостей</h3><p>История визитов и персональные сценарии помогают строить долгие отношения.</p></article>
+            {copy.benefits.map(([title, body], index) => <article key={title}><span>{String(index + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{body}</p></article>)}
           </div>
         </section>
 
         <section className="business-map-block">
-          <div className="section-heading split"><div><span className="eyebrow">Видимость с первого дня</span><h2>Зарегистрировались —<br />появились на карте</h2></div><p>Вы заполняете профиль и отправляете его на модерацию. После публикации точка ресторана автоматически становится доступна гостям на сайте и в мобильном приложении.</p></div>
+          <div className="section-heading split"><div><span className="eyebrow">{copy.mapEyebrow}</span><h2 style={{ whiteSpace: "pre-line" }}>{copy.mapTitle}</h2></div><p>{copy.mapBody}</p></div>
           <VenueMap compact />
         </section>
 
         <section className="business-final-cta">
-          <span className="eyebrow">Начните с первого заведения</span><h2>Покажите гостям,<br />что вы уже рядом.</h2><p>Создание профиля бесплатно для пилотных ресторанов Бельц.</p><Link href="/register" className="btn btn-light">Создать профиль ресторана <span>→</span></Link>
+          <span className="eyebrow">{copy.finalEyebrow}</span><h2 style={{ whiteSpace: "pre-line" }}>{copy.finalTitle}</h2><p>{copy.finalBody}</p><Link href="/register" className="btn btn-light">{copy.finalAction} <span>→</span></Link>
         </section>
       </main>
     </div>
