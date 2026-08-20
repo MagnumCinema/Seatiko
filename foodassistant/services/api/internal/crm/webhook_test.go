@@ -32,8 +32,10 @@ func TestCompanyWebhookAppliesSafeRestaurantFields(t *testing.T) {
 
 	secret := "test-webhook-secret"
 	syncer := NewSyncer(nil, dataStore, secret, time.Minute)
-	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-	payload := []byte(fmt.Sprintf(`{"event":"company.updated","data":{"foodassistantId":%q,"name":"CRM Restaurant","cuisine":"moldovan, european","averageCheckMdl":420,"updatedBy":{"source":"MANUAL"}},"timestamp":%q}`, application.ID, time.Now().UTC().Format(time.RFC3339)))
+	// Current Twenty releases use millisecond timestamps and the
+	// eventName/record envelope.
+	timestamp := fmt.Sprintf("%d", time.Now().UnixMilli())
+	payload := []byte(fmt.Sprintf(`{"eventName":"company.updated","record":{"foodassistantId":%q,"name":"CRM Restaurant","cuisine":"moldovan, european","averageCheckMdl":420,"updatedBy":{"source":"MANUAL"}},"eventDate":%q}`, application.ID, time.Now().UTC().Format(time.RFC3339)))
 	applied, err := syncer.HandleWebhook(payload, webhookSignature(secret, timestamp, payload), timestamp)
 	if err != nil {
 		t.Fatalf("handle webhook: %v", err)

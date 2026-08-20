@@ -9,7 +9,7 @@
 | **Сайт** http://localhost/ | Презентация, регистрация ресторанов, кабинет, админка | Next.js |
 | **Android** | Гостевое приложение (как прототип) | Flutter |
 | **Прототип** | UX wireframe | `virtual-restaurant/prototype` |
-| **CRM** http://crm.localhost/ | Продажи / B2B | Twenty |
+| **CRM** http://crm.localhost/ | Владельцы, рестораны, гости, брони и Timeline | Twenty |
 
 ## Поток ресторана
 
@@ -18,6 +18,8 @@
 3. Отправка на модерацию  
 4. Админ одобряет и публикует  
 5. Заведение появляется в API / на карте приложения  
+
+Данные проекта сохраняются в Docker volumes. FoodAssistant и Twenty связаны двусторонней синхронизацией: backend выполняет idempotent upsert по стабильным ID, а ручные безопасные изменения CRM возвращаются в проект через подписанный webhook.
 
 ## Запуск
 
@@ -53,7 +55,7 @@ docker compose up -d --build
 
 Подробная пошаговая инструкция со скриншотами: [`foodassistant/README.md`](./foodassistant/README.md).
 
-Логика CRM и воронка подключения: [`virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md`](./virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md).
+Логика CRM, границы ответственности и правила конфликтов: [`virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md`](./virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md).
 
 ## Android
 

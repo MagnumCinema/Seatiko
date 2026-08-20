@@ -17,8 +17,12 @@ import (
 )
 
 type webhookEnvelope struct {
+	// Twenty 1.x used event/data in examples; current Twenty sends
+	// eventName/record. Supporting both keeps upgrades backwards compatible.
 	Event     string         `json:"event"`
+	EventName string         `json:"eventName"`
 	Data      map[string]any `json:"data"`
+	Record    map[string]any `json:"record"`
 	Timestamp string         `json:"timestamp"`
 }
 
@@ -30,7 +34,13 @@ func verifyWebhookSignature(secret, timestamp, signature string, payload []byte)
 		return errors.New("Twenty webhook signature headers are missing")
 	}
 	if unix, err := strconv.ParseInt(timestamp, 10, 64); err == nil {
-		if delta := time.Since(time.Unix(unix, 0)); delta > 5*time.Minute || delta < -5*time.Minute {
+		// Twenty signs webhooks with Date.now(), which is milliseconds. Accept
+		// seconds too for older/self-hosted versions.
+		webhookTime := time.Unix(unix, 0)
+		if unix > 1_000_000_000_000 {
+			webhookTime = time.UnixMilli(unix)
+		}
+		if delta := time.Since(webhookTime); delta > 5*time.Minute || delta < -5*time.Minute {
 			return errors.New("Twenty webhook timestamp is outside the allowed window")
 		}
 	} else if parsed, err := time.Parse(time.RFC3339, timestamp); err == nil {
@@ -66,6 +76,15 @@ func mapNumber(data map[string]any, key string) (float64, bool) {
 	return value, ok
 }
 
+func mapPhone(data map[string]any) string {
+	number := strings.TrimSpace(mapText(data, "primaryPhoneNumber"))
+	callingCode := strings.TrimSpace(mapText(data, "primaryPhoneCallingCode"))
+	if number == "" || strings.HasPrefix(number, "+") || callingCode == "" {
+		return number
+	}
+	return callingCode + number
+}
+
 func actorSource(data map[string]any) string {
 	for _, field := range []string{"updatedBy", "createdBy"} {
 		if source := mapText(mapValue(data, field), "source"); source != "" {
@@ -86,26 +105,34 @@ func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp str
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return false, fmt.Errorf("decode Twenty webhook: %w", err)
 	}
-	if actorSource(event.Data) == "API" {
+	data := event.Data
+	if len(data) == 0 {
+		data = event.Record
+	}
+	eventName := event.Event
+	if eventName == "" {
+		eventName = event.EventName
+	}
+	if actorSource(data) == "API" {
 		return false, nil
 	}
 
-	switch event.Event {
+	switch eventName {
 	case "person.updated":
-		userID := mapText(event.Data, "foodassistantUserId")
+		userID := mapText(data, "foodassistantUserId")
 		if userID == "" {
 			return false, nil
 		}
-		name := mapValue(event.Data, "name")
-		emails := mapValue(event.Data, "emails")
-		phones := mapValue(event.Data, "phones")
+		name := mapValue(data, "name")
+		emails := mapValue(data, "emails")
+		phones := mapValue(data, "phones")
 		_, err := s.store.UpdateUserFromCRM(
 			userID,
 			mapText(name, "firstName"),
 			mapText(name, "lastName"),
 			mapText(emails, "primaryEmail"),
-			mapText(phones, "primaryPhoneNumber"),
-			mapText(event.Data, "foodassistantLocale"),
+			mapPhone(phones),
+			mapText(data, "foodassistantLocale"),
 		)
 		if errors.Is(err, store.ErrNotFound) {
 			return false, nil
@@ -113,56 +140,56 @@ func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp str
 		return err == nil, err
 
 	case "company.updated":
-		applicationID := mapText(event.Data, "foodassistantId")
+		applicationID := mapText(data, "foodassistantId")
 		if applicationID == "" {
 			return false, nil
 		}
 		patch := store.ApplicationUpdate{}
-		if value := strings.TrimSpace(mapText(event.Data, "name")); value != "" {
+		if value := strings.TrimSpace(mapText(data, "name")); value != "" {
 			localized := models.LocalizedString{RU: value, EN: value, RO: value}
 			patch.Name = &localized
 		}
-		if value := mapText(event.Data, "restaurantDescription"); value != "" {
+		if value := mapText(data, "restaurantDescription"); value != "" {
 			localized := models.LocalizedString{RU: value, EN: value, RO: value}
 			patch.Description = &localized
 		}
-		if value := mapText(event.Data, "cuisine"); value != "" {
+		if value := mapText(data, "cuisine"); value != "" {
 			items := strings.Split(value, ",")
 			for index := range items {
 				items[index] = strings.TrimSpace(items[index])
 			}
 			patch.Cuisine = &items
 		}
-		if value := mapText(event.Data, "openingHours"); value != "" {
+		if value := mapText(data, "openingHours"); value != "" {
 			patch.HoursText = &value
 		}
-		if value := mapText(mapValue(event.Data, "restaurantPhones"), "primaryPhoneNumber"); value != "" {
+		if value := mapPhone(mapValue(data, "restaurantPhones")); value != "" {
 			patch.Phone = &value
 		}
-		if value := mapText(mapValue(event.Data, "restaurantEmails"), "primaryEmail"); value != "" {
+		if value := mapText(mapValue(data, "restaurantEmails"), "primaryEmail"); value != "" {
 			patch.Email = &value
 		}
-		if value := mapText(mapValue(event.Data, "domainName"), "primaryLinkUrl"); value != "" {
+		if value := mapText(mapValue(data, "domainName"), "primaryLinkUrl"); value != "" {
 			patch.Website = &value
 		}
-		if value := mapText(event.Data, "cityId"); value != "" {
+		if value := mapText(data, "cityId"); value != "" {
 			patch.CityID = &value
 		}
-		if value, ok := mapNumber(event.Data, "latitude"); ok {
+		if value, ok := mapNumber(data, "latitude"); ok {
 			patch.Lat = &value
 		}
-		if value, ok := mapNumber(event.Data, "longitude"); ok {
+		if value, ok := mapNumber(data, "longitude"); ok {
 			patch.Lng = &value
 		}
-		if value, ok := mapNumber(event.Data, "priceLevel"); ok {
+		if value, ok := mapNumber(data, "priceLevel"); ok {
 			integer := int(value)
 			patch.PriceLevel = &integer
 		}
-		if value, ok := mapNumber(event.Data, "averageCheckMdl"); ok {
+		if value, ok := mapNumber(data, "averageCheckMdl"); ok {
 			integer := int(value)
 			patch.AverageCheck = &integer
 		}
-		address := mapValue(event.Data, "address")
+		address := mapValue(data, "address")
 		if value := mapText(address, "addressStreet1"); value != "" {
 			localized := models.LocalizedString{RU: value, EN: value, RO: value}
 			patch.Address = &localized
@@ -177,8 +204,8 @@ func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp str
 		return err == nil, err
 
 	case "reservation.updated":
-		reservationID := mapText(event.Data, "foodassistantReservationId")
-		status := models.ReservationStatus(mapText(event.Data, "bookingStatus"))
+		reservationID := mapText(data, "foodassistantReservationId")
+		status := models.ReservationStatus(mapText(data, "bookingStatus"))
 		if reservationID == "" || status == "" {
 			return false, nil
 		}

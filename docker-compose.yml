@@ -82,6 +82,9 @@ services:
       FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY:-}
       APP_SECRET: ${APP_SECRET:-}
       LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-LOCAL}
+      # Local-only: Twenty must be allowed to deliver webhooks to the Docker network.
+      # Keep the default safe mode enabled in production and use a public HTTPS endpoint.
+      OUTBOUND_HTTP_SAFE_MODE_ENABLED: ${TWENTY_OUTBOUND_HTTP_SAFE_MODE_ENABLED:-false}
     depends_on:
       twenty-db:
         condition: service_healthy
@@ -113,6 +116,8 @@ services:
       FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY:-}
       APP_SECRET: ${APP_SECRET:-}
       LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-LOCAL}
+      # Must match twenty-server so queued webhook jobs can reach the local API.
+      OUTBOUND_HTTP_SAFE_MODE_ENABLED: ${TWENTY_OUTBOUND_HTTP_SAFE_MODE_ENABLED:-false}
     depends_on:
       twenty-db:
         condition: service_healthy

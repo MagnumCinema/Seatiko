@@ -301,8 +301,14 @@ func (s *Syncer) syncApplication(ctx context.Context, application models.VenueAp
 			return externalID == application.ID
 		}
 		nameMatches := strings.EqualFold(strings.TrimSpace(stringField(record, "name")), localizedValue(application.Name))
-		emailMatches := strings.EqualFold(compositeString(record, "restaurantEmails", "primaryEmail"), application.Email)
-		return nameMatches && (application.Email == "" || emailMatches || strings.EqualFold(owner.Email, application.Email))
+		recordEmail := compositeString(record, "restaurantEmails", "primaryEmail")
+		candidateEmail := application.Email
+		if candidateEmail == "" {
+			candidateEmail = owner.Email
+		}
+		// A legacy company without an email can be adopted by name. A record
+		// with a conflicting email must never be silently merged.
+		return nameMatches && (recordEmail == "" || candidateEmail == "" || strings.EqualFold(recordEmail, candidateEmail))
 	})
 }
 

@@ -2,6 +2,7 @@ package store
 
 import (
 	"net/mail"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -114,10 +115,22 @@ func (s *MemoryStore) UpdateApplicationFromCRM(id string, patch ApplicationUpdat
 			return models.VenueApplication{}, ErrBadRequest
 		}
 	}
+	if patch.Website != nil && *patch.Website != "" {
+		parsed, err := url.ParseRequestURI(*patch.Website)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			return models.VenueApplication{}, ErrBadRequest
+		}
+	}
 	if patch.Lat != nil && (*patch.Lat < -90 || *patch.Lat > 90) {
 		return models.VenueApplication{}, ErrBadRequest
 	}
 	if patch.Lng != nil && (*patch.Lng < -180 || *patch.Lng > 180) {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+	if patch.PriceLevel != nil && (*patch.PriceLevel < 1 || *patch.PriceLevel > 3) {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+	if patch.AverageCheck != nil && *patch.AverageCheck < 0 {
 		return models.VenueApplication{}, ErrBadRequest
 	}
 
