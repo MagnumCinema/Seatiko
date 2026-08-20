@@ -11,8 +11,6 @@ dist/
 **/coverage/
 **/.nx/cache/
 **/yarn-error.log
-.env.keys
-
 # IDE / OS
 .DS_Store
 .idea/
