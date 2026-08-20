@@ -86,6 +86,22 @@ function tableStatusClass(status: string) {
   }
 }
 
+function venueMapPosition(item: Venue, all: Venue[]) {
+  if (all.length < 2) return { left: "50%", top: "42%" };
+  const lats = all.map((entry) => entry.lat);
+  const lngs = all.map((entry) => entry.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const latSpan = Math.max(maxLat - minLat, 0.004);
+  const lngSpan = Math.max(maxLng - minLng, 0.006);
+  return {
+    left: `${14 + ((item.lng - minLng) / lngSpan) * 72}%`,
+    top: `${16 + (1 - (item.lat - minLat) / latSpan) * 60}%`,
+  };
+}
+
 export function AppShell() {
   const { locale, setLocale, t } = useLocale();
 
@@ -100,6 +116,8 @@ export function AppShell() {
   const [cities, setCities] = useState<City[]>([]);
   const [cityId, setCityId] = useState("city-balti");
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [mapQuery, setMapQuery] = useState("");
+  const [activeMapVenueId, setActiveMapVenueId] = useState<string | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
@@ -161,6 +179,25 @@ export function AppShell() {
 
   const isAuthed = Boolean(user || getToken());
 
+  const visibleVenues = useMemo(() => {
+    const query = mapQuery.trim().toLowerCase();
+    if (!query) return venues;
+    return venues.filter((item) =>
+      [
+        pickLocale(item.name, locale),
+        pickLocale(item.address, locale),
+        ...item.cuisine,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [locale, mapQuery, venues]);
+
+  const activeMapVenue =
+    visibleVenues.find((item) => item.id === activeMapVenueId) ??
+    visibleVenues[0];
+
   const go = useCallback(
     (next: Screen, requireAuth = false) => {
       if (requireAuth && !getToken()) {
@@ -177,8 +214,10 @@ export function AppShell() {
   useEffect(() => {
     const onboarded = localStorage.getItem(ONBOARD_KEY);
     const savedCity = localStorage.getItem(CITY_KEY);
-    if (savedCity) setCityId(savedCity);
-    if (onboarded) setScreen("map");
+    queueMicrotask(() => {
+      if (savedCity) setCityId(savedCity);
+      if (onboarded) setScreen("map");
+    });
   }, []);
 
   useEffect(() => {
@@ -228,7 +267,6 @@ export function AppShell() {
 
   useEffect(() => {
     if (!getToken()) {
-      setUser(null);
       return;
     }
     fetchMe()
@@ -249,7 +287,6 @@ export function AppShell() {
   useEffect(() => {
     if (screen !== "map" && screen !== "discover") return;
     let cancelled = false;
-    setBusy(true);
     fetchVenues(cityId)
       .then((list) => {
         if (!cancelled) setVenues(list);
@@ -706,45 +743,63 @@ export function AppShell() {
                   </button>
                 ))}
               </div>
-              <div className="fa-search">{t("map.search")}</div>
-              <div className="fa-map-placeholder">
-                {venues.slice(0, 3).map((v, i) => (
+              <label className="fa-map-search">
+                <span aria-hidden>⌕</span>
+                <input
+                  value={mapQuery}
+                  onChange={(event) => setMapQuery(event.target.value)}
+                  placeholder={t("map.search")}
+                />
+                <button type="button" aria-label="Filters">☷</button>
+              </label>
+              <div className="fa-map-live">
+                <div className="fa-map-river" />
+                <div className="fa-map-road one" />
+                <div className="fa-map-road two" />
+                <div className="fa-map-road three" />
+                <span className="fa-map-city-word">BĂLȚI</span>
+                {visibleVenues.map((v, i) => (
                   <button
                     key={v.id}
                     type="button"
-                    className="fa-pin"
-                    style={{
-                      top: `${20 + i * 22}%`,
-                      left: `${18 + i * 28}%`,
-                    }}
-                    onClick={() => openVenue(v.id)}
+                    className={`fa-map-pin-live ${v.id === activeMapVenue?.id ? "active" : ""}`}
+                    style={venueMapPosition(v, visibleVenues)}
+                    onClick={() => setActiveMapVenueId(v.id)}
+                    aria-label={pickLocale(v.name, locale)}
                   >
-                    📍
+                    <span>{i + 1}</span>
                   </button>
                 ))}
-                <span>
-                  {t("map.city_map")} {cityName}
-                </span>
+                {activeMapVenue && (
+                  <button
+                    type="button"
+                    className="fa-map-venue-popover"
+                    onClick={() => openVenue(activeMapVenue.id)}
+                  >
+                    <span className="fa-map-venue-art">♨</span>
+                    <span><strong>{pickLocale(activeMapVenue.name, locale)}</strong><small>{t("map.free_tables", { count: activeMapVenue.free_tables })}</small></span>
+                    <b>→</b>
+                  </button>
+                )}
               </div>
               {busy && <p className="fa-muted">{t("common.loading")}</p>}
               {error && <p className="fa-error">{error}</p>}
-              {venues.map((v) => (
+              {visibleVenues.map((v, index) => (
                 <button
                   key={v.id}
                   type="button"
-                  className="fa-venue-card"
+                  className={`fa-venue-card premium ${v.id === activeMapVenue?.id ? "selected" : ""}`}
                   onClick={() => openVenue(v.id)}
                 >
-                  <div className="fa-venue-card-top">
-                    <h3>{pickLocale(v.name, locale)}</h3>
-                    <span>★ {v.rating}</span>
+                  <span className={`fa-venue-art art-${(index % 3) + 1}`}>♨</span>
+                  <div className="fa-venue-card-body">
+                    <div className="fa-venue-card-top">
+                      <h3>{pickLocale(v.name, locale)}</h3>
+                      <span>★ {v.rating}</span>
+                    </div>
+                    <p>{v.cuisine?.join(" · ")} · {priceLevelLabel(v.price_level)}</p>
+                    <div className="fa-venue-card-foot"><span><i /> {t("map.free_tables", { count: v.free_tables })}</span><small>~{v.average_check} MDL</small></div>
                   </div>
-                  <p>
-                    {v.cuisine?.join(" · ")} · {priceLevelLabel(v.price_level)}
-                  </p>
-                  <span className="fa-chip-green">
-                    {t("map.free_tables", { count: v.free_tables })}
-                  </span>
                 </button>
               ))}
             </div>
@@ -1498,10 +1553,10 @@ export function AppShell() {
             >
               {(
                 [
-                  ["map", "🗺", "nav.map"],
-                  ["discover", "✨", "nav.discover"],
-                  ["orders", "📋", "nav.orders"],
-                  ["profile", "👤", "nav.profile"],
+                  ["map", "⌖", "nav.map"],
+                  ["discover", "✦", "nav.discover"],
+                  ["orders", "▤", "nav.orders"],
+                  ["profile", "◉", "nav.profile"],
                 ] as const
               ).map(([id, icon, key]) => (
                 <button

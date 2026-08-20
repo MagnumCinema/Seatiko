@@ -541,9 +541,15 @@ export async function fetchReservations(): Promise<Reservation[]> {
 }
 
 export async function openSessionFromQr(token: string): Promise<QrSessionResponse> {
+  const normalized = token.trim();
+  const separator = normalized.includes(":") ? ":" : normalized.includes("/") ? "/" : null;
+  const parts = separator ? normalized.split(separator) : [];
+  const venueId = parts[0] || "venue-1";
+  const tableId = parts[1] || "t1";
+  const qrToken = parts.slice(2).join(separator ?? ":") || "demo";
   return apiFetch<QrSessionResponse>("/api/v1/sessions/qr", {
     method: "POST",
-    body: { token },
+    body: { venue_id: venueId, table_id: tableId, token: qrToken },
   });
 }
 
@@ -557,9 +563,9 @@ export async function createOrder(input: {
   venue_id: string;
   items: { menu_item_id: string; qty: number }[];
 }): Promise<Order> {
-  const data = await apiFetch<{ order: Order }>("/api/v1/orders", {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/sessions/${input.session_id}/orders`, {
     method: "POST",
-    body: input,
+    body: { items: input.items },
   });
   return data.order;
 }
@@ -568,10 +574,11 @@ export async function callWaiter(input: {
   session_id: string;
   reason: string;
 }): Promise<{ id: string; status: string }> {
-  return apiFetch("/api/v1/waiter-calls", {
+  const data = await apiFetch<{ waiter_call: { id: string; status: string } }>(`/api/v1/sessions/${input.session_id}/waiter-calls`, {
     method: "POST",
-    body: input,
+    body: { reason: input.reason },
   });
+  return data.waiter_call;
 }
 
 export async function closeSession(sessionId: string): Promise<Session> {
@@ -596,10 +603,11 @@ export async function watchTable(input: {
   venue_id: string;
   table_id: string;
 }): Promise<{ id: string }> {
-  return apiFetch("/api/v1/table-watches", {
+  const data = await apiFetch<{ watch: { id: string } }>(`/api/v1/tables/${input.table_id}/watch`, {
     method: "POST",
-    body: input,
+    body: { venue_id: input.venue_id },
   });
+  return data.watch;
 }
 
 export async function confirmArrival(

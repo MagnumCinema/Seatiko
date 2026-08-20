@@ -71,14 +71,14 @@ class HomeShellState extends State<HomeShell> {
   }
 
   void openQr() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const QrScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const QrScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: tab,
         children: [
@@ -93,67 +93,139 @@ class HomeShellState extends State<HomeShell> {
           ProfileTab(key: profileKey),
         ],
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Material(
-            color: FaColors.surface2,
-            child: InkWell(
-              onTap: openQr,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'nav.scan_qr'.tr(),
-                        style: const TextStyle(
-                          color: FaColors.text,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: FaColors.gold.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: FaColors.gold),
-                      ),
-                      child: const Icon(Icons.qr_code_2, color: FaColors.gold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          NavigationBar(
-            selectedIndex: tab,
-            onDestinationSelected: _onTab,
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.map_outlined),
-                selectedIcon: const Icon(Icons.map),
-                label: 'nav.map'.tr(),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.auto_awesome_outlined),
-                selectedIcon: const Icon(Icons.auto_awesome),
-                label: 'nav.discover'.tr(),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.receipt_long_outlined),
-                selectedIcon: const Icon(Icons.receipt_long),
-                label: 'nav.orders'.tr(),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.person_outline),
-                selectedIcon: const Icon(Icons.person),
-                label: 'nav.profile'.tr(),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        child: Container(
+          height: 72,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: FaColors.surface.withValues(alpha: .96),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: FaColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x24203E32),
+                blurRadius: 30,
+                offset: Offset(0, 12),
               ),
             ],
           ),
-        ],
+          child: Row(
+            children: [
+              _NavItem(
+                icon: Icons.map_outlined,
+                activeIcon: Icons.map_rounded,
+                label: 'nav.map'.tr(),
+                active: tab == 0,
+                onTap: () => _onTab(0),
+              ),
+              _NavItem(
+                icon: Icons.auto_awesome_outlined,
+                activeIcon: Icons.auto_awesome_rounded,
+                label: 'nav.discover'.tr(),
+                active: tab == 1,
+                onTap: () => _onTab(1),
+              ),
+              Expanded(
+                child: Center(
+                  child: Semantics(
+                    button: true,
+                    label: 'nav.scan_qr'.tr(),
+                    child: InkWell(
+                      onTap: openQr,
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: FaColors.clay,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(18),
+                            topRight: Radius.circular(18),
+                            bottomRight: Radius.circular(18),
+                            bottomLeft: Radius.circular(6),
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x42D77B48),
+                              blurRadius: 18,
+                              offset: Offset(0, 7),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _NavItem(
+                icon: Icons.receipt_long_outlined,
+                activeIcon: Icons.receipt_long_rounded,
+                label: 'nav.orders'.tr(),
+                active: tab == 2,
+                onTap: () => _onTab(2),
+              ),
+              _NavItem(
+                icon: Icons.person_outline_rounded,
+                activeIcon: Icons.person_rounded,
+                label: 'nav.profile'.tr(),
+                active: tab == 3,
+                onTap: () => _onTab(3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              active ? activeIcon : icon,
+              color: active ? FaColors.green : FaColors.muted,
+              size: 22,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: active ? FaColors.green : FaColors.muted,
+                fontSize: 9,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

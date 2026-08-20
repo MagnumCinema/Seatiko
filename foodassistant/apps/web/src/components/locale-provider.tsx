@@ -32,7 +32,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("fa_locale") as Locale | null;
-    if (saved && dictionaries[saved]) setLocaleState(saved);
+    if (saved && dictionaries[saved]) {
+      queueMicrotask(() => setLocaleState(saved));
+    }
   }, []);
 
   const setLocale = useCallback((l: Locale) => {

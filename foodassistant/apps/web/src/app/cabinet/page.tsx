@@ -83,12 +83,16 @@ export default function CabinetPage() {
   }, [router]);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   useEffect(() => {
-    if (selected) setDraft(toDraft(selected));
-    else setDraft(null);
+    const timer = window.setTimeout(() => {
+      if (selected) setDraft(toDraft(selected));
+      else setDraft(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selected]);
 
   async function onCreate() {

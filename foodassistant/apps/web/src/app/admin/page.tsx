@@ -58,7 +58,8 @@ export default function AdminPage() {
   }, [router, filter]);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   async function review(
