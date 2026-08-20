@@ -1,0 +1,16 @@
+{
+  "nav.map": "Hartă",
+  "nav.discover": "Descoperă",
+  "nav.orders": "Comenzi",
+  "nav.profile": "Profil",
+  "map.title": "Bălți",
+  "map.change_city": "Schimbă orașul",
+  "map.search": "Caută localuri...",
+  "map.free_tables": "{count} mese libere",
+  "venue.open": "Deschis",
+  "venue.closed": "Închis",
+  "common.loading": "Se încarcă...",
+  "auth.login": "Autentificare",
+  "auth.register": "Înregistrare",
+  "brand.name": "FoodAssistant"
+}

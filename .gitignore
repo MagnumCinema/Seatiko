@@ -1,0 +1,25 @@
+# Twenty CRM (self-hosted separately, huge clone)
+twenty/
+
+# Dependencies & build
+node_modules/
+.next/
+bin/
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.exe
+
+
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Flutter
+**/android/.gradle/
+**/android/local.properties
+**/ios/Pods/

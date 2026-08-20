@@ -1,0 +1,16 @@
+{
+  "nav.map": "Map",
+  "nav.discover": "Discover",
+  "nav.orders": "Orders",
+  "nav.profile": "Profile",
+  "map.title": "Bălți",
+  "map.change_city": "Change city",
+  "map.search": "Search venues...",
+  "map.free_tables": "{count} tables free",
+  "venue.open": "Open",
+  "venue.closed": "Closed",
+  "common.loading": "Loading...",
+  "auth.login": "Sign in",
+  "auth.register": "Register",
+  "brand.name": "FoodAssistant"
+}

@@ -1,0 +1,16 @@
+{
+  "nav.map": "Карта",
+  "nav.discover": "Подбор",
+  "nav.orders": "Заказы",
+  "nav.profile": "Профиль",
+  "map.title": "Бельцы",
+  "map.change_city": "Сменить город",
+  "map.search": "Поиск заведений...",
+  "map.free_tables": "{count} стола свободно",
+  "venue.open": "Открыто",
+  "venue.closed": "Закрыто",
+  "common.loading": "Загрузка...",
+  "auth.login": "Войти",
+  "auth.register": "Регистрация",
+  "brand.name": "FoodAssistant"
+}

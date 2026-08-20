@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>FoodAssistant — UX Prototype</title>
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --surface: #fff;
+      --border: #d4d4d8;
+      --text: #18181b;
+      --muted: #71717a;
+      --primary: #16a34a;
+      --primary-light: #dcfce7;
+      --accent: #2563eb;
+      --warn: #eab308;
+      --danger: #ef4444;
+      --radius: 12px;
+      --phone-w: 390px;
+      --phone-h: 780px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #27272a;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .toolbar {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .toolbar h1 { color: #fff; font-size: 1.1rem; font-weight: 600; }
+    .lang-switch { display: flex; gap: 4px; }
+    .lang-btn {
+      padding: 6px 12px;
+      border: 1px solid #52525b;
+      background: #3f3f46;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .lang-btn.active { background: var(--primary); border-color: var(--primary); }
+    .screen-nav {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-width: 900px;
+      margin-bottom: 12px;
+    }
+    .screen-nav button {
+      padding: 4px 10px;
+      font-size: 11px;
+      border: 1px solid #52525b;
+      background: #3f3f46;
+      color: #a1a1aa;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .screen-nav button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .phone {
+      width: var(--phone-w);
+      height: var(--phone-h);
+      background: var(--surface);
+      border-radius: 36px;
+      border: 8px solid #18181b;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 25px 50px rgba(0,0,0,.4);
+      display: flex;
+      flex-direction: column;
+    }
+    .status-bar {
+      height: 44px;
+      flex-shrink: 0;
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .screen.active { display: flex; }
+    .content { flex: 1; overflow-y: auto; padding: 16px; min-height: 0; }
+    .tab-bar {
+      background: var(--surface);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .tab-bar-qr-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 5px 12px 10px;
+      border-bottom: none;
+    }
+    .tab-bar-qr-row.active .tab-qr-btn {
+      box-shadow: 0 3px 12px rgba(22, 163, 74, 0.5);
+      outline: 2px solid var(--primary-light);
+    }
+    .tab-bar-qr-row.active .tab-qr-label { color: var(--primary); font-weight: 600; }
+    .tab-qr-label {
+      font-size: 9px; line-height: 1.15; text-align: center;
+      max-width: 220px; color: var(--muted); order: 1;
+    }
+    .tab-qr-btn {
+      order: 2;
+      width: 46px; height: 46px; border-radius: 12px;
+      background: var(--primary); color: #fff; border: none;
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: transform .15s;
+    }
+    .tab-qr-btn:active { transform: scale(0.96); }
+    .tab-qr-icon { width: 26px; height: 26px; display: block; }
+    .tab-bar-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 4px 0 6px;
+      border-top: 1px solid var(--border);
+    }
+    .tab-bar-main-only {
+      border-top: none;
+    }
+    .tab {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; flex: 1; min-width: 0;
+      font-size: 11px; color: var(--muted); cursor: pointer; padding: 6px 4px 4px;
+      border: none; background: none;
+    }
+    .tab.active { color: var(--primary); }
+    .tab-icon { font-size: 24px; flex-shrink: 0; }
+    .tab-label { max-width: 100%; text-align: center; line-height: 1.2; font-size: 10px; }
+    .search-bar {
+      background: var(--bg); border-radius: 10px; padding: 12px 16px;
+      color: var(--muted); font-size: 14px; margin-bottom: 12px;
+    }
+    .city-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .city-header-name {
+      font-size: 22px;
+      font-weight: 700;
+      flex: 1;
+      min-width: 0;
+    }
+    .btn-change-city {
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--accent);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-change-city:active { background: var(--bg); }
+    .city-list-item {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+    }
+    .city-list-item:active { background: var(--bg); }
+    .city-list-item.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .city-list-item.soon {
+      opacity: 0.55;
+      cursor: default;
+    }
+    .city-list-item h4 { font-size: 16px; margin-bottom: 2px; }
+    .city-list-item p { font-size: 12px; color: var(--muted); }
+    .city-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: var(--bg);
+      color: var(--muted);
+    }
+    .city-badge.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .map-placeholder {
+      background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%);
+      border-radius: var(--radius); height: 220px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; margin-bottom: 12px;
+    }
+    .pin { position: absolute; font-size: 24px; cursor: pointer; }
+    .pin:nth-child(1) { top: 40px; left: 60px; }
+    .pin:nth-child(2) { top: 80px; right: 50px; }
+    .pin:nth-child(3) { bottom: 50px; left: 120px; }
+    .venue-card {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; margin-bottom: 10px; cursor: pointer;
+      transition: border-color .15s;
+    }
+    .venue-card:hover { border-color: var(--primary); }
+    .venue-card h3 { font-size: 15px; margin-bottom: 4px; }
+    .venue-card p { font-size: 12px; color: var(--muted); }
+    .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-top: 6px; }
+    .badge-green { background: var(--primary-light); color: var(--primary); }
+    .btn {
+      display: block; width: 100%; padding: 14px; border: none;
+      border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-top: 10px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: var(--bg); color: var(--text); }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+    .hero { height: 140px; background: linear-gradient(45deg, #fef3c7, #fde68a); border-radius: var(--radius); margin-bottom: 12px; display: flex; align-items: flex-end; padding: 16px; }
+    .hero h2 { font-size: 20px; }
+    .cta-row { display: flex; gap: 8px; margin: 12px 0; }
+    .cta-row .btn { flex: 1; margin: 0; padding: 10px; font-size: 13px; }
+    .floor-map {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+      padding: 16px 0;
+    }
+    .table {
+      aspect-ratio: 1; border-radius: 8px; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      border: 2px solid transparent;
+    }
+    .table.free { background: #dcfce7; color: #166534; }
+    .table.reserved { background: #fef9c3; color: #854d0e; }
+    .table.occupied { background: #fee2e2; color: #991b1b; }
+    .table.yours { background: #dbeafe; color: #1e40af; border-color: var(--accent); }
+    .table.selected { outline: 3px solid var(--primary); }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .legend span::before { content: '●'; margin-right: 4px; }
+    .legend .l-free::before { color: #16a34a; }
+    .legend .l-res::before { color: #eab308; }
+    .legend .l-occ::before { color: #ef4444; }
+    .legend .l-yours::before { color: #2563eb; }
+    .ai-input {
+      width: 100%; padding: 14px; border: 2px solid var(--border);
+      border-radius: 12px; font-size: 14px; margin-bottom: 12px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .chip {
+      padding: 8px 14px; background: var(--bg); border-radius: 99px;
+      font-size: 12px; cursor: pointer; border: none;
+    }
+    .chip:hover { background: var(--primary-light); }
+    .holiday-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .holiday-card {
+      padding: 20px 12px; background: var(--bg); border-radius: var(--radius);
+      text-align: center; cursor: pointer; font-size: 13px;
+    }
+    .session-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+    .action-card {
+      padding: 20px; background: var(--bg); border-radius: var(--radius);
+      text-align: center; cursor: pointer; border: none; font-size: 14px;
+    }
+    .order-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .status-preparing { background: var(--warn); }
+    .status-ready { background: var(--primary); }
+    .modal-overlay {
+      display: none; position: absolute; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 100;
+      align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--surface); width: 100%; border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px; max-height: 80%;
+    }
+    .modal h3 { margin-bottom: 16px; text-align: center; }
+    .modal-detail-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+    }
+    .modal-detail-row:last-of-type { border-bottom: none; }
+    .modal-status {
+      display: inline-block; font-size: 12px; font-weight: 600;
+      padding: 4px 10px; border-radius: 99px; margin-bottom: 12px;
+    }
+    .modal-status.occupied { background: #fee2e2; color: #991b1b; }
+    .modal-status.reserved { background: #fef9c3; color: #854d0e; }
+    .modal-status.free { background: #dcfce7; color: #166534; }
+    .modal-status.yours { background: #dbeafe; color: #1e40af; }
+    .toast {
+      position: absolute; top: 56px; left: 16px; right: 16px;
+      background: #18181b; color: #fff; padding: 12px 16px;
+      border-radius: 10px; font-size: 13px; text-align: center;
+      z-index: 200; opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .toast.show { opacity: 1; }
+    .modal-rules {
+      background: var(--bg); border-radius: 10px; padding: 12px;
+      margin: 12px 0; font-size: 13px; line-height: 1.5;
+    }
+    .modal-rules li { margin-left: 16px; margin-bottom: 6px; }
+    .modal-countdown {
+      font-size: 15px; font-weight: 600; color: var(--accent);
+      margin: 8px 0 12px;
+    }
+    .input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
+    .back { background: none; border: none; font-size: 14px; color: var(--accent); cursor: pointer; padding: 0; margin-bottom: 12px; }
+    .stepper { display: flex; gap: 4px; margin-bottom: 16px; }
+    .step { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+    .step.done { background: var(--primary); }
+    .step.active { background: var(--accent); }
+    .onboarding-slide { text-align: center; padding: 40px 20px; }
+    .onboarding-slide .icon { font-size: 64px; margin-bottom: 24px; }
+    .onboarding-slide h2 { font-size: 22px; margin-bottom: 12px; }
+    .onboarding-slide p { color: var(--muted); line-height: 1.5; margin-bottom: 32px; }
+    .dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .dot.active { background: var(--primary); width: 24px; border-radius: 4px; }
+    .scanner {
+      height: 300px; background: #18181b; border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      color: #71717a; position: relative; margin: 20px 0;
+    }
+    .scanner-frame {
+      width: 200px; height: 200px; border: 2px solid var(--primary);
+      border-radius: 12px;
+    }
+    .hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
+    .profile-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .profile-fields { margin: 12px 0 20px; }
+    .profile-field label {
+      display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px;
+    }
+    .profile-field { margin-bottom: 12px; }
+    .profile-field input {
+      width: 100%; padding: 12px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>FoodAssistant — UX Prototype</h1>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="ru">RU</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="ro">RO</button>
+  </div>
+</div>
+
+<div class="screen-nav" id="screenNav"></div>
+
+<div class="phone" id="phone">
+  <div class="status-bar" id="statusBar">FoodAssistant</div>
+
+  <!-- ONBOARDING -->
+  <div class="screen no-tab active" id="screen-onboarding">
+    <div class="content onboarding-slide">
+      <div class="icon" id="ob-icon">🗺</div>
+      <h2 id="ob-title">Найди место</h2>
+      <p id="ob-body">На карте города или через AI-подбор</p>
+      <div class="dots" id="ob-dots"></div>
+      <button class="btn btn-primary" id="ob-next" data-i18n="next">Далее</button>
+      <button class="btn btn-secondary" id="ob-skip" data-i18n="skip" style="margin-top:8px">Пропустить</button>
+    </div>
+  </div>
+
+  <!-- MAP HOME -->
+  <div class="screen" id="screen-map">
+    <div class="content">
+      <div class="city-header">
+        <h2 class="city-header-name" id="mapCityName">Бельцы</h2>
+        <button class="btn-change-city" data-go="city-select" data-i18n="change_city">Сменить город</button>
+      </div>
+      <div class="search-bar" data-i18n="search">🔍 Поиск заведений...</div>
+      <div class="map-placeholder">
+        <span class="pin" data-go="venue">📍</span>
+        <span class="pin">📍</span>
+        <span class="pin">📍</span>
+        <span style="color:var(--muted);font-size:13px" id="mapCityLabel">Карта Бельцы</span>
+      </div>
+      <div class="venue-card" data-go="venue">
+        <h3>La Plăcinte</h3>
+        <p>★ 4.8 · Moldovan · €€</p>
+        <span class="badge badge-green" data-i18n="tables_free">🟢 3 стола свободно</span>
+      </div>
+      <div class="venue-card">
+        <h3>Burger House</h3>
+        <p>★ 4.5 · Fast food · €</p>
+        <span class="badge badge-green" data-i18n="tables_free2">🟢 5 столов свободно</span>
+      </div>
+    </div>
+    <div class="tab-bar" id="tab-map"></div>
+  </div>
+
+  <!-- CITY SELECT -->
+  <div class="screen no-tab" id="screen-city-select">
+    <div class="content">
+      <button class="back" data-go="map">← <span data-i18n="back">Назад</span></button>
+      <h3 style="margin-bottom:16px" data-i18n="city_select_title">Выберите город</h3>
+      <div class="city-list-item selected" data-city="balti" data-go="map">
+        <div>
+          <h4>Бельцы</h4>
+          <p>Moldova · <span data-i18n="city_pilot">Пилотный город</span></p>
+        </div>
+        <span class="city-badge active" data-i18n="city_current">Текущий</span>
+      </div>
+      <div class="city-list-item soon">
+        <div>
+          <h4>Кишинёв</h4>
+          <p>Moldova</p>
+        </div>
+        <span class="city-badge" data-i18n="city_soon">Скоро</span>
+      </div>
+      <div class="city-list-item soon">
+        <div>
+          <h4>Cahul</h4>
+          <p>Moldova</p>
+        </div>
+        <span class="city-badge" data-i18n="city_soon">Скоро</span>
+      </div>
+      <div class="city-list-item soon">
+        <div>
+          <h4>Унгены</h4>
+          <p>Moldova</p>
+        </div>
+        <span class="city-badge" data-i18n="city_soon">Скоро</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCOVER -->
+  <div class="screen" id="screen-discover">
+    <div class="content">
+      <h3 style="margin-bottom:12px" data-i18n="discover_title">Что хочешь сегодня?</h3>
+      <input class="ai-input" data-i18n-placeholder="ai_placeholder" placeholder="Хочу что-то острое недалеко…">
+      <div class="chips">
+        <button class="chip" data-i18n="chip_near">Близко</button>
+        <button class="chip" data-i18n="chip_budget">Бюджетно</button>
+        <button class="chip" data-i18n="chip_romantic">Романтика</button>
+        <button class="chip" data-i18n="chip_fast">Быстро</button>
+      </div>
+      <p style="font-size:13px;font-weight:600;margin-bottom:8px" data-i18n="holiday">🎄 Праздничные подборки</p>
+      <div class="holiday-grid">
+        <div class="holiday-card">🌷 <span data-i18n="mar8">8 марта</span></div>
+        <div class="holiday-card">🎆 <span data-i18n="ny">Новый год</span></div>
+      </div>
+      <div class="venue-card" data-go="venue">
+        <h3>AI → Sushi Master</h3>
+        <p data-i18n="ai_why">Острое, 500м, открыто сейчас</p>
+      </div>
+    </div>
+    <div class="tab-bar" id="tab-discover"></div>
+  </div>
+
+  <!-- VENUE -->
+  <div class="screen no-tab" id="screen-venue">
+    <div class="content">
+      <button class="back" data-go="map">← <span data-i18n="back">Назад</span></button>
+      <div class="hero"><h2>La Plăcinte</h2></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:8px">★ 4.8 · Moldovan · €€ · 09:00–23:00</p>
+      <span class="badge badge-green" data-i18n="tables_free">🟢 3 стола свободно</span>
+      <div class="cta-row">
+        <button class="btn btn-outline" data-go="floor" data-i18n="floor_map">Карта зала</button>
+        <button class="btn btn-primary" data-go="reservation" data-auth data-i18n="book">Забронировать</button>
+      </div>
+      <p style="margin-top:16px;font-weight:600" data-i18n="menu">Меню</p>
+      <div class="order-item"><span>Plăcintă cu brânză</span><span>85 MDL</span></div>
+      <div class="order-item"><span>Sarmale</span><span>120 MDL</span></div>
+    </div>
+  </div>
+
+  <!-- FLOOR MAP -->
+  <div class="screen no-tab" id="screen-floor">
+    <div class="content">
+      <button class="back" data-go="venue">← La Plăcinte</button>
+      <div class="legend">
+        <span class="l-free" data-i18n="leg_free">Свободен</span>
+        <span class="l-res" data-i18n="leg_res">Бронь</span>
+        <span class="l-occ" data-i18n="leg_occ">Занят</span>
+        <span class="l-yours" data-i18n="leg_yours">Ваш</span>
+      </div>
+      <div class="floor-map" id="floorMap"></div>
+      <button class="btn btn-primary" data-go="reservation" data-auth data-i18n="select_table">Выбрать стол</button>
+    </div>
+  </div>
+
+  <!-- RESERVATION -->
+  <div class="screen no-tab" id="screen-reservation">
+    <div class="content">
+      <button class="back" data-go="floor">←</button>
+      <div class="stepper">
+        <div class="step done"></div><div class="step done"></div><div class="step active"></div><div class="step"></div><div class="step"></div>
+      </div>
+      <h3 data-i18n="res_confirm">Подтверждение брони</h3>
+      <div class="order-item"><span data-i18n="res_venue">Заведение</span><span>La Plăcinte</span></div>
+      <div class="order-item"><span data-i18n="res_table">Стол</span><span>#3</span></div>
+      <div class="order-item"><span data-i18n="res_time">Время</span><span>19:30</span></div>
+      <div class="order-item"><span data-i18n="res_guests">Гости</span><span>2</span></div>
+      <button class="btn btn-secondary" data-i18n="preorder_yes">+ Заказать блюда заранее</button>
+      <button class="btn btn-primary" data-i18n="confirm_book">Подтвердить бронь</button>
+      <p class="hint" style="text-align:left;margin-top:16px;line-height:1.5" data-i18n="preorder_hint">При заказе блюд заранее: когда вы придёте, еда уже будет на столе или поступит вскоре после вашего прихода.</p>
+    </div>
+  </div>
+
+  <!-- QR SCANNER -->
+  <div class="screen" id="screen-scanner">
+    <div class="content">
+      <h3 style="text-align:center" data-i18n="scan_qr">Сканировать QR</h3>
+      <div class="scanner"><div class="scanner-frame"></div></div>
+      <p class="hint" data-i18n="scan_hint">Наведите камеру на QR-код столика</p>
+      <button class="btn btn-primary" data-go="order-choice" data-auth data-i18n="simulate_scan">Симулировать скан</button>
+    </div>
+    <div class="tab-bar" id="tab-scanner"></div>
+  </div>
+
+  <!-- ORDER CHOICE (after QR) -->
+  <div class="screen no-tab" id="screen-order-choice">
+    <div class="content">
+      <h3 data-i18n="your_table">Стол №7 · La Plăcinte</h3>
+      <p class="hint" style="margin-bottom:20px" data-i18n="order_choice_sub">Как хотите сделать заказ?</p>
+      <div class="session-actions" style="grid-template-columns:1fr;gap:12px">
+        <button class="action-card" data-go="session" style="padding:24px" data-i18n="choice_app">📋 Заказать в приложении</button>
+        <button class="action-card" data-go="waiter-initial" style="padding:24px" data-i18n="choice_waiter">🛎 Позвать официанта</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE SESSION -->
+  <div class="screen no-tab" id="screen-session">
+    <div class="content">
+      <h3 data-i18n="your_table">Стол №7 · La Plăcinte</h3>
+      <div class="session-actions">
+        <button class="action-card" data-go="menu" data-i18n="menu_btn">📋 Меню</button>
+        <button class="action-card" data-go="waiter-session" data-i18n="waiter_btn">🛎 Вызов официанта</button>
+      </div>
+      <p style="font-weight:600;margin-bottom:8px" data-i18n="active_order">Активный заказ</p>
+      <div class="order-item">
+        <span><span class="status-dot status-preparing"></span>Pasta Carbonara</span>
+        <span style="font-size:12px;color:var(--muted)" data-i18n="preparing">готовится</span>
+      </div>
+      <div class="order-item">
+        <span><span class="status-dot status-ready"></span>Caesar Salad</span>
+        <span style="font-size:12px;color:var(--primary)" data-i18n="ready">готово ✓</span>
+      </div>
+      <button class="btn btn-primary" data-go="payment" data-i18n="bill">💳 Счёт</button>
+      <button class="btn btn-secondary" data-go="map" data-i18n="release">Освободить стол</button>
+    </div>
+  </div>
+
+  <!-- WAITER — после скана QR (первый вызов) -->
+  <div class="screen no-tab" id="screen-waiter-initial">
+    <div class="content">
+      <button class="back" data-go="order-choice">← <span data-i18n="back">Назад</span></button>
+      <h3 data-i18n="waiter_initial_title">Заказ у официанта</h3>
+      <p class="hint" style="margin-bottom:20px;text-align:left" data-i18n="waiter_initial_sub">Официант подойдёт к вашему столу и примет заказ устно. Сессия за столом начнётся автоматически.</p>
+      <div class="order-item"><span data-i18n="your_table">Стол №7 · La Plăcinte</span><span>#7</span></div>
+      <button class="btn btn-primary" style="margin-top:24px" data-go="session" data-i18n="waiter_initial_call">🛎 Позвать официанта</button>
+      <button class="btn btn-secondary" data-go="session" data-i18n="choice_app">📋 Заказать в приложении</button>
+    </div>
+  </div>
+
+  <!-- WAITER — во время сессии -->
+  <div class="screen no-tab" id="screen-waiter-session">
+    <div class="content">
+      <button class="back" data-go="session">← <span data-i18n="back">Назад</span></button>
+      <h3 data-i18n="waiter_session_title">Вызов официанта</h3>
+      <p class="hint" style="margin-bottom:16px;text-align:left" data-i18n="waiter_session_sub">Выберите причину — официант получит уведомление</p>
+      <button class="btn btn-secondary" data-i18n="reason_order">📝 Сделать заказ</button>
+      <button class="btn btn-secondary" data-i18n="reason_bill">💳 Счёт</button>
+      <button class="btn btn-secondary" data-i18n="reason_question">❓ Вопрос</button>
+      <button class="btn btn-secondary" data-i18n="reason_other">💬 Другое</button>
+      <button class="btn btn-primary" style="margin-top:24px" data-go="session" data-i18n="send">Отправить вызов</button>
+      <p class="hint" style="margin-top:16px" data-i18n="waiter_coming">Иван уже идёт к вам...</p>
+    </div>
+  </div>
+
+  <!-- PAYMENT -->
+  <div class="screen no-tab" id="screen-payment">
+    <div class="content">
+      <button class="back" data-go="session">←</button>
+      <h3 data-i18n="payment">Оплата</h3>
+      <div class="order-item"><span>Итого</span><span style="font-weight:700">485 MDL</span></div>
+      <button class="btn btn-primary" data-i18n="pay_app">Apple Pay / Карта</button>
+      <button class="btn btn-secondary" data-i18n="pay_venue">Оплатить в ресторане</button>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="screen" id="screen-orders">
+    <div class="content">
+      <h3 data-i18n="orders">Заказы</h3>
+      <div class="venue-card">
+        <h3 data-i18n="order_active">Активная бронь</h3>
+        <p>La Plăcinte · Стол #3 · Сегодня 19:30</p>
+      </div>
+      <div class="venue-card" data-go="session">
+        <h3 data-i18n="order_session">Текущая сессия</h3>
+        <p>Стол #7 · 2 блюда</p>
+      </div>
+    </div>
+    <div class="tab-bar" id="tab-orders"></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="content">
+      <h3 data-i18n="profile">Профиль</h3>
+      <div class="profile-fields">
+        <div class="profile-field">
+          <label for="profileFirstName" data-i18n="profile_first_name">Имя</label>
+          <input id="profileFirstName" type="text" data-i18n-placeholder="profile_first_name_ph" placeholder="Имя">
+        </div>
+        <div class="profile-field">
+          <label for="profileLastName" data-i18n="profile_last_name">Фамилия</label>
+          <input id="profileLastName" type="text" data-i18n-placeholder="profile_last_name_ph" placeholder="Фамилия">
+        </div>
+        <div class="profile-field">
+          <label for="profileDisplayName" data-i18n="profile_display_name">Как обращаться</label>
+          <input id="profileDisplayName" type="text" data-i18n-placeholder="profile_display_name_ph" placeholder="Как к вам обращаться">
+        </div>
+      </div>
+      <div class="profile-item"><span data-i18n="language">Язык</span><span id="langDisplay">RU</span></div>
+      <div class="profile-item"><span data-i18n="allergies">Аллергии / диета</span><span>—</span></div>
+      <div class="profile-item"><span data-i18n="payment_methods">Способы оплаты</span><span>→</span></div>
+      <div class="profile-item"><span data-i18n="favorites">Избранное</span><span>→</span></div>
+      <button class="btn btn-secondary" data-i18n="logout">Выход из аккаунта</button>
+    </div>
+    <div class="tab-bar" id="tab-profile"></div>
+  </div>
+
+  <!-- AUTH MODAL -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <h3 data-i18n="auth_title">Войдите в аккаунт</h3>
+      <p style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:16px" data-i18n="auth_body">Для бронирования и заказа нужен аккаунт</p>
+      <input class="input" placeholder="+373 ___ ___ ___">
+      <button class="btn btn-primary" id="authSubmit" data-i18n="login">Войти</button>
+      <button class="btn btn-secondary" id="authCancel" data-i18n="cancel">Отмена</button>
+    </div>
+  </div>
+
+  <!-- TABLE DETAIL SHEET -->
+  <div class="modal-overlay" id="tableModal">
+    <div class="modal">
+      <h3 id="tableModalTitle">Стол №3</h3>
+      <div id="tableModalStatus" class="modal-status occupied">Занят</div>
+      <div id="tableModalBody"></div>
+      <div id="tableModalActions"></div>
+      <button class="btn btn-secondary" id="tableModalClose" data-i18n="close">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <h3 id="confirmModalTitle">Подтверждение</h3>
+      <p id="confirmModalBody" style="font-size:13px;color:var(--muted);text-align:left;margin-bottom:12px;line-height:1.5"></p>
+      <div id="confirmModalRules" class="modal-rules" style="display:none"></div>
+      <button class="btn btn-primary" id="confirmModalOk" data-i18n="confirm">Подтвердить</button>
+      <button class="btn btn-secondary" id="confirmModalCancel" data-i18n="cancel">Отмена</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const i18n = {
+  ru: {
+    next: 'Далее', skip: 'Пропустить', start: 'Начать',
+    search: '🔍 Поиск заведений...', city_map: 'Карта',
+    change_city: 'Сменить город', city_select_title: 'Выберите город',
+    city_pilot: 'Пилотный город', city_current: 'Текущий', city_soon: 'Скоро',
+    tables_free: '🟢 3 стола свободно', tables_free2: '🟢 5 столов свободно',
+    tab_map: 'Карта', tab_discover: 'Подбор', tab_scan: 'Сканируйте QR на месте', tab_orders: 'Заказы', tab_profile: 'Профиль',
+    discover_title: 'Что хочешь сегодня?', ai_placeholder: 'Хочу что-то острое недалеко…',
+    chip_near: 'Близко', chip_budget: 'Бюджетно', chip_romantic: 'Романтика', chip_fast: 'Быстро',
+    holiday: '🎄 Праздничные подборки', mar8: '8 марта', ny: 'Новый год',
+    ai_why: 'Острое, 500м, открыто сейчас', back: 'Назад',
+    floor_map: 'Карта зала', book: 'Забронировать', menu: 'Меню',
+    leg_free: 'Свободен', leg_res: 'Бронь', leg_occ: 'Занят', leg_yours: 'Ваш',
+    table_detail_title: 'Стол №{n}',
+    table_status_free: 'Свободен', table_status_occupied: 'Занят', table_status_reserved: 'Забронирован', table_status_yours: 'Ваш стол',
+    table_arrived_at: 'Пришли в {time}',
+    table_arrived_hint: 'Примерное освобождение — через ~1–1,5 ч после посадки',
+    table_reserved_for: 'Забронирован на {time}',
+    table_notify_free: '🔔 Оповестить, когда освободится',
+    table_notify_set: 'Мы сообщим, когда стол освободится',
+    table_notify_confirm_title: 'Подтвердить оповещение',
+    table_notify_confirm_body: 'Отправить push, когда стол №{n} освободится?',
+    table_reserved_until: 'До брони: {time}',
+    table_rule_session_start: 'Сесть за стол / начать сессию — с {time} (за 1 ч до брони)',
+    table_rule_release: 'Стол нужно освободить за 15 мин до брони (до {time})',
+    table_im_coming: '✓ Я приду',
+    table_im_coming_set: 'Вы подтвердили приход. Ждём вас к {time}',
+    table_im_coming_confirm_title: 'Подтвердить приход',
+    table_im_coming_confirm_body: 'Вы придёте к {time}?',
+    table_im_coming_confirm_rules: 'Правила посадки до вашей брони:',
+    table_im_coming_confirm_ok: 'Да, я приду',
+    confirm: 'Подтвердить',
+    table_book_this: 'Забронировать этот стол',
+    close: 'Закрыть',
+    select_table: 'Выбрать стол', res_confirm: 'Подтверждение брони',
+    res_venue: 'Заведение', res_table: 'Стол', res_time: 'Время', res_guests: 'Гости',
+    preorder_yes: '+ Заказать блюда заранее',
+    preorder_hint: 'При заказе блюд заранее: когда вы придёте, еда уже будет на столе или поступит вскоре после вашего прихода.',
+    confirm_book: 'Подтвердить бронь',
+    scan_qr: 'Сканировать QR', scan_hint: 'Наведите камеру на QR-код столика',
+    simulate_scan: 'Симулировать скан', order_choice_sub: 'Как хотите сделать заказ?',
+    choice_app: '📋 Заказать в приложении', choice_waiter: '🛎 Позвать официанта',
+    your_table: 'Стол №7 · La Plăcinte',
+    menu_btn: '📋 Меню', waiter_btn: '🛎 Вызов официанта', active_order: 'Активный заказ',
+    preparing: 'готовится', ready: 'готово ✓', bill: '💳 Счёт', release: 'Освободить стол',
+    call_waiter: 'Позвать официанта', reason_order: '📝 Сделать заказ',
+    reason_bill: '💳 Счёт', reason_question: '❓ Вопрос', reason_other: '💬 Другое',
+    waiter_initial_title: 'Заказ у официанта',
+    waiter_initial_sub: 'Официант подойдёт к вашему столу и примет заказ устно. Сессия за столом начнётся автоматически.',
+    waiter_initial_call: '🛎 Позвать официанта',
+    waiter_session_title: 'Вызов официанта',
+    waiter_session_sub: 'Выберите причину — официант получит уведомление',
+    send: 'Отправить вызов',
+    waiter_coming: 'Иван уже идёт к вам...', payment: 'Оплата',
+    pay_app: 'Apple Pay / Карта', pay_venue: 'Оплатить в ресторане',
+    orders: 'Заказы', order_active: 'Активная бронь', order_session: 'Текущая сессия',
+    profile: 'Профиль',
+    profile_first_name: 'Имя', profile_first_name_ph: 'Имя',
+    profile_last_name: 'Фамилия', profile_last_name_ph: 'Фамилия',
+    profile_display_name: 'Как обращаться', profile_display_name_ph: 'Как к вам обращаться',
+    profile_saved: 'Данные профиля сохранены',
+    language: 'Язык', allergies: 'Аллергии / диета',
+    payment_methods: 'Способы оплаты', favorites: 'Избранное', logout: 'Выход из аккаунта',
+    auth_title: 'Войдите в аккаунт', auth_body: 'Для бронирования и заказа нужен аккаунт',
+    login: 'Войти', cancel: 'Отмена',
+    ob: [
+      { icon: '🗺', title: 'Найди место', body: 'На карте Бельцы или через AI-подбор' },
+      { icon: '🪑', title: 'Забронируй стол', body: 'Выбери столик на карте зала' },
+      { icon: '🍽', title: 'Закажи заранее', body: 'Еда будет готова к твоему приходу' },
+      { icon: '📷', title: 'Сканируй QR', body: 'За столом — заказ и вызов официанта' }
+    ]
+  },
+  en: {
+    next: 'Next', skip: 'Skip', start: 'Get started',
+    search: '🔍 Search venues...', city_map: 'Map',
+    change_city: 'Change city', city_select_title: 'Choose a city',
+    city_pilot: 'Pilot city', city_current: 'Current', city_soon: 'Soon',
+    tables_free: '🟢 3 tables free', tables_free2: '🟢 5 tables free',
+    tab_map: 'Map', tab_discover: 'Discover', tab_scan: 'Scan QR on site', tab_orders: 'Orders', tab_profile: 'Profile',
+    discover_title: 'What do you want today?', ai_placeholder: 'I want something spicy nearby…',
+    chip_near: 'Nearby', chip_budget: 'Budget', chip_romantic: 'Romantic', chip_fast: 'Quick',
+    holiday: '🎄 Holiday picks', mar8: '8 March', ny: 'New Year',
+    ai_why: 'Spicy, 500m, open now', back: 'Back',
+    floor_map: 'Floor map', book: 'Book table', menu: 'Menu',
+    leg_free: 'Free', leg_res: 'Reserved', leg_occ: 'Occupied', leg_yours: 'Yours',
+    table_detail_title: 'Table #{n}',
+    table_status_free: 'Free', table_status_occupied: 'Occupied', table_status_reserved: 'Reserved', table_status_yours: 'Your table',
+    table_arrived_at: 'Seated at {time}',
+    table_arrived_hint: 'Estimated free in ~1–1.5 h after seating',
+    table_reserved_for: 'Reserved for {time}',
+    table_notify_free: '🔔 Notify when free',
+    table_notify_set: 'We will notify you when the table is free',
+    table_notify_confirm_title: 'Confirm notification',
+    table_notify_confirm_body: 'Send a push when table #{n} is free?',
+    table_reserved_until: 'Until reservation: {time}',
+    table_rule_session_start: 'Sit / start session from {time} (1 h before booking)',
+    table_rule_release: 'Table must be free 15 min before booking (by {time})',
+    table_im_coming: '✓ I\'m coming',
+    table_im_coming_set: 'Arrival confirmed. We expect you at {time}',
+    table_im_coming_confirm_title: 'Confirm arrival',
+    table_im_coming_confirm_body: 'Will you arrive at {time}?',
+    table_im_coming_confirm_rules: 'Seating rules before your booking:',
+    table_im_coming_confirm_ok: 'Yes, I\'m coming',
+    confirm: 'Confirm',
+    table_book_this: 'Book this table',
+    close: 'Close',
+    select_table: 'Select table', res_confirm: 'Confirm reservation',
+    res_venue: 'Venue', res_table: 'Table', res_time: 'Time', res_guests: 'Guests',
+    preorder_yes: '+ Pre-order dishes',
+    preorder_hint: 'When you pre-order dishes, your food will already be on the table when you arrive, or served shortly after you sit down.',
+    confirm_book: 'Confirm booking',
+    scan_qr: 'Scan QR', scan_hint: 'Point camera at table QR code',
+    simulate_scan: 'Simulate scan', order_choice_sub: 'How would you like to order?',
+    choice_app: '📋 Order in the app', choice_waiter: '🛎 Call a waiter',
+    your_table: 'Table #7 · La Plăcinte',
+    menu_btn: '📋 Menu', waiter_btn: '🛎 Call waiter', active_order: 'Active order',
+    preparing: 'preparing', ready: 'ready ✓', bill: '💳 Bill', release: 'Release table',
+    call_waiter: 'Call waiter', reason_order: '📝 Place order',
+    reason_bill: '💳 Bill', reason_question: '❓ Question', reason_other: '💬 Other',
+    waiter_initial_title: 'Order with waiter',
+    waiter_initial_sub: 'The waiter will come to your table and take your order verbally. Your table session starts automatically.',
+    waiter_initial_call: '🛎 Call waiter',
+    waiter_session_title: 'Call waiter',
+    waiter_session_sub: 'Choose a reason — the waiter will be notified',
+    send: 'Send call',
+    waiter_coming: 'Ivan is on the way...', payment: 'Payment',
+    pay_app: 'Apple Pay / Card', pay_venue: 'Pay at venue',
+    orders: 'Orders', order_active: 'Active reservation', order_session: 'Current session',
+    profile: 'Profile',
+    profile_first_name: 'First name', profile_first_name_ph: 'First name',
+    profile_last_name: 'Last name', profile_last_name_ph: 'Last name',
+    profile_display_name: 'Preferred name', profile_display_name_ph: 'How we should address you',
+    profile_saved: 'Profile saved',
+    language: 'Language', allergies: 'Allergies / diet',
+    payment_methods: 'Payment methods', favorites: 'Favorites', logout: 'Log out of account',
+    auth_title: 'Sign in required', auth_body: 'Account needed to book and order',
+    login: 'Sign in', cancel: 'Cancel',
+    ob: [
+      { icon: '🗺', title: 'Find a place', body: 'On the Bălți map or via AI' },
+      { icon: '🪑', title: 'Book a table', body: 'Pick a table on the floor map' },
+      { icon: '🍽', title: 'Pre-order food', body: 'Food ready when you arrive' },
+      { icon: '📷', title: 'Scan QR', body: 'Order and call waiter at your table' }
+    ]
+  },
+  ro: {
+    next: 'Următorul', skip: 'Sari peste', start: 'Începe',
+    search: '🔍 Caută localuri...', city_map: 'Harta',
+    change_city: 'Schimbă orașul', city_select_title: 'Alege orașul',
+    city_pilot: 'Oraș pilot', city_current: 'Curent', city_soon: 'Curând',
+    tables_free: '🟢 3 mese libere', tables_free2: '🟢 5 mese libere',
+    tab_map: 'Hartă', tab_discover: 'Descoperă', tab_scan: 'Scanează QR la loc', tab_orders: 'Comenzi', tab_profile: 'Profil',
+    discover_title: 'Ce vrei azi?', ai_placeholder: 'Vreau ceva picant aproape…',
+    chip_near: 'Aproape', chip_budget: 'Buget', chip_romantic: 'Romantic', chip_fast: 'Rapid',
+    holiday: '🎄 Alegeri de sărbătoare', mar8: '8 Martie', ny: 'Anul Nou',
+    ai_why: 'Picant, 500m, deschis acum', back: 'Înapoi',
+    floor_map: 'Harta sălii', book: 'Rezervă masă', menu: 'Meniu',
+    leg_free: 'Liber', leg_res: 'Rezervat', leg_occ: 'Ocupat', leg_yours: 'Al tău',
+    table_detail_title: 'Masa #{n}',
+    table_status_free: 'Liberă', table_status_occupied: 'Ocupată', table_status_reserved: 'Rezervată', table_status_yours: 'Masa ta',
+    table_arrived_at: 'Sosiți la {time}',
+    table_arrived_hint: 'Eliberare estimată — ~1–1,5 h după sosire',
+    table_reserved_for: 'Rezervată pentru {time}',
+    table_notify_free: '🔔 Anunță-mă când se eliberează',
+    table_notify_set: 'Te vom anunța când masa se eliberează',
+    table_notify_confirm_title: 'Confirmă notificarea',
+    table_notify_confirm_body: 'Trimitem push când masa #{n} se eliberează?',
+    table_reserved_until: 'Până la rezervare: {time}',
+    table_rule_session_start: 'Loc la masă / sesiune — de la {time} (cu 1 h înainte)',
+    table_rule_release: 'Masa trebuie eliberată cu 15 min înainte (până la {time})',
+    table_im_coming: '✓ Vin',
+    table_im_coming_set: 'Sosire confirmată. Te așteptăm la {time}',
+    table_im_coming_confirm_title: 'Confirmă sosirea',
+    table_im_coming_confirm_body: 'Vii la {time}?',
+    table_im_coming_confirm_rules: 'Reguli de ocupare înainte de rezervare:',
+    table_im_coming_confirm_ok: 'Da, vin',
+    confirm: 'Confirmă',
+    table_book_this: 'Rezervă această masă',
+    close: 'Închide',
+    select_table: 'Alege masa', res_confirm: 'Confirmă rezervarea',
+    res_venue: 'Local', res_table: 'Masă', res_time: 'Ora', res_guests: 'Oaspeți',
+    preorder_yes: '+ Comandă preparate din timp',
+    preorder_hint: 'Dacă comanzi preparate din timp: la sosire mâncarea va fi deja la masă sau va fi servită curând după ce vă așezați.',
+    confirm_book: 'Confirmă rezervarea',
+    scan_qr: 'Scanează QR', scan_hint: 'Îndreaptă camera spre codul QR',
+    simulate_scan: 'Simulează scanarea', order_choice_sub: 'Cum vrei să comanzi?',
+    choice_app: '📋 Comandă în aplicație', choice_waiter: '🛎 Cheamă chelnerul',
+    your_table: 'Masa #7 · La Plăcinte',
+    menu_btn: '📋 Meniu', waiter_btn: '🛎 Chemare chelner', active_order: 'Comandă activă',
+    preparing: 'se prepară', ready: 'gata ✓', bill: '💳 Notă', release: 'Eliberează masa',
+    call_waiter: 'Cheamă chelnerul', reason_order: '📝 Plasează comandă',
+    reason_bill: '💳 Notă de plată', reason_question: '❓ Întrebare', reason_other: '💬 Altceva',
+    waiter_initial_title: 'Comandă la chelner',
+    waiter_initial_sub: 'Chelnerul va veni la masa ta și va prelua comanda verbal. Sesiunea pornește automat.',
+    waiter_initial_call: '🛎 Cheamă chelnerul',
+    waiter_session_title: 'Chemare chelner',
+    waiter_session_sub: 'Alege motivul — chelnerul primește notificare',
+    send: 'Trimite apelul',
+    waiter_coming: 'Ivan vine spre tine...', payment: 'Plată',
+    pay_app: 'Apple Pay / Card', pay_venue: 'Plătește la local',
+    orders: 'Comenzi', order_active: 'Rezervare activă', order_session: 'Sesiune curentă',
+    profile: 'Profil',
+    profile_first_name: 'Prenume', profile_first_name_ph: 'Prenume',
+    profile_last_name: 'Nume', profile_last_name_ph: 'Nume de familie',
+    profile_display_name: 'Cum te numim', profile_display_name_ph: 'Cum preferi să te numim',
+    profile_saved: 'Profil salvat',
+    language: 'Limbă', allergies: 'Alergii / dietă',
+    payment_methods: 'Metode de plată', favorites: 'Favorite', logout: 'Ieșire din cont',
+    auth_title: 'Autentificare necesară', auth_body: 'Cont necesar pentru rezervare',
+    login: 'Autentificare', cancel: 'Anulează',
+    ob: [
+      { icon: '🗺', title: 'Găsește un loc', body: 'Pe harta Bălți sau cu AI' },
+      { icon: '🪑', title: 'Rezervă o masă', body: 'Alege masa pe harta sălii' },
+      { icon: '🍽', title: 'Comandă din timp', body: 'Mâncarea gata la sosire' },
+      { icon: '📷', title: 'Scanează QR', body: 'Comandă și cheamă chelnerul' }
+    ]
+  }
+};
+
+let lang = 'ru';
+let obStep = 0;
+let authed = false;
+let pendingNav = null;
+let selectedTableNum = null;
+let notifyTables = new Set();
+let comingTables = new Set();
+let pendingAction = null;
+let confirmCallback = null;
+
+const MOCK_NOW = '18:45';
+const RELEASE_BEFORE_MIN = 15;
+const SESSION_START_BEFORE_MIN = 60;
+
+const FLOOR_TABLES = [
+  { status: 'free' },
+  { status: 'free' },
+  { status: 'occupied', arrivedAt: '18:45' },
+  { status: 'reserved', reservedAt: '19:30' },
+  { status: 'free' },
+  { status: 'yours' },
+  { status: 'free' },
+  { status: 'occupied', arrivedAt: '19:10' },
+  { status: 'free' },
+  { status: 'reserved', reservedAt: '20:00' },
+  { status: 'free' },
+  { status: 'free' },
+];
+let selectedCity = 'balti';
+
+const profileData = {
+  firstName: 'Ion',
+  lastName: 'Popescu',
+  displayName: 'Ion'
+};
+
+const CITIES = {
+  balti: { ru: 'Бельцы', en: 'Bălți', ro: 'Bălți' }
+};
+const QR_ICON = '<svg class="tab-qr-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h6v6H4V4zm2 2v2h2V6H6zm8-2h6v6h-6V4zm2 2v2h2V6h-2zM4 14h6v6H4v-6zm2 2v2h2v-2H6zm8 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2zm4-8h2v6h-2v-2h-2v-2h2V10z"/></svg>';
+const screens = ['onboarding','map','city-select','discover','venue','floor','reservation','scanner','order-choice','session','waiter-initial','waiter-session','payment','orders','profile'];
+
+function t(key) { return i18n[lang][key] || key; }
+
+function cityName() {
+  return CITIES[selectedCity]?.[lang] || CITIES[selectedCity]?.ru || 'Бельцы';
+}
+
+function updateCityUI() {
+  const name = cityName();
+  const mapName = document.getElementById('mapCityName');
+  const mapLabel = document.getElementById('mapCityLabel');
+  if (mapName) mapName.textContent = name;
+  if (mapLabel) mapLabel.textContent = `${t('city_map')} ${name}`;
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (i18n[lang][key]) el.textContent = i18n[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = i18n[lang][el.dataset.i18nPlaceholder];
+  });
+  document.getElementById('langDisplay').textContent = lang.toUpperCase();
+  renderOnboarding();
+  renderTabs();
+  updateCityUI();
+  document.getElementById('screenNav').querySelectorAll('button').forEach(b => {
+    b.textContent = b.dataset.screen;
+  });
+  if (selectedTableNum && document.getElementById('tableModal').classList.contains('show')) {
+    openTableDetail(selectedTableNum);
+  }
+  renderProfileFields();
+}
+
+function renderOnboarding() {
+  const slide = i18n[lang].ob[obStep];
+  document.getElementById('ob-icon').textContent = slide.icon;
+  document.getElementById('ob-title').textContent = slide.title;
+  document.getElementById('ob-body').textContent = slide.body;
+  document.getElementById('ob-next').textContent = obStep < 3 ? t('next') : t('start');
+  const dots = document.getElementById('ob-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === obStep ? ' active' : '');
+    dots.appendChild(d);
+  }
+}
+
+function renderTabs() {
+  document.querySelectorAll('.tab-bar').forEach(bar => {
+    const parentScreen = bar.closest('.screen');
+    const screenId = parentScreen ? parentScreen.id.replace('screen-', '') : 'map';
+    const qrRow = screenId === 'scanner' ? '' : `
+      <div class="tab-bar-qr-row">
+        <span class="tab-qr-label">${t('tab_scan')}</span>
+        <button class="tab-qr-btn" data-go="scanner" aria-label="${t('tab_scan')}">${QR_ICON}</button>
+      </div>
+    `;
+    bar.innerHTML = `
+      ${qrRow}
+      <div class="tab-bar-main${screenId === 'scanner' ? ' tab-bar-main-only' : ''}">
+        <button class="tab ${screenId === 'map' ? 'active' : ''}" data-go="map">
+          <span class="tab-icon">🗺</span><span class="tab-label">${t('tab_map')}</span>
+        </button>
+        <button class="tab ${screenId === 'discover' ? 'active' : ''}" data-go="discover">
+          <span class="tab-icon">✨</span><span class="tab-label">${t('tab_discover')}</span>
+        </button>
+        <button class="tab ${screenId === 'orders' ? 'active' : ''}" data-go="orders">
+          <span class="tab-icon">📋</span><span class="tab-label">${t('tab_orders')}</span>
+        </button>
+        <button class="tab ${screenId === 'profile' ? 'active' : ''}" data-go="profile">
+          <span class="tab-icon">👤</span><span class="tab-label">${t('tab_profile')}</span>
+        </button>
+      </div>
+    `;
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+function parseTime(str) {
+  const [h, m] = str.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function formatTime(mins) {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+function formatDuration(mins) {
+  if (mins < 60) return mins + ' ' + (lang === 'ru' ? 'мин' : lang === 'ro' ? 'min' : 'min');
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (lang === 'ru') return m ? `${h} ч ${m} мин` : `${h} ч`;
+  if (lang === 'ro') return m ? `${h} h ${m} min` : `${h} h`;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+function getReservationInfo(reservedAt) {
+  const now = parseTime(MOCK_NOW);
+  const reserved = parseTime(reservedAt);
+  const untilMin = reserved - now;
+  const sessionFrom = formatTime(reserved - SESSION_START_BEFORE_MIN);
+  const releaseBy = formatTime(reserved - RELEASE_BEFORE_MIN);
+  return { untilMin, sessionFrom, releaseBy, reservedAt };
+}
+
+function requireAuth(action) {
+  if (authed) return false;
+  pendingAction = action;
+  document.getElementById('tableModal').classList.remove('show');
+  document.getElementById('authModal').classList.add('show');
+  return true;
+}
+
+function showConfirm({ title, body, rules, confirmLabel, onConfirm }) {
+  document.getElementById('confirmModalTitle').textContent = title;
+  document.getElementById('confirmModalBody').textContent = body;
+  const rulesEl = document.getElementById('confirmModalRules');
+  if (rules && rules.length) {
+    rulesEl.style.display = 'block';
+    rulesEl.innerHTML = '<ul>' + rules.map(r => `<li>${r}</li>`).join('') + '</ul>';
+  } else {
+    rulesEl.style.display = 'none';
+    rulesEl.innerHTML = '';
+  }
+  document.getElementById('confirmModalOk').textContent = confirmLabel || t('confirm');
+  confirmCallback = onConfirm;
+  document.getElementById('tableModal').classList.remove('show');
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeConfirm(reopenTable) {
+  document.getElementById('confirmModal').classList.remove('show');
+  confirmCallback = null;
+  if (reopenTable && selectedTableNum) openTableDetail(selectedTableNum);
+}
+
+function requestNotifyConfirm(num) {
+  if (requireAuth('__notify__')) return;
+  showConfirm({
+    title: t('table_notify_confirm_title'),
+    body: t('table_notify_confirm_body').replace('{n}', num),
+    confirmLabel: t('confirm'),
+    onConfirm: () => {
+      notifyTables.add(num);
+      showToast(t('table_notify_set'));
+      openTableDetail(num);
+    }
+  });
+}
+
+function requestComingConfirm(num, reservedAt) {
+  if (requireAuth('__coming__')) return;
+  const info = getReservationInfo(reservedAt);
+  showConfirm({
+    title: t('table_im_coming_confirm_title'),
+    body: t('table_im_coming_confirm_body').replace('{time}', reservedAt),
+    rules: [
+      t('table_rule_session_start').replace('{time}', info.sessionFrom),
+      t('table_rule_release').replace('{time}', info.releaseBy)
+    ],
+    confirmLabel: t('table_im_coming_confirm_ok'),
+    onConfirm: () => {
+      comingTables.add(num);
+      showToast(t('table_im_coming_set').replace('{time}', reservedAt));
+      openTableDetail(num);
+    }
+  });
+}
+
+function openTableDetail(num) {
+  selectedTableNum = num;
+  const data = FLOOR_TABLES[num - 1];
+  const modal = document.getElementById('tableModal');
+  const title = document.getElementById('tableModalTitle');
+  const statusEl = document.getElementById('tableModalStatus');
+  const body = document.getElementById('tableModalBody');
+  const actions = document.getElementById('tableModalActions');
+
+  title.textContent = t('table_detail_title').replace('{n}', num);
+  statusEl.className = 'modal-status ' + data.status;
+  const statusKeys = { free: 'table_status_free', occupied: 'table_status_occupied', reserved: 'table_status_reserved', yours: 'table_status_yours' };
+  statusEl.textContent = t(statusKeys[data.status]);
+
+  body.innerHTML = '';
+  actions.innerHTML = '';
+
+  if (data.status === 'occupied') {
+    body.innerHTML = `
+      <div class="modal-detail-row"><span>${t('table_arrived_at').replace('{time}', data.arrivedAt)}</span></div>
+      <p class="hint" style="text-align:left;margin:12px 0 0">${t('table_arrived_hint')}</p>
+    `;
+    if (notifyTables.has(num)) {
+      actions.innerHTML = `<p class="hint" style="margin-bottom:12px;color:var(--primary)">${t('table_notify_set')}</p>`;
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary';
+      btn.textContent = t('table_notify_free');
+      btn.onclick = () => requestNotifyConfirm(num);
+      actions.appendChild(btn);
+    }
+  } else if (data.status === 'reserved') {
+    const info = getReservationInfo(data.reservedAt);
+    body.innerHTML = `
+      <div class="modal-detail-row"><span>${t('table_reserved_for').replace('{time}', data.reservedAt)}</span></div>
+      <p class="modal-countdown">${t('table_reserved_until').replace('{time}', formatDuration(info.untilMin))}</p>
+      <div class="modal-rules">
+        <ul>
+          <li>${t('table_rule_session_start').replace('{time}', info.sessionFrom)}</li>
+          <li>${t('table_rule_release').replace('{time}', info.releaseBy)}</li>
+        </ul>
+      </div>
+    `;
+    if (comingTables.has(num)) {
+      actions.innerHTML = `<p class="hint" style="margin-bottom:12px;color:var(--primary)">${t('table_im_coming_set').replace('{time}', data.reservedAt)}</p>`;
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary';
+      btn.textContent = t('table_im_coming');
+      btn.onclick = () => requestComingConfirm(num, data.reservedAt);
+      actions.appendChild(btn);
+    }
+  } else if (data.status === 'free') {
+    body.innerHTML = `<p class="hint" style="text-align:left;margin-bottom:12px">${t('table_status_free')}</p>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.dataset.go = 'reservation';
+    btn.dataset.auth = '1';
+    btn.textContent = t('table_book_this');
+    actions.appendChild(btn);
+  } else if (data.status === 'yours') {
+    body.innerHTML = `<p class="hint" style="text-align:left">${t('table_status_yours')}</p>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.dataset.go = 'session';
+    btn.textContent = t('order_session');
+    actions.appendChild(btn);
+  }
+
+  modal.classList.add('show');
+}
+
+function renderFloorMap() {
+  const fm = document.getElementById('floorMap');
+  fm.innerHTML = '';
+  FLOOR_TABLES.forEach((data, i) => {
+    const num = i + 1;
+    const d = document.createElement('div');
+    d.className = 'table ' + data.status;
+    d.textContent = num;
+    d.onclick = () => openTableDetail(num);
+    if (data.status === 'free') {
+      d.onclick = () => {
+        document.querySelectorAll('.table.selected').forEach(x => x.classList.remove('selected'));
+        d.classList.add('selected');
+        openTableDetail(num);
+      };
+    }
+    fm.appendChild(d);
+  });
+}
+
+function renderProfileFields() {
+  const fn = document.getElementById('profileFirstName');
+  const ln = document.getElementById('profileLastName');
+  const dn = document.getElementById('profileDisplayName');
+  if (!fn) return;
+  fn.value = profileData.firstName;
+  ln.value = profileData.lastName;
+  dn.value = profileData.displayName;
+}
+
+function saveProfileFields() {
+  const fn = document.getElementById('profileFirstName');
+  const ln = document.getElementById('profileLastName');
+  const dn = document.getElementById('profileDisplayName');
+  if (!fn) return;
+  profileData.firstName = fn.value.trim() || profileData.firstName;
+  profileData.lastName = ln.value.trim() || profileData.lastName;
+  profileData.displayName = dn.value.trim() || profileData.displayName;
+  showToast(t('profile_saved'));
+}
+
+function showScreen(id) {
+  if (['orders','profile'].includes(id) && !authed) {
+    pendingNav = id;
+    document.getElementById('authModal').classList.add('show');
+    return;
+  }
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById('screen-' + id);
+  if (screen) screen.classList.add('active');
+  document.getElementById('screenNav').querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.screen === id);
+  });
+  const titles = { onboarding:'FoodAssistant', map:'FoodAssistant', 'city-select':t('city_select_title'), discover:t('tab_discover'), venue:'La Plăcinte', floor:t('floor_map'), reservation:t('res_confirm'), scanner:t('scan_qr'), 'order-choice':t('your_table'), session:t('your_table'), 'waiter-initial':t('waiter_initial_title'), 'waiter-session':t('waiter_session_title'), payment:t('payment'), orders:t('orders'), profile:t('profile') };
+  document.getElementById('statusBar').textContent = titles[id] || 'FoodAssistant';
+  renderTabs();
+  updateCityUI();
+  if (id === 'profile') renderProfileFields();
+}
+
+function initNav() {
+  const nav = document.getElementById('screenNav');
+  screens.forEach(s => {
+    const b = document.createElement('button');
+    b.dataset.screen = s;
+    b.textContent = s;
+    b.onclick = () => showScreen(s);
+    nav.appendChild(b);
+  });
+
+  document.getElementById('phone').addEventListener('click', e => {
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    const target = go.dataset.go;
+    if (go.dataset.city) selectedCity = go.dataset.city;
+    if (go.dataset.auth && !authed) {
+      pendingNav = target;
+      document.getElementById('tableModal').classList.remove('show');
+      document.getElementById('authModal').classList.add('show');
+      return;
+    }
+    document.getElementById('tableModal').classList.remove('show');
+    showScreen(target);
+  });
+
+  document.getElementById('ob-next').onclick = () => {
+    if (obStep < 3) { obStep++; renderOnboarding(); }
+    else showScreen('city-select');
+  };
+  document.getElementById('ob-skip').onclick = () => showScreen('city-select');
+
+  document.getElementById('authSubmit').onclick = () => {
+    authed = true;
+    document.getElementById('authModal').classList.remove('show');
+    if (pendingAction === '__notify__' && selectedTableNum) {
+      const num = selectedTableNum;
+      pendingAction = null;
+      requestNotifyConfirm(num);
+      return;
+    }
+    if (pendingAction === '__coming__' && selectedTableNum) {
+      const num = selectedTableNum;
+      const data = FLOOR_TABLES[num - 1];
+      pendingAction = null;
+      if (data.status === 'reserved') requestComingConfirm(num, data.reservedAt);
+      return;
+    }
+    pendingAction = null;
+    if (pendingNav) { showScreen(pendingNav); pendingNav = null; }
+  };
+  document.getElementById('authCancel').onclick = () => {
+    document.getElementById('authModal').classList.remove('show');
+    pendingNav = null;
+    pendingAction = null;
+  };
+
+  document.getElementById('tableModalClose').onclick = () => {
+    document.getElementById('tableModal').classList.remove('show');
+  };
+  document.getElementById('tableModal').onclick = e => {
+    if (e.target.id === 'tableModal') document.getElementById('tableModal').classList.remove('show');
+  };
+
+  document.getElementById('confirmModalOk').onclick = () => {
+    const cb = confirmCallback;
+    closeConfirm(false);
+    if (cb) cb();
+  };
+  document.getElementById('confirmModalCancel').onclick = () => closeConfirm(true);
+  document.getElementById('confirmModal').onclick = e => {
+    if (e.target.id === 'confirmModal') closeConfirm(true);
+  };
+
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.onclick = () => {
+      lang = b.dataset.lang;
+      document.querySelectorAll('.lang-btn').forEach(x => x.classList.toggle('active', x === b));
+      applyI18n();
+    };
+  });
+
+  ['profileFirstName', 'profileLastName', 'profileDisplayName'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('blur', saveProfileFields);
+  });
+
+  renderProfileFields();
+}
+
+renderFloorMap();
+initNav();
+applyI18n();
+showScreen('onboarding');
+</script>
+</body>
+</html>

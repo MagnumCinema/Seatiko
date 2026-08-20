@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "FoodAssistant"
+  },
+  "map": {
+    "city": "Bălți",
+    "search": "Search venues...",
+    "free_tables": "{} tables free",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "map": "Map",
+    "discover": "Discover",
+    "orders": "Orders",
+    "profile": "Profile"
+  },
+  "errors": {
+    "api": "Failed to load venues"
+  }
+}

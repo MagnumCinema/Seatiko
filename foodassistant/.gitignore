@@ -1,0 +1,11 @@
+node_modules/
+.next/
+
+bin/
+*.exe
+.DS_Store
+.idea/
+.vscode/
+build/
+.dart_tool/
+.flutter-plugins-dependencies

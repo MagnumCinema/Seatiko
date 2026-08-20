@@ -1,0 +1,20 @@
+{
+  "app": {
+    "title": "FoodAssistant"
+  },
+  "map": {
+    "city": "Bălți",
+    "search": "Caută localuri...",
+    "free_tables": "{} mese libere",
+    "loading": "Se încarcă..."
+  },
+  "nav": {
+    "map": "Hartă",
+    "discover": "Descoperă",
+    "orders": "Comenzi",
+    "profile": "Profil"
+  },
+  "errors": {
+    "api": "Nu s-au putut încărca localurile"
+  }
+}
