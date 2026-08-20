@@ -10,6 +10,7 @@ type Config struct {
 	Addr      string
 	JWTSecret string
 	Env       string
+	UploadDir string
 }
 
 func Load() Config {
@@ -30,9 +31,15 @@ func Load() Config {
 		env = "development"
 	}
 
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./data/uploads"
+	}
+
 	return Config{
 		Addr:      addr,
 		JWTSecret: secret,
 		Env:       env,
+		UploadDir: uploadDir,
 	}
 }

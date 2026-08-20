@@ -1,8 +1,23 @@
 # Virtual Restaurant — FoodAssistant
 
-**Один репозиторий** · **один Docker Compose** · **один вход: порт 80**
+**Один репозиторий** · **один Docker** · **вход: порт 80**
 
-Пилот: **Бельцы, Молдова**
+## Как устроено
+
+| Канал | Для кого | Где |
+|-------|----------|-----|
+| **Сайт** http://localhost/ | Презентация, регистрация ресторанов, кабинет, админка | Next.js |
+| **Android** | Гостевое приложение (как прототип) | Flutter |
+| **Прототип** | UX wireframe | `virtual-restaurant/prototype` |
+| **CRM** http://crm.localhost/ | Продажи / B2B | Twenty |
+
+## Поток ресторана
+
+1. Сайт → «Для ресторанов» → регистрация  
+2. Кабинет → анкета + фото  
+3. Отправка на модерацию  
+4. Админ одобряет и публикует  
+5. Заведение появляется в API / на карте приложения  
 
 ## Запуск
 
@@ -10,41 +25,21 @@
 docker compose up -d --build
 ```
 
-| Что | URL |
+| URL | Что |
 |-----|-----|
-| Приложение (Next.js) | http://localhost/ |
-| API | http://localhost/api/v1/... |
-| Health | http://localhost/healthz |
-| Twenty CRM | http://crm.localhost/ |
+| http://localhost/ | Презентация |
+| http://localhost/business | Для ресторанов |
+| http://localhost/cabinet | Кабинет ресторана |
+| http://localhost/admin | Админка модерации |
+| http://localhost/demo | Гостевой UX-демо (web) |
+| http://localhost/api/... | API |
+| http://crm.localhost/ | Twenty CRM |
 
-`crm.localhost` обычно открывается без правки hosts (резолвится в 127.0.0.1).
-
-Остановить: `docker compose down`
-
-## Структура (один корень)
-
-```
-project1/                      ← единственный .git
-├── docker-compose.yml
-├── .env
-├── config/nginx/              ← nginx :80
-├── foodassistant/
-│   ├── apps/mobile/           ← Flutter **только Android**
-│   ├── apps/web/              ← Next.js
-│   └── services/api/          ← Go API
-├── virtual-restaurant/        ← доки + прототип
-└── twenty/                    ← исходники CRM (без своего .git)
-```
+**Админ:** `admin@foodassistant.local` / `admin123`
 
 ## Android
 
 ```bash
 cd foodassistant/apps/mobile
 flutter run --dart-define=API_URL=http://10.0.2.2
-# устройство в Wi‑Fi:
-# flutter run --dart-define=API_URL=http://<IP-Mac>
 ```
-
-## Документация
-
-`virtual-restaurant/docs/` · `foodassistant/README.md`

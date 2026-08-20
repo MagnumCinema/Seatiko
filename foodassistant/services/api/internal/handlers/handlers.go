@@ -1,18 +1,24 @@
 package handlers
 
 import (
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/foodassistant/api/internal/auth"
 	"github.com/foodassistant/api/internal/models"
 	"github.com/foodassistant/api/internal/store"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type API struct {
 	Store     *store.MemoryStore
 	JWTSecret string
+	UploadDir string
 }
 
 func (a *API) userID(c *gin.Context) string {
@@ -86,6 +92,7 @@ type registerReq struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Locale    string `json:"locale"`
+	Role      string `json:"role"`
 }
 
 type loginReq struct {
@@ -99,9 +106,13 @@ func (a *API) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
 		return
 	}
-	u, err := a.Store.Register(req.Email, req.Password, req.FirstName, req.LastName, req.Locale)
+	u, err := a.Store.Register(req.Email, req.Password, req.FirstName, req.LastName, req.Locale, req.Role)
 	if err == store.ErrEmailTaken {
 		c.JSON(http.StatusConflict, gin.H{"error": "email_taken"})
+		return
+	}
+	if err == store.ErrBadRequest {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_role"})
 		return
 	}
 	if err != nil {
@@ -392,5 +403,284 @@ func (a *API) AcceptWaiterCall(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "already_accepted"})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "accept_failed"})
+	}
+}
+
+func (a *API) CreateRestaurantApplication(c *gin.Context) {
+	app, err := a.Store.CreateApplication(a.userID(c))
+	switch err {
+	case nil:
+		c.JSON(http.StatusCreated, gin.H{"application": app})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "user_not_found"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "create_failed"})
+	}
+}
+
+func (a *API) ListMyApplications(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"applications": a.Store.ListApplicationsByOwner(a.userID(c))})
+}
+
+func (a *API) GetMyApplication(c *gin.Context) {
+	app, err := a.Store.GetApplication(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+		return
+	}
+	if app.OwnerUserID != a.userID(c) {
+		u, uerr := a.Store.GetUser(a.userID(c))
+		if uerr != nil || u.Role != models.RoleAdmin {
+			c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"application": app})
+}
+
+type updateApplicationReq struct {
+	Name         *models.LocalizedString `json:"name"`
+	Description  *models.LocalizedString `json:"description"`
+	Address      *models.LocalizedString `json:"address"`
+	Cuisine      *[]string               `json:"cuisine"`
+	Phone        *string                 `json:"phone"`
+	Email        *string                 `json:"email"`
+	CityID       *string                 `json:"city_id"`
+	Lat          *float64                `json:"lat"`
+	Lng          *float64                `json:"lng"`
+	PriceLevel   *int                    `json:"price_level"`
+	AverageCheck *int                    `json:"average_check"`
+	HoursText    *string                 `json:"hours_text"`
+}
+
+func (a *API) UpdateRestaurantApplication(c *gin.Context) {
+	var req updateApplicationReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	app, err := a.Store.UpdateApplication(a.userID(c), c.Param("id"), store.ApplicationUpdate{
+		Name:         req.Name,
+		Description:  req.Description,
+		Address:      req.Address,
+		Cuisine:      req.Cuisine,
+		Phone:        req.Phone,
+		Email:        req.Email,
+		CityID:       req.CityID,
+		Lat:          req.Lat,
+		Lng:          req.Lng,
+		PriceLevel:   req.PriceLevel,
+		AverageCheck: req.AverageCheck,
+		HoursText:    req.HoursText,
+	})
+	switch err {
+	case nil:
+		c.JSON(http.StatusOK, gin.H{"application": app})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrConflict:
+		c.JSON(http.StatusConflict, gin.H{"error": "not_editable"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "update_failed"})
+	}
+}
+
+const maxPhotoBytes = 5 << 20 // 5MB
+
+var allowedPhotoTypes = map[string]string{
+	"image/jpeg": ".jpg",
+	"image/png":  ".png",
+	"image/webp": ".webp",
+}
+
+func (a *API) UploadApplicationPhoto(c *gin.Context) {
+	file, err := c.FormFile("photo")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "photo_required"})
+		return
+	}
+	if file.Size > maxPhotoBytes {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file_too_large"})
+		return
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_file"})
+		return
+	}
+	defer src.Close()
+
+	header := make([]byte, 512)
+	n, _ := io.ReadFull(src, header)
+	contentType := http.DetectContentType(header[:n])
+	// webp sniff may come back as application/octet-stream; fall back to extension
+	ext, ok := allowedPhotoTypes[contentType]
+	if !ok {
+		lower := strings.ToLower(file.Filename)
+		switch {
+		case strings.HasSuffix(lower, ".webp") && (contentType == "application/octet-stream" || contentType == "image/webp"):
+			ext, ok = ".webp", true
+		case strings.HasSuffix(lower, ".jpg") || strings.HasSuffix(lower, ".jpeg"):
+			if contentType == "image/jpeg" {
+				ext, ok = ".jpg", true
+			}
+		case strings.HasSuffix(lower, ".png"):
+			if contentType == "image/png" {
+				ext, ok = ".png", true
+			}
+		}
+	}
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_file_type"})
+		return
+	}
+
+	if err := os.MkdirAll(a.UploadDir, 0o755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed"})
+		return
+	}
+
+	filename := uuid.NewString() + ext
+	dstPath := filepath.Join(a.UploadDir, filename)
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed"})
+		return
+	}
+	defer dst.Close()
+
+	if _, err := dst.Write(header[:n]); err != nil {
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed"})
+		return
+	}
+	if _, err := io.Copy(dst, src); err != nil {
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed"})
+		return
+	}
+
+	url := "/uploads/" + filename
+	app, err := a.Store.AddPhoto(a.userID(c), c.Param("id"), url)
+	switch err {
+	case nil:
+		c.JSON(http.StatusCreated, gin.H{"application": app, "url": url})
+	case store.ErrNotFound:
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrConflict:
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusConflict, gin.H{"error": "not_editable"})
+	case store.ErrBadRequest:
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "max_photos"})
+	default:
+		_ = os.Remove(dstPath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed"})
+	}
+}
+
+type removePhotoReq struct {
+	URL string `json:"url" binding:"required"`
+}
+
+func (a *API) RemoveApplicationPhoto(c *gin.Context) {
+	var req removePhotoReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	app, err := a.Store.RemovePhoto(a.userID(c), c.Param("id"), req.URL)
+	switch err {
+	case nil:
+		// Best-effort delete of local file under uploads
+		if strings.HasPrefix(req.URL, "/uploads/") {
+			name := filepath.Base(req.URL)
+			_ = os.Remove(filepath.Join(a.UploadDir, name))
+		}
+		c.JSON(http.StatusOK, gin.H{"application": app})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrConflict:
+		c.JSON(http.StatusConflict, gin.H{"error": "not_editable"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "remove_failed"})
+	}
+}
+
+func (a *API) SubmitRestaurantApplication(c *gin.Context) {
+	app, err := a.Store.SubmitApplication(a.userID(c), c.Param("id"))
+	switch err {
+	case nil:
+		c.JSON(http.StatusOK, gin.H{"application": app})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrConflict:
+		c.JSON(http.StatusConflict, gin.H{"error": "invalid_status"})
+	case store.ErrBadRequest:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "incomplete"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "submit_failed"})
+	}
+}
+
+func (a *API) AdminListApplications(c *gin.Context) {
+	status := c.Query("status")
+	c.JSON(http.StatusOK, gin.H{"applications": a.Store.ListAllApplications(status)})
+}
+
+type adminReviewReq struct {
+	Status       string `json:"status" binding:"required"`
+	RejectReason string `json:"reject_reason"`
+}
+
+func (a *API) AdminReviewApplication(c *gin.Context) {
+	var req adminReviewReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	app, err := a.Store.AdminSetStatus(a.userID(c), c.Param("id"), models.ApplicationStatus(req.Status), req.RejectReason)
+	switch err {
+	case nil:
+		c.JSON(http.StatusOK, gin.H{"application": app})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrInvalidStatus:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_status"})
+	case store.ErrBadRequest:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "reject_reason_required"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "review_failed"})
+	}
+}
+
+func (a *API) AdminPublishApplication(c *gin.Context) {
+	app, err := a.Store.PublishApplication(a.userID(c), c.Param("id"))
+	switch err {
+	case nil:
+		c.JSON(http.StatusOK, gin.H{"application": app, "venue_id": app.VenueID})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrConflict:
+		c.JSON(http.StatusConflict, gin.H{"error": "not_approvable"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "publish_failed"})
 	}
 }

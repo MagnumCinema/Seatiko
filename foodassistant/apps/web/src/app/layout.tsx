@@ -14,8 +14,9 @@ const display = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "FoodAssistant",
-  description: "Виртуальный инструмент для общепита — пилот Бельцы",
+  title: "FoodAssistant — пилот Бельцы",
+  description:
+    "Презентация FoodAssistant и кабинет ресторанов. Гостевое приложение — Android.",
 };
 
 export default function RootLayout({

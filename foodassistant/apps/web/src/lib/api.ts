@@ -4,6 +4,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 export const TOKEN_KEY = "fa_token";
 
 export type LocaleCode = "ru" | "en" | "ro";
+export type UserRole = "guest" | "restaurant" | "admin";
+
+export type ApplicationStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "PUBLISHED";
 
 export type LocalizedString = { ru: string; en: string; ro: string };
 
@@ -58,10 +67,50 @@ export type User = {
   last_name: string;
   display_name: string;
   locale: string;
+  role?: UserRole | string;
   created_at: string;
 };
 
 export type AuthResponse = { token: string; user: User };
+
+export type VenueApplication = {
+  id: string;
+  owner_user_id: string;
+  status: ApplicationStatus;
+  name: LocalizedString;
+  description: LocalizedString;
+  address: LocalizedString;
+  cuisine: string[];
+  phone: string;
+  email: string;
+  city_id: string;
+  lat: number;
+  lng: number;
+  price_level: number;
+  average_check: number;
+  photo_urls: string[];
+  hours_text: string;
+  reject_reason?: string;
+  venue_id?: string | null;
+  created_at: string;
+  updated_at: string;
+  submitted_at?: string | null;
+};
+
+export type ApplicationUpdate = {
+  name?: LocalizedString;
+  description?: LocalizedString;
+  address?: LocalizedString;
+  cuisine?: string[];
+  phone?: string;
+  email?: string;
+  city_id?: string;
+  lat?: number;
+  lng?: number;
+  price_level?: number;
+  average_check?: number;
+  hours_text?: string;
+};
 
 export type Reservation = {
   id: string;
@@ -153,6 +202,18 @@ export function pickLocale(
   return s[locale] || s.en || s.ru || "";
 }
 
+/** Prefix relative upload URLs with API origin when needed. */
+export function mediaUrl(url: string): string {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = API_URL.replace(/\/$/, "");
+  return `${base}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
+export function emptyLocalized(ru = ""): LocalizedString {
+  return { ru, en: ru, ro: ru };
+}
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
@@ -172,7 +233,7 @@ type RequestOpts = {
 };
 
 async function apiFetch<T>(path: string, opts: RequestOpts = {}): Promise<T> {
-  const url = new URL(`${API_URL}${path}`);
+  const url = new URL(`${API_URL}${path}`, typeof window !== "undefined" ? window.location.origin : "http://localhost");
   if (opts.query) {
     for (const [k, v] of Object.entries(opts.query)) {
       if (v !== undefined && v !== null && v !== "") {
@@ -243,11 +304,11 @@ export async function fetchTables(venueId: string): Promise<Table[]> {
 }
 
 export async function fetchMenu(venueId: string): Promise<MenuItem[]> {
-  const data = await apiFetch<{ items: MenuItem[] }>(
+  const data = await apiFetch<{ items?: MenuItem[]; menu?: MenuItem[] }>(
     `/api/v1/venues/${venueId}/menu`,
     { auth: false },
   );
-  return data.items ?? [];
+  return data.items ?? data.menu ?? [];
 }
 
 export async function fetchCollections(): Promise<HolidayCollection[]> {
@@ -276,6 +337,7 @@ export async function register(input: {
   first_name?: string;
   last_name?: string;
   locale?: string;
+  role?: UserRole;
 }): Promise<AuthResponse> {
   const data = await apiFetch<AuthResponse>("/api/v1/auth/register", {
     method: "POST",
@@ -319,6 +381,143 @@ export async function updateMe(input: {
     body: input,
   });
   return data.user;
+}
+
+export function redirectPathForRole(role?: string | null): string {
+  if (role === "admin") return "/admin";
+  if (role === "restaurant") return "/cabinet";
+  return "/";
+}
+
+/* —— Restaurant applications —— */
+
+export async function listMyApplications(): Promise<VenueApplication[]> {
+  const data = await apiFetch<{ applications: VenueApplication[] }>(
+    "/api/v1/restaurant/applications",
+  );
+  return data.applications ?? [];
+}
+
+export async function getApplication(id: string): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    `/api/v1/restaurant/applications/${id}`,
+  );
+  return data.application;
+}
+
+export async function createApplication(): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    "/api/v1/restaurant/applications",
+    { method: "POST", body: {} },
+  );
+  return data.application;
+}
+
+export async function updateApplication(
+  id: string,
+  input: ApplicationUpdate,
+): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    `/api/v1/restaurant/applications/${id}`,
+    { method: "PATCH", body: input },
+  );
+  return data.application;
+}
+
+export async function submitApplication(id: string): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    `/api/v1/restaurant/applications/${id}/submit`,
+    { method: "POST", body: {} },
+  );
+  return data.application;
+}
+
+export async function uploadApplicationPhoto(
+  id: string,
+  file: File,
+): Promise<VenueApplication> {
+  const url = new URL(
+    `${API_URL}/api/v1/restaurant/applications/${id}/photos`,
+    typeof window !== "undefined" ? window.location.origin : "http://localhost",
+  );
+  const form = new FormData();
+  form.append("photo", file);
+
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers,
+    body: form,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    let code = `http_${res.status}`;
+    try {
+      const err = (await res.json()) as { error?: string };
+      if (err.error) code = err.error;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, code);
+  }
+
+  const data = (await res.json()) as {
+    application?: VenueApplication;
+    photo_url?: string;
+  };
+  if (data.application) return data.application;
+  return getApplication(id);
+}
+
+export async function removeApplicationPhoto(
+  id: string,
+  photoUrl: string,
+): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    `/api/v1/restaurant/applications/${id}/photos`,
+    { method: "DELETE", body: { url: photoUrl } },
+  );
+  return data.application;
+}
+
+/* —— Admin —— */
+
+export async function adminListApplications(
+  status?: ApplicationStatus | "",
+): Promise<VenueApplication[]> {
+  const data = await apiFetch<{ applications: VenueApplication[] }>(
+    "/api/v1/admin/applications",
+    { query: status ? { status } : undefined },
+  );
+  return data.applications ?? [];
+}
+
+export async function adminReviewApplication(
+  id: string,
+  input: {
+    status: "UNDER_REVIEW" | "APPROVED" | "REJECTED";
+    reject_reason?: string;
+  },
+): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    `/api/v1/admin/applications/${id}/review`,
+    { method: "POST", body: input },
+  );
+  return data.application;
+}
+
+export async function adminPublishApplication(
+  id: string,
+): Promise<VenueApplication> {
+  const data = await apiFetch<{ application: VenueApplication }>(
+    `/api/v1/admin/applications/${id}/publish`,
+    { method: "POST", body: {} },
+  );
+  return data.application;
 }
 
 export async function createReservation(input: {

@@ -64,3 +64,31 @@ func Middleware(secret string) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// RoleMiddleware requires the authenticated user to have one of the allowed roles.
+// getRole looks up the user's role by ID (from context "userID").
+func RoleMiddleware(getRole func(userID string) (string, error), allowed ...string) gin.HandlerFunc {
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, r := range allowed {
+		allowedSet[r] = struct{}{}
+	}
+	return func(c *gin.Context) {
+		uid, _ := c.Get("userID")
+		userID, _ := uid.(string)
+		if userID == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "auth_required"})
+			return
+		}
+		role, err := getRole(userID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "auth_required"})
+			return
+		}
+		if _, ok := allowedSet[role]; !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+		c.Set("role", role)
+		c.Next()
+	}
+}

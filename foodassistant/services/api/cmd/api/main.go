@@ -2,23 +2,31 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/foodassistant/api/internal/auth"
 	"github.com/foodassistant/api/internal/config"
 	"github.com/foodassistant/api/internal/handlers"
+	"github.com/foodassistant/api/internal/models"
 	"github.com/foodassistant/api/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	cfg := config.Load()
+	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
+		log.Fatalf("upload dir: %v", err)
+	}
+
 	mem := store.NewMemory()
-	api := &handlers.API{Store: mem, JWTSecret: cfg.JWTSecret}
+	api := &handlers.API{Store: mem, JWTSecret: cfg.JWTSecret, UploadDir: cfg.UploadDir}
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
+	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
 	r.GET("/healthz", api.Health)
+	r.Static("/uploads", cfg.UploadDir)
 
 	v1 := r.Group("/api/v1")
 	{
@@ -55,6 +63,38 @@ func main() {
 
 			authed.GET("/staff/waiter-calls", api.ListWaiterCalls)
 			authed.POST("/staff/waiter-calls/:id/accept", api.AcceptWaiterCall)
+
+			restaurant := authed.Group("/restaurant")
+			restaurant.Use(auth.RoleMiddleware(func(userID string) (string, error) {
+				u, err := mem.GetUser(userID)
+				if err != nil {
+					return "", err
+				}
+				return u.Role, nil
+			}, models.RoleRestaurant, models.RoleAdmin))
+			{
+				restaurant.POST("/applications", api.CreateRestaurantApplication)
+				restaurant.GET("/applications", api.ListMyApplications)
+				restaurant.GET("/applications/:id", api.GetMyApplication)
+				restaurant.PATCH("/applications/:id", api.UpdateRestaurantApplication)
+				restaurant.POST("/applications/:id/photos", api.UploadApplicationPhoto)
+				restaurant.DELETE("/applications/:id/photos", api.RemoveApplicationPhoto)
+				restaurant.POST("/applications/:id/submit", api.SubmitRestaurantApplication)
+			}
+
+			admin := authed.Group("/admin")
+			admin.Use(auth.RoleMiddleware(func(userID string) (string, error) {
+				u, err := mem.GetUser(userID)
+				if err != nil {
+					return "", err
+				}
+				return u.Role, nil
+			}, models.RoleAdmin))
+			{
+				admin.GET("/applications", api.AdminListApplications)
+				admin.POST("/applications/:id/review", api.AdminReviewApplication)
+				admin.POST("/applications/:id/publish", api.AdminPublishApplication)
+			}
 		}
 	}
 

@@ -37,19 +37,35 @@ type UserProfileUpdate struct {
 	Locale      *string
 }
 
+type ApplicationUpdate struct {
+	Name         *models.LocalizedString
+	Description  *models.LocalizedString
+	Address      *models.LocalizedString
+	Cuisine      *[]string
+	Phone        *string
+	Email        *string
+	CityID       *string
+	Lat          *float64
+	Lng          *float64
+	PriceLevel   *int
+	AverageCheck *int
+	HoursText    *string
+}
+
 type MemoryStore struct {
-	mu           sync.RWMutex
-	cities       map[string]models.City
-	venues       map[string]models.Venue
-	tables       map[string]models.Table
-	users        map[string]models.User
-	reservations map[string]models.Reservation
-	watches      map[string]models.TableWatch
-	sessions     map[string]models.Session
-	menuItems    map[string]models.MenuItem
-	orders       map[string]models.Order
-	waiterCalls  map[string]models.WaiterCall
-	collections  map[string]models.HolidayCollection
+	mu            sync.RWMutex
+	cities        map[string]models.City
+	venues        map[string]models.Venue
+	tables        map[string]models.Table
+	users         map[string]models.User
+	reservations  map[string]models.Reservation
+	watches       map[string]models.TableWatch
+	sessions      map[string]models.Session
+	menuItems     map[string]models.MenuItem
+	orders        map[string]models.Order
+	waiterCalls   map[string]models.WaiterCall
+	collections   map[string]models.HolidayCollection
+	applications  map[string]models.VenueApplication
 }
 
 func NewMemory() *MemoryStore {
@@ -65,6 +81,7 @@ func NewMemory() *MemoryStore {
 		orders:       make(map[string]models.Order),
 		waiterCalls:  make(map[string]models.WaiterCall),
 		collections:  make(map[string]models.HolidayCollection),
+		applications: make(map[string]models.VenueApplication),
 	}
 	s.seed()
 	return s
@@ -247,6 +264,22 @@ func (s *MemoryStore) seed() {
 		Title:    models.LocalizedString{RU: "Семейный обед", EN: "Family lunch", RO: "Prânz în familie"},
 		VenueIDs: []string{"venue-1", "venue-2", "venue-3"},
 	}
+
+	adminHash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	if err == nil {
+		admin := models.User{
+			ID:           "user-admin",
+			Email:        "admin@foodassistant.local",
+			PasswordHash: string(adminHash),
+			FirstName:    "Platform",
+			LastName:     "Admin",
+			DisplayName:  "Platform Admin",
+			Locale:       "en",
+			Role:         models.RoleAdmin,
+			CreatedAt:    time.Now().UTC(),
+		}
+		s.users[admin.ID] = admin
+	}
 }
 
 func (s *MemoryStore) refreshFreeTablesLocked(venueID string) {
@@ -308,7 +341,7 @@ func (s *MemoryStore) ListTables(venueID string) []models.Table {
 	return out
 }
 
-func (s *MemoryStore) Register(email, password, firstName, lastName, locale string) (models.User, error) {
+func (s *MemoryStore) Register(email, password, firstName, lastName, locale, role string) (models.User, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -316,6 +349,15 @@ func (s *MemoryStore) Register(email, password, firstName, lastName, locale stri
 		if strings.EqualFold(u.Email, email) {
 			return models.User{}, ErrEmailTaken
 		}
+	}
+
+	if role == "" {
+		role = models.RoleGuest
+	}
+	switch role {
+	case models.RoleGuest, models.RoleRestaurant:
+	default:
+		return models.User{}, ErrBadRequest
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -338,6 +380,7 @@ func (s *MemoryStore) Register(email, password, firstName, lastName, locale stri
 		LastName:     lastName,
 		DisplayName:  display,
 		Locale:       locale,
+		Role:         role,
 		CreatedAt:    time.Now().UTC(),
 	}
 	s.users[u.ID] = u
@@ -858,4 +901,331 @@ func (s *MemoryStore) AIRecommend(query string) []models.Venue {
 		}
 	}
 	return out
+}
+
+const MaxApplicationPhotos = 8
+
+func (s *MemoryStore) CreateApplication(ownerID string) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	u, ok := s.users[ownerID]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	if u.Role != models.RoleRestaurant && u.Role != models.RoleAdmin {
+		return models.VenueApplication{}, ErrForbidden
+	}
+
+	now := time.Now().UTC()
+	app := models.VenueApplication{
+		ID:          uuid.NewString(),
+		OwnerUserID: ownerID,
+		Status:      models.AppDraft,
+		Cuisine:     []string{},
+		PhotoURLs:   []string{},
+		CityID:      "city-balti",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	s.applications[app.ID] = app
+	return app, nil
+}
+
+func (s *MemoryStore) GetApplication(id string) (models.VenueApplication, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	app, ok := s.applications[id]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	return app, nil
+}
+
+func (s *MemoryStore) ListApplicationsByOwner(ownerID string) []models.VenueApplication {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]models.VenueApplication, 0)
+	for _, app := range s.applications {
+		if app.OwnerUserID == ownerID {
+			out = append(out, app)
+		}
+	}
+	return out
+}
+
+func (s *MemoryStore) ListAllApplications(status string) []models.VenueApplication {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]models.VenueApplication, 0)
+	for _, app := range s.applications {
+		if status == "" || string(app.Status) == status {
+			out = append(out, app)
+		}
+	}
+	return out
+}
+
+func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpdate) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	app, ok := s.applications[id]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	if app.OwnerUserID != ownerID {
+		return models.VenueApplication{}, ErrForbidden
+	}
+	if app.Status != models.AppDraft && app.Status != models.AppRejected {
+		return models.VenueApplication{}, ErrConflict
+	}
+
+	if patch.Name != nil {
+		app.Name = *patch.Name
+	}
+	if patch.Description != nil {
+		app.Description = *patch.Description
+	}
+	if patch.Address != nil {
+		app.Address = *patch.Address
+	}
+	if patch.Cuisine != nil {
+		app.Cuisine = *patch.Cuisine
+	}
+	if patch.Phone != nil {
+		app.Phone = *patch.Phone
+	}
+	if patch.Email != nil {
+		app.Email = *patch.Email
+	}
+	if patch.CityID != nil && *patch.CityID != "" {
+		app.CityID = *patch.CityID
+	}
+	if patch.Lat != nil {
+		app.Lat = *patch.Lat
+	}
+	if patch.Lng != nil {
+		app.Lng = *patch.Lng
+	}
+	if patch.PriceLevel != nil {
+		app.PriceLevel = *patch.PriceLevel
+	}
+	if patch.AverageCheck != nil {
+		app.AverageCheck = *patch.AverageCheck
+	}
+	if patch.HoursText != nil {
+		app.HoursText = *patch.HoursText
+	}
+
+	// Re-editing a rejected application returns it to draft
+	if app.Status == models.AppRejected {
+		app.Status = models.AppDraft
+		app.RejectReason = ""
+	}
+	app.UpdatedAt = time.Now().UTC()
+	s.applications[id] = app
+	return app, nil
+}
+
+func (s *MemoryStore) AddPhoto(ownerID, appID, url string) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	app, ok := s.applications[appID]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	if app.OwnerUserID != ownerID {
+		return models.VenueApplication{}, ErrForbidden
+	}
+	if app.Status != models.AppDraft && app.Status != models.AppRejected {
+		return models.VenueApplication{}, ErrConflict
+	}
+	if len(app.PhotoURLs) >= MaxApplicationPhotos {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+	app.PhotoURLs = append(app.PhotoURLs, url)
+	if app.Status == models.AppRejected {
+		app.Status = models.AppDraft
+		app.RejectReason = ""
+	}
+	app.UpdatedAt = time.Now().UTC()
+	s.applications[appID] = app
+	return app, nil
+}
+
+func (s *MemoryStore) RemovePhoto(ownerID, appID, url string) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	app, ok := s.applications[appID]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	if app.OwnerUserID != ownerID {
+		return models.VenueApplication{}, ErrForbidden
+	}
+	if app.Status != models.AppDraft && app.Status != models.AppRejected {
+		return models.VenueApplication{}, ErrConflict
+	}
+
+	found := false
+	next := make([]string, 0, len(app.PhotoURLs))
+	for _, u := range app.PhotoURLs {
+		if u == url && !found {
+			found = true
+			continue
+		}
+		next = append(next, u)
+	}
+	if !found {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	app.PhotoURLs = next
+	if app.Status == models.AppRejected {
+		app.Status = models.AppDraft
+		app.RejectReason = ""
+	}
+	app.UpdatedAt = time.Now().UTC()
+	s.applications[appID] = app
+	return app, nil
+}
+
+func (s *MemoryStore) SubmitApplication(ownerID, id string) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	app, ok := s.applications[id]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	if app.OwnerUserID != ownerID {
+		return models.VenueApplication{}, ErrForbidden
+	}
+	if app.Status != models.AppDraft && app.Status != models.AppRejected {
+		return models.VenueApplication{}, ErrConflict
+	}
+	if strings.TrimSpace(app.Name.EN) == "" && strings.TrimSpace(app.Name.RU) == "" && strings.TrimSpace(app.Name.RO) == "" {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+
+	now := time.Now().UTC()
+	app.Status = models.AppSubmitted
+	app.RejectReason = ""
+	app.SubmittedAt = &now
+	app.UpdatedAt = now
+	s.applications[id] = app
+	return app, nil
+}
+
+func (s *MemoryStore) AdminSetStatus(adminID, id string, status models.ApplicationStatus, rejectReason string) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	admin, ok := s.users[adminID]
+	if !ok || admin.Role != models.RoleAdmin {
+		return models.VenueApplication{}, ErrForbidden
+	}
+
+	app, ok := s.applications[id]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+
+	switch status {
+	case models.AppUnderReview, models.AppApproved, models.AppRejected:
+	default:
+		return models.VenueApplication{}, ErrInvalidStatus
+	}
+	if status == models.AppRejected && strings.TrimSpace(rejectReason) == "" {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+
+	app.Status = status
+	if status == models.AppRejected {
+		app.RejectReason = rejectReason
+	} else {
+		app.RejectReason = ""
+	}
+	app.UpdatedAt = time.Now().UTC()
+	s.applications[id] = app
+	return app, nil
+}
+
+func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplication, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	admin, ok := s.users[adminID]
+	if !ok || admin.Role != models.RoleAdmin {
+		return models.VenueApplication{}, ErrForbidden
+	}
+
+	app, ok := s.applications[id]
+	if !ok {
+		return models.VenueApplication{}, ErrNotFound
+	}
+	if app.Status != models.AppApproved {
+		return models.VenueApplication{}, ErrConflict
+	}
+	if app.VenueID != nil {
+		return models.VenueApplication{}, ErrConflict
+	}
+
+	imageURL := ""
+	if len(app.PhotoURLs) > 0 {
+		imageURL = app.PhotoURLs[0]
+	}
+	cityID := app.CityID
+	if cityID == "" {
+		cityID = "city-balti"
+	}
+	cuisine := app.Cuisine
+	if cuisine == nil {
+		cuisine = []string{}
+	}
+
+	venueID := "venue-" + uuid.NewString()
+	venue := models.Venue{
+		ID:                    venueID,
+		CityID:                cityID,
+		Name:                  app.Name,
+		Description:           app.Description,
+		Cuisine:               cuisine,
+		Rating:                0,
+		PriceLevel:            app.PriceLevel,
+		Address:               app.Address,
+		Lat:                   app.Lat,
+		Lng:                   app.Lng,
+		AverageCheck:          app.AverageCheck,
+		OpenNow:               true,
+		ImageURL:              imageURL,
+		AlcoholLicense:        false,
+		SessionStartBeforeMin: 15,
+		ReleaseBeforeMin:      10,
+	}
+	s.venues[venueID] = venue
+
+	// Create a few FREE tables
+	for i := 1; i <= 4; i++ {
+		t := models.Table{
+			ID:      uuid.NewString(),
+			VenueID: venueID,
+			Number:  i,
+			Seats:   2 + (i%3)*2,
+			Status:  models.TableFree,
+			X:       0.2 + float64(i)*0.15,
+			Y:       0.4,
+		}
+		s.tables[t.ID] = t
+	}
+	s.refreshFreeTablesLocked(venueID)
+
+	now := time.Now().UTC()
+	app.Status = models.AppPublished
+	app.VenueID = &venueID
+	app.UpdatedAt = now
+	s.applications[id] = app
+	return app, nil
 }

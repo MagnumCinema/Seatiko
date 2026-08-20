@@ -58,6 +58,12 @@ type Table struct {
 	Y             float64     `json:"y"`
 }
 
+const (
+	RoleGuest      = "guest"
+	RoleRestaurant = "restaurant"
+	RoleAdmin      = "admin"
+)
+
 type User struct {
 	ID           string    `json:"id"`
 	Email        string    `json:"email"`
@@ -67,7 +73,43 @@ type User struct {
 	LastName     string    `json:"last_name"`
 	DisplayName  string    `json:"display_name"`
 	Locale       string    `json:"locale"`
+	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type ApplicationStatus string
+
+const (
+	AppDraft       ApplicationStatus = "DRAFT"
+	AppSubmitted   ApplicationStatus = "SUBMITTED"
+	AppUnderReview ApplicationStatus = "UNDER_REVIEW"
+	AppApproved    ApplicationStatus = "APPROVED"
+	AppRejected    ApplicationStatus = "REJECTED"
+	AppPublished   ApplicationStatus = "PUBLISHED"
+)
+
+type VenueApplication struct {
+	ID           string            `json:"id"`
+	OwnerUserID  string            `json:"owner_user_id"`
+	Status       ApplicationStatus `json:"status"`
+	Name         LocalizedString   `json:"name"`
+	Description  LocalizedString   `json:"description"`
+	Address      LocalizedString   `json:"address"`
+	Cuisine      []string          `json:"cuisine"`
+	Phone        string            `json:"phone"`
+	Email        string            `json:"email"`
+	CityID       string            `json:"city_id"`
+	Lat          float64           `json:"lat"`
+	Lng          float64           `json:"lng"`
+	PriceLevel   int               `json:"price_level"`
+	AverageCheck int               `json:"average_check"`
+	PhotoURLs    []string          `json:"photo_urls"`
+	HoursText    string            `json:"hours_text"`
+	RejectReason string            `json:"reject_reason,omitempty"`
+	VenueID      *string           `json:"venue_id,omitempty"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
+	SubmittedAt  *time.Time        `json:"submitted_at,omitempty"`
 }
 
 type ReservationStatus string
