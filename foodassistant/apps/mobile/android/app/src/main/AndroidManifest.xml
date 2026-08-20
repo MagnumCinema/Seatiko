@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required by FoodAssistant API and OpenFreeMap vector tiles. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mobile"
+        android:label="FoodAssistant"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

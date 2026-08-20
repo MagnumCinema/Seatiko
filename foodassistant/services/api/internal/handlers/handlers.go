@@ -440,6 +440,34 @@ func (a *API) GetMyApplication(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"application": app})
 }
 
+func (a *API) ListApplicationActivity(c *gin.Context) {
+	activity, err := a.Store.ListApplicationActivity(a.userID(c), c.Param("id"))
+	switch err {
+	case nil:
+		c.JSON(http.StatusOK, gin.H{"activity": activity})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "list_failed"})
+	}
+}
+
+func (a *API) ListRestaurantReservations(c *gin.Context) {
+	reservations, err := a.Store.ListRestaurantReservations(a.userID(c))
+	switch err {
+	case nil:
+		c.JSON(http.StatusOK, gin.H{"reservations": reservations})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "list_failed"})
+	}
+}
+
 type updateApplicationReq struct {
 	Name         *models.LocalizedString `json:"name"`
 	Description  *models.LocalizedString `json:"description"`
@@ -484,6 +512,8 @@ func (a *API) UpdateRestaurantApplication(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 	case store.ErrConflict:
 		c.JSON(http.StatusConflict, gin.H{"error": "not_editable"})
+	case store.ErrBadRequest:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_fields"})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "update_failed"})
 	}

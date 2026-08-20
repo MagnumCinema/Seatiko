@@ -17,23 +17,23 @@ type City struct {
 }
 
 type Venue struct {
-	ID                   string          `json:"id"`
-	CityID               string          `json:"city_id"`
-	Name                 LocalizedString `json:"name"`
-	Description          LocalizedString `json:"description"`
-	Cuisine              []string        `json:"cuisine"`
-	Rating               float64         `json:"rating"`
-	PriceLevel           int             `json:"price_level"`
-	Address              LocalizedString `json:"address"`
-	Lat                  float64         `json:"lat"`
-	Lng                  float64         `json:"lng"`
-	AverageCheck         int             `json:"average_check"`
-	OpenNow              bool            `json:"open_now"`
-	FreeTables           int             `json:"free_tables"`
-	ImageURL             string          `json:"image_url"`
-	AlcoholLicense       bool            `json:"alcohol_license_valid"`
-	SessionStartBeforeMin int            `json:"session_start_before_min"`
-	ReleaseBeforeMin     int             `json:"release_before_min"`
+	ID                    string          `json:"id"`
+	CityID                string          `json:"city_id"`
+	Name                  LocalizedString `json:"name"`
+	Description           LocalizedString `json:"description"`
+	Cuisine               []string        `json:"cuisine"`
+	Rating                float64         `json:"rating"`
+	PriceLevel            int             `json:"price_level"`
+	Address               LocalizedString `json:"address"`
+	Lat                   float64         `json:"lat"`
+	Lng                   float64         `json:"lng"`
+	AverageCheck          int             `json:"average_check"`
+	OpenNow               bool            `json:"open_now"`
+	FreeTables            int             `json:"free_tables"`
+	ImageURL              string          `json:"image_url"`
+	AlcoholLicense        bool            `json:"alcohol_license_valid"`
+	SessionStartBeforeMin int             `json:"session_start_before_min"`
+	ReleaseBeforeMin      int             `json:"release_before_min"`
 }
 
 type TableStatus string
@@ -112,6 +112,20 @@ type VenueApplication struct {
 	SubmittedAt  *time.Time        `json:"submitted_at,omitempty"`
 }
 
+// ApplicationActivity is an append-only audit entry for the restaurant
+// onboarding lifecycle. ChangedFields contains stable field keys so clients can
+// localise the journal without parsing human-readable text from the API.
+type ApplicationActivity struct {
+	ID            string    `json:"id"`
+	ApplicationID string    `json:"application_id"`
+	ActorUserID   string    `json:"actor_user_id"`
+	ActorRole     string    `json:"actor_role"`
+	Action        string    `json:"action"`
+	ChangedFields []string  `json:"changed_fields"`
+	Note          string    `json:"note,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
 type ReservationStatus string
 
 const (
@@ -126,6 +140,24 @@ type Reservation struct {
 	UserID             string            `json:"user_id"`
 	VenueID            string            `json:"venue_id"`
 	TableID            string            `json:"table_id"`
+	Guests             int               `json:"guests"`
+	ReservedFor        time.Time         `json:"reserved_for"`
+	Status             ReservationStatus `json:"status"`
+	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
+	CreatedAt          time.Time         `json:"created_at"`
+}
+
+// RestaurantReservation is the owner-facing reservation projection. It only
+// exposes booking data needed to operate the venue and is available through the
+// restaurant-authorised API group.
+type RestaurantReservation struct {
+	ID                 string            `json:"id"`
+	VenueID            string            `json:"venue_id"`
+	VenueName          LocalizedString   `json:"venue_name"`
+	TableID            string            `json:"table_id"`
+	TableNumber        int               `json:"table_number"`
+	GuestName          string            `json:"guest_name"`
+	GuestEmail         string            `json:"guest_email"`
 	Guests             int               `json:"guests"`
 	ReservedFor        time.Time         `json:"reserved_for"`
 	Status             ReservationStatus `json:"status"`
@@ -183,10 +215,10 @@ type MenuItem struct {
 }
 
 type OrderItem struct {
-	MenuItemID string `json:"menu_item_id"`
+	MenuItemID string          `json:"menu_item_id"`
 	Name       LocalizedString `json:"name"`
-	Qty        int    `json:"qty"`
-	Price      int    `json:"price"`
+	Qty        int             `json:"qty"`
+	Price      int             `json:"price"`
 }
 
 type Order struct {
@@ -230,8 +262,8 @@ type WaiterCall struct {
 }
 
 type HolidayCollection struct {
-	ID          string          `json:"id"`
-	Slug        string          `json:"slug"`
-	Title       LocalizedString `json:"title"`
-	VenueIDs    []string        `json:"venue_ids"`
+	ID       string          `json:"id"`
+	Slug     string          `json:"slug"`
+	Title    LocalizedString `json:"title"`
+	VenueIDs []string        `json:"venue_ids"`
 }

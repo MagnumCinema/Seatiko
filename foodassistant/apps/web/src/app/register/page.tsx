@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { useLocale } from "@/components/locale-provider";
-import {
-  ApiError,
-  register,
-  type UserRole,
-} from "@/lib/api";
+import { ApiError, register } from "@/lib/api";
+
+const ownerSteps = [
+  "Создайте защищённый аккаунт владельца",
+  "Заполните профиль и поставьте точку на карте",
+  "Отправьте заведение на проверку платформы",
+  "После публикации принимайте брони в кабинете",
+];
 
 export default function RegisterPage() {
   const router = useRouter();
   const { locale } = useLocale();
-  const [role, setRole] = useState<UserRole>("guest");
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -32,17 +34,16 @@ export default function RegisterPage() {
       await register({
         ...form,
         locale,
-        role,
+        role: "restaurant",
       });
-      if (role === "restaurant") router.replace("/cabinet");
-      else router.replace("/");
+      router.replace("/cabinet");
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.code === "email_taken"
             ? "Этот email уже зарегистрирован"
             : err.code
-          : "Ошибка регистрации",
+          : "Не удалось создать аккаунт. Попробуйте ещё раз.",
       );
     } finally {
       setBusy(false);
@@ -50,84 +51,123 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="auth-page owner-register-page">
       <SiteHeader />
-      <div className="auth-card">
-        <h1>Регистрация</h1>
-        <p>Гость или владелец ресторана для подачи заявки.</p>
+      <main className="owner-register-shell">
+        <section className="owner-register-story">
+          <span className="owner-kicker">FoodAssistant для бизнеса</span>
+          <h1>Ваш ресторан — на карте города и в телефоне гостя.</h1>
+          <p>
+            От первой заявки до бронирований — один понятный кабинет владельца.
+            Регистрация для гостей доступна в мобильном приложении.
+          </p>
 
-        <div className="role-toggle" role="group" aria-label="Тип аккаунта">
-          <button
-            type="button"
-            className={role === "guest" ? "on" : ""}
-            onClick={() => setRole("guest")}
-          >
-            Гость
-          </button>
-          <button
-            type="button"
-            className={role === "restaurant" ? "on" : ""}
-            onClick={() => setRole("restaurant")}
-          >
-            Ресторан
-          </button>
-        </div>
+          <ol className="owner-register-steps">
+            {ownerSteps.map((step, index) => (
+              <li key={step}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <p>{step}</p>
+              </li>
+            ))}
+          </ol>
 
-        <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
-          <div className="field">
-            <label htmlFor="first_name">Имя</label>
-            <input
-              id="first_name"
-              value={form.first_name}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, first_name: e.target.value }))
-              }
-            />
+          <div className="owner-register-trust">
+            <strong>Проверка 1–3 рабочих дня</strong>
+            <span>История действий сохраняется автоматически</span>
           </div>
-          <div className="field">
-            <label htmlFor="last_name">Фамилия</label>
-            <input
-              id="last_name"
-              value={form.last_name}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, last_name: e.target.value }))
-              }
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="password">Пароль (мин. 6)</label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              autoComplete="new-password"
-              value={form.password}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, password: e.target.value }))
-              }
-            />
-          </div>
-          {error && <p className="auth-error">{error}</p>}
-          <button type="submit" className="btn btn-gold btn-block" disabled={busy}>
-            {busy ? "Создание…" : "Создать аккаунт"}
-          </button>
-        </form>
-        <p className="auth-links">
-          Уже есть аккаунт? <Link href="/login">Войти</Link>
-        </p>
-      </div>
+        </section>
+
+        <section className="auth-card owner-register-card">
+          <span className="owner-kicker">Аккаунт владельца</span>
+          <h2>Подключить ресторан</h2>
+          <p>
+            Сначала создаём личный доступ. Данные ресторана вы заполните следующим
+            шагом в кабинете.
+          </p>
+
+          <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
+            <div className="owner-form-row">
+              <div className="field">
+                <label htmlFor="first_name">Имя</label>
+                <input
+                  id="first_name"
+                  required
+                  autoComplete="given-name"
+                  value={form.first_name}
+                  onChange={(e) =>
+                    setForm((current) => ({
+                      ...current,
+                      first_name: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="last_name">Фамилия</label>
+                <input
+                  id="last_name"
+                  required
+                  autoComplete="family-name"
+                  value={form.last_name}
+                  onChange={(e) =>
+                    setForm((current) => ({
+                      ...current,
+                      last_name: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="email">Рабочий email</label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="owner@restaurant.md"
+                value={form.email}
+                onChange={(e) =>
+                  setForm((current) => ({ ...current, email: e.target.value }))
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="password">Пароль</label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                placeholder="Не менее 6 символов"
+                value={form.password}
+                onChange={(e) =>
+                  setForm((current) => ({
+                    ...current,
+                    password: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <p className="owner-form-legal">
+              Создавая аккаунт, вы подтверждаете, что имеете право представлять
+              заведение и предоставлять данные для публикации.
+            </p>
+            {error && <p className="auth-error">{error}</p>}
+            <button
+              type="submit"
+              className="btn btn-gold btn-block"
+              disabled={busy}
+            >
+              {busy ? "Создаём кабинет…" : "Продолжить в кабинет"}
+            </button>
+          </form>
+          <p className="auth-links">
+            Уже есть аккаунт? <Link href="/login">Войти</Link>
+          </p>
+        </section>
+      </main>
     </div>
   );
 }

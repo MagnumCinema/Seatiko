@@ -75,7 +75,9 @@ func main() {
 			{
 				restaurant.POST("/applications", api.CreateRestaurantApplication)
 				restaurant.GET("/applications", api.ListMyApplications)
+				restaurant.GET("/reservations", api.ListRestaurantReservations)
 				restaurant.GET("/applications/:id", api.GetMyApplication)
+				restaurant.GET("/applications/:id/activity", api.ListApplicationActivity)
 				restaurant.PATCH("/applications/:id", api.UpdateRestaurantApplication)
 				restaurant.POST("/applications/:id/photos", api.UploadApplicationPhoto)
 				restaurant.DELETE("/applications/:id/photos", api.RemoveApplicationPhoto)

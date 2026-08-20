@@ -115,6 +115,14 @@ export default function AdminPage() {
     >
       <div className="auth-hint" style={{ marginTop: 0, marginBottom: 20 }}>
         Вход: <code>admin@foodassistant.local</code> / <code>admin123</code>
+        <a
+          href="http://crm.localhost/"
+          target="_blank"
+          rel="noreferrer"
+          style={{ marginLeft: 14, fontWeight: 750 }}
+        >
+          Открыть Twenty CRM →
+        </a>
       </div>
 
       <div className="filter-row">

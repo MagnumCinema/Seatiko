@@ -97,6 +97,17 @@ export type VenueApplication = {
   submitted_at?: string | null;
 };
 
+export type ApplicationActivity = {
+  id: string;
+  application_id: string;
+  actor_user_id: string;
+  actor_role: string;
+  action: string;
+  changed_fields: string[];
+  note?: string;
+  created_at: string;
+};
+
 export type ApplicationUpdate = {
   name?: LocalizedString;
   description?: LocalizedString;
@@ -117,6 +128,21 @@ export type Reservation = {
   user_id: string;
   venue_id: string;
   table_id: string;
+  guests: number;
+  reserved_for: string;
+  status: string;
+  arrival_confirmed_at?: string | null;
+  created_at: string;
+};
+
+export type RestaurantReservation = {
+  id: string;
+  venue_id: string;
+  venue_name: LocalizedString;
+  table_id: string;
+  table_number: number;
+  guest_name: string;
+  guest_email: string;
   guests: number;
   reserved_for: string;
   status: string;
@@ -403,6 +429,24 @@ export async function getApplication(id: string): Promise<VenueApplication> {
     `/api/v1/restaurant/applications/${id}`,
   );
   return data.application;
+}
+
+export async function listApplicationActivity(
+  id: string,
+): Promise<ApplicationActivity[]> {
+  const data = await apiFetch<{ activity: ApplicationActivity[] }>(
+    `/api/v1/restaurant/applications/${id}/activity`,
+  );
+  return data.activity ?? [];
+}
+
+export async function listRestaurantReservations(): Promise<
+  RestaurantReservation[]
+> {
+  const data = await apiFetch<{ reservations: RestaurantReservation[] }>(
+    "/api/v1/restaurant/reservations",
+  );
+  return data.reservations ?? [];
 }
 
 export async function createApplication(): Promise<VenueApplication> {

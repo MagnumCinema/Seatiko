@@ -38,6 +38,9 @@ dependencies:
   shared_preferences: ^2.5.5
   easy_localization: ^3.0.8
   intl: ^0.20.3
+  # Vendored until the upstream AGP 9 built-in Kotlin fix is released.
+  maplibre_gl:
+    path: vendor/maplibre_gl
 
 dev_dependencies:
   flutter_test:

@@ -13,6 +13,9 @@ FoodAssistant/
 ├── docs/
 │   ├── README.md          ← вы здесь
 │   ├── APP_LOGIC.md       ← полная бизнес-логика и сценарии
+│   ├── RESTAURANT_OWNER_FLOW.md ← регистрация и кабинет владельца
+│   ├── TWENTY_CRM_INTEGRATION.md ← внутренняя CRM и воронка подключения
+│   ├── MAP_ARCHITECTURE.md ← бесплатная карта для сайта и Android
 │   ├── I18N.md            ← локализация RU / EN / RO
 │   ├── UX_SCREENS.md      ← спецификация экранов для дизайна
 │   └── CHANGELOG.md       ← история изменений docs / прототипа
@@ -29,6 +32,9 @@ FoodAssistant/
 | Что | Где описано |
 |-----|-------------|
 | **Бизнес-логика**, правила, auth, push, API-поля | [`APP_LOGIC.md`](./APP_LOGIC.md) |
+| **Владелец ресторана**, регистрация, модерация, кабинет и audit | [`RESTAURANT_OWNER_FLOW.md`](./RESTAURANT_OWNER_FLOW.md) |
+| **CRM**, воронка подключения, данные и события синхронизации | [`TWENTY_CRM_INTEGRATION.md`](./TWENTY_CRM_INTEGRATION.md) |
+| **Карта**, MapLibre/OpenFreeMap на сайте и Android | [`MAP_ARCHITECTURE.md`](./MAP_ARCHITECTURE.md) |
 | **Экраны**, переходы, wireframes | [`UX_SCREENS.md`](./UX_SCREENS.md) |
 | **Строки интерфейса** ru/en/ro | [`I18N.md`](./I18N.md) |
 | **Кликабельная демо** | [`prototype/index.html`](../prototype/index.html) |
@@ -98,6 +104,9 @@ open prototype/index.html
 | Документ | Описание |
 |----------|----------|
 | [APP_LOGIC.md](./APP_LOGIC.md) | Роли, сценарии, state machines, модель данных, события, MVP |
+| [RESTAURANT_OWNER_FLOW.md](./RESTAURANT_OWNER_FLOW.md) | Подключение ресторана, статусы, кабинет, брони и история действий |
+| [TWENTY_CRM_INTEGRATION.md](./TWENTY_CRM_INTEGRATION.md) | Роли Twenty CRM, воронка, модель данных и безопасная синхронизация |
+| [MAP_ARCHITECTURE.md](./MAP_ARCHITECTURE.md) | Бесплатный картографический стек, функции и масштабирование |
 | [I18N.md](./I18N.md) | Языки, автоопределение, ключевые строки |
 | [UX_SCREENS.md](./UX_SCREENS.md) | Каждый экран: элементы, действия, переходы, confirm dialogs |
 | [CHANGELOG.md](./CHANGELOG.md) | История изменений документации и прототипа |

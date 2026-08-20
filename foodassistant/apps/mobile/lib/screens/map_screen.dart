@@ -1,7 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/screens/city_select_screen.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
@@ -302,7 +301,7 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _RestaurantMap extends StatelessWidget {
+class _RestaurantMap extends StatefulWidget {
   const _RestaurantMap({
     required this.venues,
     required this.selected,
@@ -317,20 +316,192 @@ class _RestaurantMap extends StatelessWidget {
   final ValueChanged<Venue> onSelect;
   final ValueChanged<Venue> onOpen;
 
-  Offset _position(Venue venue) {
-    if (venues.length <= 1) return const Offset(.52, .48);
-    final lats = venues.map((v) => v.lat).toList();
-    final lngs = venues.map((v) => v.lng).toList();
-    final minLat = lats.reduce(math.min);
-    final maxLat = lats.reduce(math.max);
-    final minLng = lngs.reduce(math.min);
-    final maxLng = lngs.reduce(math.max);
-    final latSpan = math.max(maxLat - minLat, .004);
-    final lngSpan = math.max(maxLng - minLng, .006);
-    return Offset(
-      .14 + ((venue.lng - minLng) / lngSpan) * .72,
-      .17 + (1 - (venue.lat - minLat) / latSpan) * .62,
+  @override
+  State<_RestaurantMap> createState() => _RestaurantMapState();
+}
+
+class _RestaurantMapState extends State<_RestaurantMap> {
+  static const _styleUrl = 'https://tiles.openfreemap.org/styles/liberty';
+  static const _balti = LatLng(47.7622, 27.9289);
+
+  MapLibreMapController? _controller;
+  final Map<String, Circle> _circles = {};
+  bool _styleReady = false;
+  int _syncGeneration = 0;
+
+  @override
+  void didUpdateWidget(covariant _RestaurantMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_styleReady) return;
+
+    final oldIds = oldWidget.venues.map((venue) => venue.id).join('|');
+    final newIds = widget.venues.map((venue) => venue.id).join('|');
+    if (oldIds != newIds) {
+      _scheduleSync(fitBounds: true);
+    } else if (oldWidget.selected?.id != widget.selected?.id) {
+      _scheduleSelectionUpdate();
+    }
+  }
+
+  void _onMapCreated(MapLibreMapController controller) {
+    _controller = controller;
+    controller.onCircleTapped.add(_onCircleTapped);
+    controller.onSymbolTapped.add(_onSymbolTapped);
+  }
+
+  void _onStyleLoaded() {
+    _styleReady = true;
+    _scheduleSync(fitBounds: true);
+  }
+
+  void _scheduleSync({required bool fitBounds}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncMarkers(fitBounds: fitBounds);
+    });
+  }
+
+  void _scheduleSelectionUpdate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateSelection();
+    });
+  }
+
+  void _onCircleTapped(Circle circle) => _selectVenue(circle.data);
+
+  void _onSymbolTapped(Symbol symbol) => _selectVenue(symbol.data);
+
+  void _selectVenue(Map<String, dynamic>? data) {
+    final venueId = data?['venueId'] as String?;
+    final venue = widget.venues.where((item) => item.id == venueId).firstOrNull;
+    if (venue == null) return;
+    widget.onSelect(venue);
+    _controller?.animateCamera(
+      CameraUpdate.newLatLngZoom(LatLng(venue.lat, venue.lng), 15.2),
+      duration: const Duration(milliseconds: 520),
     );
+  }
+
+  Future<void> _syncMarkers({required bool fitBounds}) async {
+    final controller = _controller;
+    if (controller == null || !_styleReady) return;
+    final generation = ++_syncGeneration;
+
+    await controller.clearSymbols();
+    await controller.clearCircles();
+    if (!mounted || generation != _syncGeneration) return;
+
+    _circles.clear();
+    if (widget.venues.isEmpty) return;
+
+    final circles = await controller.addCircles(
+      [
+        for (final venue in widget.venues)
+          CircleOptions(
+            geometry: LatLng(venue.lat, venue.lng),
+            circleRadius: venue.id == widget.selected?.id ? 19 : 16,
+            circleColor: venue.id == widget.selected?.id
+                ? '#D77B48'
+                : '#1F6848',
+            circleStrokeWidth: 3,
+            circleStrokeColor: '#FFF7E9',
+            circleOpacity: .98,
+          ),
+      ],
+      [
+        for (final venue in widget.venues) {'venueId': venue.id},
+      ],
+    );
+    if (!mounted || generation != _syncGeneration) return;
+
+    for (var index = 0; index < widget.venues.length; index++) {
+      _circles[widget.venues[index].id] = circles[index];
+    }
+
+    await controller.addSymbols(
+      [
+        for (var index = 0; index < widget.venues.length; index++)
+          SymbolOptions(
+            geometry: LatLng(
+              widget.venues[index].lat,
+              widget.venues[index].lng,
+            ),
+            textField: '${index + 1}',
+            textSize: 10,
+            textColor: '#FFFFFF',
+            textHaloColor: '#1F6848',
+            textHaloWidth: .3,
+          ),
+      ],
+      [
+        for (final venue in widget.venues) {'venueId': venue.id},
+      ],
+    );
+
+    if (fitBounds && mounted && generation == _syncGeneration) {
+      await _fitVenues();
+    }
+  }
+
+  Future<void> _updateSelection() async {
+    final controller = _controller;
+    if (controller == null) return;
+    for (final entry in _circles.entries) {
+      final active = entry.key == widget.selected?.id;
+      await controller.updateCircle(
+        entry.value,
+        CircleOptions(
+          circleRadius: active ? 19 : 16,
+          circleColor: active ? '#D77B48' : '#1F6848',
+        ),
+      );
+    }
+  }
+
+  Future<void> _fitVenues() async {
+    final controller = _controller;
+    if (controller == null || widget.venues.isEmpty) return;
+    if (widget.venues.length == 1) {
+      final venue = widget.venues.first;
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(venue.lat, venue.lng), 15),
+      );
+      return;
+    }
+
+    final latitudes = widget.venues.map((venue) => venue.lat);
+    final longitudes = widget.venues.map((venue) => venue.lng);
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        latitudes.reduce((a, b) => a < b ? a : b),
+        longitudes.reduce((a, b) => a < b ? a : b),
+      ),
+      northeast: LatLng(
+        latitudes.reduce((a, b) => a > b ? a : b),
+        longitudes.reduce((a, b) => a > b ? a : b),
+      ),
+    );
+    await controller.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        bounds,
+        left: 46,
+        top: 44,
+        right: 46,
+        bottom: 128,
+      ),
+      duration: const Duration(milliseconds: 420),
+    );
+  }
+
+  void _zoomIn() => _controller?.animateCamera(CameraUpdate.zoomIn());
+
+  void _zoomOut() => _controller?.animateCamera(CameraUpdate.zoomOut());
+
+  @override
+  void dispose() {
+    _syncGeneration++;
+    _controller?.onCircleTapped.remove(_onCircleTapped);
+    _controller?.onSymbolTapped.remove(_onSymbolTapped);
+    super.dispose();
   }
 
   @override
@@ -350,175 +521,114 @@ class _RestaurantMap extends StatelessWidget {
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            children: [
-              Positioned.fill(child: CustomPaint(painter: _CityMapPainter())),
-              const Positioned(
-                left: 22,
-                top: 20,
-                child: Text(
-                  'BĂLȚI',
-                  style: TextStyle(
-                    color: Color(0x26254338),
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4,
-                  ),
-                ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: MapLibreMap(
+              styleString: _styleUrl,
+              initialCameraPosition: const CameraPosition(
+                target: _balti,
+                zoom: 13.6,
               ),
-              for (var index = 0; index < venues.length; index++)
-                Builder(
-                  builder: (context) {
-                    final venue = venues[index];
-                    final pos = _position(venue);
-                    final active = venue.id == selected?.id;
-                    return Positioned(
-                      left: pos.dx * constraints.maxWidth - (active ? 31 : 23),
-                      top: pos.dy * constraints.maxHeight - (active ? 31 : 23),
-                      child: _MapPin(
-                        index: index + 1,
-                        active: active,
-                        label: venue.name.pick(locale),
-                        onTap: () => onSelect(venue),
-                      ),
-                    );
-                  },
-                ),
-              Positioned(
-                right: 14,
-                top: 14,
-                child: Column(
-                  children: [
-                    _MapControl(icon: Icons.add_rounded, onTap: () {}),
-                    const SizedBox(height: 5),
-                    _MapControl(icon: Icons.remove_rounded, onTap: () {}),
-                  ],
-                ),
-              ),
-              if (selected != null)
-                Positioned(
-                  left: 14,
-                  right: 14,
-                  bottom: 14,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => onOpen(selected!),
+              onMapCreated: _onMapCreated,
+              onStyleLoadedCallback: _onStyleLoaded,
+              compassEnabled: false,
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              minMaxZoomPreference: const MinMaxZoomPreference(10, 19),
+              logoEnabled: false,
+              attributionButtonPosition: AttributionButtonPosition.topLeft,
+              annotationOrder: const [
+                AnnotationType.circle,
+                AnnotationType.symbol,
+              ],
+              annotationConsumeTapEvents: const [
+                AnnotationType.circle,
+                AnnotationType.symbol,
+              ],
+              foregroundLoadColor: const Color(0xFFE5E5DA),
+            ),
+          ),
+          Positioned(
+            right: 14,
+            top: 14,
+            child: Column(
+              children: [
+                _MapControl(icon: Icons.add_rounded, onTap: _zoomIn),
+                const SizedBox(height: 5),
+                _MapControl(icon: Icons.remove_rounded, onTap: _zoomOut),
+              ],
+            ),
+          ),
+          if (widget.selected != null)
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 14,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => widget.onOpen(widget.selected!),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: FaColors.surface.withValues(alpha: .94),
                       borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(13),
-                        decoration: BoxDecoration(
-                          color: FaColors.surface.withValues(alpha: .94),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x1A1D392F),
-                              blurRadius: 20,
-                              offset: Offset(0, 8),
-                            ),
-                          ],
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1A1D392F),
+                          blurRadius: 20,
+                          offset: Offset(0, 8),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: FaColors.claySoft,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.restaurant_rounded,
-                                color: FaColors.clay,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 11),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    selected!.name.pick(locale),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${selected!.freeTables} свободных столов · ~${selected!.averageCheck} MDL',
-                                    style: const TextStyle(
-                                      color: FaColors.muted,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.arrow_forward_rounded, size: 18),
-                          ],
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: FaColors.claySoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.restaurant_rounded,
+                            color: FaColors.clay,
+                            size: 20,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.selected!.name.pick(widget.locale),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${widget.selected!.freeTables} свободных столов · ~${widget.selected!.averageCheck} MDL',
+                                style: const TextStyle(
+                                  color: FaColors.muted,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_rounded, size: 18),
+                      ],
                     ),
                   ),
                 ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MapPin extends StatelessWidget {
-  const _MapPin({
-    required this.index,
-    required this.active,
-    required this.label,
-    required this.onTap,
-  });
-  final int index;
-  final bool active;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: active ? 62 : 46,
-          height: active ? 62 : 46,
-          decoration: BoxDecoration(
-            color: active ? FaColors.clay : FaColors.green,
-            shape: BoxShape.circle,
-            border: Border.all(color: FaColors.cream, width: 4),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x38213E33),
-                blurRadius: 14,
-                offset: Offset(0, 7),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              '$index',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
               ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -541,80 +651,6 @@ class _MapControl extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CityMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final grid = Paint()
-      ..color = const Color(0x10234338)
-      ..strokeWidth = 1;
-    for (double x = 15; x < size.width; x += 34) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (double y = 12; y < size.height; y += 34) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
-
-    final park = Paint()..color = const Color(0xFFCADFC5);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * .65, 22, size.width * .27, 72),
-        const Radius.circular(28),
-      ),
-      park,
-    );
-
-    final river = Paint()
-      ..color = const Color(0xFFBBD6D2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 19;
-    final riverPath = Path()
-      ..moveTo(-8, size.height * .12)
-      ..cubicTo(
-        size.width * .2,
-        size.height * .25,
-        0,
-        size.height * .65,
-        size.width * .18,
-        size.height * 1.08,
-      );
-    canvas.drawPath(riverPath, river);
-
-    final road = Paint()
-      ..color = const Color(0xFFFAF8F1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round;
-    final roadThin = Paint()
-      ..color = const Color(0xFFFAF8F1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * .12, size.height * .32),
-      Offset(size.width * .93, size.height * .53),
-      road,
-    );
-    canvas.drawLine(
-      Offset(size.width * .18, size.height * .72),
-      Offset(size.width * .88, size.height * .18),
-      road,
-    );
-    canvas.drawLine(
-      Offset(size.width * .38, -10),
-      Offset(size.width * .57, size.height + 10),
-      roadThin,
-    );
-    canvas.drawLine(
-      Offset(size.width * .06, size.height * .58),
-      Offset(size.width * .88, size.height * .8),
-      roadThin,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _VenueCard extends StatelessWidget {

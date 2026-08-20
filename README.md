@@ -25,6 +25,20 @@
 docker compose up -d --build
 ```
 
+## Бесплатная интерактивная карта
+
+Карта работает без Google Cloud, API-ключа и банковской карты:
+
+- сайт: **MapLibre GL JS**;
+- Android: **MapLibre Native** через Flutter;
+- векторные тайлы: **OpenFreeMap**;
+- геоданные: **OpenStreetMap**;
+- точки ресторанов: собственный FoodAssistant API.
+
+Карта встроена прямо в главную страницу сайта и в раздел «Карта» Android-приложения. Атрибуция источников показывается автоматически. Для запуска достаточно обычной команды `docker compose up -d --build`.
+
+Публичный OpenFreeMap не требует регистрации и не ограничивает число просмотров, но не предоставляет SLA. При большом коммерческом трафике тот же стек можно развернуть на своём сервере без переделки интерфейса.
+
 | URL | Что |
 |-----|-----|
 | http://localhost/ | Презентация |
@@ -36,6 +50,8 @@ docker compose up -d --build
 | http://crm.localhost/ | Twenty CRM |
 
 **Админ:** `admin@foodassistant.local` / `admin123`
+
+Логика CRM и воронка подключения: [`virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md`](./virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md).
 
 ## Android
 

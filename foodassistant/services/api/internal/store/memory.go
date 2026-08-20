@@ -2,6 +2,8 @@ package store
 
 import (
 	"errors"
+	"net/mail"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -12,16 +14,16 @@ import (
 )
 
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrEmailTaken     = errors.New("email already registered")
-	ErrInvalidCreds   = errors.New("invalid credentials")
-	ErrTableNotFree   = errors.New("table not free")
-	ErrInvalidQR      = errors.New("invalid qr token")
-	ErrBadRequest     = errors.New("bad request")
-	ErrForbidden      = errors.New("forbidden")
-	ErrConflict       = errors.New("conflict")
-	ErrSessionClosed  = errors.New("session closed")
-	ErrInvalidStatus  = errors.New("invalid status")
+	ErrNotFound      = errors.New("not found")
+	ErrEmailTaken    = errors.New("email already registered")
+	ErrInvalidCreds  = errors.New("invalid credentials")
+	ErrTableNotFree  = errors.New("table not free")
+	ErrInvalidQR     = errors.New("invalid qr token")
+	ErrBadRequest    = errors.New("bad request")
+	ErrForbidden     = errors.New("forbidden")
+	ErrConflict      = errors.New("conflict")
+	ErrSessionClosed = errors.New("session closed")
+	ErrInvalidStatus = errors.New("invalid status")
 )
 
 type OrderItemInput struct {
@@ -53,19 +55,20 @@ type ApplicationUpdate struct {
 }
 
 type MemoryStore struct {
-	mu            sync.RWMutex
-	cities        map[string]models.City
-	venues        map[string]models.Venue
-	tables        map[string]models.Table
-	users         map[string]models.User
-	reservations  map[string]models.Reservation
-	watches       map[string]models.TableWatch
-	sessions      map[string]models.Session
-	menuItems     map[string]models.MenuItem
-	orders        map[string]models.Order
-	waiterCalls   map[string]models.WaiterCall
-	collections   map[string]models.HolidayCollection
-	applications  map[string]models.VenueApplication
+	mu           sync.RWMutex
+	cities       map[string]models.City
+	venues       map[string]models.Venue
+	tables       map[string]models.Table
+	users        map[string]models.User
+	reservations map[string]models.Reservation
+	watches      map[string]models.TableWatch
+	sessions     map[string]models.Session
+	menuItems    map[string]models.MenuItem
+	orders       map[string]models.Order
+	waiterCalls  map[string]models.WaiterCall
+	collections  map[string]models.HolidayCollection
+	applications map[string]models.VenueApplication
+	activities   map[string][]models.ApplicationActivity
 }
 
 func NewMemory() *MemoryStore {
@@ -82,6 +85,7 @@ func NewMemory() *MemoryStore {
 		waiterCalls:  make(map[string]models.WaiterCall),
 		collections:  make(map[string]models.HolidayCollection),
 		applications: make(map[string]models.VenueApplication),
+		activities:   make(map[string][]models.ApplicationActivity),
 	}
 	s.seed()
 	return s
@@ -117,8 +121,8 @@ func (s *MemoryStore) seed() {
 				RO: "Bucătărie moldovenească și plăcinte în centrul Bălțiului",
 			},
 			Cuisine: []string{"moldovan", "bakery"}, Rating: 4.8, PriceLevel: 2,
-			Address:             models.LocalizedString{RU: "ул. Независимости 45", EN: "Independenței 45", RO: "Independenței 45"},
-			Lat: 47.7617, Lng: 27.9288, AverageCheck: 250, OpenNow: true,
+			Address: models.LocalizedString{RU: "ул. Независимости 45", EN: "Independenței 45", RO: "Independenței 45"},
+			Lat:     47.7617, Lng: 27.9288, AverageCheck: 250, OpenNow: true,
 			ImageURL: "/images/venues/la-placinte.jpg", AlcoholLicense: true,
 			SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 		},
@@ -131,8 +135,8 @@ func (s *MemoryStore) seed() {
 				RO: "Cafea, mic dejun și prânz ușor",
 			},
 			Cuisine: []string{"cafe", "european"}, Rating: 4.5, PriceLevel: 1,
-			Address:             models.LocalizedString{RU: "пл. Василия Лупу 1", EN: "Vasile Lupu Sq 1", RO: "Piața Vasile Lupu 1"},
-			Lat: 47.7631, Lng: 27.9299, AverageCheck: 180, OpenNow: true,
+			Address: models.LocalizedString{RU: "пл. Василия Лупу 1", EN: "Vasile Lupu Sq 1", RO: "Piața Vasile Lupu 1"},
+			Lat:     47.7631, Lng: 27.9299, AverageCheck: 180, OpenNow: true,
 			ImageURL: "/images/venues/cafe-central.jpg", AlcoholLicense: false,
 			SessionStartBeforeMin: 10, ReleaseBeforeMin: 10,
 		},
@@ -145,8 +149,8 @@ func (s *MemoryStore) seed() {
 				RO: "Steak-uri și atmosferă de seară",
 			},
 			Cuisine: []string{"steak", "grill"}, Rating: 4.6, PriceLevel: 3,
-			Address:             models.LocalizedString{RU: "ул. Штефана чел Маре 12", EN: "Ștefan cel Mare 12", RO: "Ștefan cel Mare 12"},
-			Lat: 47.7598, Lng: 27.9255, AverageCheck: 450, OpenNow: true,
+			Address: models.LocalizedString{RU: "ул. Штефана чел Маре 12", EN: "Ștefan cel Mare 12", RO: "Ștefan cel Mare 12"},
+			Lat:     47.7598, Lng: 27.9255, AverageCheck: 450, OpenNow: true,
 			ImageURL: "/images/venues/steak-house.jpg", AlcoholLicense: true,
 			SessionStartBeforeMin: 20, ReleaseBeforeMin: 15,
 		},
@@ -186,63 +190,63 @@ func (s *MemoryStore) seed() {
 			Category:    models.LocalizedString{RU: "Выпечка", EN: "Pastries", RO: "Patiserie"},
 			Name:        models.LocalizedString{RU: "Плацинда с сыром", EN: "Cheese plăcintă", RO: "Plăcintă cu brânză"},
 			Description: models.LocalizedString{RU: "Классическая молдавская плацинда", EN: "Classic Moldovan pastry", RO: "Plăcintă moldovenească clasică"},
-			Price: 45,
+			Price:       45,
 		},
 		{
 			ID: "m2", VenueID: "venue-1",
 			Category:    models.LocalizedString{RU: "Супы", EN: "Soups", RO: "Supe"},
 			Name:        models.LocalizedString{RU: "Зеленый борщ", EN: "Green borscht", RO: "Borș verde"},
 			Description: models.LocalizedString{RU: "С щавелем и яйцом", EN: "With sorrel and egg", RO: "Cu măcriș și ou"},
-			Price: 65,
+			Price:       65,
 		},
 		{
 			ID: "m3", VenueID: "venue-1",
 			Category:    models.LocalizedString{RU: "Напитки", EN: "Drinks", RO: "Băuturi"},
 			Name:        models.LocalizedString{RU: "Домашний компот", EN: "Homemade compote", RO: "Compot de casă"},
 			Description: models.LocalizedString{RU: "Сезонные фрукты", EN: "Seasonal fruits", RO: "Fructe de sezon"},
-			Price: 25,
+			Price:       25,
 		},
 		{
 			ID: "m4", VenueID: "venue-2",
 			Category:    models.LocalizedString{RU: "Кофе", EN: "Coffee", RO: "Cafea"},
 			Name:        models.LocalizedString{RU: "Капучино", EN: "Cappuccino", RO: "Cappuccino"},
 			Description: models.LocalizedString{RU: "Двойной эспрессо с молоком", EN: "Double espresso with milk", RO: "Espresso dublu cu lapte"},
-			Price: 40,
+			Price:       40,
 		},
 		{
 			ID: "m5", VenueID: "venue-2",
 			Category:    models.LocalizedString{RU: "Завтраки", EN: "Breakfast", RO: "Mic dejun"},
 			Name:        models.LocalizedString{RU: "Авокадо тост", EN: "Avocado toast", RO: "Toast cu avocado"},
 			Description: models.LocalizedString{RU: "На зерновом хлебе", EN: "On wholegrain bread", RO: "Pe pâine integrală"},
-			Price: 75,
+			Price:       75,
 		},
 		{
 			ID: "m6", VenueID: "venue-2",
 			Category:    models.LocalizedString{RU: "Десерты", EN: "Desserts", RO: "Deserturi"},
 			Name:        models.LocalizedString{RU: "Чизкейк", EN: "Cheesecake", RO: "Cheesecake"},
 			Description: models.LocalizedString{RU: "Нью-Йорк стиль", EN: "New York style", RO: "Stil New York"},
-			Price: 55,
+			Price:       55,
 		},
 		{
 			ID: "m7", VenueID: "venue-3",
 			Category:    models.LocalizedString{RU: "Стейки", EN: "Steaks", RO: "Steak-uri"},
 			Name:        models.LocalizedString{RU: "Рибай 300г", EN: "Ribeye 300g", RO: "Ribeye 300g"},
 			Description: models.LocalizedString{RU: "На гриле, medium rare", EN: "Grilled, medium rare", RO: "La grătar, medium rare"},
-			Price: 320,
+			Price:       320,
 		},
 		{
 			ID: "m8", VenueID: "venue-3",
 			Category:    models.LocalizedString{RU: "Гарниры", EN: "Sides", RO: "Garnituri"},
 			Name:        models.LocalizedString{RU: "Картофель фри", EN: "French fries", RO: "Cartofi prăjiți"},
 			Description: models.LocalizedString{RU: "С соусом", EN: "With sauce", RO: "Cu sos"},
-			Price: 45,
+			Price:       45,
 		},
 		{
 			ID: "m9", VenueID: "venue-3",
 			Category:    models.LocalizedString{RU: "Напитки", EN: "Drinks", RO: "Băuturi"},
 			Name:        models.LocalizedString{RU: "Красное вино бокал", EN: "Red wine glass", RO: "Vin roșu pahar"},
 			Description: models.LocalizedString{RU: "Местное вино", EN: "Local wine", RO: "Vin local"},
-			Price: 80, ContainsAlcohol: true,
+			Price:       80, ContainsAlcohol: true,
 		},
 	}
 	for _, m := range menu {
@@ -905,6 +909,40 @@ func (s *MemoryStore) AIRecommend(query string) []models.Venue {
 
 const MaxApplicationPhotos = 8
 
+func localizedEqual(a, b models.LocalizedString) bool {
+	return a.RU == b.RU && a.EN == b.EN && a.RO == b.RO
+}
+
+func stringSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *MemoryStore) recordActivityLocked(appID, actorID, action string, changedFields []string, note string) {
+	role := "system"
+	if actor, ok := s.users[actorID]; ok {
+		role = actor.Role
+	}
+	entry := models.ApplicationActivity{
+		ID:            uuid.NewString(),
+		ApplicationID: appID,
+		ActorUserID:   actorID,
+		ActorRole:     role,
+		Action:        action,
+		ChangedFields: append([]string(nil), changedFields...),
+		Note:          note,
+		CreatedAt:     time.Now().UTC(),
+	}
+	s.activities[appID] = append(s.activities[appID], entry)
+}
+
 func (s *MemoryStore) CreateApplication(ownerID string) (models.VenueApplication, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -929,6 +967,7 @@ func (s *MemoryStore) CreateApplication(ownerID string) (models.VenueApplication
 		UpdatedAt:   now,
 	}
 	s.applications[app.ID] = app
+	s.recordActivityLocked(app.ID, ownerID, "APPLICATION_CREATED", nil, "")
 	return app, nil
 }
 
@@ -951,7 +990,85 @@ func (s *MemoryStore) ListApplicationsByOwner(ownerID string) []models.VenueAppl
 			out = append(out, app)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].UpdatedAt.After(out[j].UpdatedAt) })
 	return out
+}
+
+func (s *MemoryStore) ListApplicationActivity(requesterID, appID string) ([]models.ApplicationActivity, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	app, ok := s.applications[appID]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	requester, ok := s.users[requesterID]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	if app.OwnerUserID != requesterID && requester.Role != models.RoleAdmin {
+		return nil, ErrForbidden
+	}
+
+	out := append([]models.ApplicationActivity(nil), s.activities[appID]...)
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
+	return out, nil
+}
+
+func (s *MemoryStore) ListRestaurantReservations(ownerID string) ([]models.RestaurantReservation, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	owner, ok := s.users[ownerID]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	if owner.Role != models.RoleRestaurant && owner.Role != models.RoleAdmin {
+		return nil, ErrForbidden
+	}
+
+	venueIDs := make(map[string]bool)
+	if owner.Role == models.RoleAdmin {
+		for venueID := range s.venues {
+			venueIDs[venueID] = true
+		}
+	} else {
+		for _, app := range s.applications {
+			if app.OwnerUserID == ownerID && app.VenueID != nil {
+				venueIDs[*app.VenueID] = true
+			}
+		}
+	}
+
+	out := make([]models.RestaurantReservation, 0)
+	for _, reservation := range s.reservations {
+		if !venueIDs[reservation.VenueID] {
+			continue
+		}
+		venue := s.venues[reservation.VenueID]
+		table := s.tables[reservation.TableID]
+		guest := s.users[reservation.UserID]
+		guestName := strings.TrimSpace(guest.DisplayName)
+		if guestName == "" {
+			guestName = strings.TrimSpace(guest.FirstName + " " + guest.LastName)
+		}
+		out = append(out, models.RestaurantReservation{
+			ID:                 reservation.ID,
+			VenueID:            reservation.VenueID,
+			VenueName:          venue.Name,
+			TableID:            reservation.TableID,
+			TableNumber:        table.Number,
+			GuestName:          guestName,
+			GuestEmail:         guest.Email,
+			Guests:             reservation.Guests,
+			ReservedFor:        reservation.ReservedFor,
+			Status:             reservation.Status,
+			ArrivalConfirmedAt: reservation.ArrivalConfirmedAt,
+			CreatedAt:          reservation.CreatedAt,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ReservedFor.After(out[j].ReservedFor) })
+	return out, nil
 }
 
 func (s *MemoryStore) ListAllApplications(status string) []models.VenueApplication {
@@ -980,51 +1097,86 @@ func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpd
 	if app.Status != models.AppDraft && app.Status != models.AppRejected {
 		return models.VenueApplication{}, ErrConflict
 	}
+	if patch.Email != nil && *patch.Email != "" {
+		if _, err := mail.ParseAddress(*patch.Email); err != nil {
+			return models.VenueApplication{}, ErrBadRequest
+		}
+	}
+	if patch.Lat != nil && (*patch.Lat < -90 || *patch.Lat > 90) {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+	if patch.Lng != nil && (*patch.Lng < -180 || *patch.Lng > 180) {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+	if patch.PriceLevel != nil && (*patch.PriceLevel < 1 || *patch.PriceLevel > 3) {
+		return models.VenueApplication{}, ErrBadRequest
+	}
+	if patch.AverageCheck != nil && *patch.AverageCheck < 0 {
+		return models.VenueApplication{}, ErrBadRequest
+	}
 
-	if patch.Name != nil {
+	changed := make([]string, 0, 12)
+	if patch.Name != nil && !localizedEqual(app.Name, *patch.Name) {
 		app.Name = *patch.Name
+		changed = append(changed, "name")
 	}
-	if patch.Description != nil {
+	if patch.Description != nil && !localizedEqual(app.Description, *patch.Description) {
 		app.Description = *patch.Description
+		changed = append(changed, "description")
 	}
-	if patch.Address != nil {
+	if patch.Address != nil && !localizedEqual(app.Address, *patch.Address) {
 		app.Address = *patch.Address
+		changed = append(changed, "address")
 	}
-	if patch.Cuisine != nil {
+	if patch.Cuisine != nil && !stringSliceEqual(app.Cuisine, *patch.Cuisine) {
 		app.Cuisine = *patch.Cuisine
+		changed = append(changed, "cuisine")
 	}
-	if patch.Phone != nil {
+	if patch.Phone != nil && app.Phone != *patch.Phone {
 		app.Phone = *patch.Phone
+		changed = append(changed, "phone")
 	}
-	if patch.Email != nil {
+	if patch.Email != nil && app.Email != *patch.Email {
 		app.Email = *patch.Email
+		changed = append(changed, "email")
 	}
-	if patch.CityID != nil && *patch.CityID != "" {
+	if patch.CityID != nil && *patch.CityID != "" && app.CityID != *patch.CityID {
 		app.CityID = *patch.CityID
+		changed = append(changed, "city")
 	}
-	if patch.Lat != nil {
+	if patch.Lat != nil && app.Lat != *patch.Lat {
 		app.Lat = *patch.Lat
+		changed = append(changed, "latitude")
 	}
-	if patch.Lng != nil {
+	if patch.Lng != nil && app.Lng != *patch.Lng {
 		app.Lng = *patch.Lng
+		changed = append(changed, "longitude")
 	}
-	if patch.PriceLevel != nil {
+	if patch.PriceLevel != nil && app.PriceLevel != *patch.PriceLevel {
 		app.PriceLevel = *patch.PriceLevel
+		changed = append(changed, "price_level")
 	}
-	if patch.AverageCheck != nil {
+	if patch.AverageCheck != nil && app.AverageCheck != *patch.AverageCheck {
 		app.AverageCheck = *patch.AverageCheck
+		changed = append(changed, "average_check")
 	}
-	if patch.HoursText != nil {
+	if patch.HoursText != nil && app.HoursText != *patch.HoursText {
 		app.HoursText = *patch.HoursText
+		changed = append(changed, "hours")
 	}
 
-	// Re-editing a rejected application returns it to draft
+	if len(changed) == 0 {
+		return app, nil
+	}
+
+	// Re-editing a rejected application returns it to draft.
 	if app.Status == models.AppRejected {
 		app.Status = models.AppDraft
 		app.RejectReason = ""
 	}
 	app.UpdatedAt = time.Now().UTC()
 	s.applications[id] = app
+	s.recordActivityLocked(id, ownerID, "PROFILE_UPDATED", changed, "")
 	return app, nil
 }
 
@@ -1052,6 +1204,7 @@ func (s *MemoryStore) AddPhoto(ownerID, appID, url string) (models.VenueApplicat
 	}
 	app.UpdatedAt = time.Now().UTC()
 	s.applications[appID] = app
+	s.recordActivityLocked(appID, ownerID, "PHOTO_ADDED", []string{"photos"}, "")
 	return app, nil
 }
 
@@ -1089,6 +1242,7 @@ func (s *MemoryStore) RemovePhoto(ownerID, appID, url string) (models.VenueAppli
 	}
 	app.UpdatedAt = time.Now().UTC()
 	s.applications[appID] = app
+	s.recordActivityLocked(appID, ownerID, "PHOTO_REMOVED", []string{"photos"}, "")
 	return app, nil
 }
 
@@ -1106,7 +1260,7 @@ func (s *MemoryStore) SubmitApplication(ownerID, id string) (models.VenueApplica
 	if app.Status != models.AppDraft && app.Status != models.AppRejected {
 		return models.VenueApplication{}, ErrConflict
 	}
-	if strings.TrimSpace(app.Name.EN) == "" && strings.TrimSpace(app.Name.RU) == "" && strings.TrimSpace(app.Name.RO) == "" {
+	if !applicationComplete(app) {
 		return models.VenueApplication{}, ErrBadRequest
 	}
 
@@ -1116,7 +1270,19 @@ func (s *MemoryStore) SubmitApplication(ownerID, id string) (models.VenueApplica
 	app.SubmittedAt = &now
 	app.UpdatedAt = now
 	s.applications[id] = app
+	s.recordActivityLocked(id, ownerID, "APPLICATION_SUBMITTED", nil, "")
 	return app, nil
+}
+
+func applicationComplete(app models.VenueApplication) bool {
+	namePresent := strings.TrimSpace(app.Name.EN) != "" || strings.TrimSpace(app.Name.RU) != "" || strings.TrimSpace(app.Name.RO) != ""
+	descriptionPresent := strings.TrimSpace(app.Description.EN) != "" || strings.TrimSpace(app.Description.RU) != "" || strings.TrimSpace(app.Description.RO) != ""
+	addressPresent := strings.TrimSpace(app.Address.EN) != "" || strings.TrimSpace(app.Address.RU) != "" || strings.TrimSpace(app.Address.RO) != ""
+	_, emailErr := mail.ParseAddress(strings.TrimSpace(app.Email))
+	coordinatesValid := app.Lat >= -90 && app.Lat <= 90 && app.Lng >= -180 && app.Lng <= 180 && app.Lat != 0 && app.Lng != 0
+	return namePresent && descriptionPresent && addressPresent && len(app.Cuisine) > 0 &&
+		strings.TrimSpace(app.Phone) != "" && emailErr == nil && strings.TrimSpace(app.HoursText) != "" &&
+		coordinatesValid && len(app.PhotoURLs) > 0
 }
 
 func (s *MemoryStore) AdminSetStatus(adminID, id string, status models.ApplicationStatus, rejectReason string) (models.VenueApplication, error) {
@@ -1150,6 +1316,13 @@ func (s *MemoryStore) AdminSetStatus(adminID, id string, status models.Applicati
 	}
 	app.UpdatedAt = time.Now().UTC()
 	s.applications[id] = app
+	action := "REVIEW_STARTED"
+	if status == models.AppApproved {
+		action = "APPLICATION_APPROVED"
+	} else if status == models.AppRejected {
+		action = "APPLICATION_REJECTED"
+	}
+	s.recordActivityLocked(id, adminID, action, nil, rejectReason)
 	return app, nil
 }
 
@@ -1227,5 +1400,6 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 	app.VenueID = &venueID
 	app.UpdatedAt = now
 	s.applications[id] = app
+	s.recordActivityLocked(id, adminID, "APPLICATION_PUBLISHED", nil, "")
 	return app, nil
 }
