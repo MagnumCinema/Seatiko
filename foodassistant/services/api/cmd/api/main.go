@@ -26,6 +26,9 @@ func main() {
 		v1.GET("/venues", api.ListVenues)
 		v1.GET("/venues/:id", api.GetVenue)
 		v1.GET("/venues/:id/tables", api.ListTables)
+		v1.GET("/venues/:id/menu", api.ListMenu)
+		v1.GET("/collections", api.ListCollections)
+		v1.POST("/discover/ai", api.AIDiscover)
 
 		v1.POST("/auth/register", api.Register)
 		v1.POST("/auth/login", api.Login)
@@ -34,6 +37,24 @@ func main() {
 		authed.Use(auth.Middleware(cfg.JWTSecret))
 		{
 			authed.GET("/me", api.Me)
+			authed.PATCH("/me", api.UpdateMe)
+
+			authed.POST("/reservations", api.CreateReservation)
+			authed.GET("/reservations", api.ListReservations)
+			authed.POST("/reservations/:id/confirm-arrival", api.ConfirmArrival)
+
+			authed.POST("/tables/:id/watch", api.WatchTable)
+
+			authed.POST("/sessions/qr", api.ScanQR)
+			authed.GET("/sessions/:id", api.GetSession)
+			authed.POST("/sessions/:id/close", api.CloseSession)
+			authed.POST("/sessions/:id/orders", api.CreateOrder)
+			authed.POST("/sessions/:id/waiter-calls", api.CreateWaiterCall)
+
+			authed.GET("/orders", api.ListOrders)
+
+			authed.GET("/staff/waiter-calls", api.ListWaiterCalls)
+			authed.POST("/staff/waiter-calls/:id/accept", api.AcceptWaiterCall)
 		}
 	}
 

@@ -17,11 +17,12 @@ export type Locale = "ru" | "en" | "ro";
 const dictionaries = { ru, en, ro } as const;
 
 type Dict = (typeof dictionaries)[Locale];
+export type MessageKey = keyof Dict;
 
 type LocaleContextValue = {
   locale: Locale;
   setLocale: (l: Locale) => void;
-  t: (key: keyof Dict, params?: Record<string, string | number>) => string;
+  t: (key: MessageKey, params?: Record<string, string | number>) => string;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -41,11 +42,14 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: keyof Dict, params?: Record<string, string | number>) => {
-      let value = dictionaries[locale][key] ?? dictionaries.en[key] ?? String(key);
+    (key: MessageKey, params?: Record<string, string | number>) => {
+      let value =
+        dictionaries[locale][key] ??
+        dictionaries.en[key] ??
+        String(key);
       if (params) {
         for (const [k, v] of Object.entries(params)) {
-          value = value.replace(`{${k}}`, String(v));
+          value = value.split(`{${k}}`).join(String(v));
         }
       }
       return value;

@@ -2,17 +2,210 @@
   "app": {
     "title": "FoodAssistant"
   },
-  "map": {
-    "city": "Bălți",
-    "search": "Caută localuri...",
-    "free_tables": "{} mese libere",
-    "loading": "Se încarcă..."
+  "common": {
+    "loading": "Se încarcă...",
+    "back": "Înapoi",
+    "close": "Închide",
+    "cancel": "Anulează",
+    "confirm": "Confirmă",
+    "error": "Ceva nu a mers",
+    "save": "Salvează",
+    "retry": "Reîncearcă",
+    "soon": "În curând"
   },
   "nav": {
     "map": "Hartă",
     "discover": "Descoperă",
     "orders": "Comenzi",
-    "profile": "Profil"
+    "profile": "Profil",
+    "scan_qr": "Scanează QR la loc"
+  },
+  "onboarding": {
+    "next": "Următorul",
+    "skip": "Sari peste",
+    "start": "Începe",
+    "1": {
+      "title": "Găsește un loc",
+      "body": "Pe harta Bălți sau cu AI"
+    },
+    "2": {
+      "title": "Rezervă o masă",
+      "body": "Alege masa pe harta sălii"
+    },
+    "3": {
+      "title": "Comandă din timp",
+      "body": "Mâncarea gata la sosire"
+    },
+    "4": {
+      "title": "Scanează QR",
+      "body": "Comandă și cheamă chelnerul"
+    }
+  },
+  "city": {
+    "title": "Alege un oraș",
+    "pilot": "Oraș pilot",
+    "current": "Curent",
+    "soon": "În curând"
+  },
+  "map": {
+    "city": "Bălți",
+    "change_city": "Schimbă orașul",
+    "search": "Caută localuri...",
+    "free_tables": "{} mese libere",
+    "loading": "Se încarcă...",
+    "map_label": "Hartă"
+  },
+  "discover": {
+    "title": "Ce vrei azi?",
+    "placeholder": "Vreau ceva picant aproape…",
+    "chip_near": "Aproape",
+    "chip_budget": "Buget",
+    "chip_romantic": "Romantic",
+    "chip_fast": "Rapid",
+    "holiday": "Locuri de sărbătoare",
+    "ai_ask": "Întreabă AI",
+    "empty": "Nicio sugestie încă"
+  },
+  "venue": {
+    "open": "Deschis",
+    "closed": "Închis",
+    "floor_map": "Harta sălii",
+    "book": "Rezervă",
+    "menu": "Meniu",
+    "about": "Despre",
+    "avg_check": "Notă medie {} MDL"
+  },
+  "floor": {
+    "leg_free": "Liber",
+    "leg_res": "Rezervat",
+    "leg_occ": "Ocupat",
+    "leg_yours": "Al tău",
+    "select_table": "Alege masa",
+    "today": "Azi"
+  },
+  "table": {
+    "title": "Masa #{}",
+    "status_free": "Liber",
+    "status_occupied": "Ocupat",
+    "status_reserved": "Rezervat",
+    "status_yours": "Masa ta",
+    "arrived_at": "Sosiți la {}",
+    "arrived_hint": "Eliberare estimată ~1–1,5 h după așezare",
+    "reserved_for": "Rezervată pentru {}",
+    "notify_free": "Anunță-mă când se eliberează",
+    "notify_set": "Te vom anunța când se eliberează",
+    "notify_confirm_title": "Confirmă notificarea",
+    "notify_confirm_body": "Trimitem push când masa #{} se eliberează?",
+    "im_coming": "Vin",
+    "im_coming_set": "Te așteptăm la {}",
+    "im_coming_confirm_title": "Confirmă sosirea",
+    "im_coming_confirm_body": "Vii la {}?",
+    "im_coming_ok": "Da, vin",
+    "book_this": "Rezervă această masă",
+    "seats": "{} locuri",
+    "go_session": "Deschide sesiunea"
+  },
+  "reservation": {
+    "title": "Confirmă rezervarea",
+    "venue": "Local",
+    "table": "Masă",
+    "time": "Ora",
+    "guests": "Oaspeți",
+    "preorder": "+ Comandă preparate din timp",
+    "preorder_hint": "Dacă comanzi din timp: mâncarea va fi la masă la sosire sau servită curând după.",
+    "confirm_book": "Confirmă rezervarea",
+    "success": "Rezervare confirmată",
+    "book_only": "Doar rezervare"
+  },
+  "scan": {
+    "title": "Scanează QR",
+    "hint": "Îndreaptă camera spre QR — sau introdu token demo",
+    "token_placeholder": "venue-1:t1",
+    "simulate": "Deschide sesiunea"
+  },
+  "order_choice": {
+    "sub": "Cum vrei să comanzi?",
+    "app": "Comandă în aplicație",
+    "waiter": "Cheamă chelnerul"
+  },
+  "session": {
+    "your_table": "Masa #{} · {}",
+    "menu": "Meniu",
+    "waiter": "Chemă chelnerul",
+    "active_order": "Comandă activă",
+    "preparing": "se prepară",
+    "ready": "gata",
+    "bill": "Notă",
+    "release": "Eliberează masa",
+    "empty_orders": "Nicio comandă încă",
+    "released": "Masa eliberată"
+  },
+  "waiter": {
+    "initial_title": "Comandă la chelner",
+    "initial_sub": "Chelnerul va veni la masă și va lua comanda verbal. Sesiunea pornește automat.",
+    "initial_call": "Cheamă chelnerul",
+    "session_title": "Chemă chelnerul",
+    "session_sub": "Alege motivul — chelnerul primește notificare",
+    "reason_order": "Plasează comandă",
+    "reason_bill": "Notă de plată",
+    "reason_question": "Întrebare",
+    "reason_other": "Altceva",
+    "send": "Trimite apelul",
+    "coming": "Chelnerul vine..."
+  },
+  "menu": {
+    "title": "Meniu",
+    "cart": "Coș",
+    "add": "Adaugă",
+    "checkout": "Trimite la bucătărie",
+    "empty": "Meniu indisponibil",
+    "cart_empty": "Coșul este gol",
+    "total": "Total",
+    "alcohol_hint": "Alcoolul se comandă doar la local"
+  },
+  "payment": {
+    "title": "Plată",
+    "total": "Total",
+    "pay_app": "Plătește în app",
+    "pay_venue": "Plătește la local",
+    "status_paid": "Plătit",
+    "status_pending": "Așteaptă plata la local",
+    "done": "Gata"
+  },
+  "orders": {
+    "title": "Comenzi",
+    "active": "Active",
+    "history": "Istoric",
+    "active_res": "Rezervare activă",
+    "session": "Sesiune curentă",
+    "empty": "Nicio comandă sau rezervare",
+    "need_auth": "Autentifică-te pentru comenzi"
+  },
+  "profile": {
+    "title": "Profil",
+    "first_name": "Prenume",
+    "last_name": "Nume",
+    "display_name": "Cum te numim",
+    "language": "Limbă",
+    "allergies": "Alergii / dietă",
+    "payment_methods": "Metode de plată",
+    "favorites": "Favorite",
+    "saved": "Profil salvat",
+    "guest": "Vizitator",
+    "sign_in": "Autentificare",
+    "logout": "Ieșire din cont"
+  },
+  "auth": {
+    "login": "Autentificare",
+    "register": "Înregistrare",
+    "title": "Autentificare necesară",
+    "body": "Cont necesar pentru rezervare și comandă",
+    "email": "Email",
+    "password": "Parolă",
+    "first_name": "Prenume",
+    "last_name": "Nume",
+    "switch_register": "Creează cont",
+    "switch_login": "Ai deja cont?"
   },
   "errors": {
     "api": "Nu s-au putut încărca localurile"
