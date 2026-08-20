@@ -3,33 +3,37 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
+import { useLocale } from "@/components/locale-provider";
+import { getSiteCopy } from "@/lib/site-copy";
 
 export default function HomePage() {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).home;
+
   return (
     <div className="landing">
       <SiteHeader variant="transparent" />
 
       <section className="landing-hero">
         <div className="landing-hero-copy">
-          <div className="hero-live-badge"><i /> Уже работает в Бельцах</div>
-          <p className="landing-kicker">Новый стандарт гостеприимства</p>
-          <h1>Ваш ресторан<br /><em>всегда рядом.</em></h1>
+          <div className="hero-live-badge"><i /> {copy.live}</div>
+          <p className="landing-kicker">{copy.kicker}</p>
+          <h1>{copy.title}<br /><em>{copy.titleAccent}</em></h1>
           <p className="landing-lead">
-            Гости находят ресторан на карте, выбирают стол, бронируют и делают
-            заказ. Вы управляете залом, меню и сервисом в одном пространстве.
+            {copy.lead}
           </p>
           <div className="landing-ctas">
             <Link href="#map" className="btn btn-gold">
-              Найти ресторан <span>→</span>
+              {copy.find} <span>→</span>
             </Link>
             <Link href="/business" className="btn btn-outline">
-              Подключить заведение
+              {copy.connect}
             </Link>
           </div>
           <div className="hero-trust">
-            <span><strong>3</strong> заведения в пилоте</span>
-            <span><strong>4.7</strong> средний рейтинг</span>
-            <span><strong>24/7</strong> онлайн-бронирование</span>
+            <span><strong>3</strong> {copy.pilot}</span>
+            <span><strong>4.7</strong> {copy.rating}</span>
+            <span><strong>24/7</strong> {copy.booking247}</span>
           </div>
         </div>
 
@@ -37,11 +41,11 @@ export default function HomePage() {
           <div className="hero-image" />
           <div className="hero-floating-card hero-booking-card">
             <span className="hero-card-icon">✓</span>
-            <div><small>Бронь подтверждена</small><strong>La Plăcinte · 19:30</strong></div>
+            <div><small>{copy.confirmed}</small><strong>La Plăcinte · 19:30</strong></div>
           </div>
           <div className="hero-floating-card hero-table-card">
             <span className="hero-table-dot" />
-            <div><strong>12 столов свободно</strong><small>данные обновлены сейчас</small></div>
+            <div><strong>{copy.freeTables}</strong><small>{copy.updated}</small></div>
           </div>
         </div>
       </section>
@@ -49,46 +53,49 @@ export default function HomePage() {
       <section className="landing-map-section" id="map">
         <div className="section-heading split">
           <div>
-            <span className="eyebrow">Живая карта города</span>
-            <h2>Все лучшие места —<br />на одной карте</h2>
+            <span className="eyebrow">{copy.mapEyebrow}</span>
+            <h2 style={{ whiteSpace: "pre-line" }}>{copy.mapTitle}</h2>
           </div>
-          <p>Каждый ресторан после регистрации и модерации автоматически появляется на карте. Гости сразу видят рейтинг, средний чек и доступные столы.</p>
+          <p>{copy.mapBody}</p>
         </div>
         <VenueMap />
       </section>
 
       <section className="landing-features" id="how">
         <div className="section-heading centered">
-          <span className="eyebrow">От первого касания до возвращения</span>
-          <h2>Сервис, который чувствуется</h2>
-          <p>Мы убрали лишние действия между желанием поужинать и идеальным столиком.</p>
+          <span className="eyebrow">{copy.serviceEyebrow}</span>
+          <h2>{copy.serviceTitle}</h2>
+          <p>{copy.serviceBody}</p>
         </div>
         <div className="feature-list">
-          <article className="feature-item"><span className="feature-icon">⌖</span><span className="feature-num">01</span><h3>Найти место</h3><p>Карта ресторанов, фильтры по кухне, рейтингу и свободным столам.</p></article>
-          <article className="feature-item featured"><span className="feature-icon">◇</span><span className="feature-num">02</span><h3>Выбрать стол</h3><p>Живой план зала показывает свободные столы и помогает выбрать лучший.</p></article>
-          <article className="feature-item"><span className="feature-icon">▦</span><span className="feature-num">03</span><h3>Заказать по QR</h3><p>Меню, заказ и вызов официанта открываются прямо за вашим столом.</p></article>
-          <article className="feature-item"><span className="feature-icon">♡</span><span className="feature-num">04</span><h3>Вернуться снова</h3><p>История заказов, любимые места и персональные предложения.</p></article>
+          {copy.features.map(([title, body], index) => (
+            <article key={title} className={`feature-item ${index === 1 ? "featured" : ""}`}>
+              <span className="feature-icon">{["⌖", "◇", "▦", "♡"][index]}</span>
+              <span className="feature-num">{String(index + 1).padStart(2, "0")}</span>
+              <h3>{title}</h3><p>{body}</p>
+            </article>
+          ))}
         </div>
       </section>
 
       <section className="owner-cta">
         <div>
-          <span className="eyebrow">Для владельцев ресторанов</span>
-          <h2>Больше гостей.<br />Меньше пустых столов.</h2>
-          <p>Создайте профиль заведения, добавьте фотографии и появитесь на карте после быстрой модерации.</p>
-          <Link href="/register" className="btn btn-light">Зарегистрировать ресторан <span>→</span></Link>
+          <span className="eyebrow">{copy.ownerEyebrow}</span>
+          <h2 style={{ whiteSpace: "pre-line" }}>{copy.ownerTitle}</h2>
+          <p>{copy.ownerBody}</p>
+          <Link href="/register" className="btn btn-light">{copy.ownerAction} <span>→</span></Link>
         </div>
         <div className="owner-stats">
-          <div><strong>+28%</strong><span>повторных визитов</span></div>
-          <div><strong>−35%</strong><span>пропущенных броней</span></div>
-          <div><strong>1 кабинет</strong><span>для зала и сервиса</span></div>
+          <div><strong>+28%</strong><span>{copy.repeat}</span></div>
+          <div><strong>−35%</strong><span>{copy.missed}</span></div>
+          <div><strong>{copy.oneCabinet}</strong><span>{copy.oneCabinetBody}</span></div>
         </div>
       </section>
 
       <footer className="landing-footer">
         <Link href="/" className="footer-brand"><span className="site-brand-mark">F</span> FoodAssistant</Link>
-        <span>Гостеприимство начинается до входа в ресторан.</span>
-        <div><Link href="/business">Ресторанам</Link><Link href="/demo">Демо</Link><Link href="/login">Войти</Link></div>
+        <span>{copy.slogan}</span>
+        <div><Link href="/business">{copy.restaurants}</Link><Link href="/demo">Demo</Link><Link href="/login">{getSiteCopy(locale).header.login}</Link></div>
       </footer>
     </div>
   );

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/api";
 import { SiteHeader } from "@/components/site-header";
+import { useLocale } from "@/components/locale-provider";
+import { getSiteCopy } from "@/lib/site-copy";
 
 type Props = {
   title: string;
@@ -14,6 +16,8 @@ type Props = {
 
 export function PanelShell({ title, subtitle, children, email }: Props) {
   const router = useRouter();
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).panel;
 
   return (
     <div className="panel-page">
@@ -27,7 +31,7 @@ export function PanelShell({ title, subtitle, children, email }: Props) {
           <div className="panel-top-actions">
             {email && <span className="panel-email">{email}</span>}
             <Link href="/" className="panel-link">
-              На сайт
+              {copy.site}
             </Link>
             <button
               type="button"
@@ -37,7 +41,7 @@ export function PanelShell({ title, subtitle, children, email }: Props) {
                 router.push("/login");
               }}
             >
-              Выйти
+              {copy.logout}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import 'package:mobile/api.dart';
 import 'package:mobile/screens/reservation_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
+import 'package:mobile/widgets/restaurant_floor_plan.dart';
 
 class FloorMapScreen extends StatefulWidget {
   const FloorMapScreen({
@@ -40,19 +41,6 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
     });
   }
 
-  Color _color(String status) {
-    switch (status) {
-      case 'FREE':
-        return FaColors.free;
-      case 'OCCUPIED':
-        return FaColors.occupied;
-      case 'RESERVED':
-        return FaColors.reserved;
-      default:
-        return FaColors.yours;
-    }
-  }
-
   Future<void> _openTable(VenueTable t) async {
     if (widget.selectMode && t.status == 'FREE') {
       Navigator.pop(context, t);
@@ -83,8 +71,10 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
-              child: Text('floor.today'.tr(),
-                  style: const TextStyle(color: FaColors.muted)),
+              child: Text(
+                'floor.today'.tr(),
+                style: const TextStyle(color: FaColors.muted),
+              ),
             ),
           ),
         ],
@@ -101,48 +91,12 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
                   );
                 }
                 final tables = snap.data!;
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Container(
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: FaColors.surface2,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: FaColors.border),
-                      ),
-                      child: Stack(
-                        children: tables.map((t) {
-                          final left = t.x * (constraints.maxWidth - 72);
-                          final top = t.y * (constraints.maxHeight - 120);
-                          return Positioned(
-                            left: 16 + left,
-                            top: 16 + top,
-                            child: GestureDetector(
-                              onTap: () => _openTable(t),
-                              child: Container(
-                                width: 52,
-                                height: 52,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: _color(t.status).withValues(alpha: 0.25),
-                                  border: Border.all(
-                                      color: _color(t.status), width: 2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${t.number}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: _color(t.status),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    );
-                  },
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: RestaurantFloorPlan(
+                    tables: tables,
+                    onTableTap: _openTable,
+                  ),
                 );
               },
             ),
@@ -172,13 +126,13 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(
-            color: c,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12, color: FaColors.muted)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: FaColors.muted),
+        ),
       ],
     );
   }
@@ -241,8 +195,10 @@ class _TableSheet extends StatelessWidget {
           if (t.status == 'OCCUPIED') ...[
             Text('table.arrived_at'.tr(args: [formatClock(t.occupiedSince)])),
             const SizedBox(height: 4),
-            Text('table.arrived_hint'.tr(),
-                style: const TextStyle(color: FaColors.muted, fontSize: 13)),
+            Text(
+              'table.arrived_hint'.tr(),
+              style: const TextStyle(color: FaColors.muted, fontSize: 13),
+            ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () async {
@@ -253,8 +209,7 @@ class _TableSheet extends StatelessWidget {
                   builder: (ctx) => AlertDialog(
                     title: Text('table.notify_confirm_title'.tr()),
                     content: Text(
-                      'table.notify_confirm_body'
-                          .tr(args: ['${t.number}']),
+                      'table.notify_confirm_body'.tr(args: ['${t.number}']),
                     ),
                     actions: [
                       TextButton(
@@ -270,8 +225,10 @@ class _TableSheet extends StatelessWidget {
                 );
                 if (confirm != true || !context.mounted) return;
                 try {
-                  await ApiClient.instance
-                      .watchTable(venueId: venueId, tableId: t.id);
+                  await ApiClient.instance.watchTable(
+                    venueId: venueId,
+                    tableId: t.id,
+                  );
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('table.notify_set'.tr())),
@@ -290,9 +247,7 @@ class _TableSheet extends StatelessWidget {
             ),
           ],
           if (t.status == 'RESERVED') ...[
-            Text(
-              'table.reserved_for'.tr(args: [formatClock(t.reservedFor)]),
-            ),
+            Text('table.reserved_for'.tr(args: [formatClock(t.reservedFor)])),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () async {
@@ -321,15 +276,12 @@ class _TableSheet extends StatelessWidget {
                 if (confirm != true || !context.mounted) return;
                 try {
                   if (t.reservationId != null) {
-                    await ApiClient.instance
-                        .confirmArrival(t.reservationId!);
+                    await ApiClient.instance.confirmArrival(t.reservationId!);
                   }
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          'table.im_coming_set'.tr(args: [time]),
-                        ),
+                        content: Text('table.im_coming_set'.tr(args: [time])),
                       ),
                     );
                     Navigator.pop(context);
@@ -356,10 +308,8 @@ class _TableSheet extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ReservationScreen(
-                      venue: v!,
-                      preselectedTable: t,
-                    ),
+                    builder: (_) =>
+                        ReservationScreen(venue: v!, preselectedTable: t),
                   ),
                 );
               },

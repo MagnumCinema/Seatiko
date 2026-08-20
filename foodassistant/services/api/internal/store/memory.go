@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"net/mail"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -46,6 +47,7 @@ type ApplicationUpdate struct {
 	Cuisine      *[]string
 	Phone        *string
 	Email        *string
+	Website      *string
 	CityID       *string
 	Lat          *float64
 	Lng          *float64
@@ -1102,6 +1104,12 @@ func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpd
 			return models.VenueApplication{}, ErrBadRequest
 		}
 	}
+	if patch.Website != nil && *patch.Website != "" {
+		parsed, err := url.ParseRequestURI(*patch.Website)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			return models.VenueApplication{}, ErrBadRequest
+		}
+	}
 	if patch.Lat != nil && (*patch.Lat < -90 || *patch.Lat > 90) {
 		return models.VenueApplication{}, ErrBadRequest
 	}
@@ -1139,6 +1147,10 @@ func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpd
 	if patch.Email != nil && app.Email != *patch.Email {
 		app.Email = *patch.Email
 		changed = append(changed, "email")
+	}
+	if patch.Website != nil && app.Website != *patch.Website {
+		app.Website = *patch.Website
+		changed = append(changed, "website")
 	}
 	if patch.CityID != nil && *patch.CityID != "" && app.CityID != *patch.CityID {
 		app.CityID = *patch.CityID
@@ -1374,22 +1386,37 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		AverageCheck:          app.AverageCheck,
 		OpenNow:               true,
 		ImageURL:              imageURL,
+		Website:               app.Website,
 		AlcoholLicense:        false,
 		SessionStartBeforeMin: 15,
 		ReleaseBeforeMin:      10,
 	}
 	s.venues[venueID] = venue
 
-	// Create a few FREE tables
-	for i := 1; i <= 4; i++ {
+	// Start every published restaurant with an editable, booking-ready floor
+	// layout. Positions are normalized so web and mobile render the same room.
+	defaultLayout := []struct {
+		x, y  float64
+		seats int
+	}{
+		{x: 0.18, y: 0.22, seats: 2},
+		{x: 0.43, y: 0.22, seats: 4},
+		{x: 0.72, y: 0.22, seats: 4},
+		{x: 0.22, y: 0.5, seats: 4},
+		{x: 0.52, y: 0.5, seats: 6},
+		{x: 0.79, y: 0.51, seats: 2},
+		{x: 0.35, y: 0.76, seats: 2},
+		{x: 0.68, y: 0.76, seats: 6},
+	}
+	for index, position := range defaultLayout {
 		t := models.Table{
 			ID:      uuid.NewString(),
 			VenueID: venueID,
-			Number:  i,
-			Seats:   2 + (i%3)*2,
+			Number:  index + 1,
+			Seats:   position.seats,
 			Status:  models.TableFree,
-			X:       0.2 + float64(i)*0.15,
-			Y:       0.4,
+			X:       position.x,
+			Y:       position.y,
 		}
 		s.tables[t.ID] = t
 	}

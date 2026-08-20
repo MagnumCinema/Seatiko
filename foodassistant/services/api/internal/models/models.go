@@ -31,6 +31,7 @@ type Venue struct {
 	OpenNow               bool            `json:"open_now"`
 	FreeTables            int             `json:"free_tables"`
 	ImageURL              string          `json:"image_url"`
+	Website               string          `json:"website,omitempty"`
 	AlcoholLicense        bool            `json:"alcohol_license_valid"`
 	SessionStartBeforeMin int             `json:"session_start_before_min"`
 	ReleaseBeforeMin      int             `json:"release_before_min"`
@@ -98,6 +99,7 @@ type VenueApplication struct {
 	Cuisine      []string          `json:"cuisine"`
 	Phone        string            `json:"phone"`
 	Email        string            `json:"email"`
+	Website      string            `json:"website,omitempty"`
 	CityID       string            `json:"city_id"`
 	Lat          float64           `json:"lat"`
 	Lng          float64           `json:"lng"`

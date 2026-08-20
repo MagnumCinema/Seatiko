@@ -107,6 +107,30 @@ a {
   color: var(--fa-gold);
 }
 
+.field-optional {
+  color: #8b9690;
+  font-weight: 500;
+}
+
+.venue-map-website {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  color: #c8683b;
+  font-size: 0.86rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.venue-map-website:hover {
+  text-decoration: underline;
+}
+
+.fa-venue-website {
+  margin-top: 0.35rem;
+  text-decoration: none;
+}
+
 .landing {
   min-height: 100vh;
   background:
@@ -1278,28 +1302,70 @@ a {
   color: #60a5fa;
 }
 
-.fa-floor {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  padding: 12px 0;
+.fa-floor-room {
+  position: relative;
+  min-height: 390px;
+  overflow: hidden;
+  margin: 12px 0 16px;
+  border: 1px solid rgba(230, 198, 139, 0.14);
+  border-radius: 22px;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+    radial-gradient(circle at 72% 32%, rgba(95, 145, 109, .12), transparent 28%),
+    #18231d;
+  background-size: 30px 30px, 30px 30px, auto, auto;
+  box-shadow: inset 0 0 0 7px rgba(255, 250, 235, .018);
 }
+
+.fa-floor-room.compact { min-height: 285px; margin-top: 8px; border-radius: 18px; }
+.fa-floor-windows { position: absolute; left: 27%; right: 23%; top: 8px; display: flex; gap: 7px; }
+.fa-floor-windows i { height: 5px; flex: 1; border-radius: 99px; background: rgba(145,190,199,.38); box-shadow: 0 4px 14px rgba(110,174,190,.12); }
+.fa-floor-bar { position: absolute; left: 10px; top: 20%; bottom: 25%; width: 46px; display: grid; align-content: center; justify-items: center; gap: 13px; color: rgba(244,223,180,.55); border: 1px solid rgba(226,191,126,.13); border-radius: 14px; background: rgba(232,194,124,.055); font-size: 8px; letter-spacing: .14em; }
+.fa-floor-bar i { width: 9px; height: 9px; border: 1px solid rgba(229,197,137,.32); border-radius: 50%; }
+.fa-floor-service { position: absolute; top: 13px; right: 13px; padding: 7px 10px; color: rgba(233,222,195,.48); border: 1px solid rgba(255,255,255,.07); border-radius: 8px; background: rgba(255,255,255,.035); font-size: 9px; }
+.fa-floor-entrance { position: absolute; right: 18px; bottom: 13px; color: rgba(233,222,195,.48); font-size: 9px; }
 
 .fa-table {
-  aspect-ratio: 1;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
+  position: absolute;
+  width: 66px;
+  height: 48px;
+  translate: -50% -50%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1px;
+  color: #dbe6dd;
+  border: 2px solid #587163;
+  border-radius: 13px;
+  background: #26372e;
+  box-shadow: 0 9px 18px rgba(0,0,0,.18);
   cursor: pointer;
-  border: 2px solid transparent;
+  transition: scale .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
-
-.fa-table.selected {
-  outline: 3px solid var(--fa-gold);
-}
+.fa-table:hover { scale: 1.05; }
+.fa-table:focus { outline: none; }
+.fa-table:focus-visible { outline: 2px solid #f0bc67; outline-offset: 4px; }
+.fa-table.round { width: 52px; height: 52px; border-radius: 50%; }
+.fa-table.large { width: 80px; }
+.fa-table > span { font-size: 12px; font-weight: 850; line-height: 1; }
+.fa-table > small { color: currentColor; opacity: .6; font-size: 7px; }
+.fa-table.free { color: #bce8ca; border-color: #4e9a68; background: #244c36; }
+.fa-table.occupied { color: #edc5bd; border-color: #b56557; background: #5b332e; }
+.fa-table.reserved { color: #f0dbac; border-color: #b88c42; background: #59482a; }
+.fa-table.cleaning { color: #cbd3ce; border-color: #7f8b84; background: #3d4741; }
+.fa-table.selected { border-color: #f0bc67; box-shadow: 0 0 0 4px rgba(240,188,103,.17), 0 10px 24px rgba(0,0,0,.24); }
+.fa-table .seat { position: absolute; width: 16px; height: 5px; border-radius: 3px; background: currentColor; opacity: .38; }
+.fa-table .seat.top { left: 50%; top: -8px; translate: -50% 0; }
+.fa-table .seat.bottom { left: 50%; bottom: -8px; translate: -50% 0; }
+.fa-table .seat.left { left: -8px; top: 50%; width: 5px; height: 16px; translate: 0 -50%; }
+.fa-table .seat.right { right: -8px; top: 50%; width: 5px; height: 16px; translate: 0 -50%; }
+.fa-floor-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--fa-muted); font-size: 12px; }
+.fa-reservation-floor-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-top: 12px; }
+.fa-reservation-floor-head > div { display: grid; gap: 3px; }
+.fa-reservation-floor-head strong { font-size: 13px; }
+.fa-reservation-floor-head small { color: var(--fa-muted); font-size: 10px; }
+.fa-reservation-floor-head button { padding: 0; color: var(--fa-gold); border: 0; background: none; font-size: 10px; cursor: pointer; }
 
 .fa-stepper {
   display: flex;

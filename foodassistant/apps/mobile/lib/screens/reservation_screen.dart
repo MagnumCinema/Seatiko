@@ -4,6 +4,7 @@ import 'package:mobile/api.dart';
 import 'package:mobile/screens/floor_map_screen.dart';
 import 'package:mobile/screens/menu_screen.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/widgets/restaurant_floor_plan.dart';
 
 class ReservationScreen extends StatefulWidget {
   const ReservationScreen({
@@ -23,14 +24,22 @@ class _ReservationScreenState extends State<ReservationScreen> {
   late DateTime reservedFor;
   int guests = 2;
   VenueTable? table;
+  late Future<List<VenueTable>> tablesFuture;
   bool busy = false;
 
   @override
   void initState() {
     super.initState();
     table = widget.preselectedTable;
+    tablesFuture = ApiClient.instance.fetchTables(widget.venue.id);
     final d = DateTime.now().add(const Duration(hours: 1, minutes: 30));
-    reservedFor = DateTime(d.year, d.month, d.day, d.hour, (d.minute ~/ 15) * 15);
+    reservedFor = DateTime(
+      d.year,
+      d.month,
+      d.day,
+      d.hour,
+      (d.minute ~/ 15) * 15,
+    );
   }
 
   Future<void> _pickTable() async {
@@ -61,9 +70,8 @@ class _ReservationScreenState extends State<ReservationScreen> {
         reservedFor: reservedFor,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('reservation.success'.tr())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('reservation.success'.tr())));
       if (preorder) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -80,9 +88,8 @@ class _ReservationScreenState extends State<ReservationScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('common.error'.tr())),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('common.error'.tr())));
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -98,18 +105,85 @@ class _ReservationScreenState extends State<ReservationScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _row('reservation.venue'.tr(), widget.venue.name.pick(locale)),
-          const SizedBox(height: 12),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text('reservation.table'.tr()),
-            subtitle: Text(
-              table == null
-                  ? 'floor.select_table'.tr()
-                  : 'table.title'.tr(args: ['${table!.number}']),
-            ),
-            trailing: const Icon(Icons.chevron_right, color: FaColors.gold),
-            onTap: _pickTable,
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'floor.select_table'.tr(),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      table == null
+                          ? 'Нажмите на свободный стол на плане'
+                          : 'Стол №${table!.number} · ${table!.seats} мест',
+                      style: const TextStyle(
+                        color: FaColors.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _pickTable,
+                icon: const Icon(Icons.open_in_full_rounded, size: 15),
+                label: const Text('Открыть', style: TextStyle(fontSize: 11)),
+              ),
+            ],
           ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 300,
+            child: FutureBuilder<List<VenueTable>>(
+              future: tablesFuture,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: FaColors.clay),
+                  );
+                }
+                return RestaurantFloorPlan(
+                  compact: true,
+                  tables: snapshot.data!,
+                  selectedTableId: table?.id,
+                  onTableTap: (candidate) {
+                    if (candidate.status == 'FREE') {
+                      setState(() => table = candidate);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            candidate.status == 'RESERVED'
+                                ? 'Этот стол уже забронирован'
+                                : 'Сейчас этот стол занят',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              _FloorLegend(color: FaColors.free, label: 'Свободен'),
+              _FloorLegend(color: FaColors.reserved, label: 'Забронирован'),
+              _FloorLegend(color: FaColors.occupied, label: 'Занят'),
+            ],
+          ),
+          const SizedBox(height: 16),
           const Divider(color: FaColors.border),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -148,18 +222,18 @@ class _ReservationScreenState extends State<ReservationScreen> {
           Row(
             children: [
               IconButton(
-                onPressed: guests > 1
-                    ? () => setState(() => guests--)
-                    : null,
+                onPressed: guests > 1 ? () => setState(() => guests--) : null,
                 icon: const Icon(Icons.remove_circle_outline),
               ),
-              Text('$guests',
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w700)),
+              Text(
+                '$guests',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               IconButton(
-                onPressed: guests < 12
-                    ? () => setState(() => guests++)
-                    : null,
+                onPressed: guests < 12 ? () => setState(() => guests++) : null,
                 icon: const Icon(Icons.add_circle_outline),
               ),
             ],
@@ -196,7 +270,36 @@ class _ReservationScreenState extends State<ReservationScreen> {
       children: [
         Text(label, style: const TextStyle(color: FaColors.muted)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+}
+
+class _FloorLegend extends StatelessWidget {
+  const _FloorLegend({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: const TextStyle(color: FaColors.muted, fontSize: 10),
+        ),
       ],
     );
   }

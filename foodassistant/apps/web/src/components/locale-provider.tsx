@@ -34,7 +34,18 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem("fa_locale") as Locale | null;
     if (saved && dictionaries[saved]) {
       queueMicrotask(() => setLocaleState(saved));
+      document.documentElement.lang = saved;
     }
+
+    const syncLocale = (event: StorageEvent) => {
+      const next = event.newValue as Locale | null;
+      if (event.key === "fa_locale" && next && dictionaries[next]) {
+        setLocaleState(next);
+        document.documentElement.lang = next;
+      }
+    };
+    window.addEventListener("storage", syncLocale);
+    return () => window.removeEventListener("storage", syncLocale);
   }, []);
 
   const setLocale = useCallback((l: Locale) => {

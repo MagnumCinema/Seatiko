@@ -475,6 +475,7 @@ type updateApplicationReq struct {
 	Cuisine      *[]string               `json:"cuisine"`
 	Phone        *string                 `json:"phone"`
 	Email        *string                 `json:"email"`
+	Website      *string                 `json:"website"`
 	CityID       *string                 `json:"city_id"`
 	Lat          *float64                `json:"lat"`
 	Lng          *float64                `json:"lng"`
@@ -496,6 +497,7 @@ func (a *API) UpdateRestaurantApplication(c *gin.Context) {
 		Cuisine:      req.Cuisine,
 		Phone:        req.Phone,
 		Email:        req.Email,
+		Website:      req.Website,
 		CityID:       req.CityID,
 		Lat:          req.Lat,
 		Lng:          req.Lng,

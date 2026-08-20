@@ -43,6 +43,7 @@ type Draft = {
   phone: string;
   hours_text: string;
   email: string;
+  website: string;
   lat: string;
   lng: string;
   price_level: string;
@@ -75,6 +76,7 @@ const fieldLabels: Record<string, string> = {
   cuisine: "кухня",
   phone: "телефон",
   email: "email",
+  website: "сайт ресторана",
   city: "город",
   latitude: "широта",
   longitude: "долгота",
@@ -102,6 +104,7 @@ function toDraft(app: VenueApplication): Draft {
     phone: app.phone || "",
     hours_text: app.hours_text || "",
     email: app.email || "",
+    website: app.website || "",
     lat: app.lat ? String(app.lat) : "",
     lng: app.lng ? String(app.lng) : "",
     price_level: app.price_level ? String(app.price_level) : "2",
@@ -121,6 +124,7 @@ function toPayload(draft: Draft): ApplicationUpdate {
     phone: draft.phone.trim(),
     hours_text: draft.hours_text.trim(),
     email: draft.email.trim(),
+    website: draft.website.trim(),
     lat: Number(draft.lat) || 0,
     lng: Number(draft.lng) || 0,
     price_level: Number(draft.price_level) || 2,
@@ -141,6 +145,7 @@ function storedDraft(applicationId: string): Draft | null {
       phone: value.phone ?? "",
       hours_text: value.hours_text ?? "",
       email: value.email ?? "",
+      website: value.website ?? "",
       lat: value.lat ?? "",
       lng: value.lng ?? "",
       price_level: value.price_level ?? "2",
@@ -462,7 +467,7 @@ export default function CabinetPage() {
       return;
     }
     if (value instanceof ApiError && value.code === "invalid_fields") {
-      setError("Проверьте email, координаты, ценовой уровень и средний чек.");
+      setError("Проверьте email, сайт, координаты, ценовой уровень и средний чек.");
       return;
     }
     setError(value instanceof ApiError ? value.code : fallback);
@@ -957,6 +962,20 @@ export default function CabinetPage() {
                       <div className="field">
                         <label htmlFor="venue-email">Email заведения *</label>
                         <input id="venue-email" type="email" disabled={!canEdit} value={draft.email} onChange={(event) => updateDraft("email", event.target.value)} />
+                      </div>
+                      <div className="field owner-field-wide">
+                        <label htmlFor="venue-website">Сайт ресторана <span className="field-optional">(если есть)</span></label>
+                        <input
+                          id="venue-website"
+                          type="url"
+                          inputMode="url"
+                          autoComplete="url"
+                          disabled={!canEdit}
+                          placeholder="https://restaurant.md"
+                          value={draft.website}
+                          onChange={(event) => updateDraft("website", event.target.value)}
+                        />
+                        <small>Необязательное поле. Ссылка появится в карточке заведения после публикации.</small>
                       </div>
                       <div className="field">
                         <label htmlFor="venue-price">Ценовой уровень</label>

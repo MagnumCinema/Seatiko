@@ -76,14 +76,66 @@ const QR_ICON = (
 function tableStatusClass(status: string) {
   switch (status) {
     case "FREE":
-      return "bg-emerald-500/25 text-emerald-300 border-emerald-500/40";
+      return "free";
     case "OCCUPIED":
-      return "bg-red-500/25 text-red-300 border-red-500/40";
+      return "occupied";
     case "RESERVED":
-      return "bg-amber-400/25 text-amber-200 border-amber-400/40";
+      return "reserved";
     default:
-      return "bg-white/10 text-[#c8d0c2] border-white/15";
+      return "cleaning";
   }
+}
+
+function TableFloorPlan({
+  tables,
+  selectedId,
+  compact = false,
+  onTableClick,
+}: {
+  tables: Table[];
+  selectedId?: string;
+  compact?: boolean;
+  onTableClick: (table: Table) => void;
+}) {
+  return (
+    <div className={`fa-floor-room ${compact ? "compact" : ""}`}>
+      <div className="fa-floor-windows" aria-hidden>
+        <i /><i /><i />
+      </div>
+      <div className="fa-floor-bar" aria-hidden>
+        <span>BAR</span><i /><i /><i />
+      </div>
+      <div className="fa-floor-service" aria-hidden>Кухня</div>
+      <div className="fa-floor-entrance" aria-hidden>Вход ↑</div>
+      {tables.map((table) => {
+        const left = Math.max(12, Math.min(88, table.x * 100));
+        const top = Math.max(18, Math.min(82, table.y * 100));
+        return (
+          <button
+            key={table.id}
+            type="button"
+            title={`Стол №${table.number} · ${table.seats} мест`}
+            aria-label={`Стол №${table.number}, ${table.seats} мест`}
+            className={`fa-table ${tableStatusClass(table.status)} ${
+              table.seats >= 6 ? "large" : table.seats <= 2 ? "round" : ""
+            } ${selectedId === table.id ? "selected" : ""}`}
+            style={{ left: `${left}%`, top: `${top}%` }}
+            onClick={() => onTableClick(table)}
+          >
+            <i className="seat top" aria-hidden />
+            <i className="seat right" aria-hidden />
+            <span>{table.number}</span>
+            <small>{table.seats} мест</small>
+            <i className="seat bottom" aria-hidden />
+            <i className="seat left" aria-hidden />
+          </button>
+        );
+      })}
+      {tables.length === 0 && (
+        <div className="fa-floor-empty">План зала пока не настроен</div>
+      )}
+    </div>
+  );
 }
 
 function venueMapPosition(item: Venue, all: Venue[]) {
@@ -327,6 +379,8 @@ export function AppShell() {
     try {
       const v = await fetchVenue(id);
       setVenue(v);
+      setTables([]);
+      setSelectedTable(null);
       go("venue");
     } catch {
       showToast(t("common.error"));
@@ -928,10 +982,7 @@ export function AppShell() {
                 <button
                   type="button"
                   className="fa-btn fa-btn-primary"
-                  onClick={() => {
-                    setSelectedTable(null);
-                    go("reservation", true);
-                  }}
+                  onClick={() => void openFloor()}
                 >
                   {t("venue.book")}
                 </button>
@@ -945,6 +996,16 @@ export function AppShell() {
                 {t("session.menu")}
               </button>
               <p className="fa-body">{pickLocale(venue.description, locale)}</p>
+              {venue.website && (
+                <a
+                  className="fa-btn fa-btn-outline fa-venue-website"
+                  href={venue.website}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  ↗ {t("venue.website")}
+                </a>
+              )}
             </div>
           )}
 
@@ -963,21 +1024,14 @@ export function AppShell() {
                 <span className="occ">{t("floor.leg_occ")}</span>
                 <span className="yours">{t("floor.leg_yours")}</span>
               </div>
-              <div className="fa-floor">
-                {tables.map((tb) => (
-                  <button
-                    key={tb.id}
-                    type="button"
-                    className={`fa-table ${tableStatusClass(tb.status)} ${selectedTable?.id === tb.id ? "selected" : ""}`}
-                    onClick={() => {
-                      setTableSheet(tb);
-                      if (tb.status === "FREE") setSelectedTable(tb);
-                    }}
-                  >
-                    #{tb.number}
-                  </button>
-                ))}
-              </div>
+              <TableFloorPlan
+                tables={tables}
+                selectedId={selectedTable?.id}
+                onTableClick={(table) => {
+                  setTableSheet(table);
+                  if (table.status === "FREE") setSelectedTable(table);
+                }}
+              />
               <button
                 type="button"
                 className="fa-btn fa-btn-primary"
@@ -1006,6 +1060,22 @@ export function AppShell() {
                 <span />
               </div>
               <h3 className="fa-h3">{t("res.confirm_title")}</h3>
+              <div className="fa-reservation-floor-head">
+                <div>
+                  <strong>{t("floor.select_table")}</strong>
+                  <small>Нажмите на свободный стол на плане</small>
+                </div>
+                <button type="button" onClick={() => go("floor")}>На весь экран ↗</button>
+              </div>
+              <TableFloorPlan
+                tables={tables}
+                compact
+                selectedId={selectedTable?.id}
+                onTableClick={(table) => {
+                  if (table.status === "FREE") setSelectedTable(table);
+                  else setTableSheet(table);
+                }}
+              />
               <div className="fa-row">
                 <span>{t("res.venue")}</span>
                 <span>{pickLocale(venue.name, locale)}</span>

@@ -39,6 +39,7 @@ export type Venue = {
   open_now: boolean;
   free_tables: number;
   image_url: string;
+  website?: string;
   alcohol_license_valid?: boolean;
   session_start_before_min?: number;
   release_before_min?: number;
@@ -62,6 +63,7 @@ export type Table = {
 export type User = {
   id: string;
   email: string;
+  website?: string;
   phone?: string;
   first_name: string;
   last_name: string;
@@ -115,6 +117,7 @@ export type ApplicationUpdate = {
   cuisine?: string[];
   phone?: string;
   email?: string;
+  website?: string;
   city_id?: string;
   lat?: number;
   lng?: number;

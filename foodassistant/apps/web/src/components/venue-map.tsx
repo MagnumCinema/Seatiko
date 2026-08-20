@@ -429,6 +429,16 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
               </span>
               <strong>{selected.free_tables} свободных столов</strong>
             </div>
+            {selected.website && (
+              <a
+                className="venue-map-website"
+                href={selected.website}
+                target="_blank"
+                rel="noreferrer"
+              >
+                ↗ {locale === "ru" ? "Сайт ресторана" : locale === "ro" ? "Site-ul restaurantului" : "Restaurant website"}
+              </a>
+            )}
           </>
         ) : (
           <p className="venue-map-address">
