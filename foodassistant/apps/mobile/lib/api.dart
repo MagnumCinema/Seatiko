@@ -155,6 +155,7 @@ class VenueTable {
     this.reservationId,
     required this.x,
     required this.y,
+    this.zone = 'hall',
   });
 
   final String id;
@@ -167,6 +168,7 @@ class VenueTable {
   final String? reservationId;
   final double x;
   final double y;
+  final String zone;
 
   factory VenueTable.fromJson(Map<String, dynamic> json) => VenueTable(
     id: json['id'] as String,
@@ -179,7 +181,90 @@ class VenueTable {
     reservationId: json['reservation_id'] as String?,
     x: (json['x'] as num?)?.toDouble() ?? 0.5,
     y: (json['y'] as num?)?.toDouble() ?? 0.5,
+    zone: _normalizeZone(json['zone'] as String?),
   );
+}
+
+String _normalizeZone(String? zone) {
+  final raw = (zone ?? 'hall').trim().toLowerCase();
+  switch (raw) {
+    case '':
+    case 'зал':
+    case 'hall':
+    case 'indoor':
+    case 'main':
+      return 'hall';
+    case 'улица':
+    case 'street':
+    case 'outside':
+      return 'street';
+    case 'терраса':
+    case 'terrace':
+    case 'patio':
+    case 'веранда':
+      return 'terrace';
+    case 'сад':
+    case 'garden':
+      return 'garden';
+    case 'бар':
+    case 'bar':
+      return 'bar';
+    default:
+      return raw.replaceAll(RegExp(r'[^a-z0-9_-]'), '');
+  }
+}
+
+String zoneLabel(String zone, String locale) {
+  switch (_normalizeZone(zone)) {
+    case 'hall':
+      return locale == 'en'
+          ? 'Hall'
+          : locale == 'ro'
+          ? 'Sală'
+          : 'Зал';
+    case 'street':
+      return locale == 'en'
+          ? 'Street'
+          : locale == 'ro'
+          ? 'Stradă'
+          : 'Улица';
+    case 'terrace':
+      return locale == 'en'
+          ? 'Terrace'
+          : locale == 'ro'
+          ? 'Terasă'
+          : 'Терраса';
+    case 'garden':
+      return locale == 'en'
+          ? 'Garden'
+          : locale == 'ro'
+          ? 'Grădină'
+          : 'Сад';
+    case 'bar':
+      return 'Bar';
+    default:
+      final z = _normalizeZone(zone);
+      if (z.isEmpty) {
+        return locale == 'en'
+            ? 'Hall'
+            : locale == 'ro'
+            ? 'Sală'
+            : 'Зал';
+      }
+      return z[0].toUpperCase() + z.substring(1);
+  }
+}
+
+List<String> zonesFromTables(List<VenueTable> tables) {
+  const order = ['hall', 'terrace', 'street', 'garden', 'bar'];
+  final seen = <String>{};
+  for (final t in tables) {
+    seen.add(_normalizeZone(t.zone));
+  }
+  if (seen.isEmpty) seen.add('hall');
+  final ordered = order.where(seen.contains).toList();
+  final custom = seen.where((z) => !order.contains(z)).toList()..sort();
+  return [...ordered, ...custom];
 }
 
 class User {
@@ -237,6 +322,8 @@ class Reservation {
     required this.status,
     this.arrivalConfirmedAt,
     this.createdAt,
+    this.venueName,
+    this.tableNumber = 0,
   });
 
   final String id;
@@ -248,6 +335,8 @@ class Reservation {
   final String status;
   final DateTime? arrivalConfirmedAt;
   final DateTime? createdAt;
+  final LocalizedString? venueName;
+  final int tableNumber;
 
   factory Reservation.fromJson(Map<String, dynamic> json) => Reservation(
     id: json['id'] as String,
@@ -259,6 +348,10 @@ class Reservation {
     status: json['status'] as String? ?? '',
     arrivalConfirmedAt: _parseTime(json['arrival_confirmed_at']),
     createdAt: _parseTime(json['created_at']),
+    venueName: json['venue_name'] != null
+        ? LocalizedString.fromJson(json['venue_name'])
+        : null,
+    tableNumber: json['table_number'] as int? ?? 0,
   );
 }
 
@@ -357,6 +450,10 @@ class Order {
     required this.total,
     this.createdAt,
     this.updatedAt,
+    this.checkNumber,
+    this.paymentMethod,
+    this.paidAt,
+    this.venueName,
   });
 
   final String id;
@@ -368,6 +465,10 @@ class Order {
   final int total;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? checkNumber;
+  final String? paymentMethod;
+  final DateTime? paidAt;
+  final LocalizedString? venueName;
 
   factory Order.fromJson(Map<String, dynamic> json) => Order(
     id: json['id'] as String,
@@ -381,6 +482,12 @@ class Order {
     total: json['total'] as int? ?? 0,
     createdAt: _parseTime(json['created_at']),
     updatedAt: _parseTime(json['updated_at']),
+    checkNumber: json['check_number'] as String?,
+    paymentMethod: json['payment_method'] as String?,
+    paidAt: _parseTime(json['paid_at']),
+    venueName: json['venue_name'] != null
+        ? LocalizedString.fromJson(json['venue_name'])
+        : null,
   );
 }
 
@@ -433,6 +540,72 @@ class WaiterCall {
     reason: json['reason'] as String? ?? '',
     status: json['status'] as String? ?? '',
   );
+}
+
+class WaitlistEntry {
+  WaitlistEntry({
+    required this.id,
+    required this.venueId,
+    required this.guestName,
+    required this.guests,
+    required this.status,
+    required this.createdAt,
+    this.zone = '',
+    this.position = 0,
+    this.quotedWaitMin = 0,
+    this.tableNumber = 0,
+    this.venueName,
+  });
+
+  final String id;
+  final String venueId;
+  final String guestName;
+  final int guests;
+  final String status;
+  final DateTime? createdAt;
+  final String zone;
+  final int position;
+  final int quotedWaitMin;
+  final int tableNumber;
+  final LocalizedString? venueName;
+
+  bool get isActive => status == 'WAITING' || status == 'READY';
+  bool get isReady => status == 'READY';
+
+  factory WaitlistEntry.fromJson(Map<String, dynamic> json) => WaitlistEntry(
+    id: json['id'] as String,
+    venueId: json['venue_id'] as String? ?? '',
+    guestName: json['guest_name'] as String? ?? '',
+    guests: (json['guests'] as num?)?.toInt() ?? 0,
+    status: json['status'] as String? ?? '',
+    createdAt: _parseTime(json['created_at']),
+    zone: json['zone'] as String? ?? '',
+    position: (json['position'] as num?)?.toInt() ?? 0,
+    quotedWaitMin: (json['quoted_wait_min'] as num?)?.toInt() ?? 0,
+    tableNumber: (json['table_number'] as num?)?.toInt() ?? 0,
+    venueName: json['venue_name'] == null
+        ? null
+        : LocalizedString.fromJson(json['venue_name']),
+  );
+}
+
+class WaitlistSummary {
+  WaitlistSummary({
+    required this.waiting,
+    required this.quotedWaitMin,
+    required this.freeTables,
+  });
+
+  final int waiting;
+  final int quotedWaitMin;
+  final int freeTables;
+
+  factory WaitlistSummary.fromJson(Map<String, dynamic> json) =>
+      WaitlistSummary(
+        waiting: (json['waiting'] as num?)?.toInt() ?? 0,
+        quotedWaitMin: (json['quoted_wait_min'] as num?)?.toInt() ?? 0,
+        freeTables: (json['free_tables'] as num?)?.toInt() ?? 0,
+      );
 }
 
 DateTime? _parseTime(dynamic v) {
@@ -514,6 +687,10 @@ class ApiClient {
       case 'PATCH':
         response = await http
             .patch(uri, headers: headers, body: encoded)
+            .timeout(const Duration(seconds: 12));
+      case 'DELETE':
+        response = await http
+            .delete(uri, headers: headers, body: encoded)
             .timeout(const Duration(seconds: 12));
       default:
         response = await http
@@ -700,6 +877,51 @@ class ApiClient {
     );
   }
 
+  Future<WaitlistSummary> fetchWaitlistSummary(String venueId) async {
+    final data = await _request('/api/v1/venues/$venueId/waitlist/summary');
+    return WaitlistSummary.fromJson(data['summary'] as Map<String, dynamic>);
+  }
+
+  Future<WaitlistEntry> joinWaitlist({
+    required String venueId,
+    required int guests,
+    String? phone,
+    String? zone,
+    String? note,
+  }) async {
+    final data = await _request(
+      '/api/v1/waitlist',
+      method: 'POST',
+      body: {
+        'venue_id': venueId,
+        'guests': guests,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (zone != null && zone.isNotEmpty) 'zone': zone,
+        if (note != null && note.isNotEmpty) 'note': note,
+        'source': 'ANDROID',
+      },
+      auth: true,
+    );
+    return WaitlistEntry.fromJson(data['entry'] as Map<String, dynamic>);
+  }
+
+  Future<List<WaitlistEntry>> fetchMyWaitlist() async {
+    final data = await _request('/api/v1/waitlist', auth: true);
+    final list = data['waitlist'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => WaitlistEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<WaitlistEntry> leaveWaitlist(String id) async {
+    final data = await _request(
+      '/api/v1/waitlist/$id',
+      method: 'DELETE',
+      auth: true,
+    );
+    return WaitlistEntry.fromJson(data['entry'] as Map<String, dynamic>);
+  }
+
   /// Demo token formats: `venue-1:t1` or `venue-1/t1` or raw fields.
   Future<Session> scanQr({
     required String venueId,
@@ -755,6 +977,19 @@ class ApiClient {
     final data = await _request('/api/v1/orders', auth: true);
     final list = data['orders'] as List<dynamic>? ?? [];
     return list.map((e) => Order.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Order> payOrder({
+    required String orderId,
+    required String method,
+  }) async {
+    final data = await _request(
+      '/api/v1/payments',
+      method: 'POST',
+      body: {'order_id': orderId, 'method': method},
+      auth: true,
+    );
+    return Order.fromJson(data['order'] as Map<String, dynamic>);
   }
 
   Future<WaiterCall> callWaiter({

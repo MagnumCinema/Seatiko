@@ -4,12 +4,14 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/foodassistant/api/internal/auth"
 	"github.com/foodassistant/api/internal/config"
 	"github.com/foodassistant/api/internal/crm"
 	"github.com/foodassistant/api/internal/handlers"
 	"github.com/foodassistant/api/internal/models"
+	"github.com/foodassistant/api/internal/places"
 	"github.com/foodassistant/api/internal/store"
 	"github.com/gin-gonic/gin"
 )
@@ -37,7 +39,18 @@ func main() {
 	} else {
 		log.Printf("Twenty CRM synchronization disabled: TWENTY_API_KEY is empty")
 	}
-	api := &handlers.API{Store: mem, CRM: crmSyncer, JWTSecret: cfg.JWTSecret, UploadDir: cfg.UploadDir}
+	api := &handlers.API{
+		Store:     mem,
+		CRM:       crmSyncer,
+		Places:    places.New(cfg.GooglePlacesAPIKey),
+		JWTSecret: cfg.JWTSecret,
+		UploadDir: cfg.UploadDir,
+	}
+	if cfg.GooglePlacesAPIKey != "" {
+		log.Printf("Google Places enrichment enabled")
+	} else {
+		log.Printf("Google Places enrichment disabled: GOOGLE_PLACES_API_KEY is empty (using local photos/reviews)")
+	}
 
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -46,6 +59,14 @@ func main() {
 	r.GET("/healthz", api.Health)
 	r.Static("/uploads", cfg.UploadDir)
 
+	getRole := func(userID string) (string, error) {
+		u, err := mem.GetUser(userID)
+		if err != nil {
+			return "", err
+		}
+		return u.Role, nil
+	}
+
 	v1 := r.Group("/api/v1")
 	{
 		v1.GET("/integrations/twenty/status", api.CRMStatus)
@@ -53,25 +74,33 @@ func main() {
 		v1.GET("/cities", api.ListCities)
 		v1.GET("/venues", api.ListVenues)
 		v1.GET("/venues/:id", api.GetVenue)
+		v1.GET("/venues/:id/places", api.GetVenuePlaces)
 		v1.GET("/venues/:id/tables", api.ListTables)
 		v1.GET("/venues/:id/menu", api.ListMenu)
+		v1.GET("/venues/:id/waitlist/summary", api.GetWaitlistSummary)
 		v1.GET("/collections", api.ListCollections)
 		v1.POST("/discover/ai", api.AIDiscover)
 
-		v1.POST("/auth/register", api.Register)
-		v1.POST("/auth/login", api.Login)
+		authLimit := auth.RateLimitMiddleware(40, time.Minute)
+		v1.POST("/auth/register", authLimit, api.Register)
+		v1.POST("/auth/login", authLimit, api.Login)
 
 		authed := v1.Group("/")
 		authed.Use(auth.Middleware(cfg.JWTSecret))
 		{
 			authed.GET("/me", api.Me)
 			authed.PATCH("/me", api.UpdateMe)
+			authed.POST("/staff/invites/:id/accept", api.AcceptStaffInvite)
 
 			authed.POST("/reservations", api.CreateReservation)
 			authed.GET("/reservations", api.ListReservations)
 			authed.POST("/reservations/:id/confirm-arrival", api.ConfirmArrival)
 
 			authed.POST("/tables/:id/watch", api.WatchTable)
+
+			authed.POST("/waitlist", api.JoinWaitlist)
+			authed.GET("/waitlist", api.ListMyWaitlist)
+			authed.DELETE("/waitlist/:id", api.LeaveWaitlist)
 
 			authed.POST("/sessions/qr", api.ScanQR)
 			authed.GET("/sessions/:id", api.GetSession)
@@ -80,18 +109,27 @@ func main() {
 			authed.POST("/sessions/:id/waiter-calls", api.CreateWaiterCall)
 
 			authed.GET("/orders", api.ListOrders)
+			authed.GET("/orders/:id", api.GetOrder)
+			authed.POST("/payments", api.PayOrder)
 
-			authed.GET("/staff/waiter-calls", api.ListWaiterCalls)
-			authed.POST("/staff/waiter-calls/:id/accept", api.AcceptWaiterCall)
+			staff := authed.Group("/staff")
+			staff.Use(auth.RoleMiddleware(getRole, models.RoleStaff, models.RoleRestaurant, models.RoleAdmin))
+			{
+				staff.GET("/waiter-calls", api.StaffListWaiterCalls)
+				staff.POST("/waiter-calls/:id/accept", api.StaffAcceptWaiterCall)
+				staff.POST("/waiter-calls/:id/complete", api.StaffCompleteWaiterCall)
+				staff.GET("/orders", api.StaffListOrders)
+				staff.PATCH("/orders/:id", api.StaffUpdateOrderStatus)
+				staff.GET("/reservations", api.StaffListReservations)
+				staff.GET("/waitlist", api.StaffListWaitlist)
+				staff.POST("/waitlist", api.StaffAddWaitlist)
+				staff.POST("/waitlist/:id/notify", api.StaffNotifyWaitlist)
+				staff.POST("/waitlist/:id/seat", api.StaffSeatWaitlist)
+				staff.POST("/waitlist/:id/close", api.StaffCloseWaitlist)
+			}
 
 			restaurant := authed.Group("/restaurant")
-			restaurant.Use(auth.RoleMiddleware(func(userID string) (string, error) {
-				u, err := mem.GetUser(userID)
-				if err != nil {
-					return "", err
-				}
-				return u.Role, nil
-			}, models.RoleRestaurant, models.RoleAdmin))
+			restaurant.Use(auth.RoleMiddleware(getRole, models.RoleRestaurant, models.RoleAdmin))
 			{
 				restaurant.POST("/applications", api.CreateRestaurantApplication)
 				restaurant.GET("/applications", api.ListMyApplications)
@@ -102,20 +140,37 @@ func main() {
 				restaurant.POST("/applications/:id/photos", api.UploadApplicationPhoto)
 				restaurant.DELETE("/applications/:id/photos", api.RemoveApplicationPhoto)
 				restaurant.POST("/applications/:id/submit", api.SubmitRestaurantApplication)
+				restaurant.POST("/applications/:id/change-requests", api.SubmitProfileChangeRequest)
+				restaurant.GET("/change-requests", api.ListMyProfileChangeRequests)
+
+				restaurant.PUT("/venues/:venueId/tables", api.ReplaceVenueTables)
+				restaurant.GET("/venues/:venueId/menu", api.ListVenueMenuOwner)
+				restaurant.POST("/venues/:venueId/menu", api.CreateVenueMenuItem)
+				restaurant.PATCH("/venues/:venueId/menu/:itemId", api.UpdateVenueMenuItem)
+				restaurant.DELETE("/venues/:venueId/menu/:itemId", api.DeleteVenueMenuItem)
+				restaurant.POST("/venues/:venueId/menu/:itemId/stop", api.SetVenueMenuStopped)
+				restaurant.POST("/venues/:venueId/qr/regenerate", api.RegenerateVenueQR)
+				restaurant.GET("/venues/:venueId/qr", api.ListVenueQR)
+				restaurant.PATCH("/venues/:venueId/booking-rules", api.UpdateVenueBookingRules)
+				restaurant.GET("/venues/:venueId/analytics", api.GetVenueAnalytics)
+				restaurant.POST("/venues/:venueId/staff/invite", api.InviteVenueStaff)
+				restaurant.GET("/venues/:venueId/staff", api.ListVenueStaff)
 			}
 
 			admin := authed.Group("/admin")
-			admin.Use(auth.RoleMiddleware(func(userID string) (string, error) {
-				u, err := mem.GetUser(userID)
-				if err != nil {
-					return "", err
-				}
-				return u.Role, nil
-			}, models.RoleAdmin))
+			admin.Use(auth.RoleMiddleware(getRole, models.RoleAdmin))
 			{
+				admin.GET("/overview", api.AdminOverview)
+				admin.GET("/people", api.AdminListPeople)
+				admin.GET("/companies", api.AdminListCompanies)
+				admin.GET("/reservations", api.AdminListReservations)
+				admin.GET("/orders", api.AdminListOrders)
+				admin.GET("/crm/status", api.AdminCRMStatus)
 				admin.GET("/applications", api.AdminListApplications)
 				admin.POST("/applications/:id/review", api.AdminReviewApplication)
 				admin.POST("/applications/:id/publish", api.AdminPublishApplication)
+				admin.GET("/change-requests", api.AdminListProfileChangeRequests)
+				admin.POST("/change-requests/:id/review", api.AdminReviewProfileChange)
 				admin.POST("/integrations/twenty/reconcile", api.ReconcileCRM)
 			}
 		}

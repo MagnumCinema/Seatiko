@@ -95,6 +95,7 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
                   padding: const EdgeInsets.all(16),
                   child: RestaurantFloorPlan(
                     tables: tables,
+                    locale: context.locale.languageCode,
                     onTableTap: _openTable,
                   ),
                 );
@@ -107,10 +108,10 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                _leg(FaColors.free, 'floor.leg_free'.tr()),
-                _leg(FaColors.occupied, 'floor.leg_occ'.tr()),
-                _leg(FaColors.reserved, 'floor.leg_res'.tr()),
-                _leg(FaColors.yours, 'floor.leg_yours'.tr()),
+                _leg(RestaurantFloorPlan.tableTan, 'floor.leg_free'.tr()),
+                _leg(RestaurantFloorPlan.tableOccupied, 'floor.leg_occ'.tr()),
+                _leg(RestaurantFloorPlan.tableReserved, 'floor.leg_res'.tr()),
+                _leg(RestaurantFloorPlan.olive, 'floor.leg_yours'.tr()),
               ],
             ),
           ),

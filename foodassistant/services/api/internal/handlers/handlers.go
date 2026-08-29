@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/foodassistant/api/internal/auth"
 	"github.com/foodassistant/api/internal/crm"
 	"github.com/foodassistant/api/internal/models"
+	"github.com/foodassistant/api/internal/places"
 	"github.com/foodassistant/api/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -19,6 +21,7 @@ import (
 type API struct {
 	Store     *store.MemoryStore
 	CRM       *crm.Syncer
+	Places    *places.Client
 	JWTSecret string
 	UploadDir string
 }
@@ -104,6 +107,64 @@ func (a *API) GetVenue(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"venue": v})
+}
+
+func (a *API) GetVenuePlaces(c *gin.Context) {
+	v, err := a.Store.GetVenue(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "venue_not_found"})
+		return
+	}
+
+	source := "local"
+	photos := append([]string(nil), v.PhotoURLs...)
+	if len(photos) == 0 && v.ImageURL != "" {
+		photos = []string{v.ImageURL}
+	}
+	reviews := append([]models.VenueReview(nil), v.Reviews...)
+	rating := v.Rating
+	reviewCount := v.ReviewCount
+	placeID := v.GooglePlaceID
+
+	if a.Places != nil && a.Places.Enabled() {
+		enriched, enrichErr := a.Places.Enrich(
+			c.Request.Context(),
+			v.Name.RU,
+			v.Address.RU,
+			v.Lat,
+			v.Lng,
+			v.GooglePlaceID,
+		)
+		if enrichErr == nil {
+			source = "google"
+			placeID = enriched.PlaceID
+			if enriched.Rating > 0 {
+				rating = enriched.Rating
+			}
+			if enriched.ReviewCount > 0 {
+				reviewCount = enriched.ReviewCount
+			}
+			if len(enriched.PhotoURLs) > 0 {
+				photos = enriched.PhotoURLs
+			}
+			if len(enriched.Reviews) > 0 {
+				reviews = enriched.Reviews
+			}
+			_ = a.Store.ApplyVenuePlaces(v.ID, placeID, rating, reviewCount, photos, reviews)
+		} else {
+			log.Printf("places enrich %s: %v", v.ID, enrichErr)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"source":       source,
+		"google_place_id": placeID,
+		"rating":       rating,
+		"review_count": reviewCount,
+		"photo_urls":   photos,
+		"reviews":      reviews,
+		"live_google":  a.Places != nil && a.Places.Enabled(),
+	})
 }
 
 func (a *API) ListTables(c *gin.Context) {
@@ -399,6 +460,54 @@ func (a *API) CreateOrder(c *gin.Context) {
 
 func (a *API) ListOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"orders": a.Store.ListOrders(a.userID(c))})
+}
+
+func (a *API) GetOrder(c *gin.Context) {
+	o, err := a.Store.GetOrder(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "order_not_found"})
+		return
+	}
+	if o.UserID != a.userID(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+	if venue, err := a.Store.GetVenue(o.VenueID); err == nil {
+		o.VenueName = venue.Name
+	}
+	c.JSON(http.StatusOK, gin.H{"order": o})
+}
+
+type payOrderReq struct {
+	OrderID string `json:"order_id"`
+	Method  string `json:"method"`
+}
+
+func (a *API) PayOrder(c *gin.Context) {
+	var req payOrderReq
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.OrderID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	o, err := a.Store.PayOrder(a.userID(c), req.OrderID, req.Method)
+	switch err {
+	case nil:
+		status := "paid"
+		if o.Status != models.OrderPaid {
+			status = "pending"
+		}
+		c.JSON(http.StatusOK, gin.H{"status": status, "order": o})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "order_not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrConflict:
+		c.JSON(http.StatusConflict, gin.H{"error": "conflict"})
+	case store.ErrBadRequest:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "payment_failed"})
+	}
 }
 
 type waiterCallReq struct {

@@ -119,8 +119,8 @@ func TestRestaurantApplicationAuditAndReservationProjection(t *testing.T) {
 	}
 
 	tables := store.ListTables(*application.VenueID)
-	if len(tables) != 8 {
-		t.Fatalf("published venue tables = %d, want 8", len(tables))
+	if len(tables) != 9 {
+		t.Fatalf("published venue tables = %d, want 9", len(tables))
 	}
 	for _, table := range tables {
 		if table.X <= 0 || table.X >= 1 || table.Y <= 0 || table.Y >= 1 {

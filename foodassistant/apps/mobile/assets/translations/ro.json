@@ -73,7 +73,30 @@
     "book": "Rezervă",
     "menu": "Meniu",
     "about": "Despre",
-    "avg_check": "Notă medie {} MDL"
+    "avg_check": "Notă medie {} MDL",
+    "menu_preview": "Feluri populare",
+    "see_full_menu": "Vezi tot meniul"
+  },
+  "waitlist": {
+    "no_tables": "Nu sunt mese libere",
+    "live_queue": "Rând live",
+    "join_hint": "Intră în rând — te anunțăm când se eliberează o masă. Așteptare",
+    "join_hint_soon": "Intră în rând — acum aproape nu se așteaptă",
+    "in_queue": "{} în rând",
+    "guests": "Persoane",
+    "guests_n": "{} persoane",
+    "join": "Intră în rând",
+    "leave": "Ieși din rând",
+    "waiting_title": "Ești în rând",
+    "ready_title": "Masa ta este gata",
+    "ready_hint": "Vino la gazdă — ținem masa un timp limitat",
+    "ready_table": "Masa {} · vino la gazdă",
+    "already": "Ești deja în rândul acestui local",
+    "error": "Acțiunea a eșuat",
+    "wait_soon": "O masă se eliberează imediat",
+    "wait_min": "≈ {} min",
+    "wait_hour": "≈ {} h",
+    "wait_hour_min": "≈ {} h {} min"
   },
   "floor": {
     "leg_free": "Liber",
@@ -119,9 +142,13 @@
   },
   "scan": {
     "title": "Scanează QR",
-    "hint": "Îndreaptă camera spre QR — sau introdu token demo",
+    "hint": "Îndreaptă camera spre codul QR al mesei",
     "token_placeholder": "venue-1:t1",
-    "simulate": "Deschide sesiunea"
+    "simulate": "Deschide sesiunea",
+    "manual": "Introdu manual",
+    "torch": "Lanternă",
+    "invalid": "Nu am putut deschide masa cu acest cod",
+    "no_camera": "Fără acces la cameră — permite accesul sau introdu codul manual"
   },
   "order_choice": {
     "sub": "Cum vrei să comanzi?",
@@ -161,7 +188,10 @@
     "empty": "Meniu indisponibil",
     "cart_empty": "Coșul este gol",
     "total": "Total",
-    "alcohol_hint": "Alcoolul se comandă doar la local"
+    "alcohol_hint": "Alcoolul se comandă doar la local",
+    "browse_hint": "Acesta este meniul restaurantului. Comanda la bucătărie — după check-in (QR) sau precomandă cu rezervarea.",
+    "book_to_order": "Rezervă o masă",
+    "preorder_saved": "Lista e legată de rezervare · bucătăria o primește după check-in"
   },
   "payment": {
     "title": "Plată",
@@ -179,7 +209,15 @@
     "active_res": "Rezervare activă",
     "session": "Sesiune curentă",
     "empty": "Nicio comandă sau rezervare",
-    "need_auth": "Autentifică-te pentru comenzi"
+    "need_auth": "Autentifică-te pentru rezervări și comenzi",
+    "spent": "Cheltuit",
+    "bookings": "Rezervări",
+    "checks": "Bonuri",
+    "table": "Masă",
+    "guests": "oaspeți",
+    "when": "Ora",
+    "status": "Status",
+    "receipt": "Bon"
   },
   "profile": {
     "title": "Profil",
@@ -191,15 +229,21 @@
     "payment_methods": "Metode de plată",
     "favorites": "Favorite",
     "saved": "Profil salvat",
-    "guest": "Vizitator",
+    "guest": "Contul tău",
     "sign_in": "Autentificare",
-    "logout": "Ieșire din cont"
+    "logout": "Ieșire din cont",
+    "account_benefits": "Istoric rezervări, bonuri, cheltuieli și vizite — într-un loc",
+    "stat_spent": "Cheltuit",
+    "stat_bookings": "Rezervări",
+    "stat_orders": "Comenzi",
+    "my_history": "Rezervări și bonuri",
+    "my_history_hint": "Istoricul vizitelor și plăților"
   },
   "auth": {
     "login": "Autentificare",
     "register": "Înregistrare",
     "title": "Autentificare necesară",
-    "body": "Cont necesar pentru rezervare și comandă",
+    "body": "Cont necesar pentru rezervare, comandă și istoric",
     "email": "Email",
     "password": "Parolă",
     "first_name": "Prenume",

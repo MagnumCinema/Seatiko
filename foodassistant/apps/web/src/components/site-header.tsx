@@ -23,7 +23,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
           <Link href="/#map">{copy.map}</Link>
           <Link href="/#how">{copy.how}</Link>
           <Link href="/business">{copy.business}</Link>
-          <Link href="/demo">{copy.demo}</Link>
+          <Link href="/book">{copy.book}</Link>
           <div className="site-lang" role="group" aria-label={copy.language}>
             {(["ru", "en", "ro"] as Locale[]).map((l) => (
               <button

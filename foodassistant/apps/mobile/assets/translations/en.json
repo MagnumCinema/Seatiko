@@ -73,7 +73,30 @@
     "book": "Book table",
     "menu": "Menu",
     "about": "About",
-    "avg_check": "Avg check {} MDL"
+    "avg_check": "Avg check {} MDL",
+    "menu_preview": "Popular dishes",
+    "see_full_menu": "See full menu"
+  },
+  "waitlist": {
+    "no_tables": "No free tables",
+    "live_queue": "Live queue",
+    "join_hint": "Join the queue — we'll ping you when a table frees up. Wait",
+    "join_hint_soon": "Join the queue — there's barely any wait right now",
+    "in_queue": "{} in queue",
+    "guests": "Guests",
+    "guests_n": "{} guests",
+    "join": "Join the queue",
+    "leave": "Leave the queue",
+    "waiting_title": "You're in the queue",
+    "ready_title": "Your table is ready",
+    "ready_hint": "Come to the host — we hold the table for a short while",
+    "ready_table": "Table {} · come to the host",
+    "already": "You're already in this venue's queue",
+    "error": "Action failed",
+    "wait_soon": "A table is about to free up",
+    "wait_min": "≈ {} min",
+    "wait_hour": "≈ {} h",
+    "wait_hour_min": "≈ {} h {} min"
   },
   "floor": {
     "leg_free": "Free",
@@ -119,9 +142,13 @@
   },
   "scan": {
     "title": "Scan QR",
-    "hint": "Point camera at table QR — or enter demo token",
+    "hint": "Point the camera at the table QR code",
     "token_placeholder": "venue-1:t1",
-    "simulate": "Open session"
+    "simulate": "Open session",
+    "manual": "Enter manually",
+    "torch": "Torch",
+    "invalid": "Could not open a table with this code",
+    "no_camera": "No camera access — allow it or enter the code manually"
   },
   "order_choice": {
     "sub": "How would you like to order?",
@@ -161,7 +188,10 @@
     "empty": "Menu unavailable",
     "cart_empty": "Cart is empty",
     "total": "Total",
-    "alcohol_hint": "Alcohol can only be ordered at the venue"
+    "alcohol_hint": "Alcohol can only be ordered at the venue",
+    "browse_hint": "This is the restaurant menu. Kitchen orders start after you check in (QR) or with a reservation preorder.",
+    "book_to_order": "Book a table",
+    "preorder_saved": "List saved with your booking · kitchen gets it after check-in"
   },
   "payment": {
     "title": "Payment",
@@ -179,7 +209,15 @@
     "active_res": "Active reservation",
     "session": "Current session",
     "empty": "No orders or reservations yet",
-    "need_auth": "Sign in to see orders"
+    "need_auth": "Sign in to see bookings and orders",
+    "spent": "Spent",
+    "bookings": "Bookings",
+    "checks": "Receipts",
+    "table": "Table",
+    "guests": "guests",
+    "when": "Time",
+    "status": "Status",
+    "receipt": "Receipt"
   },
   "profile": {
     "title": "Profile",
@@ -191,15 +229,21 @@
     "payment_methods": "Payment methods",
     "favorites": "Favorites",
     "saved": "Profile saved",
-    "guest": "Guest",
+    "guest": "Your account",
     "sign_in": "Sign in",
-    "logout": "Log out of account"
+    "logout": "Log out of account",
+    "account_benefits": "Booking history, receipts, spend and return visits — in one place",
+    "stat_spent": "Spent",
+    "stat_bookings": "Bookings",
+    "stat_orders": "Orders",
+    "my_history": "My bookings & receipts",
+    "my_history_hint": "Visit and payment history"
   },
   "auth": {
     "login": "Sign in",
     "register": "Register",
     "title": "Sign in required",
-    "body": "Account needed to book and order",
+    "body": "Account needed to book, order and keep history",
     "email": "Email",
     "password": "Password",
     "first_name": "First name",

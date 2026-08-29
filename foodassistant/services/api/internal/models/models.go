@@ -23,6 +23,7 @@ type Venue struct {
 	Description           LocalizedString `json:"description"`
 	Cuisine               []string        `json:"cuisine"`
 	Rating                float64         `json:"rating"`
+	ReviewCount           int             `json:"review_count"`
 	PriceLevel            int             `json:"price_level"`
 	Address               LocalizedString `json:"address"`
 	Lat                   float64         `json:"lat"`
@@ -31,10 +32,26 @@ type Venue struct {
 	OpenNow               bool            `json:"open_now"`
 	FreeTables            int             `json:"free_tables"`
 	ImageURL              string          `json:"image_url"`
+	PhotoURLs             []string        `json:"photo_urls,omitempty"`
 	Website               string          `json:"website,omitempty"`
+	GooglePlaceID         string          `json:"google_place_id,omitempty"`
+	Reviews               []VenueReview   `json:"reviews,omitempty"`
 	AlcoholLicense        bool            `json:"alcohol_license_valid"`
 	SessionStartBeforeMin int             `json:"session_start_before_min"`
 	ReleaseBeforeMin      int             `json:"release_before_min"`
+	BookingIntervalMin    int             `json:"booking_interval_min"`
+	HoldMinutes           int             `json:"hold_minutes"`
+	AllowPreorder         bool            `json:"allow_preorder"`
+}
+
+// VenueReview is a guest-facing review shown on the venue page (seeded or from Google Places).
+type VenueReview struct {
+	Author    string  `json:"author"`
+	Rating    float64 `json:"rating"`
+	Text      string  `json:"text"`
+	Relative  string  `json:"relative_time,omitempty"`
+	Source    string  `json:"source,omitempty"`
+	ProfileURL string `json:"profile_url,omitempty"`
 }
 
 type TableStatus string
@@ -57,13 +74,77 @@ type Table struct {
 	ReservationID *string     `json:"reservation_id,omitempty"`
 	X             float64     `json:"x"`
 	Y             float64     `json:"y"`
+	// Zone is a floor area slug: hall, terrace, street, or a custom value.
+	Zone          string      `json:"zone,omitempty"`
+	QRToken       string      `json:"qr_token,omitempty"`
 }
 
 const (
 	RoleGuest      = "guest"
 	RoleRestaurant = "restaurant"
+	RoleStaff      = "staff"
 	RoleAdmin      = "admin"
 )
+
+const (
+	StaffRoleWaiter     = "waiter"
+	StaffStatusInvited  = "INVITED"
+	StaffStatusActive   = "ACTIVE"
+	StaffStatusRevoked  = "REVOKED"
+)
+
+// StaffMember is a venue staff invite or active membership.
+type StaffMember struct {
+	ID        string    `json:"id"`
+	VenueID   string    `json:"venue_id"`
+	UserID    string    `json:"user_id,omitempty"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+const (
+	ProfileChangePending  = "PENDING"
+	ProfileChangeApproved = "APPROVED"
+	ProfileChangeRejected = "REJECTED"
+)
+
+// ApplicationPatch is an ApplicationUpdate-like payload for profile change requests.
+type ApplicationPatch struct {
+	Name         *LocalizedString `json:"name,omitempty"`
+	Description  *LocalizedString `json:"description,omitempty"`
+	Address      *LocalizedString `json:"address,omitempty"`
+	Cuisine      *[]string        `json:"cuisine,omitempty"`
+	Phone        *string          `json:"phone,omitempty"`
+	Email        *string          `json:"email,omitempty"`
+	Website      *string          `json:"website,omitempty"`
+	CityID       *string          `json:"city_id,omitempty"`
+	Lat          *float64         `json:"lat,omitempty"`
+	Lng          *float64         `json:"lng,omitempty"`
+	PriceLevel   *int             `json:"price_level,omitempty"`
+	AverageCheck *int             `json:"average_check,omitempty"`
+	HoursText    *string          `json:"hours_text,omitempty"`
+}
+
+type ProfileChangeRequest struct {
+	ID            string           `json:"id"`
+	ApplicationID string           `json:"application_id"`
+	OwnerUserID   string           `json:"owner_user_id"`
+	Status        string           `json:"status"`
+	Patch         ApplicationPatch `json:"patch"`
+	CreatedAt     time.Time        `json:"created_at"`
+	Note          string           `json:"note,omitempty"`
+}
+
+type VenueAnalytics struct {
+	VenueID              string         `json:"venue_id"`
+	ReservationsByStatus map[string]int `json:"reservations_by_status"`
+	FreeTables           int            `json:"free_tables"`
+	WaiterCallsPending   int            `json:"waiter_calls_pending"`
+	OrdersByStatus       map[string]int `json:"orders_by_status"`
+	TotalTables          int            `json:"total_tables"`
+}
 
 type User struct {
 	ID           string    `json:"id"`
@@ -158,6 +239,9 @@ type Reservation struct {
 	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
 	CreatedAt          time.Time         `json:"created_at"`
 	UpdatedAt          time.Time         `json:"updated_at"`
+	// Guest list enrichment (filled on read, not persisted separately).
+	VenueName   LocalizedString `json:"venue_name,omitempty"`
+	TableNumber int             `json:"table_number,omitempty"`
 }
 
 // RestaurantReservation is the owner-facing reservation projection. It only
@@ -225,6 +309,7 @@ type MenuItem struct {
 	Description     LocalizedString `json:"description"`
 	Price           int             `json:"price"`
 	ContainsAlcohol bool            `json:"contains_alcohol"`
+	Stopped         bool            `json:"stopped"`
 }
 
 type OrderItem struct {
@@ -235,15 +320,19 @@ type OrderItem struct {
 }
 
 type Order struct {
-	ID        string      `json:"id"`
-	SessionID string      `json:"session_id"`
-	UserID    string      `json:"user_id"`
-	VenueID   string      `json:"venue_id"`
-	Items     []OrderItem `json:"items"`
-	Status    OrderStatus `json:"status"`
-	Total     int         `json:"total"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	ID            string          `json:"id"`
+	SessionID     string          `json:"session_id"`
+	UserID        string          `json:"user_id"`
+	VenueID       string          `json:"venue_id"`
+	Items         []OrderItem     `json:"items"`
+	Status        OrderStatus     `json:"status"`
+	Total         int             `json:"total"`
+	CheckNumber   string          `json:"check_number,omitempty"`
+	PaymentMethod string          `json:"payment_method,omitempty"`
+	PaidAt        *time.Time      `json:"paid_at,omitempty"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
+	VenueName     LocalizedString `json:"venue_name,omitempty"`
 }
 
 type WaiterCallReason string
@@ -279,4 +368,55 @@ type HolidayCollection struct {
 	Slug     string          `json:"slug"`
 	Title    LocalizedString `json:"title"`
 	VenueIDs []string        `json:"venue_ids"`
+}
+
+type WaitlistStatus string
+
+const (
+	WaitlistWaiting  WaitlistStatus = "WAITING"
+	WaitlistReady    WaitlistStatus = "READY"
+	WaitlistSeated   WaitlistStatus = "SEATED"
+	WaitlistLeft     WaitlistStatus = "LEFT"
+	WaitlistExpired  WaitlistStatus = "EXPIRED"
+)
+
+const (
+	WaitlistSourceWeb     = "WEB"
+	WaitlistSourceAndroid = "ANDROID"
+	WaitlistSourceIOS     = "IOS"
+	WaitlistSourceHost    = "HOST"
+)
+
+// WaitlistEntry is a place in a venue's virtual queue. Guests join remotely from
+// web/mobile when nothing is free; hosts add walk-ins from the stand.
+type WaitlistEntry struct {
+	ID         string         `json:"id"`
+	VenueID    string         `json:"venue_id"`
+	UserID     string         `json:"user_id,omitempty"`
+	GuestName  string         `json:"guest_name"`
+	Phone      string         `json:"phone,omitempty"`
+	Guests     int            `json:"guests"`
+	Zone       string         `json:"zone,omitempty"`
+	Note       string         `json:"note,omitempty"`
+	Status     WaitlistStatus `json:"status"`
+	Source     string         `json:"source"`
+	TableID    string         `json:"table_id,omitempty"`
+	CreatedAt  time.Time      `json:"created_at"`
+	NotifiedAt *time.Time     `json:"notified_at,omitempty"`
+	SeatedAt   *time.Time     `json:"seated_at,omitempty"`
+	ClosedAt   *time.Time     `json:"closed_at,omitempty"`
+
+	// Enrichment filled on read, not persisted separately.
+	Position    int             `json:"position,omitempty"`
+	QuotedWait  int             `json:"quoted_wait_min,omitempty"`
+	TableNumber int             `json:"table_number,omitempty"`
+	VenueName   LocalizedString `json:"venue_name,omitempty"`
+}
+
+// WaitlistSummary is the public queue state shown before a guest joins.
+type WaitlistSummary struct {
+	VenueID    string `json:"venue_id"`
+	Waiting    int    `json:"waiting"`
+	QuotedWait int    `json:"quoted_wait_min"`
+	FreeTables int    `json:"free_tables"`
 }

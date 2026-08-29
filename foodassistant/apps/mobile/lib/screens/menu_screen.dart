@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/api.dart';
+import 'package:mobile/screens/reservation_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
 
@@ -11,12 +12,14 @@ class MenuScreen extends StatefulWidget {
     required this.venueName,
     this.sessionId,
     this.preorderMode = false,
+    this.venue,
   });
 
   final String venueId;
   final String venueName;
   final String? sessionId;
   final bool preorderMode;
+  final Venue? venue;
 
   @override
   State<MenuScreen> createState() => _MenuScreenState();
@@ -26,6 +29,9 @@ class _MenuScreenState extends State<MenuScreen> {
   late Future<List<MenuItem>> _future;
   final cart = <String, ({MenuItem item, int qty})>{};
   bool busy = false;
+
+  bool get canOrder => widget.sessionId != null;
+  bool get browseOnly => widget.sessionId == null && !widget.preorderMode;
 
   @override
   void initState() {
@@ -39,6 +45,7 @@ class _MenuScreenState extends State<MenuScreen> {
   int get count => cart.values.fold(0, (s, e) => s + e.qty);
 
   void _add(MenuItem item) {
+    if (browseOnly) return;
     if (widget.preorderMode && item.containsAlcohol) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('menu.alcohol_hint'.tr())),
@@ -53,13 +60,14 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _checkout() async {
     if (cart.isEmpty) return;
-    if (widget.sessionId == null) {
+    if (widget.preorderMode && widget.sessionId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('reservation.success'.tr())),
+        SnackBar(content: Text('menu.preorder_saved'.tr())),
       );
       Navigator.pop(context);
       return;
     }
+    if (widget.sessionId == null) return;
     final ok = await ensureAuth(context);
     if (!ok || !mounted) return;
     setState(() => busy = true);
@@ -86,12 +94,24 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
+  Future<void> _goBook() async {
+    final ok = await ensureAuth(context);
+    if (!ok || !mounted) return;
+    Venue? v = widget.venue;
+    v ??= await ApiClient.instance.fetchVenue(widget.venueId);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ReservationScreen(venue: v!)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.locale.languageCode;
     return Scaffold(
+      backgroundColor: FaColors.bg,
       appBar: AppBar(title: Text('${'menu.title'.tr()} · ${widget.venueName}')),
-      floatingActionButton: count == 0
+      floatingActionButton: browseOnly || count == 0
           ? null
           : FloatingActionButton.extended(
               backgroundColor: FaColors.gold,
@@ -120,47 +140,122 @@ class _MenuScreenState extends State<MenuScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
             children: [
+              if (browseOnly)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3EEE4),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2D6C4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'menu.browse_hint'.tr(),
+                        style: const TextStyle(
+                          color: FaColors.muted,
+                          height: 1.4,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: _goBook,
+                        child: Text('menu.book_to_order'.tr()),
+                      ),
+                    ],
+                  ),
+                ),
               for (final entry in categories.entries) ...[
                 Text(
-                  entry.key,
+                  entry.key.toUpperCase(),
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: FaColors.gold,
+                    letterSpacing: 1.1,
+                    color: Color(0xFFB8924F),
                   ),
                 ),
                 const SizedBox(height: 8),
                 ...entry.value.map((item) {
                   final blocked =
                       widget.preorderMode && item.containsAlcohol;
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(item.name.pick(locale)),
-                      subtitle: Text(
-                        item.description.pick(locale),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: FaColors.muted, fontSize: 12),
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('${item.price} MDL'),
-                          TextButton(
-                            onPressed: blocked ? null : () => _add(item),
-                            child: Text('menu.add'.tr()),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+                    decoration: BoxDecoration(
+                      color: FaColors.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: FaColors.border),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name.pick(locale),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (item.description.pick(locale).isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  item.description.pick(locale),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: FaColors.muted,
+                                    fontSize: 12,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                              if (item.containsAlcohol)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 6),
+                                  child: Text(
+                                    '18+',
+                                    style: TextStyle(
+                                      color: Color(0xFFB8924F),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ],
-                      ),
-                      isThreeLine: true,
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${item.price} MDL',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (!browseOnly)
+                              TextButton(
+                                onPressed: blocked ? null : () => _add(item),
+                                child: Text('menu.add'.tr()),
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   );
                 }),
                 const SizedBox(height: 12),
               ],
-              if (cart.isNotEmpty) ...[
+              if (!browseOnly && cart.isNotEmpty) ...[
                 const Divider(color: FaColors.border),
                 Text(
                   'menu.cart'.tr(),
@@ -176,12 +271,19 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
                 Text(
                   '${'menu.total'.tr()}: $total MDL',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 FilledButton(
                   onPressed: busy ? null : _checkout,
-                  child: Text('menu.checkout'.tr()),
+                  child: Text(
+                    canOrder
+                        ? 'menu.checkout'.tr()
+                        : 'menu.preorder_saved'.tr(),
+                  ),
                 ),
               ],
             ],

@@ -14,12 +14,42 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   String? status;
+  bool busy = false;
+  List<Order> paid = [];
 
-  int get total =>
-      widget.orders.fold(0, (s, o) => s + o.total);
+  int get total => widget.orders.fold(0, (s, o) => s + o.total);
+
+  Future<void> _pay(String method) async {
+    setState(() => busy = true);
+    try {
+      final results = <Order>[];
+      for (final order in widget.orders) {
+        results.add(
+          await ApiClient.instance.payOrder(
+            orderId: order.id,
+            method: method,
+          ),
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        paid = results;
+        status = method == 'app' ? 'paid' : 'pending';
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('common.error'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.locale.languageCode;
     return Scaffold(
       appBar: AppBar(title: Text('payment.title'.tr())),
       body: Padding(
@@ -33,18 +63,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${widget.orders.length} order(s)',
+              '${widget.orders.length} ${'orders.checks'.tr().toLowerCase()}',
               style: const TextStyle(color: FaColors.muted),
+            ),
+            const SizedBox(height: 16),
+            ...widget.orders.map(
+              (o) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '${o.checkNumber ?? o.id.substring(0, 8)} · ${o.items.map((i) => i.name.pick(locale)).join(', ')}',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
             ),
             const Spacer(),
             if (status == null) ...[
               FilledButton(
-                onPressed: () => setState(() => status = 'paid'),
+                onPressed: busy ? null : () => _pay('app'),
                 child: Text('payment.pay_app'.tr()),
               ),
               const SizedBox(height: 10),
               OutlinedButton(
-                onPressed: () => setState(() => status = 'pending'),
+                onPressed: busy ? null : () => _pay('venue'),
                 child: Text('payment.pay_venue'.tr()),
               ),
             ] else ...[
@@ -61,9 +101,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
+              if (paid.isNotEmpty && paid.first.checkNumber != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  paid.map((o) => o.checkNumber).whereType<String>().join(', '),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: FaColors.muted),
+                ),
+              ],
               const SizedBox(height: 24),
               FilledButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, true),
                 child: Text('payment.done'.tr()),
               ),
             ],

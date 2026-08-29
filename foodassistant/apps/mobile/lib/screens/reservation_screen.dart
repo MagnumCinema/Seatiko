@@ -153,6 +153,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 return RestaurantFloorPlan(
                   compact: true,
                   tables: snapshot.data!,
+                  locale: context.locale.languageCode,
                   selectedTableId: table?.id,
                   onTableTap: (candidate) {
                     if (candidate.status == 'FREE') {

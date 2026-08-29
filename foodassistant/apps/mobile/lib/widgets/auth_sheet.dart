@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/theme.dart';
 
-Future<User?> showAuthSheet(BuildContext context) async {
+Future<User?> showAuthSheet(
+  BuildContext context, {
+  bool register = false,
+}) async {
   return showModalBottomSheet<User>(
     context: context,
     isScrollControlled: true,
@@ -11,25 +14,32 @@ Future<User?> showAuthSheet(BuildContext context) async {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (ctx) => const _AuthSheet(),
+    builder: (ctx) => _AuthSheet(initialRegister: register),
   );
 }
 
 class _AuthSheet extends StatefulWidget {
-  const _AuthSheet();
+  const _AuthSheet({this.initialRegister = false});
+  final bool initialRegister;
 
   @override
   State<_AuthSheet> createState() => _AuthSheetState();
 }
 
 class _AuthSheetState extends State<_AuthSheet> {
-  bool register = false;
+  late bool register;
   bool busy = false;
   String? error;
   final email = TextEditingController();
   final password = TextEditingController();
   final firstName = TextEditingController();
   final lastName = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    register = widget.initialRegister;
+  }
 
   @override
   void dispose() {

@@ -5,6 +5,7 @@ import 'package:mobile/api.dart';
 import 'package:mobile/screens/city_select_screen.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/widgets/venue_thumb.dart';
 
 class MapTab extends StatefulWidget {
   const MapTab({
@@ -38,7 +39,9 @@ class MapTabState extends State<MapTab> {
 
   void reload(String cityId) {
     _cityId = cityId;
-    setState(() => _future = ApiClient.instance.fetchVenues(cityId: cityId));
+    setState(() {
+      _future = ApiClient.instance.fetchVenues(cityId: cityId);
+    });
   }
 
   Future<void> _changeCity() async {
@@ -585,18 +588,11 @@ class _RestaurantMapState extends State<_RestaurantMap> {
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: FaColors.claySoft,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.restaurant_rounded,
-                            color: FaColors.clay,
-                            size: 20,
-                          ),
+                        VenueThumb(
+                          imageUrl: widget.selected!.imageUrl,
+                          size: 42,
+                          radius: 12,
+                          priceLevel: widget.selected!.priceLevel,
                         ),
                         const SizedBox(width: 11),
                         Expanded(
@@ -688,24 +684,9 @@ class _VenueCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: venue.priceLevel >= 3
-                          ? const [Color(0xFF7D4C37), Color(0xFF2E493C)]
-                          : const [Color(0xFFE6B17E), Color(0xFF43735D)],
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.restaurant_menu_rounded,
-                    color: Colors.white,
-                    size: 27,
-                  ),
+                VenueThumb(
+                  imageUrl: venue.imageUrl,
+                  priceLevel: venue.priceLevel,
                 ),
                 const SizedBox(width: 13),
                 Expanded(

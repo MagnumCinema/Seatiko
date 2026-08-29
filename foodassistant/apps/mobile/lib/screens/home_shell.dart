@@ -90,7 +90,13 @@ class HomeShellState extends State<HomeShell> {
           ),
           DiscoverTab(cityId: cityId),
           OrdersTab(key: ordersKey),
-          ProfileTab(key: profileKey),
+          ProfileTab(
+            key: profileKey,
+            onOpenOrders: () {
+              setState(() => tab = 2);
+              ordersKey.currentState?.reload();
+            },
+          ),
         ],
       ),
       bottomNavigationBar: SafeArea(

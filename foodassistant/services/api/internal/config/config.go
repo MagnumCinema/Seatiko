@@ -18,6 +18,7 @@ type Config struct {
 	TwentyAPIKey        string
 	TwentyWebhookSecret string
 	TwentySyncInterval  time.Duration
+	GooglePlacesAPIKey  string
 }
 
 func Load() Config {
@@ -67,5 +68,6 @@ func Load() Config {
 		TwentyAPIKey:        os.Getenv("TWENTY_API_KEY"),
 		TwentyWebhookSecret: os.Getenv("TWENTY_WEBHOOK_SECRET"),
 		TwentySyncInterval:  time.Duration(syncSeconds) * time.Second,
+		GooglePlacesAPIKey:  os.Getenv("GOOGLE_PLACES_API_KEY"),
 	}
 }

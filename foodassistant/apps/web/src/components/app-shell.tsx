@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, type Locale } from "@/components/locale-provider";
+import { TableFloorPlan } from "@/components/table-floor-plan";
+import { VenueMenu } from "@/components/venue-menu";
 import {
   ApiError,
   callWaiter,
@@ -29,6 +31,7 @@ import {
   register,
   updateMe,
   watchTable,
+  confirmArrival,
   type City,
   type HolidayCollection,
   type MenuItem,
@@ -73,71 +76,6 @@ const QR_ICON = (
   </svg>
 );
 
-function tableStatusClass(status: string) {
-  switch (status) {
-    case "FREE":
-      return "free";
-    case "OCCUPIED":
-      return "occupied";
-    case "RESERVED":
-      return "reserved";
-    default:
-      return "cleaning";
-  }
-}
-
-function TableFloorPlan({
-  tables,
-  selectedId,
-  compact = false,
-  onTableClick,
-}: {
-  tables: Table[];
-  selectedId?: string;
-  compact?: boolean;
-  onTableClick: (table: Table) => void;
-}) {
-  return (
-    <div className={`fa-floor-room ${compact ? "compact" : ""}`}>
-      <div className="fa-floor-windows" aria-hidden>
-        <i /><i /><i />
-      </div>
-      <div className="fa-floor-bar" aria-hidden>
-        <span>BAR</span><i /><i /><i />
-      </div>
-      <div className="fa-floor-service" aria-hidden>Кухня</div>
-      <div className="fa-floor-entrance" aria-hidden>Вход ↑</div>
-      {tables.map((table) => {
-        const left = Math.max(12, Math.min(88, table.x * 100));
-        const top = Math.max(18, Math.min(82, table.y * 100));
-        return (
-          <button
-            key={table.id}
-            type="button"
-            title={`Стол №${table.number} · ${table.seats} мест`}
-            aria-label={`Стол №${table.number}, ${table.seats} мест`}
-            className={`fa-table ${tableStatusClass(table.status)} ${
-              table.seats >= 6 ? "large" : table.seats <= 2 ? "round" : ""
-            } ${selectedId === table.id ? "selected" : ""}`}
-            style={{ left: `${left}%`, top: `${top}%` }}
-            onClick={() => onTableClick(table)}
-          >
-            <i className="seat top" aria-hidden />
-            <i className="seat right" aria-hidden />
-            <span>{table.number}</span>
-            <small>{table.seats} мест</small>
-            <i className="seat bottom" aria-hidden />
-            <i className="seat left" aria-hidden />
-          </button>
-        );
-      })}
-      {tables.length === 0 && (
-        <div className="fa-floor-empty">План зала пока не настроен</div>
-      )}
-    </div>
-  );
-}
-
 function venueMapPosition(item: Venue, all: Venue[]) {
   if (all.length < 2) return { left: "50%", top: "42%" };
   const lats = all.map((entry) => entry.lat);
@@ -154,10 +92,16 @@ function venueMapPosition(item: Venue, all: Venue[]) {
   };
 }
 
-export function AppShell() {
+export function AppShell({
+  initialVenueId,
+  variant = "phone",
+}: {
+  initialVenueId?: string;
+  variant?: "phone" | "web";
+} = {}) {
   const { locale, setLocale, t } = useLocale();
 
-  const [screen, setScreen] = useState<Screen>("onboarding");
+  const [screen, setScreen] = useState<Screen>(initialVenueId ? "venue" : "onboarding");
   const [obStep, setObStep] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -268,9 +212,39 @@ export function AppShell() {
     const savedCity = localStorage.getItem(CITY_KEY);
     queueMicrotask(() => {
       if (savedCity) setCityId(savedCity);
+      if (initialVenueId) {
+        localStorage.setItem(ONBOARD_KEY, "1");
+        return;
+      }
       if (onboarded) setScreen("map");
     });
-  }, []);
+  }, [initialVenueId]);
+
+  useEffect(() => {
+    if (!initialVenueId) return;
+    let cancelled = false;
+    setBusy(true);
+    fetchVenue(initialVenueId)
+      .then((v) => {
+        if (cancelled) return;
+        setVenue(v);
+        setTables([]);
+        setSelectedTable(null);
+        setScreen("venue");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScreen("map");
+          showToast(t("common.error"));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialVenueId, showToast, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -686,9 +660,16 @@ export function AppShell() {
   const cartTotal = cart.reduce((s, c) => s + c.item.price * c.qty, 0);
 
   return (
-    <div className="fa-page">
-      <div className="fa-phone">
-        <div className="fa-status-bar">{t("brand.name")}</div>
+    <div className={`fa-page ${variant === "web" ? "fa-page-web" : ""}`}>
+      <div className={`fa-phone ${variant === "web" ? "fa-web-shell" : ""}`}>
+        {variant === "phone" ? (
+          <div className="fa-status-bar">{t("brand.name")}</div>
+        ) : (
+          <div className="fa-web-bar">
+            <strong>{t("brand.name")}</strong>
+            <span>Бронирование на сайте</span>
+          </div>
+        )}
 
         <div className="fa-screen">
           {screen === "onboarding" && (
@@ -1333,38 +1314,24 @@ export function AppShell() {
                 ← {t("common.back")}
               </button>
               <h3 className="fa-h3">{t("menu.title")}</h3>
-              {menuItems.length === 0 && (
-                <p className="fa-muted">{t("menu.empty")}</p>
-              )}
-              {menuItems.map((item) => (
-                <div key={item.id} className="fa-row">
-                  <div>
-                    <strong>{pickLocale(item.name, locale)}</strong>
-                    <p className="fa-muted">
-                      {pickLocale(item.category, locale)} · {item.price} MDL
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="fa-mini"
-                    onClick={() => {
-                      setCart((prev) => {
-                        const ex = prev.find((c) => c.item.id === item.id);
-                        if (ex) {
-                          return prev.map((c) =>
-                            c.item.id === item.id
-                              ? { ...c, qty: c.qty + 1 }
-                              : c,
-                          );
-                        }
-                        return [...prev, { item, qty: 1 }];
-                      });
-                    }}
-                  >
-                    {t("menu.add")}
-                  </button>
-                </div>
-              ))}
+              <VenueMenu
+                items={menuItems}
+                locale={locale}
+                compact
+                onAdd={(item) => {
+                  setCart((prev) => {
+                    const ex = prev.find((c) => c.item.id === item.id);
+                    if (ex) {
+                      return prev.map((c) =>
+                        c.item.id === item.id
+                          ? { ...c, qty: c.qty + 1 }
+                          : c,
+                      );
+                    }
+                    return [...prev, { item, qty: 1 }];
+                  });
+                }}
+              />
               <div className="fa-cart">
                 <p className="fa-section-label">{t("menu.cart")}</p>
                 {cart.length === 0 ? (
@@ -1477,18 +1444,25 @@ export function AppShell() {
               )}
               {reservations.map((r) => (
                 <div key={r.id} className="fa-venue-card static">
-                  <h3>{t("orders.active_res")}</h3>
+                  <h3>
+                    {pickLocale(r.venue_name, locale) || t("orders.active_res")}
+                  </h3>
                   <p>
-                    {r.table_id} · {formatTime(r.reserved_for)} · {r.status}
+                    {r.table_number ? `Стол ${r.table_number} · ` : ""}
+                    {formatTime(r.reserved_for)} · {r.guests} гост. · {r.status}
                   </p>
                 </div>
               ))}
               {orders.map((o) => (
                 <div key={o.id} className="fa-venue-card static">
                   <h3>
-                    {o.status} · {o.total} MDL
+                    {pickLocale(o.venue_name, locale) || o.status} · {o.total} MDL
                   </h3>
-                  <p>{formatTime(o.created_at)}</p>
+                  <p>
+                    {o.check_number ? `${o.check_number} · ` : ""}
+                    {formatTime(o.created_at)} · {o.status}
+                    {o.payment_method ? ` · ${o.payment_method}` : ""}
+                  </p>
                 </div>
               ))}
               {isAuthed &&
@@ -1697,11 +1671,21 @@ export function AppShell() {
                     type="button"
                     className="fa-btn fa-btn-secondary"
                     onClick={() => {
-                      showToast(
-                        t("table.im_coming_set", {
-                          time: formatTime(tableSheet.reserved_for),
-                        }),
-                      );
+                      const reservationId = tableSheet.reservation_id;
+                      if (!reservationId) {
+                        showToast(t("common.error"));
+                        return;
+                      }
+                      void confirmArrival(reservationId)
+                        .then(() => {
+                          showToast(
+                            t("table.im_coming_set", {
+                              time: formatTime(tableSheet.reserved_for),
+                            }),
+                          );
+                          setTableSheet(null);
+                        })
+                        .catch(() => showToast(t("common.error")));
                     }}
                   >
                     ✓ {t("table.im_coming")}

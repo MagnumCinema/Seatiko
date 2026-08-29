@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
+import { CabinetOpsPanel } from "@/components/cabinet-ops";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -30,7 +31,7 @@ import {
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 
-type Section = "overview" | "profile" | "reservations" | "activity";
+type Section = "overview" | "profile" | "reservations" | "activity" | "ops";
 type ReservationFilter = "upcoming" | "history" | "all";
 
 const DRAFT_STORAGE_PREFIX = "foodassistant:restaurant-draft:";
@@ -55,6 +56,7 @@ type Draft = {
 const navigation: { id: Section; label: string; icon: string }[] = [
   { id: "overview", label: "Обзор", icon: "⌂" },
   { id: "profile", label: "Профиль заведения", icon: "◇" },
+  { id: "ops", label: "Зал / меню / QR", icon: "▣" },
   { id: "reservations", label: "Бронирования", icon: "▦" },
   { id: "activity", label: "История действий", icon: "↺" },
 ];
@@ -667,7 +669,7 @@ export default function CabinetPage() {
                   onClick={() => setSection(item.id)}
                 >
                   <i aria-hidden>{item.icon}</i>
-                  <span>{cabinetCopy[item.id]}</span>
+                  <span>{item.label}</span>
                   {item.id === "reservations" && futureBookings.length > 0 && (
                     <b>{futureBookings.length}</b>
                   )}
@@ -731,12 +733,14 @@ export default function CabinetPage() {
                   <span className="owner-kicker">
                     {section === "overview" && "Центр управления"}
                     {section === "profile" && cabinetCopy.dataForGuests}
+                    {section === "ops" && "Зал, меню и QR"}
                     {section === "reservations" && "Операционная работа"}
                     {section === "activity" && "Прозрачность аккаунта"}
                   </span>
                   <h2>
                     {section === "overview" && (pickLocale(selected.name, "ru") || "Новый ресторан")}
                     {section === "profile" && cabinetCopy.profile}
+                    {section === "ops" && "Операции"}
                     {section === "reservations" && "Бронирования"}
                     {section === "activity" && "История действий"}
                   </h2>
@@ -1069,6 +1073,16 @@ export default function CabinetPage() {
                     </div>
                   )}
                 </section>
+              )}
+
+              {section === "ops" && (
+                selected.venue_id ? (
+                  <CabinetOpsPanel venueId={selected.venue_id} />
+                ) : (
+                  <p className="fa-muted">
+                    Операции зала, меню и QR доступны после публикации ресторана.
+                  </p>
+                )
               )}
 
               {section === "reservations" && (

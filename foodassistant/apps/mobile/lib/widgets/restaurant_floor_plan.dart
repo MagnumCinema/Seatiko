@@ -2,162 +2,211 @@ import 'package:flutter/material.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/theme.dart';
 
-class RestaurantFloorPlan extends StatelessWidget {
+/// Schematic floor plan: cream room, tan tables, olive chairs/benches.
+class RestaurantFloorPlan extends StatefulWidget {
   const RestaurantFloorPlan({
     super.key,
     required this.tables,
     required this.onTableTap,
     this.selectedTableId,
     this.compact = false,
+    this.locale = 'ru',
   });
 
   final List<VenueTable> tables;
   final ValueChanged<VenueTable> onTableTap;
   final String? selectedTableId;
   final bool compact;
+  final String locale;
 
-  Color _statusColor(String status) {
+  static const roomBg = Color(0xFFF3EEE4);
+  static const tableTan = Color(0xFFC9A66B);
+  static const tableReserved = Color(0xFFB8924F);
+  static const tableOccupied = Color(0xFFA07850);
+  static const tableCleaning = Color(0xFFB5AA98);
+  static const olive = Color(0xFF6F8F3D);
+  static const zoneBorder = Color(0xFFD2C4AE);
+  static const zoneText = Color(0xFF8A8070);
+
+  @override
+  State<RestaurantFloorPlan> createState() => _RestaurantFloorPlanState();
+}
+
+class _RestaurantFloorPlanState extends State<RestaurantFloorPlan> {
+  late String _zone;
+
+  @override
+  void initState() {
+    super.initState();
+    final zones = zonesFromTables(widget.tables);
+    _zone = zones.isEmpty ? 'hall' : zones.first;
+  }
+
+  @override
+  void didUpdateWidget(covariant RestaurantFloorPlan oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final zones = zonesFromTables(widget.tables);
+    if (!zones.contains(_zone)) {
+      _zone = zones.isEmpty ? 'hall' : zones.first;
+    }
+  }
+
+  Color _tableFill(String status) {
     switch (status) {
-      case 'FREE':
-        return FaColors.free;
-      case 'OCCUPIED':
-        return FaColors.occupied;
       case 'RESERVED':
-        return FaColors.reserved;
+        return RestaurantFloorPlan.tableReserved;
+      case 'OCCUPIED':
+        return RestaurantFloorPlan.tableOccupied;
+      case 'CLEANING':
+        return RestaurantFloorPlan.tableCleaning;
       default:
-        return FaColors.muted;
+        return RestaurantFloorPlan.tableTan;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2EFE5),
-        borderRadius: BorderRadius.circular(compact ? 20 : 24),
-        border: Border.all(color: FaColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x10244135),
-            blurRadius: 24,
-            offset: Offset(0, 12),
+    final zones = zonesFromTables(widget.tables);
+    final visible =
+        widget.tables.where((t) => t.zone == _zone).toList();
+    final outdoor = _zone == 'street' || _zone == 'terrace';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (zones.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final zone in zones)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                          '${zoneLabel(zone, widget.locale)} · ${widget.tables.where((t) => t.zone == zone && t.status == 'FREE').length}',
+                        ),
+                        selected: _zone == zone,
+                        selectedColor: RestaurantFloorPlan.olive,
+                        labelStyle: TextStyle(
+                          color: _zone == zone ? Colors.white : FaColors.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                        onSelected: (_) => setState(() => _zone = zone),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ],
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final roomWidth = constraints.maxWidth;
-          final roomHeight = constraints.maxHeight;
-          return Stack(
-            children: [
-              const Positioned.fill(child: _FloorGrid()),
-              Positioned(
-                left: roomWidth * .26,
-                right: roomWidth * .18,
-                top: 9,
-                child: const _Windows(),
-              ),
-              Positioned(
-                left: 11,
-                top: roomHeight * .2,
-                bottom: roomHeight * .22,
-                child: const _Bar(),
-              ),
-              const Positioned(right: 13, top: 13, child: _RoomLabel('Кухня')),
-              const Positioned(
-                right: 16,
-                bottom: 12,
-                child: Text(
-                  'Вход ↑',
-                  style: TextStyle(
-                    color: FaColors.muted,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                  ),
+        Expanded(
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: RestaurantFloorPlan.roomBg,
+              borderRadius: BorderRadius.circular(widget.compact ? 14 : 18),
+              border: Border.all(color: const Color(0xFFE2D6C4)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14281E10),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
                 ),
-              ),
-              for (final table in tables)
-                Positioned(
-                  left:
-                      56 +
-                      table.x.clamp(.08, .92) *
-                          (roomWidth - (compact ? 115 : 128)),
-                  top:
-                      32 +
-                      table.y.clamp(.08, .9) *
-                          (roomHeight - (compact ? 92 : 108)),
-                  child: FractionalTranslation(
-                    translation: const Offset(-.5, -.5),
-                    child: _FloorTable(
-                      table: table,
-                      color: _statusColor(table.status),
-                      selected: selectedTableId == table.id,
-                      compact: compact,
-                      onTap: () => onTableTap(table),
+              ],
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final roomWidth = constraints.maxWidth;
+                final roomHeight = constraints.maxHeight;
+                return Stack(
+                  children: [
+                    Positioned(
+                      left: 10,
+                      top: roomHeight * .14,
+                      bottom: roomHeight * .18,
+                      child: const _ZoneBar(),
                     ),
-                  ),
-                ),
-              if (tables.isEmpty)
-                const Positioned.fill(
-                  child: Center(
-                    child: Text(
-                      'План зала пока не настроен',
-                      style: TextStyle(color: FaColors.muted, fontSize: 12),
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: _ZoneChip(outdoor ? 'Снаружи' : 'Кухня'),
                     ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+                    const Positioned(
+                      right: 14,
+                      bottom: 12,
+                      child: Text(
+                        'Вход ↑',
+                        style: TextStyle(
+                          color: RestaurantFloorPlan.zoneText,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
+                    for (final table in visible)
+                      Positioned(
+                        left: (table.x.clamp(.12, .88) * roomWidth),
+                        top: (table.y.clamp(.16, .84) * roomHeight),
+                        child: FractionalTranslation(
+                          translation: const Offset(-.5, -.5),
+                          child: _SchematicTable(
+                            table: table,
+                            fill: _tableFill(table.status),
+                            selected: widget.selectedTableId == table.id,
+                            compact: widget.compact,
+                            onTap: () => widget.onTableTap(table),
+                          ),
+                        ),
+                      ),
+                    if (visible.isEmpty)
+                      Positioned.fill(
+                        child: Center(
+                          child: Text(
+                            'В зоне «${zoneLabel(_zone, widget.locale)}» пока нет столов',
+                            style: const TextStyle(
+                              color: RestaurantFloorPlan.zoneText,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _FloorGrid extends StatelessWidget {
-  const _FloorGrid();
+class _ZoneBar extends StatelessWidget {
+  const _ZoneBar();
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: _GridPainter());
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0x10244135)
-      ..strokeWidth = 1;
-    const step = 28.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _Windows extends StatelessWidget {
-  const _Windows();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(
-        3,
-        (_) => Expanded(
-          child: Container(
-            height: 5,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFBFD6D5),
-              borderRadius: BorderRadius.circular(99),
+    return Container(
+      width: 34,
+      decoration: BoxDecoration(
+        color: const Color(0x1FD2B48C),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: RestaurantFloorPlan.zoneBorder, style: BorderStyle.solid),
+      ),
+      child: const RotatedBox(
+        quarterTurns: 3,
+        child: Center(
+          child: Text(
+            'BAR',
+            style: TextStyle(
+              color: RestaurantFloorPlan.zoneText,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
             ),
           ),
         ),
@@ -166,91 +215,84 @@ class _Windows extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  const _Bar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 39,
-      padding: const EdgeInsets.symmetric(vertical: 11),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE9DFC9),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: const Color(0x1FD77B48)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          const Text(
-            'BAR',
-            style: TextStyle(
-              color: FaColors.clay,
-              fontSize: 7,
-              letterSpacing: 1,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          for (var i = 0; i < 3; i++)
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0x66A47554)),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoomLabel extends StatelessWidget {
-  const _RoomLabel(this.label);
+class _ZoneChip extends StatelessWidget {
+  const _ZoneChip(this.label);
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: FaColors.surface.withValues(alpha: .72),
+        color: const Color(0x8CFFFFFF),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: FaColors.border),
+        border: Border.all(color: RestaurantFloorPlan.zoneBorder),
       ),
       child: Text(
-        label,
-        style: const TextStyle(color: FaColors.muted, fontSize: 9),
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: RestaurantFloorPlan.zoneText,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }
 }
 
-class _FloorTable extends StatelessWidget {
-  const _FloorTable({
+enum _TableShape { oval, portrait, portraitLarge, booth }
+
+_TableShape _shapeFor(int seats) {
+  if (seats <= 2) return _TableShape.oval;
+  if (seats >= 7) return _TableShape.booth;
+  if (seats >= 5) return _TableShape.portraitLarge;
+  return _TableShape.portrait;
+}
+
+class _SchematicTable extends StatelessWidget {
+  const _SchematicTable({
     required this.table,
-    required this.color,
+    required this.fill,
     required this.selected,
     required this.compact,
     required this.onTap,
   });
 
   final VenueTable table;
-  final Color color;
+  final Color fill;
   final bool selected;
   final bool compact;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final round = table.seats <= 2;
-    final width = round
-        ? (compact ? 46.0 : 52.0)
-        : table.seats >= 6
-        ? (compact ? 66.0 : 76.0)
-        : (compact ? 58.0 : 65.0);
-    final height = round ? width : (compact ? 43.0 : 48.0);
+    final shape = _shapeFor(table.seats);
+    final scale = compact ? 0.88 : 1.0;
+    late final double w;
+    late final double h;
+    late final BorderRadius radius;
+    switch (shape) {
+      case _TableShape.oval:
+        w = 58 * scale;
+        h = 40 * scale;
+        radius = BorderRadius.circular(99);
+      case _TableShape.portrait:
+        w = 42 * scale;
+        h = 62 * scale;
+        radius = BorderRadius.circular(10);
+      case _TableShape.portraitLarge:
+        w = 46 * scale;
+        h = 78 * scale;
+        radius = BorderRadius.circular(10);
+      case _TableShape.booth:
+        w = 44 * scale;
+        h = 70 * scale;
+        radius = BorderRadius.circular(10);
+    }
+
+    final pad = 18.0 * scale;
+    final freeRing = table.status == 'FREE' && !selected;
 
     return Semantics(
       button: true,
@@ -258,73 +300,70 @@ class _FloorTable extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
-          width: width + 16,
-          height: height + 16,
+          width: w + pad * 2,
+          height: h + pad * 2,
           child: Stack(
             alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
-              _Seat(
-                color: color,
-                alignment: Alignment.topCenter,
-                horizontal: true,
-              ),
-              _Seat(
-                color: color,
-                alignment: Alignment.bottomCenter,
-                horizontal: true,
-              ),
-              _Seat(
-                color: color,
-                alignment: Alignment.centerLeft,
-                horizontal: false,
-              ),
-              _Seat(
-                color: color,
-                alignment: Alignment.centerRight,
-                horizontal: false,
-              ),
+              ..._seatingMarks(shape, w, h, scale),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                width: width,
-                height: height,
+                width: w,
+                height: h,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: .14),
-                  borderRadius: BorderRadius.circular(round ? 99 : 13),
-                  border: Border.all(
-                    color: selected ? FaColors.clay : color,
-                    width: selected ? 3 : 2,
-                  ),
-                  boxShadow: selected
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x33D77B48),
-                            blurRadius: 14,
-                            spreadRadius: 3,
-                          ),
-                        ]
-                      : const [],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${table.number}',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: compact ? 12 : 14,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  color: fill,
+                  borderRadius: radius,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0x245A3C14),
+                      blurRadius: selected ? 18 : 12,
+                      offset: const Offset(0, 6),
                     ),
-                    if (!compact)
-                      Text(
-                        '${table.seats} мест',
-                        style: TextStyle(
-                          color: color.withValues(alpha: .75),
-                          fontSize: 7,
-                          fontWeight: FontWeight.w600,
+                    if (selected)
+                      const BoxShadow(
+                        color: Color(0xFF6F8F3D),
+                        blurRadius: 0,
+                        spreadRadius: 3,
+                      )
+                    else if (freeRing)
+                      BoxShadow(
+                        color: RestaurantFloorPlan.olive.withValues(alpha: 0.22),
+                        blurRadius: 0,
+                        spreadRadius: 2,
+                      )
+                    else if (table.status == 'RESERVED')
+                      BoxShadow(
+                        color: RestaurantFloorPlan.tableReserved.withValues(
+                          alpha: 0.35,
                         ),
+                        blurRadius: 0,
+                        spreadRadius: 3,
+                      )
+                    else if (table.status == 'OCCUPIED')
+                      BoxShadow(
+                        color: FaColors.occupied.withValues(alpha: 0.35),
+                        blurRadius: 0,
+                        spreadRadius: 3,
                       ),
                   ],
+                ),
+                child: Center(
+                  child: Text(
+                    '${table.number}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 13 : 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                      shadows: const [
+                        Shadow(
+                          color: Color(0x2E5A3C14),
+                          offset: Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -333,29 +372,108 @@ class _FloorTable extends StatelessWidget {
       ),
     );
   }
+
+  List<Widget> _seatingMarks(
+    _TableShape shape,
+    double w,
+    double h,
+    double scale,
+  ) {
+    const olive = RestaurantFloorPlan.olive;
+    if (shape == _TableShape.booth) {
+      final benchW = 10 * scale;
+      final benchH = h * 0.78;
+      return [
+        Positioned(
+          left: 18 * scale - benchW - 4,
+          top: (h + 36 * scale - benchH) / 2,
+          child: _Bench(width: benchW, height: benchH, color: olive),
+        ),
+        Positioned(
+          right: 18 * scale - benchW - 4,
+          top: (h + 36 * scale - benchH) / 2,
+          child: _Bench(width: benchW, height: benchH, color: olive),
+        ),
+      ];
+    }
+
+    final chair = shape == _TableShape.oval ? 11.0 * scale : 12.0 * scale;
+    final perSide = shape == _TableShape.portraitLarge ? 3 : 2;
+    final marks = <Widget>[];
+    for (var i = 0; i < perSide; i++) {
+      final t = perSide == 1
+          ? 0.5
+          : (0.28 + i * (0.44 / (perSide - 1)));
+      final top = 18 * scale + h * t - chair / 2;
+      marks.add(
+        Positioned(
+          left: 18 * scale - chair - 3,
+          top: top,
+          child: _Chair(size: chair, color: olive),
+        ),
+      );
+      marks.add(
+        Positioned(
+          right: 18 * scale - chair - 3,
+          top: top,
+          child: _Chair(size: chair, color: olive),
+        ),
+      );
+    }
+    return marks;
+  }
 }
 
-class _Seat extends StatelessWidget {
-  const _Seat({
-    required this.color,
-    required this.alignment,
-    required this.horizontal,
-  });
+class _Chair extends StatelessWidget {
+  const _Chair({required this.size, required this.color});
+  final double size;
   final Color color;
-  final Alignment alignment;
-  final bool horizontal;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: Container(
-        width: horizontal ? 15 : 5,
-        height: horizontal ? 5 : 15,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: .35),
-          borderRadius: BorderRadius.circular(3),
-        ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(3),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x26283214),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Bench extends StatelessWidget {
+  const _Bench({
+    required this.width,
+    required this.height,
+    required this.color,
+  });
+  final double width;
+  final double height;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x26283214),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
     );
   }

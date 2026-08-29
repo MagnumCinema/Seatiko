@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/widgets/venue_thumb.dart';
 
 class DiscoverTab extends StatefulWidget {
   const DiscoverTab({super.key, required this.cityId});
@@ -167,6 +168,12 @@ class _DiscoverTabState extends State<DiscoverTab> {
               (v) => Card(
                 margin: const EdgeInsets.only(bottom: 10),
                 child: ListTile(
+                  leading: VenueThumb(
+                    imageUrl: v.imageUrl,
+                    size: 48,
+                    radius: 12,
+                    priceLevel: v.priceLevel,
+                  ),
                   title: Text(v.name.pick(locale)),
                   subtitle: Text(
                     'map.free_tables'.tr(args: ['${v.freeTables}']),

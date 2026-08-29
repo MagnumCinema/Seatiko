@@ -95,7 +95,7 @@ export default function HomePage() {
       <footer className="landing-footer">
         <Link href="/" className="footer-brand"><span className="site-brand-mark">F</span> FoodAssistant</Link>
         <span>{copy.slogan}</span>
-        <div><Link href="/business">{copy.restaurants}</Link><Link href="/demo">Demo</Link><Link href="/login">{getSiteCopy(locale).header.login}</Link></div>
+        <div><Link href="/business">{copy.restaurants}</Link><Link href="/login">{getSiteCopy(locale).header.login}</Link></div>
       </footer>
     </div>
   );

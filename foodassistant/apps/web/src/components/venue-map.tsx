@@ -27,9 +27,9 @@ const CLUSTER_LAYER_ID = "foodassistant-clusters";
 const VENUE_LAYER_ID = "foodassistant-venue-pins";
 
 const mapCopy = {
-  ru: { unavailable: "Карта временно недоступна", unavailableBody: "Рестораны и свободные столы остаются доступными в списке справа.", openExternal: "Открыть Бельцы на OpenStreetMap", online: "заведений онлайн", aria: "Интерактивная карта ресторанов Бельц", loadingMap: "Загружаем карту Бельц…", loadingVenues: "Загружаем заведения", updated: "OpenStreetMap · обновляется автоматически", nearby: "Рядом с вами", cityVenues: "Рестораны Бельц", open: "Открыто сейчас", closed: "Сейчас закрыто", free: "свободных столов", tables: "столов", empty: "После публикации рестораны автоматически появятся здесь.", action: "Выбрать стол в ресторане" },
-  en: { unavailable: "Map temporarily unavailable", unavailableBody: "Restaurants and available tables are still listed on the right.", openExternal: "Open Bălți in OpenStreetMap", online: "venues online", aria: "Interactive map of Bălți restaurants", loadingMap: "Loading Bălți map…", loadingVenues: "Loading venues", updated: "OpenStreetMap · updates automatically", nearby: "Near you", cityVenues: "Bălți restaurants", open: "Open now", closed: "Closed now", free: "tables available", tables: "tables", empty: "Restaurants appear here automatically after publication.", action: "Choose a restaurant table" },
-  ro: { unavailable: "Harta este temporar indisponibilă", unavailableBody: "Restaurantele și mesele libere rămân disponibile în lista din dreapta.", openExternal: "Deschide Bălți în OpenStreetMap", online: "localuri online", aria: "Harta interactivă a restaurantelor din Bălți", loadingMap: "Se încarcă harta Bălți…", loadingVenues: "Se încarcă localurile", updated: "OpenStreetMap · se actualizează automat", nearby: "În apropiere", cityVenues: "Restaurante din Bălți", open: "Deschis acum", closed: "Închis acum", free: "mese libere", tables: "mese", empty: "Restaurantele apar automat aici după publicare.", action: "Alege masa în restaurant" },
+  ru: { unavailable: "Карта временно недоступна", unavailableBody: "Рестораны и свободные столы остаются доступными в списке справа.", openExternal: "Открыть Бельцы на OpenStreetMap",   online: "заведений онлайн", aria: "Интерактивная карта ресторанов Бельц", loadingMap: "Загружаем карту Бельц…", loadingVenues: "Загружаем заведения", updated: "OpenStreetMap · обновляется автоматически", nearby: "Рядом с вами", cityVenues: "Рестораны Бельц", open: "Открыто сейчас", closed: "Сейчас закрыто", free: "свободных столов", tables: "столов", empty: "После публикации рестораны автоматически появятся здесь.", action: "Выбрать стол", openPage: "Страница ресторана", popupFree: "свободно", popupBook: "Забронировать" },
+  en: { unavailable: "Map temporarily unavailable", unavailableBody: "Restaurants and available tables are still listed on the right.", openExternal: "Open Bălți in OpenStreetMap", online: "venues online", aria: "Interactive map of Bălți restaurants", loadingMap: "Loading Bălți map…", loadingVenues: "Loading venues", updated: "OpenStreetMap · updates automatically", nearby: "Near you", cityVenues: "Bălți restaurants", open: "Open now", closed: "Closed now", free: "tables available", tables: "tables", empty: "Restaurants appear here automatically after publication.", action: "Choose a table", openPage: "Restaurant page", popupFree: "free", popupBook: "Book" },
+  ro: { unavailable: "Harta este temporar indisponibilă", unavailableBody: "Restaurantele și mesele libere rămân disponibile în lista din dreapta.", openExternal: "Deschide Bălți în OpenStreetMap", online: "localuri online", aria: "Harta interactivă a restaurantelor din Bălți", loadingMap: "Se încarcă harta Bălți…", loadingVenues: "Se încarcă localurile", updated: "OpenStreetMap · se actualizează automat", nearby: "În apropiere", cityVenues: "Restaurante din Bălți", open: "Deschis acum", closed: "Închis acum", free: "mese libere", tables: "mese", empty: "Restaurantele apar automat aici după publicare.", action: "Alege masa", openPage: "Pagina restaurantului", popupFree: "libere", popupBook: "Rezervă" },
 } as const;
 
 function venueCollection(
@@ -102,7 +102,9 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
   const copy = mapCopy[locale];
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   const venuesRef = useRef<Venue[]>([]);
+  const localeRef = useRef(locale);
   const fittedVenuesRef = useRef("");
   const [venues, setVenues] = useState<Venue[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -112,6 +114,64 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     venuesRef.current = venues;
   }, [venues]);
+
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
+
+  function showVenuePopup(venue: Venue, map: maplibregl.Map) {
+    const labels = mapCopy[localeRef.current];
+    const name = pickLocale(venue.name, localeRef.current);
+    const root = document.createElement("div");
+    root.className = "venue-map-popup-card";
+
+    const title = document.createElement("strong");
+    title.textContent = name;
+    root.appendChild(title);
+
+    const rating = document.createElement("div");
+    rating.className = "venue-map-popup-rating";
+    rating.textContent = `★ ${venue.rating.toFixed(1)}${
+      venue.review_count ? ` · ${venue.review_count}` : ""
+    }`;
+    root.appendChild(rating);
+
+    const free = document.createElement("div");
+    free.className = "venue-map-popup-free";
+    const freeCount = document.createElement("b");
+    freeCount.textContent = String(venue.free_tables);
+    free.appendChild(freeCount);
+    free.appendChild(document.createTextNode(` ${labels.popupFree}`));
+    root.appendChild(free);
+
+    const actions = document.createElement("div");
+    actions.className = "venue-map-popup-actions";
+
+    const pageLink = document.createElement("a");
+    pageLink.href = `/venues/${encodeURIComponent(venue.id)}`;
+    pageLink.textContent = labels.openPage;
+    actions.appendChild(pageLink);
+
+    const bookLink = document.createElement("a");
+    bookLink.href = `/book?venue=${encodeURIComponent(venue.id)}`;
+    bookLink.className = "primary";
+    bookLink.textContent = labels.popupBook;
+    actions.appendChild(bookLink);
+
+    root.appendChild(actions);
+
+    popupRef.current?.remove();
+    popupRef.current = new maplibregl.Popup({
+      offset: 18,
+      closeButton: true,
+      maxWidth: "280px",
+      className: "venue-map-popup",
+      anchor: "bottom",
+    })
+      .setLngLat([venue.lng, venue.lat])
+      .setDOMContent(root)
+      .addTo(map);
+  }
 
   useEffect(() => {
     let active = true;
@@ -170,6 +230,8 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
     });
 
     return () => {
+      popupRef.current?.remove();
+      popupRef.current = null;
       mapRef.current = null;
       map.remove();
     };
@@ -330,6 +392,7 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
         if (!venue) return;
         setSelectedId(venue.id);
         map.easeTo({ center: [venue.lng, venue.lat], zoom: 15.2, duration: 520 });
+        showVenuePopup(venue, map);
       });
       map.on("click", CLUSTER_LAYER_ID, async (event) => {
         const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
@@ -375,11 +438,13 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
 
   function selectVenue(venue: Venue) {
     setSelectedId(venue.id);
-    mapRef.current?.easeTo({
+    const map = mapRef.current;
+    map?.easeTo({
       center: [venue.lng, venue.lat],
       zoom: 15.2,
       duration: 520,
     });
+    if (map) showVenuePopup(venue, map);
   }
 
   return (
@@ -467,9 +532,20 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
           ))}
         </div>
 
-        <Link href="/demo" className="map-primary-action">
-          {copy.action} <span>→</span>
-        </Link>
+        <div className="venue-map-actions">
+          <Link
+            href={selected ? `/venues/${encodeURIComponent(selected.id)}` : "/"}
+            className="map-secondary-action"
+          >
+            {copy.openPage}
+          </Link>
+          <Link
+            href={selected ? `/book?venue=${encodeURIComponent(selected.id)}` : "/book"}
+            className="map-primary-action"
+          >
+            {copy.action} <span>→</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

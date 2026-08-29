@@ -41,6 +41,7 @@ dependencies:
   # Vendored until the upstream AGP 9 built-in Kotlin fix is released.
   maplibre_gl:
     path: vendor/maplibre_gl
+  mobile_scanner: ^7.4.0
 
 dev_dependencies:
   flutter_test:

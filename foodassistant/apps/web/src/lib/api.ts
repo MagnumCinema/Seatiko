@@ -31,6 +31,7 @@ export type Venue = {
   description: LocalizedString;
   cuisine: string[];
   rating: number;
+  review_count?: number;
   price_level: number;
   address: LocalizedString;
   lat: number;
@@ -39,10 +40,32 @@ export type Venue = {
   open_now: boolean;
   free_tables: number;
   image_url: string;
+  photo_urls?: string[];
   website?: string;
+  google_place_id?: string;
+  reviews?: VenueReview[];
   alcohol_license_valid?: boolean;
   session_start_before_min?: number;
   release_before_min?: number;
+};
+
+export type VenueReview = {
+  author: string;
+  rating: number;
+  text: string;
+  relative_time?: string;
+  source?: string;
+  profile_url?: string;
+};
+
+export type VenuePlaces = {
+  source: string;
+  google_place_id?: string;
+  rating: number;
+  review_count: number;
+  photo_urls: string[];
+  reviews: VenueReview[];
+  live_google: boolean;
 };
 
 export type TableStatus = "FREE" | "RESERVED" | "OCCUPIED" | "CLEANING";
@@ -58,6 +81,8 @@ export type Table = {
   reservation_id?: string | null;
   x: number;
   y: number;
+  zone?: string;
+  qr_token?: string;
 };
 
 export type User = {
@@ -137,6 +162,8 @@ export type Reservation = {
   source?: "WEB" | "ANDROID" | "IOS" | "PHONE" | "WALK_IN";
   arrival_confirmed_at?: string | null;
   created_at: string;
+  venue_name?: LocalizedString;
+  table_number?: number;
 };
 
 export type RestaurantReservation = {
@@ -173,6 +200,7 @@ export type MenuItem = {
   description: LocalizedString;
   price: number;
   contains_alcohol: boolean;
+  stopped?: boolean;
 };
 
 export type OrderItem = {
@@ -192,6 +220,10 @@ export type Order = {
   total: number;
   created_at: string;
   updated_at: string;
+  check_number?: string;
+  payment_method?: string;
+  paid_at?: string | null;
+  venue_name?: LocalizedString;
 };
 
 export type HolidayCollection = {
@@ -199,6 +231,42 @@ export type HolidayCollection = {
   slug: string;
   title: LocalizedString;
   venue_ids: string[];
+};
+
+export type WaitlistStatus =
+  | "WAITING"
+  | "READY"
+  | "SEATED"
+  | "LEFT"
+  | "EXPIRED";
+
+export type WaitlistEntry = {
+  id: string;
+  venue_id: string;
+  user_id?: string;
+  guest_name: string;
+  phone?: string;
+  guests: number;
+  zone?: string;
+  note?: string;
+  status: WaitlistStatus;
+  source: string;
+  table_id?: string;
+  created_at: string;
+  notified_at?: string | null;
+  seated_at?: string | null;
+  closed_at?: string | null;
+  position?: number;
+  quoted_wait_min?: number;
+  table_number?: number;
+  venue_name?: LocalizedString;
+};
+
+export type WaitlistSummary = {
+  venue_id: string;
+  waiting: number;
+  quoted_wait_min: number;
+  free_tables: number;
 };
 
 export type DiscoverResult = {
@@ -323,6 +391,10 @@ export async function fetchVenue(id: string): Promise<Venue> {
     auth: false,
   });
   return data.venue;
+}
+
+export async function fetchVenuePlaces(id: string): Promise<VenuePlaces> {
+  return apiFetch<VenuePlaces>(`/api/v1/venues/${id}/places`, { auth: false });
 }
 
 export async function fetchTables(venueId: string): Promise<Table[]> {
@@ -668,6 +740,100 @@ export async function confirmArrival(
   return data.reservation;
 }
 
+export async function fetchWaitlistSummary(
+  venueId: string,
+): Promise<WaitlistSummary> {
+  const data = await apiFetch<{ summary: WaitlistSummary }>(
+    `/api/v1/venues/${venueId}/waitlist/summary`,
+    { auth: false },
+  );
+  return data.summary;
+}
+
+export async function joinWaitlist(input: {
+  venue_id: string;
+  guests: number;
+  phone?: string;
+  zone?: string;
+  note?: string;
+  guest_name?: string;
+}): Promise<WaitlistEntry> {
+  const data = await apiFetch<{ entry: WaitlistEntry }>("/api/v1/waitlist", {
+    method: "POST",
+    body: { ...input, source: "WEB" },
+  });
+  return data.entry;
+}
+
+export async function fetchMyWaitlist(): Promise<WaitlistEntry[]> {
+  const data = await apiFetch<{ waitlist: WaitlistEntry[] }>("/api/v1/waitlist");
+  return data.waitlist ?? [];
+}
+
+export async function leaveWaitlist(id: string): Promise<WaitlistEntry> {
+  const data = await apiFetch<{ entry: WaitlistEntry }>(`/api/v1/waitlist/${id}`, {
+    method: "DELETE",
+  });
+  return data.entry;
+}
+
+export async function staffListWaitlist(
+  venueId: string,
+): Promise<WaitlistEntry[]> {
+  const data = await apiFetch<{ waitlist: WaitlistEntry[] }>(
+    "/api/v1/staff/waitlist",
+    { query: { venue_id: venueId } },
+  );
+  return data.waitlist ?? [];
+}
+
+export async function staffAddWaitlist(input: {
+  venue_id: string;
+  guest_name: string;
+  guests: number;
+  phone?: string;
+  note?: string;
+}): Promise<WaitlistEntry> {
+  const data = await apiFetch<{ entry: WaitlistEntry }>("/api/v1/staff/waitlist", {
+    method: "POST",
+    body: input,
+  });
+  return data.entry;
+}
+
+export async function staffNotifyWaitlist(
+  id: string,
+  tableId?: string,
+): Promise<WaitlistEntry> {
+  const data = await apiFetch<{ entry: WaitlistEntry }>(
+    `/api/v1/staff/waitlist/${id}/notify`,
+    { method: "POST", body: { table_id: tableId ?? "" } },
+  );
+  return data.entry;
+}
+
+export async function staffSeatWaitlist(
+  id: string,
+  tableId?: string,
+): Promise<WaitlistEntry> {
+  const data = await apiFetch<{ entry: WaitlistEntry }>(
+    `/api/v1/staff/waitlist/${id}/seat`,
+    { method: "POST", body: { table_id: tableId ?? "" } },
+  );
+  return data.entry;
+}
+
+export async function staffCloseWaitlist(
+  id: string,
+  status: "LEFT" | "EXPIRED" = "LEFT",
+): Promise<WaitlistEntry> {
+  const data = await apiFetch<{ entry: WaitlistEntry }>(
+    `/api/v1/staff/waitlist/${id}/close`,
+    { method: "POST", body: { status } },
+  );
+  return data.entry;
+}
+
 export function priceLevelLabel(level: number): string {
   return "€".repeat(Math.max(1, Math.min(3, level || 1)));
 }
@@ -678,3 +844,340 @@ export function formatTime(iso?: string | null): string {
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
+
+export type VenueAnalytics = {
+  venue_id: string;
+  reservations_by_status: Record<string, number>;
+  free_tables: number;
+  waiter_calls_pending: number;
+  orders_by_status: Record<string, number>;
+  total_tables: number;
+};
+
+export type StaffMember = {
+  id: string;
+  venue_id: string;
+  user_id?: string;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+};
+
+export async function replaceVenueTables(
+  venueId: string,
+  tables: { number: number; seats: number; x: number; y: number; zone?: string }[],
+): Promise<Table[]> {
+  const data = await apiFetch<{ tables: Table[] }>(
+    `/api/v1/restaurant/venues/${venueId}/tables`,
+    { method: "PUT", body: { tables } },
+  );
+  return data.tables ?? [];
+}
+
+export async function listOwnerMenu(venueId: string): Promise<MenuItem[]> {
+  const data = await apiFetch<{ items?: MenuItem[]; menu?: MenuItem[] }>(
+    `/api/v1/restaurant/venues/${venueId}/menu`,
+  );
+  return data.menu ?? data.items ?? [];
+}
+
+export async function upsertOwnerMenuItem(
+  venueId: string,
+  item: Partial<MenuItem> & { name: LocalizedString; price: number },
+): Promise<MenuItem> {
+  const data = await apiFetch<{ item: MenuItem }>(
+    `/api/v1/restaurant/venues/${venueId}/menu`,
+    { method: "POST", body: item },
+  );
+  return data.item;
+}
+
+export async function updateOwnerMenuItem(
+  venueId: string,
+  itemId: string,
+  item: Partial<MenuItem> & { name: LocalizedString; price: number },
+): Promise<MenuItem> {
+  const data = await apiFetch<{ item: MenuItem }>(
+    `/api/v1/restaurant/venues/${venueId}/menu/${itemId}`,
+    { method: "PATCH", body: item },
+  );
+  return data.item;
+}
+
+export async function deleteOwnerMenuItem(
+  venueId: string,
+  itemId: string,
+): Promise<void> {
+  await apiFetch(`/api/v1/restaurant/venues/${venueId}/menu/${itemId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function stopOwnerMenuItem(
+  venueId: string,
+  itemId: string,
+  stopped = true,
+): Promise<MenuItem> {
+  const data = await apiFetch<{ item: MenuItem }>(
+    `/api/v1/restaurant/venues/${venueId}/menu/${itemId}/stop`,
+    { method: "POST", body: { stopped } },
+  );
+  return data.item;
+}
+
+export async function listVenueQR(venueId: string): Promise<Table[]> {
+  const data = await apiFetch<{ tables: Table[] }>(
+    `/api/v1/restaurant/venues/${venueId}/qr`,
+  );
+  return data.tables ?? [];
+}
+
+export async function regenerateVenueQR(venueId: string): Promise<Table[]> {
+  const data = await apiFetch<{ tables: Table[] }>(
+    `/api/v1/restaurant/venues/${venueId}/qr/regenerate`,
+    { method: "POST", body: {} },
+  );
+  return data.tables ?? [];
+}
+
+export async function updateBookingRules(
+  venueId: string,
+  rules: Record<string, number | boolean>,
+): Promise<Venue> {
+  const data = await apiFetch<{ venue: Venue }>(
+    `/api/v1/restaurant/venues/${venueId}/booking-rules`,
+    { method: "PATCH", body: rules },
+  );
+  return data.venue;
+}
+
+export async function fetchVenueAnalytics(
+  venueId: string,
+): Promise<VenueAnalytics> {
+  const data = await apiFetch<{ analytics: VenueAnalytics }>(
+    `/api/v1/restaurant/venues/${venueId}/analytics`,
+  );
+  return data.analytics;
+}
+
+export async function inviteVenueStaff(
+  venueId: string,
+  email: string,
+): Promise<StaffMember> {
+  const data = await apiFetch<{ staff: StaffMember }>(
+    `/api/v1/restaurant/venues/${venueId}/staff/invite`,
+    { method: "POST", body: { email } },
+  );
+  return data.staff;
+}
+
+export async function listVenueStaff(venueId: string): Promise<StaffMember[]> {
+  const data = await apiFetch<{ staff: StaffMember[] }>(
+    `/api/v1/restaurant/venues/${venueId}/staff`,
+  );
+  return data.staff ?? [];
+}
+
+export async function staffListWaiterCalls(venueId: string) {
+  return apiFetch<{ waiter_calls: { id: string; table_id: string; reason: string; status: string }[] }>(
+    `/api/v1/staff/waiter-calls?venue_id=${encodeURIComponent(venueId)}`,
+  );
+}
+
+export async function staffCompleteWaiterCall(id: string) {
+  return apiFetch(`/api/v1/staff/waiter-calls/${id}/complete`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export async function staffListOrders(venueId: string): Promise<Order[]> {
+  const data = await apiFetch<{ orders: Order[] }>(
+    `/api/v1/staff/orders?venue_id=${encodeURIComponent(venueId)}`,
+  );
+  return data.orders ?? [];
+}
+
+export async function staffUpdateOrder(
+  orderId: string,
+  venueId: string,
+  status: string,
+): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(
+    `/api/v1/staff/orders/${orderId}`,
+    { method: "PATCH", body: { status, venue_id: venueId } },
+  );
+  return data.order;
+}
+
+export async function submitProfileChangeRequest(
+  applicationId: string,
+  patch: ApplicationUpdate,
+) {
+  return apiFetch(`/api/v1/restaurant/applications/${applicationId}/change-requests`, {
+    method: "POST",
+    body: patch,
+  });
+}
+
+export type AdminOverview = {
+  users_total: number;
+  guests_total: number;
+  owners_total: number;
+  staff_total: number;
+  venues_published: number;
+  applications_pending: number;
+  reservations_active: number;
+  reservations_total: number;
+  orders_total: number;
+  orders_paid: number;
+  revenue_paid_mdl: number;
+  waiter_calls_pending: number;
+  change_requests_open: number;
+  reservations_by_status: Record<string, number>;
+  orders_by_status: Record<string, number>;
+};
+
+export type AdminPerson = {
+  id: string;
+  email: string;
+  phone?: string;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  role: string;
+  locale: string;
+  created_at: string;
+  crm_object: string;
+};
+
+export type AdminCompany = {
+  application_id: string;
+  venue_id?: string;
+  name: LocalizedString;
+  status: ApplicationStatus;
+  owner_email: string;
+  owner_name: string;
+  phone: string;
+  email: string;
+  city_id: string;
+  average_check: number;
+  cuisine: string[];
+  updated_at: string;
+  crm_object: string;
+};
+
+export type AdminReservationRow = {
+  id: string;
+  venue_id: string;
+  venue_name: LocalizedString;
+  table_id: string;
+  table_number: number;
+  guest_id: string;
+  guest_name: string;
+  guest_email: string;
+  guests: number;
+  reserved_for: string;
+  status: string;
+  source?: string;
+  arrival_confirmed_at?: string | null;
+  created_at: string;
+  crm_object: string;
+};
+
+export type AdminOrderRow = {
+  id: string;
+  session_id: string;
+  user_id: string;
+  guest_name: string;
+  guest_email: string;
+  venue_id: string;
+  venue_name: LocalizedString;
+  items: OrderItem[];
+  status: string;
+  total: number;
+  paid: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminCRMStatus = {
+  enabled: boolean;
+  healthy: boolean;
+  running?: boolean;
+  last_success_at?: string;
+  last_error_at?: string;
+  last_error?: string;
+  crm_url: string;
+  objects?: string[];
+};
+
+export type ProfileChangeRequest = {
+  id: string;
+  application_id: string;
+  owner_user_id: string;
+  status: string;
+  patch: ApplicationUpdate;
+  created_at: string;
+  note?: string;
+};
+
+export async function adminOverview(): Promise<AdminOverview> {
+  const data = await apiFetch<{ overview: AdminOverview }>("/api/v1/admin/overview");
+  return data.overview;
+}
+
+export async function adminListPeople(): Promise<AdminPerson[]> {
+  const data = await apiFetch<{ people: AdminPerson[] }>("/api/v1/admin/people");
+  return data.people ?? [];
+}
+
+export async function adminListCompanies(): Promise<AdminCompany[]> {
+  const data = await apiFetch<{ companies: AdminCompany[] }>("/api/v1/admin/companies");
+  return data.companies ?? [];
+}
+
+export async function adminListReservations(): Promise<AdminReservationRow[]> {
+  const data = await apiFetch<{ reservations: AdminReservationRow[] }>(
+    "/api/v1/admin/reservations",
+  );
+  return data.reservations ?? [];
+}
+
+export async function adminListOrders(): Promise<AdminOrderRow[]> {
+  const data = await apiFetch<{ orders: AdminOrderRow[] }>("/api/v1/admin/orders");
+  return data.orders ?? [];
+}
+
+export async function adminCRMStatus(): Promise<AdminCRMStatus> {
+  return apiFetch<AdminCRMStatus>("/api/v1/admin/crm/status");
+}
+
+export async function adminReconcileCRM(): Promise<void> {
+  await apiFetch("/api/v1/admin/integrations/twenty/reconcile", {
+    method: "POST",
+    body: {},
+  });
+}
+
+export async function adminListChangeRequests(): Promise<ProfileChangeRequest[]> {
+  const data = await apiFetch<{ change_requests: ProfileChangeRequest[] }>(
+    "/api/v1/admin/change-requests",
+  );
+  return data.change_requests ?? [];
+}
+
+export async function adminReviewChangeRequest(
+  id: string,
+  status: "APPROVED" | "REJECTED",
+  note?: string,
+): Promise<ProfileChangeRequest> {
+  const data = await apiFetch<{ change_request: ProfileChangeRequest }>(
+    `/api/v1/admin/change-requests/${id}/review`,
+    { method: "POST", body: { status, note } },
+  );
+  return data.change_request;
+}
+
+

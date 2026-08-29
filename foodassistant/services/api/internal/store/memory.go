@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"net/mail"
 	"net/url"
 	"sort"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/foodassistant/api/internal/models"
+	"github.com/foodassistant/api/internal/qr"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -57,38 +59,46 @@ type ApplicationUpdate struct {
 }
 
 type MemoryStore struct {
-	mu           sync.RWMutex
-	dataFile     string
-	cities       map[string]models.City
-	venues       map[string]models.Venue
-	tables       map[string]models.Table
-	users        map[string]models.User
-	reservations map[string]models.Reservation
-	watches      map[string]models.TableWatch
-	sessions     map[string]models.Session
-	menuItems    map[string]models.MenuItem
-	orders       map[string]models.Order
-	waiterCalls  map[string]models.WaiterCall
-	collections  map[string]models.HolidayCollection
-	applications map[string]models.VenueApplication
-	activities   map[string][]models.ApplicationActivity
+	mu             sync.RWMutex
+	dataFile       string
+	qrSecret       string
+	cities         map[string]models.City
+	venues         map[string]models.Venue
+	tables         map[string]models.Table
+	users          map[string]models.User
+	reservations   map[string]models.Reservation
+	watches        map[string]models.TableWatch
+	sessions       map[string]models.Session
+	menuItems      map[string]models.MenuItem
+	orders         map[string]models.Order
+	waiterCalls    map[string]models.WaiterCall
+	collections    map[string]models.HolidayCollection
+	applications   map[string]models.VenueApplication
+	activities     map[string][]models.ApplicationActivity
+	staffMembers   map[string]models.StaffMember
+	profileChanges map[string]models.ProfileChangeRequest
+	waitlist       map[string]models.WaitlistEntry
 }
 
 func NewMemory() *MemoryStore {
 	s := &MemoryStore{
-		cities:       make(map[string]models.City),
-		venues:       make(map[string]models.Venue),
-		tables:       make(map[string]models.Table),
-		users:        make(map[string]models.User),
-		reservations: make(map[string]models.Reservation),
-		watches:      make(map[string]models.TableWatch),
-		sessions:     make(map[string]models.Session),
-		menuItems:    make(map[string]models.MenuItem),
-		orders:       make(map[string]models.Order),
-		waiterCalls:  make(map[string]models.WaiterCall),
-		collections:  make(map[string]models.HolidayCollection),
-		applications: make(map[string]models.VenueApplication),
-		activities:   make(map[string][]models.ApplicationActivity),
+		qrSecret:       "foodassistant-qr-dev-secret",
+		cities:         make(map[string]models.City),
+		venues:         make(map[string]models.Venue),
+		tables:         make(map[string]models.Table),
+		users:          make(map[string]models.User),
+		reservations:   make(map[string]models.Reservation),
+		watches:        make(map[string]models.TableWatch),
+		sessions:       make(map[string]models.Session),
+		menuItems:      make(map[string]models.MenuItem),
+		orders:         make(map[string]models.Order),
+		waiterCalls:    make(map[string]models.WaiterCall),
+		collections:    make(map[string]models.HolidayCollection),
+		applications:   make(map[string]models.VenueApplication),
+		activities:     make(map[string][]models.ApplicationActivity),
+		staffMembers:   make(map[string]models.StaffMember),
+		profileChanges: make(map[string]models.ProfileChangeRequest),
+		waitlist:       make(map[string]models.WaitlistEntry),
 	}
 	s.seed()
 	return s
@@ -123,11 +133,23 @@ func (s *MemoryStore) seed() {
 				EN: "Moldovan cuisine and pastries in central Bălți",
 				RO: "Bucătărie moldovenească și plăcinte în centrul Bălțiului",
 			},
-			Cuisine: []string{"moldovan", "bakery"}, Rating: 4.8, PriceLevel: 2,
+			Cuisine: []string{"moldovan", "bakery"}, Rating: 4.8, ReviewCount: 214, PriceLevel: 2,
 			Address: models.LocalizedString{RU: "ул. Независимости 45", EN: "Independenței 45", RO: "Independenței 45"},
 			Lat:     47.7617, Lng: 27.9288, AverageCheck: 250, OpenNow: true,
-			ImageURL: "/images/venues/la-placinte.jpg", AlcoholLicense: true,
+			ImageURL: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+			PhotoURLs: []string{
+				"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+				"https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+				"https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
+			},
+			Reviews: []models.VenueReview{
+				{Author: "Maria C.", Rating: 5, Text: "Лучшие плацинды в Бельцах. Зал уютный, бронируем стол через FoodAssistant.", Relative: "2 недели назад", Source: "google"},
+				{Author: "Andrei P.", Rating: 5, Text: "Отличный сервис и быстрая подача. Карта столов совпадает с реальностью.", Relative: "месяц назад", Source: "google"},
+				{Author: "Elena V.", Rating: 4, Text: "Вкусно и по-домашнему. Иногда очередь в обед.", Relative: "2 месяца назад", Source: "google"},
+			},
+			AlcoholLicense: true,
 			SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
+			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
 		},
 		{
 			ID: "venue-2", CityID: balti.ID,
@@ -137,11 +159,23 @@ func (s *MemoryStore) seed() {
 				EN: "Coffee, breakfast and light lunch",
 				RO: "Cafea, mic dejun și prânz ușor",
 			},
-			Cuisine: []string{"cafe", "european"}, Rating: 4.5, PriceLevel: 1,
+			Cuisine: []string{"cafe", "european"}, Rating: 4.5, ReviewCount: 128, PriceLevel: 1,
 			Address: models.LocalizedString{RU: "пл. Василия Лупу 1", EN: "Vasile Lupu Sq 1", RO: "Piața Vasile Lupu 1"},
 			Lat:     47.7631, Lng: 27.9299, AverageCheck: 180, OpenNow: true,
-			ImageURL: "/images/venues/cafe-central.jpg", AlcoholLicense: false,
+			ImageURL: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
+			PhotoURLs: []string{
+				"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
+				"https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80",
+				"https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80",
+			},
+			Reviews: []models.VenueReview{
+				{Author: "Ion M.", Rating: 5, Text: "Идеально для завтрака. Видно свободные столы прямо на карте.", Relative: "5 дней назад", Source: "google"},
+				{Author: "Sofia R.", Rating: 4, Text: "Кофе отличный, иногда шумно у окна.", Relative: "3 недели назад", Source: "google"},
+				{Author: "Dmitri K.", Rating: 5, Text: "Быстро нашли стол на плане зала и забронировали.", Relative: "месяц назад", Source: "google"},
+			},
+			AlcoholLicense: false,
 			SessionStartBeforeMin: 10, ReleaseBeforeMin: 10,
+			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
 		},
 		{
 			ID: "venue-3", CityID: balti.ID,
@@ -151,11 +185,22 @@ func (s *MemoryStore) seed() {
 				EN: "Steaks and evening atmosphere",
 				RO: "Steak-uri și atmosferă de seară",
 			},
-			Cuisine: []string{"steak", "grill"}, Rating: 4.6, PriceLevel: 3,
+			Cuisine: []string{"steak", "grill"}, Rating: 4.6, ReviewCount: 97, PriceLevel: 3,
 			Address: models.LocalizedString{RU: "ул. Штефана чел Маре 12", EN: "Ștefan cel Mare 12", RO: "Ștefan cel Mare 12"},
 			Lat:     47.7598, Lng: 27.9255, AverageCheck: 450, OpenNow: true,
-			ImageURL: "/images/venues/steak-house.jpg", AlcoholLicense: true,
+			ImageURL: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
+			PhotoURLs: []string{
+				"https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
+				"https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=1200&q=80",
+				"https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1200&q=80",
+			},
+			Reviews: []models.VenueReview{
+				{Author: "Alexei N.", Rating: 5, Text: "Стейк medium rare идеальный. Вечером лучше бронировать заранее.", Relative: "неделю назад", Source: "google"},
+				{Author: "Irina S.", Rating: 4, Text: "Атмосфера и сервис на уровне. Цены выше среднего.", Relative: "месяц назад", Source: "google"},
+			},
+			AlcoholLicense: true,
 			SessionStartBeforeMin: 20, ReleaseBeforeMin: 15,
+			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: false,
 		},
 	}
 	for _, v := range venues {
@@ -167,18 +212,21 @@ func (s *MemoryStore) seed() {
 	reserved := now.Add(45 * time.Minute)
 
 	tables := []models.Table{
-		{ID: "t1", VenueID: "venue-1", Number: 1, Seats: 2, Status: models.TableFree, X: 0.2, Y: 0.3},
-		{ID: "t2", VenueID: "venue-1", Number: 2, Seats: 4, Status: models.TableFree, X: 0.5, Y: 0.3},
-		{ID: "t3", VenueID: "venue-1", Number: 3, Seats: 4, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.8, Y: 0.3},
-		{ID: "t4", VenueID: "venue-1", Number: 4, Seats: 6, Status: models.TableReserved, ReservedFor: &reserved, X: 0.35, Y: 0.65},
-		{ID: "t5", VenueID: "venue-1", Number: 5, Seats: 2, Status: models.TableFree, X: 0.65, Y: 0.65},
-		{ID: "t6", VenueID: "venue-2", Number: 1, Seats: 2, Status: models.TableFree, X: 0.3, Y: 0.4},
-		{ID: "t7", VenueID: "venue-2", Number: 2, Seats: 2, Status: models.TableFree, X: 0.6, Y: 0.4},
-		{ID: "t8", VenueID: "venue-2", Number: 3, Seats: 4, Status: models.TableFree, X: 0.45, Y: 0.7},
-		{ID: "t9", VenueID: "venue-2", Number: 4, Seats: 2, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.75, Y: 0.7},
-		{ID: "t10", VenueID: "venue-2", Number: 5, Seats: 6, Status: models.TableFree, X: 0.2, Y: 0.75},
-		{ID: "t11", VenueID: "venue-3", Number: 1, Seats: 4, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.4, Y: 0.5},
-		{ID: "t12", VenueID: "venue-3", Number: 2, Seats: 2, Status: models.TableFree, X: 0.7, Y: 0.5},
+		{ID: "t1", VenueID: "venue-1", Number: 1, Seats: 2, Status: models.TableFree, X: 0.2, Y: 0.3, Zone: "hall"},
+		{ID: "t2", VenueID: "venue-1", Number: 2, Seats: 4, Status: models.TableFree, X: 0.5, Y: 0.3, Zone: "hall"},
+		{ID: "t3", VenueID: "venue-1", Number: 3, Seats: 4, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.8, Y: 0.3, Zone: "hall"},
+		{ID: "t4", VenueID: "venue-1", Number: 4, Seats: 6, Status: models.TableReserved, ReservedFor: &reserved, X: 0.35, Y: 0.65, Zone: "terrace"},
+		{ID: "t5", VenueID: "venue-1", Number: 5, Seats: 2, Status: models.TableFree, X: 0.65, Y: 0.65, Zone: "terrace"},
+		{ID: "t6", VenueID: "venue-2", Number: 1, Seats: 2, Status: models.TableFree, X: 0.3, Y: 0.4, Zone: "hall"},
+		{ID: "t7", VenueID: "venue-2", Number: 2, Seats: 2, Status: models.TableFree, X: 0.6, Y: 0.4, Zone: "hall"},
+		{ID: "t8", VenueID: "venue-2", Number: 3, Seats: 4, Status: models.TableFree, X: 0.45, Y: 0.7, Zone: "street"},
+		{ID: "t9", VenueID: "venue-2", Number: 4, Seats: 2, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.75, Y: 0.7, Zone: "street"},
+		{ID: "t10", VenueID: "venue-2", Number: 5, Seats: 6, Status: models.TableFree, X: 0.2, Y: 0.75, Zone: "street"},
+		{ID: "t11", VenueID: "venue-3", Number: 1, Seats: 4, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.4, Y: 0.5, Zone: "hall"},
+		{ID: "t12", VenueID: "venue-3", Number: 2, Seats: 2, Status: models.TableFree, X: 0.7, Y: 0.5, Zone: "hall"},
+		{ID: "t13", VenueID: "venue-3", Number: 3, Seats: 4, Status: models.TableFree, X: 0.28, Y: 0.35, Zone: "street"},
+		{ID: "t14", VenueID: "venue-3", Number: 4, Seats: 2, Status: models.TableFree, X: 0.55, Y: 0.4, Zone: "street"},
+		{ID: "t15", VenueID: "venue-3", Number: 5, Seats: 6, Status: models.TableFree, X: 0.78, Y: 0.62, Zone: "terrace"},
 	}
 	for _, t := range tables {
 		s.tables[t.ID] = t
@@ -337,12 +385,50 @@ func (s *MemoryStore) GetVenue(id string) (models.Venue, error) {
 	return v, nil
 }
 
+func (s *MemoryStore) ApplyVenuePlaces(
+	id, placeID string,
+	rating float64,
+	reviewCount int,
+	photos []string,
+	reviews []models.VenueReview,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	v, ok := s.venues[id]
+	if !ok {
+		return ErrNotFound
+	}
+	if placeID != "" {
+		v.GooglePlaceID = placeID
+	}
+	if rating > 0 {
+		v.Rating = rating
+	}
+	if reviewCount > 0 {
+		v.ReviewCount = reviewCount
+	}
+	if len(photos) > 0 {
+		v.PhotoURLs = append([]string(nil), photos...)
+		v.ImageURL = photos[0]
+	}
+	if len(reviews) > 0 {
+		v.Reviews = append([]models.VenueReview(nil), reviews...)
+	}
+	s.venues[id] = v
+	return nil
+}
+
 func (s *MemoryStore) ListTables(venueID string) []models.Table {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make([]models.Table, 0)
 	for _, t := range s.tables {
 		if t.VenueID == venueID {
+			if t.Zone == "" {
+				t.Zone = "hall"
+			}
 			out = append(out, t)
 		}
 	}
@@ -571,10 +657,20 @@ func (s *MemoryStore) ListReservations(userID string) []models.Reservation {
 	defer s.mu.RUnlock()
 	out := make([]models.Reservation, 0)
 	for _, r := range s.reservations {
-		if r.UserID == userID {
-			out = append(out, r)
+		if r.UserID != userID {
+			continue
 		}
+		if venue, ok := s.venues[r.VenueID]; ok {
+			r.VenueName = venue.Name
+		}
+		if table, ok := s.tables[r.TableID]; ok {
+			r.TableNumber = table.Number
+		}
+		out = append(out, r)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].ReservedFor.After(out[j].ReservedFor)
+	})
 	return out
 }
 
@@ -612,8 +708,8 @@ func (s *MemoryStore) ScanQR(userID, venueID, tableID, token string) (models.Ses
 	defer s.mu.Unlock()
 	defer s.persistBestEffortLocked()
 
-	// MVP: accept any non-empty token (including "demo")
-	if strings.TrimSpace(token) == "" {
+	token = strings.TrimSpace(token)
+	if token == "" {
 		return models.Session{}, ErrInvalidQR
 	}
 
@@ -627,6 +723,14 @@ func (s *MemoryStore) ScanQR(userID, venueID, tableID, token string) (models.Ses
 	if !ok || t.VenueID != venueID {
 		return models.Session{}, ErrNotFound
 	}
+
+	legacy := qr.LegacyToken(venueID, tableID)
+	if t.QRToken != "" {
+		if token != t.QRToken && token != legacy && !qr.Verify(s.qrSecret, venueID, tableID, token) {
+			return models.Session{}, ErrInvalidQR
+		}
+	}
+	// When QRToken is empty, any non-empty token is accepted (compat).
 
 	var reservationID *string
 	now := time.Now().UTC()
@@ -642,7 +746,7 @@ func (s *MemoryStore) ScanQR(userID, venueID, tableID, token string) (models.Ses
 		if !ok || r.UserID != userID {
 			return models.Session{}, ErrForbidden
 		}
-		if r.Status != models.ReservationConfirmed {
+		if r.Status != models.ReservationConfirmed && r.Status != models.ReservationCheckedIn {
 			return models.Session{}, ErrConflict
 		}
 		r.Status = models.ReservationCheckedIn
@@ -725,7 +829,7 @@ func (s *MemoryStore) ListMenu(venueID string) ([]models.MenuItem, error) {
 	}
 	out := make([]models.MenuItem, 0)
 	for _, m := range s.menuItems {
-		if m.VenueID == venueID {
+		if m.VenueID == venueID && !m.Stopped {
 			out = append(out, m)
 		}
 	}
@@ -761,6 +865,9 @@ func (s *MemoryStore) CreateOrder(sessionID, userID string, items []OrderItemInp
 		if !ok || mi.VenueID != sess.VenueID {
 			return models.Order{}, ErrNotFound
 		}
+		if mi.Stopped {
+			return models.Order{}, ErrBadRequest
+		}
 		orderItems = append(orderItems, models.OrderItem{
 			MenuItemID: mi.ID,
 			Name:       mi.Name,
@@ -772,15 +879,16 @@ func (s *MemoryStore) CreateOrder(sessionID, userID string, items []OrderItemInp
 
 	now := time.Now().UTC()
 	o := models.Order{
-		ID:        uuid.NewString(),
-		SessionID: sessionID,
-		UserID:    userID,
-		VenueID:   sess.VenueID,
-		Items:     orderItems,
-		Status:    models.OrderSubmitted,
-		Total:     total,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:          uuid.NewString(),
+		SessionID:   sessionID,
+		UserID:      userID,
+		VenueID:     sess.VenueID,
+		Items:       orderItems,
+		Status:      models.OrderSubmitted,
+		Total:       total,
+		CheckNumber: fmt.Sprintf("FA-%s-%04d", now.Format("20060102"), len(s.orders)+1),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	s.orders[o.ID] = o
 	return o, nil
@@ -791,10 +899,17 @@ func (s *MemoryStore) ListOrders(userID string) []models.Order {
 	defer s.mu.RUnlock()
 	out := make([]models.Order, 0)
 	for _, o := range s.orders {
-		if o.UserID == userID {
-			out = append(out, o)
+		if o.UserID != userID {
+			continue
 		}
+		if venue, ok := s.venues[o.VenueID]; ok {
+			o.VenueName = venue.Name
+		}
+		out = append(out, o)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].CreatedAt.After(out[j].CreatedAt)
+	})
 	return out
 }
 
@@ -805,6 +920,48 @@ func (s *MemoryStore) GetOrder(id string) (models.Order, error) {
 	if !ok {
 		return models.Order{}, ErrNotFound
 	}
+	return o, nil
+}
+
+func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	o, ok := s.orders[orderID]
+	if !ok {
+		return models.Order{}, ErrNotFound
+	}
+	if o.UserID != userID {
+		return models.Order{}, ErrForbidden
+	}
+	if o.Status == models.OrderCancelled {
+		return models.Order{}, ErrConflict
+	}
+	if o.Status == models.OrderPaid {
+		return o, nil
+	}
+
+	now := time.Now().UTC()
+	method = strings.ToLower(strings.TrimSpace(method))
+	switch method {
+	case "app", "card", "online":
+		o.Status = models.OrderPaid
+		o.PaymentMethod = "app"
+		o.PaidAt = &now
+	case "venue", "cash", "at_venue":
+		o.PaymentMethod = "venue"
+		if o.Status == models.OrderSubmitted || o.Status == models.OrderPreparing || o.Status == models.OrderReady {
+			o.Status = models.OrderServed
+		}
+	default:
+		return models.Order{}, ErrBadRequest
+	}
+	if o.CheckNumber == "" {
+		o.CheckNumber = fmt.Sprintf("FA-%s-%04d", now.Format("20060102"), len(s.orders))
+	}
+	o.UpdatedAt = now
+	s.orders[orderID] = o
 	return o, nil
 }
 
@@ -824,7 +981,17 @@ func (s *MemoryStore) UpdateOrderStatus(orderID string, status models.OrderStatu
 		return models.Order{}, ErrInvalidStatus
 	}
 	o.Status = status
-	o.UpdatedAt = time.Now().UTC()
+	now := time.Now().UTC()
+	o.UpdatedAt = now
+	if status == models.OrderPaid && o.PaidAt == nil {
+		o.PaidAt = &now
+		if o.PaymentMethod == "" {
+			o.PaymentMethod = "venue"
+		}
+		if o.CheckNumber == "" {
+			o.CheckNumber = fmt.Sprintf("FA-%s-%04d", now.Format("20060102"), len(s.orders))
+		}
+	}
 	s.orders[orderID] = o
 	return o, nil
 }
@@ -1396,8 +1563,9 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 	}
 
 	imageURL := ""
-	if len(app.PhotoURLs) > 0 {
-		imageURL = app.PhotoURLs[0]
+	photos := append([]string(nil), app.PhotoURLs...)
+	if len(photos) > 0 {
+		imageURL = photos[0]
 	}
 	cityID := app.CityID
 	if cityID == "" {
@@ -1416,6 +1584,7 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		Description:           app.Description,
 		Cuisine:               cuisine,
 		Rating:                0,
+		ReviewCount:           0,
 		PriceLevel:            app.PriceLevel,
 		Address:               app.Address,
 		Lat:                   app.Lat,
@@ -1423,10 +1592,14 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		AverageCheck:          app.AverageCheck,
 		OpenNow:               true,
 		ImageURL:              imageURL,
+		PhotoURLs:             photos,
 		Website:               app.Website,
 		AlcoholLicense:        false,
 		SessionStartBeforeMin: 15,
 		ReleaseBeforeMin:      10,
+		BookingIntervalMin:    30,
+		HoldMinutes:           15,
+		AllowPreorder:         true,
 	}
 	s.venues[venueID] = venue
 
@@ -1435,25 +1608,30 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 	defaultLayout := []struct {
 		x, y  float64
 		seats int
+		zone  string
 	}{
-		{x: 0.18, y: 0.22, seats: 2},
-		{x: 0.43, y: 0.22, seats: 4},
-		{x: 0.72, y: 0.22, seats: 4},
-		{x: 0.22, y: 0.5, seats: 4},
-		{x: 0.52, y: 0.5, seats: 6},
-		{x: 0.79, y: 0.51, seats: 2},
-		{x: 0.35, y: 0.76, seats: 2},
-		{x: 0.68, y: 0.76, seats: 6},
+		{x: 0.18, y: 0.22, seats: 2, zone: "hall"},
+		{x: 0.43, y: 0.22, seats: 4, zone: "hall"},
+		{x: 0.72, y: 0.22, seats: 4, zone: "hall"},
+		{x: 0.22, y: 0.5, seats: 4, zone: "hall"},
+		{x: 0.52, y: 0.5, seats: 6, zone: "hall"},
+		{x: 0.28, y: 0.35, seats: 2, zone: "terrace"},
+		{x: 0.55, y: 0.4, seats: 4, zone: "terrace"},
+		{x: 0.78, y: 0.55, seats: 4, zone: "street"},
+		{x: 0.42, y: 0.7, seats: 6, zone: "street"},
 	}
 	for index, position := range defaultLayout {
+		tID := uuid.NewString()
 		t := models.Table{
-			ID:      uuid.NewString(),
+			ID:      tID,
 			VenueID: venueID,
 			Number:  index + 1,
 			Seats:   position.seats,
 			Status:  models.TableFree,
 			X:       position.x,
 			Y:       position.y,
+			Zone:    position.zone,
+			QRToken: qr.Sign(s.qrSecret, venueID, tID),
 		}
 		s.tables[t.ID] = t
 	}

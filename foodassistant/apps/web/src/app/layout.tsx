@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Fraunces } from "next/font/google";
+import { Inter, Manrope, Fraunces } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import "./premium.css";
@@ -15,6 +15,11 @@ const display = Fraunces({
   subsets: ["latin"],
 });
 
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin", "cyrillic"],
+});
+
 export const metadata: Metadata = {
   title: "FoodAssistant — пилот Бельцы",
   description:
@@ -25,7 +30,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" className={`${sans.variable} ${display.variable} h-full`}>
+    <html lang="ru" className={`${sans.variable} ${display.variable} ${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-[#0f1410] text-[#f3efe6] antialiased">
         <LocaleProvider>{children}</LocaleProvider>
       </body>

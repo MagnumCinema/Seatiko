@@ -6,6 +6,8 @@ import 'package:mobile/screens/menu_screen.dart';
 import 'package:mobile/screens/reservation_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
+import 'package:mobile/widgets/venue_thumb.dart';
+import 'package:mobile/widgets/waitlist_card.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   const VenueDetailScreen({super.key, required this.venueId});
@@ -23,6 +25,18 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   void initState() {
     super.initState();
     _future = ApiClient.instance.fetchVenue(widget.venueId);
+  }
+
+  void _openMenu(Venue v, String locale) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MenuScreen(
+          venueId: v.id,
+          venueName: v.name.pick(locale),
+          venue: v,
+        ),
+      ),
+    );
   }
 
   @override
@@ -48,23 +62,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     v.name.pick(locale),
                     style: const TextStyle(fontSize: 16),
                   ),
-                  background: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF2D5A3D),
-                          Color(0xFF1A2218),
-                          Color(0xFF3A3020),
-                        ],
-                      ),
-                    ),
-                    child: const Align(
-                      alignment: Alignment.center,
-                      child: Icon(Icons.restaurant, size: 64, color: FaColors.gold),
-                    ),
-                  ),
+                  background: VenueHeroImage(imageUrl: v.imageUrl),
                 ),
               ),
               SliverToBoxAdapter(
@@ -156,19 +154,15 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => MenuScreen(
-                                venueId: v.id,
-                                venueName: v.name.pick(locale),
-                                sessionId: null,
-                              ),
-                            ),
-                          );
-                        },
+                        onPressed: () => _openMenu(v, locale),
                         icon: const Icon(Icons.menu_book_outlined),
                         label: Text('venue.menu'.tr()),
+                      ),
+                      WaitlistCard(
+                        venueId: v.id,
+                        onChanged: () => setState(() {
+                          _future = ApiClient.instance.fetchVenue(v.id);
+                        }),
                       ),
                     ],
                   ),
