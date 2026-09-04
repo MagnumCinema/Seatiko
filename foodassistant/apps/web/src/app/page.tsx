@@ -40,12 +40,18 @@ export default function HomePage() {
         <div className="landing-visual">
           <div className="hero-image" />
           <div className="hero-floating-card hero-booking-card">
-            <span className="hero-card-icon">✓</span>
-            <div><small>{copy.confirmed}</small><strong>La Plăcinte · 19:30</strong></div>
+            <span className="hero-card-icon">⌖</span>
+            <div>
+              <small>{copy.heroCard1Title}</small>
+              <strong>{copy.heroCard1Body}</strong>
+            </div>
           </div>
           <div className="hero-floating-card hero-table-card">
             <span className="hero-table-dot" />
-            <div><strong>{copy.freeTables}</strong><small>{copy.updated}</small></div>
+            <div>
+              <strong>{copy.heroCard2Title}</strong>
+              <small>{copy.heroCard2Body}</small>
+            </div>
           </div>
         </div>
       </section>
