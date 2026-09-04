@@ -39,8 +39,8 @@ function sortPlaces(places: MapPlace[]): MapPlace[] {
     if (a.in_database !== b.in_database) return a.in_database ? -1 : 1;
     const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
     if (ratingDiff !== 0) return ratingDiff;
-    const nameA = a.name.en || a.name.ru || a.name.ro || "";
-    const nameB = b.name.en || b.name.ro || b.name.ru || "";
+  const nameA = a.name.en || a.name.ru || a.name.ro || "";
+  const nameB = b.name.en || b.name.ru || b.name.ro || "";
     return nameA.localeCompare(nameB);
   });
 }

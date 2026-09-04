@@ -10,7 +10,7 @@ type MapPlace struct {
 	GooglePlaceID  string          `json:"google_place_id,omitempty"`
 	InDatabase     bool            `json:"in_database"`
 	VenueID        string          `json:"venue_id,omitempty"`
-	FreeTables     int             `json:"free_tables,omitempty"`
+	FreeTables     int             `json:"free_tables"`
 	OpenNow        *bool           `json:"open_now,omitempty"`
 	Cuisine        []string        `json:"cuisine,omitempty"`
 	PriceLevel     int             `json:"price_level,omitempty"`
