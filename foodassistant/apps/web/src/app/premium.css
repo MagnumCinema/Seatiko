@@ -569,6 +569,28 @@
 .venue-map-status i { width: 7px; height: 7px; border-radius: 50%; background: #61d092; box-shadow: 0 0 0 5px rgba(97,208,146,.15); }
 .live-map-status small { color: #87948d; font-size: .49rem; }
 
+.venue-map-legend {
+  position: absolute;
+  z-index: 5;
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 13px;
+  border-radius: 99px;
+  color: #3d5f52;
+  background: rgba(255, 252, 246, 0.9);
+  box-shadow: 0 8px 24px rgba(29, 66, 53, 0.08);
+  backdrop-filter: blur(12px);
+  font-size: 0.6rem;
+  font-weight: 650;
+}
+.venue-map-legend span { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.legend-dot-ours { background: #175f43; }
+.legend-dot-other { background: #8a8f8c; }
+
 .live-map-fallback {
   position: absolute;
   inset: 0;
@@ -615,7 +637,9 @@
 
 .venue-map-panel-head { display: flex; justify-content: space-between; gap: 14px; align-items: start; }
 .venue-map-panel h3 { margin: 7px 0 0; font-size: 1.45rem; letter-spacing: -0.04em; }
+.venue-map-panel-head-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .venue-rating { padding: 7px 9px; border-radius: 9px; color: #9b602e; background: #fae8c8; font-size: 0.72rem; font-weight: 750; }
+.venue-bookable-badge { padding: 6px 9px; border-radius: 9px; color: #fffdf8; background: #175f43; font-size: 0.62rem; font-weight: 750; white-space: nowrap; }
 .venue-map-address { margin: 14px 0 18px; color: #748078; font-size: 0.78rem; line-height: 1.5; }
 .venue-map-meta { display: flex; flex-wrap: wrap; gap: 7px; }
 .venue-map-meta span { padding: 6px 8px; border: 1px solid rgba(31, 73, 57, 0.09); border-radius: 7px; color: #5f6f66; background: #f7f2e9; font-size: 0.65rem; }
@@ -630,6 +654,8 @@
 }
 .venue-availability span { display: flex; align-items: center; gap: 8px; color: #4f715f; font-size: 0.68rem; }
 .venue-availability strong { color: #21563c; font-size: 0.82rem; }
+.venue-availability-comingsoon { background: #f3f0e9; }
+.venue-availability-comingsoon span { color: #8a8f8c; font-weight: 700; }
 
 .venue-map-list { display: grid; gap: 7px; }
 .venue-map-list button {
@@ -649,8 +675,9 @@
 .venue-map-list button:hover,
 .venue-map-list button.active { border-color: rgba(214, 121, 70, 0.16); background: #fbefe3; }
 .venue-map-list b { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; color: #fff; background: #d67946; font-size: 0.65rem; }
-.venue-map-list span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; font-weight: 650; }
-.venue-map-list small { color: #78867d; font-size: 0.62rem; }
+.venue-map-list span { display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; font-weight: 650; }
+.venue-map-list small { color: #78867d; font-size: 0.62rem; white-space: nowrap; }
+.venue-map-badge { flex: none; padding: 2px 6px; border-radius: 6px; color: #fffdf8; background: #175f43; font-size: 0.52rem; font-weight: 750; font-style: normal; text-transform: uppercase; letter-spacing: 0.03em; }
 .map-primary-action { display: flex; justify-content: space-between; margin-top: 22px; padding: 13px 15px; border-radius: 11px; color: #fff; background: #173f31; font-size: 0.76rem; font-weight: 650; }
 
 .landing-features { padding-top: 60px; padding-bottom: 130px; }

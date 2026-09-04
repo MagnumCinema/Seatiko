@@ -4,17 +4,19 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from "maplibre-gl";
 import {
-  fetchVenues,
+  fetchMapPlaces,
   pickLocale,
   priceLevelLabel,
   type LocaleCode,
-  type Venue,
+  type MapPlace,
 } from "@/lib/api";
 import { useLocale } from "@/components/locale-provider";
 
 type MapState = "loading" | "ready" | "error";
-type VenuePointProperties = {
+type PlacePointProperties = {
+  placeId: string;
   venueId: string;
+  inDatabase: boolean;
   index: string;
   name: string;
   selected: boolean;
@@ -27,36 +29,49 @@ const CLUSTER_LAYER_ID = "foodassistant-clusters";
 const VENUE_LAYER_ID = "foodassistant-venue-pins";
 
 const mapCopy = {
-  ru: { unavailable: "Карта временно недоступна", unavailableBody: "Рестораны и свободные столы остаются доступными в списке справа.", openExternal: "Открыть Бельцы на OpenStreetMap",   online: "заведений онлайн", aria: "Интерактивная карта ресторанов Бельц", loadingMap: "Загружаем карту Бельц…", loadingVenues: "Загружаем заведения", updated: "OpenStreetMap · обновляется автоматически", nearby: "Рядом с вами", cityVenues: "Рестораны Бельц", open: "Открыто сейчас", closed: "Сейчас закрыто", free: "свободных столов", tables: "столов", empty: "После публикации рестораны автоматически появятся здесь.", action: "Выбрать стол", openPage: "Страница ресторана", popupFree: "свободно", popupBook: "Забронировать" },
-  en: { unavailable: "Map temporarily unavailable", unavailableBody: "Restaurants and available tables are still listed on the right.", openExternal: "Open Bălți in OpenStreetMap", online: "venues online", aria: "Interactive map of Bălți restaurants", loadingMap: "Loading Bălți map…", loadingVenues: "Loading venues", updated: "OpenStreetMap · updates automatically", nearby: "Near you", cityVenues: "Bălți restaurants", open: "Open now", closed: "Closed now", free: "tables available", tables: "tables", empty: "Restaurants appear here automatically after publication.", action: "Choose a table", openPage: "Restaurant page", popupFree: "free", popupBook: "Book" },
-  ro: { unavailable: "Harta este temporar indisponibilă", unavailableBody: "Restaurantele și mesele libere rămân disponibile în lista din dreapta.", openExternal: "Deschide Bălți în OpenStreetMap", online: "localuri online", aria: "Harta interactivă a restaurantelor din Bălți", loadingMap: "Se încarcă harta Bălți…", loadingVenues: "Se încarcă localurile", updated: "OpenStreetMap · se actualizează automat", nearby: "În apropiere", cityVenues: "Restaurante din Bălți", open: "Deschis acum", closed: "Închis acum", free: "mese libere", tables: "mese", empty: "Restaurantele apar automat aici după publicare.", action: "Alege masa", openPage: "Pagina restaurantului", popupFree: "libere", popupBook: "Rezervă" },
+  ru: { unavailable: "Карта временно недоступна", unavailableBody: "Рестораны и свободные столы остаются доступными в списке справа.", openExternal: "Открыть Бельцы на OpenStreetMap",   online: "заведений онлайн", aria: "Интерактивная карта ресторанов Бельц", loadingMap: "Загружаем карту Бельц…", loadingVenues: "Загружаем заведения", updated: "OpenStreetMap · обновляется автоматически", nearby: "Рядом с вами", cityVenues: "Рестораны Бельц", open: "Открыто сейчас", closed: "Сейчас закрыто", free: "свободных столов", tables: "столов", empty: "После публикации рестораны автоматически появятся здесь.", action: "Выбрать стол", openPage: "Страница ресторана", popupFree: "свободно", popupBook: "Забронировать", legendAria: "Легенда карты", legendOurs: "В FoodAssistant — можно забронировать", legendOther: "Другие заведения", comingSoon: "Скоро в FoodAssistant", bookableBadge: "Можно забронировать" },
+  en: { unavailable: "Map temporarily unavailable", unavailableBody: "Restaurants and available tables are still listed on the right.", openExternal: "Open Bălți in OpenStreetMap", online: "venues online", aria: "Interactive map of Bălți restaurants", loadingMap: "Loading Bălți map…", loadingVenues: "Loading venues", updated: "OpenStreetMap · updates automatically", nearby: "Near you", cityVenues: "Bălți restaurants", open: "Open now", closed: "Closed now", free: "tables available", tables: "tables", empty: "Restaurants appear here automatically after publication.", action: "Choose a table", openPage: "Restaurant page", popupFree: "free", popupBook: "Book", legendAria: "Map legend", legendOurs: "In FoodAssistant — bookable", legendOther: "Other places", comingSoon: "Coming soon to FoodAssistant", bookableBadge: "Bookable" },
+  ro: { unavailable: "Harta este temporar indisponibilă", unavailableBody: "Restaurantele și mesele libere rămân disponibile în lista din dreapta.", openExternal: "Deschide Bălți în OpenStreetMap", online: "localuri online", aria: "Harta interactivă a restaurantelor din Bălți", loadingMap: "Se încarcă harta Bălți…", loadingVenues: "Se încarcă localurile", updated: "OpenStreetMap · se actualizează automat", nearby: "În apropiere", cityVenues: "Restaurante din Bălți", open: "Deschis acum", closed: "Închis acum", free: "mese libere", tables: "mese", empty: "Restaurantele apar automat aici după publicare.", action: "Alege masa", openPage: "Pagina restaurantului", popupFree: "libere", popupBook: "Rezervă", legendAria: "Legenda hărții", legendOurs: "În FoodAssistant — se poate rezerva", legendOther: "Alte localuri", comingSoon: "În curând în FoodAssistant", bookableBadge: "Se poate rezerva" },
 } as const;
 
-function venueCollection(
-  venues: Venue[],
+function sortPlaces(places: MapPlace[]): MapPlace[] {
+  return [...places].sort((a, b) => {
+    if (a.in_database !== b.in_database) return a.in_database ? -1 : 1;
+    const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
+    if (ratingDiff !== 0) return ratingDiff;
+    const nameA = a.name.en || a.name.ru || a.name.ro || "";
+    const nameB = b.name.en || b.name.ro || b.name.ru || "";
+    return nameA.localeCompare(nameB);
+  });
+}
+
+function placeCollection(
+  places: MapPlace[],
   locale: LocaleCode,
   selectedId: string | null,
-): GeoJSON.FeatureCollection<GeoJSON.Point, VenuePointProperties> {
+): GeoJSON.FeatureCollection<GeoJSON.Point, PlacePointProperties> {
   return {
     type: "FeatureCollection",
-    features: venues.map((venue, index) => ({
+    features: places.map((place, index) => ({
       type: "Feature",
-      id: venue.id,
+      id: place.id,
       geometry: {
         type: "Point",
-        coordinates: [venue.lng, venue.lat],
+        coordinates: [place.lng, place.lat],
       },
       properties: {
-        venueId: venue.id,
+        placeId: place.id,
+        venueId: place.venue_id ?? "",
+        inDatabase: place.in_database,
         index: String(index + 1),
-        name: pickLocale(venue.name, locale),
-        selected: venue.id === selectedId,
+        name: pickLocale(place.name, locale),
+        selected: place.id === selectedId,
       },
     })),
   };
 }
 
-function FreeMapFallback({ venues, locale }: { venues: Venue[]; locale: LocaleCode }) {
+function FreeMapFallback({ places, locale }: { places: MapPlace[]; locale: LocaleCode }) {
   const copy = mapCopy[locale];
   return (
     <div className="live-map-fallback" role="status">
@@ -64,9 +79,9 @@ function FreeMapFallback({ venues, locale }: { venues: Venue[]; locale: LocaleCo
         <i className="one" />
         <i className="two" />
         <i className="three" />
-        {venues.slice(0, 4).map((venue, index) => (
+        {places.slice(0, 4).map((place, index) => (
           <span
-            key={venue.id}
+            key={place.id}
             style={{
               left: `${22 + index * 17}%`,
               top: `${57 - (index % 2) * 22}%`,
@@ -91,7 +106,7 @@ function FreeMapFallback({ venues, locale }: { venues: Venue[]; locale: LocaleCo
         </div>
       </div>
       <div className="venue-map-status">
-        <i /> {venues.length} {copy.online}
+        <i /> {places.length} {copy.online}
       </div>
     </div>
   );
@@ -103,25 +118,26 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
-  const venuesRef = useRef<Venue[]>([]);
+  const placesRef = useRef<MapPlace[]>([]);
   const localeRef = useRef(locale);
-  const fittedVenuesRef = useRef("");
-  const [venues, setVenues] = useState<Venue[]>([]);
+  const fittedPlacesRef = useRef("");
+  const [places, setPlaces] = useState<MapPlace[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapState, setMapState] = useState<MapState>("loading");
 
   useEffect(() => {
-    venuesRef.current = venues;
-  }, [venues]);
+    placesRef.current = places;
+  }, [places]);
 
   useEffect(() => {
     localeRef.current = locale;
   }, [locale]);
 
-  function showVenuePopup(venue: Venue, map: maplibregl.Map) {
+  function showVenuePopup(place: MapPlace, map: maplibregl.Map) {
     const labels = mapCopy[localeRef.current];
-    const name = pickLocale(venue.name, localeRef.current);
+    const name = pickLocale(place.name, localeRef.current);
+    const bookable = place.in_database && Boolean(place.venue_id);
     const root = document.createElement("div");
     root.className = "venue-map-popup-card";
 
@@ -129,36 +145,50 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
     title.textContent = name;
     root.appendChild(title);
 
-    const rating = document.createElement("div");
-    rating.className = "venue-map-popup-rating";
-    rating.textContent = `★ ${venue.rating.toFixed(1)}${
-      venue.review_count ? ` · ${venue.review_count}` : ""
-    }`;
-    root.appendChild(rating);
+    if (typeof place.rating === "number") {
+      const rating = document.createElement("div");
+      rating.className = "venue-map-popup-rating";
+      rating.textContent = `★ ${place.rating.toFixed(1)}`;
+      root.appendChild(rating);
+    }
 
-    const free = document.createElement("div");
-    free.className = "venue-map-popup-free";
-    const freeCount = document.createElement("b");
-    freeCount.textContent = String(venue.free_tables);
-    free.appendChild(freeCount);
-    free.appendChild(document.createTextNode(` ${labels.popupFree}`));
-    root.appendChild(free);
+    if (bookable) {
+      if (typeof place.free_tables === "number") {
+        const free = document.createElement("div");
+        free.className = "venue-map-popup-free";
+        const freeCount = document.createElement("b");
+        freeCount.textContent = String(place.free_tables);
+        free.appendChild(freeCount);
+        free.appendChild(document.createTextNode(` ${labels.popupFree}`));
+        root.appendChild(free);
+      }
 
-    const actions = document.createElement("div");
-    actions.className = "venue-map-popup-actions";
+      const actions = document.createElement("div");
+      actions.className = "venue-map-popup-actions";
 
-    const pageLink = document.createElement("a");
-    pageLink.href = `/venues/${encodeURIComponent(venue.id)}`;
-    pageLink.textContent = labels.openPage;
-    actions.appendChild(pageLink);
+      const pageLink = document.createElement("a");
+      pageLink.href = `/venues/${encodeURIComponent(place.venue_id as string)}`;
+      pageLink.textContent = labels.openPage;
+      actions.appendChild(pageLink);
 
-    const bookLink = document.createElement("a");
-    bookLink.href = `/book?venue=${encodeURIComponent(venue.id)}`;
-    bookLink.className = "primary";
-    bookLink.textContent = labels.popupBook;
-    actions.appendChild(bookLink);
+      const bookLink = document.createElement("a");
+      bookLink.href = `/book?venue=${encodeURIComponent(place.venue_id as string)}`;
+      bookLink.className = "primary";
+      bookLink.textContent = labels.popupBook;
+      actions.appendChild(bookLink);
 
-    root.appendChild(actions);
+      root.appendChild(actions);
+    } else {
+      const address = document.createElement("div");
+      address.className = "venue-map-popup-address";
+      address.textContent = pickLocale(place.address, localeRef.current);
+      root.appendChild(address);
+
+      const comingSoon = document.createElement("div");
+      comingSoon.className = "venue-map-popup-comingsoon";
+      comingSoon.textContent = labels.comingSoon;
+      root.appendChild(comingSoon);
+    }
 
     popupRef.current?.remove();
     popupRef.current = new maplibregl.Popup({
@@ -168,18 +198,19 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
       className: "venue-map-popup",
       anchor: "bottom",
     })
-      .setLngLat([venue.lng, venue.lat])
+      .setLngLat([place.lng, place.lat])
       .setDOMContent(root)
       .addTo(map);
   }
 
   useEffect(() => {
     let active = true;
-    fetchVenues()
-      .then((items) => {
+    fetchMapPlaces()
+      .then((data) => {
         if (!active) return;
-        setVenues(items);
-        setSelectedId(items[0]?.id ?? null);
+        const sorted = sortPlaces(data.places ?? []);
+        setPlaces(sorted);
+        setSelectedId(sorted[0]?.id ?? null);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -192,7 +223,7 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     if (!mapNodeRef.current) return;
 
-    fittedVenuesRef.current = "";
+    fittedPlacesRef.current = "";
     const map = new maplibregl.Map({
       container: mapNodeRef.current,
       style: OPEN_FREE_MAP_STYLE,
@@ -241,8 +272,8 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
     const map = mapRef.current;
     if (!map || mapState !== "ready") return;
     const effectiveSelectedId =
-      venues.find((venue) => venue.id === selectedId)?.id ?? venues[0]?.id ?? null;
-    const data = venueCollection(venues, locale, effectiveSelectedId);
+      places.find((place) => place.id === selectedId)?.id ?? places[0]?.id ?? null;
+    const data = placeCollection(places, locale, effectiveSelectedId);
     const existingSource = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
 
     if (existingSource) {
@@ -336,7 +367,9 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
             "case",
             ["boolean", ["get", "selected"], false],
             "#d77b48",
+            ["boolean", ["get", "inDatabase"], false],
             "#175f43",
+            "#8a8f8c",
           ],
           "circle-radius": [
             "case",
@@ -387,12 +420,12 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
 
       map.on("click", VENUE_LAYER_ID, (event) => {
         const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
-        const venueId = String(feature?.properties?.venueId ?? "");
-        const venue = venuesRef.current.find((item) => item.id === venueId);
-        if (!venue) return;
-        setSelectedId(venue.id);
-        map.easeTo({ center: [venue.lng, venue.lat], zoom: 15.2, duration: 520 });
-        showVenuePopup(venue, map);
+        const placeId = String(feature?.properties?.placeId ?? "");
+        const place = placesRef.current.find((item) => item.id === placeId);
+        if (!place) return;
+        setSelectedId(place.id);
+        map.easeTo({ center: [place.lng, place.lat], zoom: 15.2, duration: 520 });
+        showVenuePopup(place, map);
       });
       map.on("click", CLUSTER_LAYER_ID, async (event) => {
         const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
@@ -416,36 +449,43 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
       });
     }
 
-    const venueGeometryKey = venues
-      .map((venue) => `${venue.id}:${venue.lat}:${venue.lng}`)
+    const placeGeometryKey = places
+      .map((place) => `${place.id}:${place.lat}:${place.lng}`)
       .join("|");
-    if (venues.length > 0 && fittedVenuesRef.current !== venueGeometryKey) {
+    if (places.length > 0 && fittedPlacesRef.current !== placeGeometryKey) {
       const bounds = new maplibregl.LngLatBounds();
-      venues.forEach((venue) => bounds.extend([venue.lng, venue.lat]));
+      places.forEach((place) => bounds.extend([place.lng, place.lat]));
       map.fitBounds(bounds, {
         padding: compact ? 48 : 72,
         maxZoom: 15.5,
         duration: 0,
       });
-      fittedVenuesRef.current = venueGeometryKey;
+      fittedPlacesRef.current = placeGeometryKey;
     }
-  }, [compact, locale, mapState, selectedId, venues]);
+  }, [compact, locale, mapState, selectedId, places]);
 
   const selected = useMemo(
-    () => venues.find((venue) => venue.id === selectedId) ?? venues[0],
-    [selectedId, venues],
+    () => places.find((place) => place.id === selectedId) ?? places[0],
+    [selectedId, places],
   );
 
-  function selectVenue(venue: Venue) {
-    setSelectedId(venue.id);
+  function selectPlace(place: MapPlace) {
+    setSelectedId(place.id);
     const map = mapRef.current;
     map?.easeTo({
-      center: [venue.lng, venue.lat],
+      center: [place.lng, place.lat],
       zoom: 15.2,
       duration: 520,
     });
-    if (map) showVenuePopup(venue, map);
+    if (map) showVenuePopup(place, map);
   }
+
+  const selectedBookable = Boolean(selected?.in_database && selected?.venue_id);
+  const hasMeta =
+    !!selected &&
+    ((selected.cuisine && selected.cuisine.length > 0) ||
+      typeof selected.price_level === "number" ||
+      typeof selected.average_check === "number");
 
   return (
     <div className={`venue-map-shell ${compact ? "compact" : ""}`}>
@@ -454,7 +494,7 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
         aria-label={copy.aria}
       >
         <div ref={mapNodeRef} className="live-map-surface" />
-        {mapState === "error" && <FreeMapFallback venues={venues} locale={locale} />}
+        {mapState === "error" && <FreeMapFallback places={places} locale={locale} />}
         {mapState === "loading" && (
           <div className="live-map-loading">
             <span />
@@ -462,12 +502,18 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
           </div>
         )}
         {mapState === "ready" && (
-          <div className="live-map-status">
-            <span>
-              <i /> {loading ? copy.loadingVenues : `${venues.length} ${copy.online}`}
-            </span>
-            <small>{copy.updated}</small>
-          </div>
+          <>
+            <div className="live-map-status">
+              <span>
+                <i /> {loading ? copy.loadingVenues : `${places.length} ${copy.online}`}
+              </span>
+              <small>{copy.updated}</small>
+            </div>
+            <div className="venue-map-legend" aria-label={copy.legendAria}>
+              <span><i className="legend-dot legend-dot-ours" /> {copy.legendOurs}</span>
+              <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>
+            </div>
+          </>
         )}
       </div>
 
@@ -479,9 +525,14 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
               {selected ? pickLocale(selected.name, locale) : copy.cityVenues}
             </h3>
           </div>
-          {selected && (
-            <span className="venue-rating">★ {selected.rating.toFixed(1)}</span>
-          )}
+          <div className="venue-map-panel-head-badges">
+            {selected?.in_database && (
+              <span className="venue-bookable-badge">{copy.bookableBadge}</span>
+            )}
+            {selected && typeof selected.rating === "number" && (
+              <span className="venue-rating">★ {selected.rating.toFixed(1)}</span>
+            )}
+          </div>
         </div>
 
         {selected ? (
@@ -489,17 +540,31 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
             <p className="venue-map-address">
               ⌖ {pickLocale(selected.address, locale)}
             </p>
-            <div className="venue-map-meta">
-              <span>{selected.cuisine.slice(0, 2).join(" · ")}</span>
-              <span>{priceLevelLabel(selected.price_level)}</span>
-              <span>~{selected.average_check} MDL</span>
-            </div>
-            <div className="venue-availability">
-              <span>
-                <i /> {selected.open_now ? copy.open : copy.closed}
-              </span>
-              <strong>{selected.free_tables} {copy.free}</strong>
-            </div>
+            {hasMeta && (
+              <div className="venue-map-meta">
+                {selected.cuisine && selected.cuisine.length > 0 && (
+                  <span>{selected.cuisine.slice(0, 2).join(" · ")}</span>
+                )}
+                {typeof selected.price_level === "number" && (
+                  <span>{priceLevelLabel(selected.price_level)}</span>
+                )}
+                {typeof selected.average_check === "number" && (
+                  <span>~{selected.average_check} MDL</span>
+                )}
+              </div>
+            )}
+            {selectedBookable ? (
+              <div className="venue-availability">
+                <span>
+                  <i /> {selected.open_now ? copy.open : copy.closed}
+                </span>
+                <strong>{selected.free_tables ?? 0} {copy.free}</strong>
+              </div>
+            ) : (
+              <div className="venue-availability venue-availability-comingsoon">
+                <span>{copy.comingSoon}</span>
+              </div>
+            )}
             {selected.website && (
               <a
                 className="venue-map-website"
@@ -518,34 +583,47 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
         )}
 
         <div className="venue-map-list">
-          {venues.slice(0, compact ? 3 : 4).map((venue, index) => (
+          {places.slice(0, compact ? 3 : 4).map((place, index) => (
             <button
               type="button"
-              key={venue.id}
-              className={venue.id === selected?.id ? "active" : ""}
-              onClick={() => selectVenue(venue)}
+              key={place.id}
+              className={place.id === selected?.id ? "active" : ""}
+              onClick={() => selectPlace(place)}
             >
               <b>{index + 1}</b>
-              <span>{pickLocale(venue.name, locale)}</span>
-              <small>{venue.free_tables} {copy.tables}</small>
+              <span>
+                {pickLocale(place.name, locale)}
+                {place.in_database && (
+                  <em className="venue-map-badge">{copy.bookableBadge}</em>
+                )}
+              </span>
+              <small>
+                {place.in_database
+                  ? `${place.free_tables ?? 0} ${copy.tables}`
+                  : typeof place.rating === "number"
+                    ? `★ ${place.rating.toFixed(1)}`
+                    : copy.comingSoon}
+              </small>
             </button>
           ))}
         </div>
 
-        <div className="venue-map-actions">
-          <Link
-            href={selected ? `/venues/${encodeURIComponent(selected.id)}` : "/"}
-            className="map-secondary-action"
-          >
-            {copy.openPage}
-          </Link>
-          <Link
-            href={selected ? `/book?venue=${encodeURIComponent(selected.id)}` : "/book"}
-            className="map-primary-action"
-          >
-            {copy.action} <span>→</span>
-          </Link>
-        </div>
+        {selectedBookable && selected && (
+          <div className="venue-map-actions">
+            <Link
+              href={`/venues/${encodeURIComponent(selected.venue_id as string)}`}
+              className="map-secondary-action"
+            >
+              {copy.openPage}
+            </Link>
+            <Link
+              href={`/book?venue=${encodeURIComponent(selected.venue_id as string)}`}
+              className="map-primary-action"
+            >
+              {copy.action} <span>→</span>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
