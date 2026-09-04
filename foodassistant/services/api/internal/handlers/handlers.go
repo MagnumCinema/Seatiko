@@ -100,6 +100,43 @@ func (a *API) ListVenues(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"venues": a.Store.ListVenues(cityID)})
 }
 
+func (a *API) ListMapPlaces(c *gin.Context) {
+	cityID := c.Query("city_id")
+	if cityID == "" {
+		cityID = "city-balti"
+	}
+	const (
+		baltiLat = 47.7622
+		baltiLng = 27.9289
+		radiusM  = 4000.0
+	)
+
+	venues := a.Store.ListVenues(cityID)
+	var googlePlaces []places.GoogleFoodPlace
+	googleEnabled := a.Places != nil && a.Places.Enabled()
+	if googleEnabled {
+		found, err := a.Places.SearchNearbyFood(c.Request.Context(), baltiLat, baltiLng, radiusM)
+		if err != nil {
+			log.Printf("map places google: %v", err)
+			googleEnabled = false
+		} else {
+			googlePlaces = found
+		}
+	}
+
+	merged := places.MergeMapPlaces(venues, googlePlaces)
+	resp := models.MapPlacesResponse{
+		CityID: cityID,
+		Places: merged,
+	}
+	resp.Center.Lat = baltiLat
+	resp.Center.Lng = baltiLng
+	resp.Source.GoogleEnabled = googleEnabled
+	resp.Source.GoogleCount = len(googlePlaces)
+	resp.Source.DatabaseCount = len(venues)
+	c.JSON(http.StatusOK, resp)
+}
+
 func (a *API) GetVenue(c *gin.Context) {
 	v, err := a.Store.GetVenue(c.Param("id"))
 	if err != nil {
