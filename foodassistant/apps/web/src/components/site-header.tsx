@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, type Locale } from "@/components/locale-provider";
+import { useTheme } from "@/components/theme-provider";
 import { getSiteCopy } from "@/lib/site-copy";
 
 type Props = {
@@ -15,6 +16,7 @@ function scrollToId(id: string) {
 
 export function SiteHeader({ variant = "solid" }: Props) {
   const { locale, setLocale } = useLocale();
+  const { theme, toggleTheme } = useTheme();
   const copy = getSiteCopy(locale).header;
   const pathname = usePathname();
   const router = useRouter();
@@ -68,6 +70,15 @@ export function SiteHeader({ variant = "solid" }: Props) {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className="site-theme-toggle"
+            onClick={toggleTheme}
+            aria-label={copy.theme}
+          >
+            {theme === "dark" ? copy.themeLight : copy.themeDark}
+          </button>
+          <Link href="/account">{copy.account}</Link>
           <Link href="/login" className="site-nav-login">{copy.login}</Link>
           <Link href="/register" className="site-nav-cta">{copy.connect}</Link>
         </nav>

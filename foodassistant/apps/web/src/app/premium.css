@@ -117,6 +117,22 @@ html[data-theme="light"] {
   border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.site-theme-toggle {
+  border: 1px solid var(--site-border);
+  background: var(--site-surface);
+  color: var(--site-fg);
+  font-size: 0.72rem;
+  font-weight: 550;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.site-theme-toggle:hover {
+  border-color: var(--site-accent);
+}
+
 .landing {
   background: #f4f0e8;
   color: #17362c;
