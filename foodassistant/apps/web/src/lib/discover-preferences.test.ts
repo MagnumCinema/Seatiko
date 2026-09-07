@@ -122,4 +122,43 @@ describe("filterAndRankPlaces", () => {
     );
     expect(ranked.map((r) => r.place.id)).toEqual(["b"]);
   });
+
+  it("does not hard-exclude places missing price_level", () => {
+    const noPrice = place({
+      id: "d",
+      cuisine: ["Italian"],
+      in_database: true,
+      rating: 4.0,
+    });
+    const prefs: DiscoverPreferences = {
+      ...emptyPreferences(),
+      budget: [2],
+    };
+    const ranked = filterAndRankPlaces([italianPartner, noPrice], prefs);
+    expect(ranked.map((r) => r.place.id)).toContain("d");
+    expect(ranked.map((r) => r.place.id)).toContain("a");
+    const scoredKnown = ranked.find((r) => r.place.id === "a")!;
+    const scoredUnknown = ranked.find((r) => r.place.id === "d")!;
+    expect(scoredKnown.score).toBeGreaterThan(scoredUnknown.score);
+  });
+
+  it("treats restaurant type as soft (scoring only)", () => {
+    const fineDining = place({
+      id: "e",
+      name: { ru: "Fine Dining", en: "Fine Dining", ro: "Fine Dining" },
+      cuisine: ["Italian"],
+      price_level: 3,
+      in_database: true,
+      rating: 4.5,
+    });
+    const prefs: DiscoverPreferences = {
+      ...emptyPreferences(),
+      restaurantType: ["fast_food"],
+    };
+    const ranked = filterAndRankPlaces([fineDining, italianPartner], prefs);
+    expect(ranked.map((r) => r.place.id)).toEqual(
+      expect.arrayContaining(["e", "a"]),
+    );
+    expect(ranked).toHaveLength(2);
+  });
 });

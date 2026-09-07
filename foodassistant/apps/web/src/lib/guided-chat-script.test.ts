@@ -22,6 +22,21 @@ describe("guided-chat-script", () => {
     expect(prefs.cuisine).toEqual(["italian"]);
   });
 
+  it("applyChatAnswer unions ids without wiping existing picks", () => {
+    const withItalian = applyChatAnswer(emptyPreferences(), "cuisine", [
+      "italian",
+    ]);
+    const withAsian = applyChatAnswer(withItalian, "cuisine", ["asian"]);
+    expect(withAsian.cuisine).toEqual(["italian", "asian"]);
+
+    const keepItalian = applyChatAnswer(withAsian, "cuisine", ["italian"]);
+    expect(keepItalian.cuisine).toEqual(["italian", "asian"]);
+
+    const withBudget = applyChatAnswer(withAsian, "budget", ["2"]);
+    const unionBudget = applyChatAnswer(withBudget, "budget", ["1"]);
+    expect(unionBudget.budget).toEqual([2, 1]);
+  });
+
   it("skip advances without changing prefs", () => {
     const prefs = emptyPreferences();
     expect(nextChatStepIndex(0, true)).toBe(1);

@@ -205,6 +205,13 @@ function typeMatches(place: MapPlace, ids: RestaurantTypeId[]): boolean {
 
 function budgetMatches(place: MapPlace, levels: BudgetLevel[]): boolean {
   if (!levels.length) return true;
+  // Missing price_level: do not hard-exclude (unknown ≠ mismatch).
+  if (typeof place.price_level !== "number") return true;
+  return levels.includes(place.price_level as BudgetLevel);
+}
+
+function budgetScoreMatches(place: MapPlace, levels: BudgetLevel[]): boolean {
+  if (!levels.length) return false;
   if (typeof place.price_level !== "number") return false;
   return levels.includes(place.price_level as BudgetLevel);
 }
@@ -231,7 +238,7 @@ function passesHardFilters(
   opts?: RankOptions,
 ): boolean {
   if (!cuisineMatches(place, prefs.cuisine)) return false;
-  if (!typeMatches(place, prefs.restaurantType)) return false;
+  // Restaurant type is soft in v1 — MapPlace signals are weak; scoring only.
   if (!budgetMatches(place, prefs.budget)) return false;
 
   for (const p of prefs.practical) {
@@ -293,7 +300,7 @@ function scorePlace(
 
   let score = 0;
   if (prefs.cuisine.length && cuisineMatches(place, prefs.cuisine)) score += 40;
-  if (prefs.budget.length && budgetMatches(place, prefs.budget)) score += 30;
+  if (budgetScoreMatches(place, prefs.budget)) score += 30;
   if (prefs.restaurantType.length && typeMatches(place, prefs.restaurantType)) {
     score += 20;
   }

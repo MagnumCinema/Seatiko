@@ -628,7 +628,9 @@ export function VenueMap({
           </>
         ) : (
           <p className="venue-map-address">
-            {preferences && !loading ? discoverCopy.filtersEmpty : copy.empty}
+            {preferences && !loading && places.length === 0
+              ? discoverCopy.filtersEmpty
+              : copy.empty}
           </p>
         )}
 

@@ -32,6 +32,14 @@ export function nextChatStepIndex(current: number, _skipped: boolean): number {
   return Math.min(current + 1, CHAT_STEPS.length);
 }
 
+function unionIds<T extends string | number>(existing: T[], incoming: T[]): T[] {
+  const out = [...existing];
+  for (const id of incoming) {
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
 export function applyChatAnswer(
   prefs: DiscoverPreferences,
   dimension: ChatDimension,
@@ -39,18 +47,34 @@ export function applyChatAnswer(
 ): DiscoverPreferences {
   switch (dimension) {
     case "cuisine":
-      return { ...prefs, cuisine: ids as CuisineId[] };
-    case "restaurantType":
-      return { ...prefs, restaurantType: ids as RestaurantTypeId[] };
-    case "budget":
       return {
         ...prefs,
-        budget: ids.map(Number).filter((n): n is BudgetLevel => n === 1 || n === 2 || n === 3),
+        cuisine: unionIds(prefs.cuisine, ids as CuisineId[]),
       };
+    case "restaurantType":
+      return {
+        ...prefs,
+        restaurantType: unionIds(
+          prefs.restaurantType,
+          ids as RestaurantTypeId[],
+        ),
+      };
+    case "budget": {
+      const levels = ids
+        .map(Number)
+        .filter((n): n is BudgetLevel => n === 1 || n === 2 || n === 3);
+      return { ...prefs, budget: unionIds(prefs.budget, levels) };
+    }
     case "occasion":
-      return { ...prefs, occasion: ids as OccasionId[] };
+      return {
+        ...prefs,
+        occasion: unionIds(prefs.occasion, ids as OccasionId[]),
+      };
     case "practical":
-      return { ...prefs, practical: ids as PracticalId[] };
+      return {
+        ...prefs,
+        practical: unionIds(prefs.practical, ids as PracticalId[]),
+      };
   }
 }
 

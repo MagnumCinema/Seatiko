@@ -16,14 +16,27 @@ type Props = {
 export function PreferenceSummary({ prefs, onShowMap }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
-  const labels: string[] = [
-    ...prefs.cuisine.map((id) => copy.chips[id]),
-    ...prefs.restaurantType.map((id) =>
-      copy.chips[id === "fast_food" ? "fast_food" : id],
-    ),
-    ...prefs.budget.map((b) => copy.chips[`budget${b}` as BudgetChipKey]),
-    ...prefs.occasion.map((id) => copy.chips[id]),
-    ...prefs.practical.map((id) => copy.chips[id]),
+  const picks: { key: string; label: string }[] = [
+    ...prefs.cuisine.map((id) => ({
+      key: `cuisine-${id}`,
+      label: copy.chips[id],
+    })),
+    ...prefs.restaurantType.map((id) => ({
+      key: `type-${id}`,
+      label: copy.chips[id === "fast_food" ? "fast_food" : id],
+    })),
+    ...prefs.budget.map((b) => ({
+      key: `budget-${b}`,
+      label: copy.chips[`budget${b}` as BudgetChipKey],
+    })),
+    ...prefs.occasion.map((id) => ({
+      key: `occasion-${id}`,
+      label: copy.chips[id],
+    })),
+    ...prefs.practical.map((id) => ({
+      key: `practical-${id}`,
+      label: copy.chips[id],
+    })),
   ];
 
   return (
@@ -31,11 +44,11 @@ export function PreferenceSummary({ prefs, onShowMap }: Props) {
       <div>
         <span className="eyebrow">{copy.yourPicks}</span>
         <div className="discover-summary-picks">
-          {labels.length === 0 ? (
+          {picks.length === 0 ? (
             <span className="muted">—</span>
           ) : (
-            labels.map((label) => (
-              <span key={label} className="discover-chip on">
+            picks.map(({ key, label }) => (
+              <span key={key} className="discover-chip on">
                 {label}
               </span>
             ))
