@@ -66,11 +66,11 @@ Prototype may simplify UI; **logic is always fixed in these docs first**.
 ### Guest profile (`APP_LOGIC` §8.3, `UX_SCREENS` §13)
 - First name, last name, **preferred name** (`display_name`), phone, locale
 - Allergies / diet, payment methods, favorites, order/booking history
-- Alcohol / 18+: **staff-bound** ID check → `alcohol_preorder_allowed`; guest profile shows read-only status (who/when/venue). The **named waiter/manager** who granted is responsible if the guest was not actually 18+ — §8.4
+- Age 18+: **staff-bound** ID check → `adult_preorder_allowed` (unlocks **all** `requires_age_18` menu items, not only alcohol; alias `alcohol_preorder_allowed`). Guest profile: read-only who/when/venue. The **named waiter/manager** who granted is responsible if the guest was not actually 18+ — §8.4
 
-### Floor / QR / alcohol
+### Floor / QR / age-restricted
 - Table states, notify when free, “I’m coming”, QR session
-- Alcohol: in-session order OK with staff ID check; preorder only after staff grant — details in `APP_LOGIC` §8.4
+- 18+ items: in-session order OK; preorder only after staff grant; alcohol adds license + re-check on serve — `APP_LOGIC` §8.4
 
 ---
 
