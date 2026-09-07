@@ -532,7 +532,7 @@ Trigger: бронь, заказ, QR session, Orders tab, Profile tab, AI limit, 
 | Call detail | Стол, причина, «Принять» |
 | Table detail | Orders, mark served |
 | Manual order | Add items to table |
-| **Client / Guest card** | Подтвердить совершеннолетие · Grant/Revoke предзаказ алкоголя |
+| **Client / Guest card** | Подтвердить совершеннолетие · Grant/Revoke предзаказ алкоголя · **явное предупреждение: grant привязан к вашему staff-аккаунту и вашей ответственности** |
 
 ---
 

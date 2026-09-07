@@ -8,6 +8,18 @@
 
 ---
 
+## [1.4.1] — 2026-09-07
+
+### Добавлено
+- **18+ grant привязан к конкретному официанту/менеджеру** (`alcohol_verified_by_staff_id`): персональная ответственность, если гость фактически младше 18
+- Staff UI warning + i18n keys; guest profile alcohol status read-only with who/when/venue
+- Audit log для grant/revoke обязателен (не «рекомендуется»)
+
+### Изменено
+- `APP_LOGIC.md` §8.4, `UX_SCREENS.md` staff guest card, `I18N.md` alcohol keys, `docs/README.md` summary
+
+---
+
 ## [1.4.0] — 2026-08-09
 
 ### Добавлено

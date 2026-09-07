@@ -66,7 +66,7 @@ Prototype may simplify UI; **logic is always fixed in these docs first**.
 ### Guest profile (`APP_LOGIC` §8.3, `UX_SCREENS` §13)
 - First name, last name, **preferred name** (`display_name`), phone, locale
 - Allergies / diet, payment methods, favorites, order/booking history
-- Alcohol / 18+: staff ID check → `alcohol_preorder_allowed` (not a self-checkbox) — §8.4
+- Alcohol / 18+: **staff-bound** ID check → `alcohol_preorder_allowed`; guest profile shows read-only status (who/when/venue). The **named waiter/manager** who granted is responsible if the guest was not actually 18+ — §8.4
 
 ### Floor / QR / alcohol
 - Table states, notify when free, “I’m coming”, QR session
