@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
@@ -42,6 +42,17 @@ export default function HomePage() {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).home;
 
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash !== "map" && hash !== "how") return;
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(hash)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <div className="landing">
       <SiteHeader variant="transparent" />
@@ -55,15 +66,26 @@ export default function HomePage() {
             {copy.lead}
           </p>
           <div className="landing-ctas">
-            <Link href="/discover" className="btn btn-gold">
-              {copy.find} <span>→</span>
+            <Link href="/discover" className="btn btn-gold btn-hero-find">
+              {copy.find} <span aria-hidden>→</span>
             </Link>
-            <Link href="#map" className="btn btn-outline">
-              {copy.browseMap}
-            </Link>
-            <Link href="/business" className="btn btn-outline">
-              {copy.connect}
-            </Link>
+            <div className="landing-ctas-secondary">
+              <a
+                href="#map"
+                className="btn btn-outline"
+                onClick={(event) => {
+                  event.preventDefault();
+                  document
+                    .getElementById("map")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                {copy.browseMap}
+              </a>
+              <Link href="/business" className="btn btn-outline">
+                {copy.connect}
+              </Link>
+            </div>
           </div>
           <div className="hero-trust">
             <span><strong>3</strong> {copy.pilot}</span>
@@ -91,10 +113,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <Suspense fallback={null}>
-        <HomeMapSection />
-      </Suspense>
-
       <section className="landing-features" id="how">
         <div className="section-heading centered">
           <span className="eyebrow">{copy.serviceEyebrow}</span>
@@ -111,6 +129,10 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <Suspense fallback={null}>
+        <HomeMapSection />
+      </Suspense>
 
       <section className="owner-cta">
         <div>

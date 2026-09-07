@@ -8,7 +8,7 @@ const copy = {
     home: {
       live: "Уже работает в Бельцах", kicker: "Новый стандарт гостеприимства", title: "Ваш ресторан", titleAccent: "всегда рядом.",
       lead: "Гости находят ресторан на карте, выбирают стол, бронируют и делают заказ. Вы управляете залом, меню и сервисом в одном пространстве.",
-      find: "Найти ресторан", browseMap: "Смотреть карту", connect: "Подключить заведение", pilot: "заведения в пилоте", rating: "средний рейтинг", booking247: "онлайн-бронирование",
+      find: "Найти ресторан", browseMap: "Смотреть карту", connect: "Для ресторанов", pilot: "заведения в пилоте", rating: "средний рейтинг", booking247: "онлайн-бронирование",
       heroCard1Title: "Карта города", heroCard1Body: "Свободные столы в реальном времени", heroCard2Title: "Стол + QR-заказ", heroCard2Body: "Выбор места и меню за столом",
       mapEyebrow: "Живая карта города", mapTitle: "Все лучшие места —\nна одной карте", mapBody: "На карте — заведения города. Точки FoodAssistant можно забронировать; остальные отмечены как «скоро».",
       serviceEyebrow: "От первого касания до возвращения", serviceTitle: "Сервис, который чувствуется", serviceBody: "Мы убрали лишние действия между желанием поужинать и идеальным столиком.",
@@ -81,7 +81,7 @@ const copy = {
     home: {
       live: "Now live in Bălți", kicker: "A new standard of hospitality", title: "Your restaurant", titleAccent: "always close.",
       lead: "Guests find a restaurant on the map, choose a table, book and order. You manage the floor, menu and service in one place.",
-      find: "Find a restaurant", browseMap: "Browse map", connect: "Connect your venue", pilot: "pilot venues", rating: "average rating", booking247: "online booking",
+      find: "Find a restaurant", browseMap: "Browse map", connect: "For restaurants", pilot: "pilot venues", rating: "average rating", booking247: "online booking",
       heroCard1Title: "City map", heroCard1Body: "Live free tables", heroCard2Title: "Table + QR order", heroCard2Body: "Pick a seat and order at the table",
       mapEyebrow: "Live city map", mapTitle: "All the best places —\non one map", mapBody: "The map shows places across the city. FoodAssistant venues are bookable; others are marked as coming soon.",
       serviceEyebrow: "From discovery to the next visit", serviceTitle: "Service you can feel", serviceBody: "We removed the friction between wanting dinner and finding the perfect table.",
@@ -149,7 +149,7 @@ const copy = {
     home: {
       live: "Disponibil deja în Bălți", kicker: "Un nou standard al ospitalității", title: "Restaurantul tău", titleAccent: "mereu aproape.",
       lead: "Oaspeții găsesc restaurantul pe hartă, aleg masa, rezervă și comandă. Tu gestionezi sala, meniul și serviciul într-un singur loc.",
-      find: "Găsește restaurant", browseMap: "Vezi harta", connect: "Conectează localul", pilot: "localuri pilot", rating: "rating mediu", booking247: "rezervări online",
+      find: "Găsește restaurant", browseMap: "Vezi harta", connect: "Pentru restaurante", pilot: "localuri pilot", rating: "rating mediu", booking247: "rezervări online",
       heroCard1Title: "Harta orașului", heroCard1Body: "Mese libere în timp real", heroCard2Title: "Masă + comandă QR", heroCard2Body: "Alegi locul și comanzi la masă",
       mapEyebrow: "Harta live a orașului", mapTitle: "Cele mai bune localuri —\npe aceeași hartă", mapBody: "Pe hartă apar localurile din oraș. Punctele FoodAssistant pot fi rezervate; restul sunt marcate ca «în curând».",
       serviceEyebrow: "De la descoperire la următoarea vizită", serviceTitle: "Serviciu care se simte", serviceBody: "Am eliminat pașii inutili dintre dorința de a lua cina și masa perfectă.",

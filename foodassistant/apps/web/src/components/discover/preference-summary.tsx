@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { DiscoverPreferences } from "@/lib/discover-preferences";
 import { encodePreferences } from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -11,9 +10,10 @@ type BudgetChipKey = "budget1" | "budget2" | "budget3";
 type Props = {
   prefs: DiscoverPreferences;
   onShowMap: () => void;
+  onBrowseMap?: () => void;
 };
 
-export function PreferenceSummary({ prefs, onShowMap }: Props) {
+export function PreferenceSummary({ prefs, onShowMap, onBrowseMap }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
   const picks: { key: string; label: string }[] = [
@@ -56,9 +56,13 @@ export function PreferenceSummary({ prefs, onShowMap }: Props) {
         </div>
       </div>
       <div className="discover-summary-actions">
-        <Link href="/#map" className="btn btn-outline">
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={() => onBrowseMap?.()}
+        >
           {copy.browseMap}
-        </Link>
+        </button>
         <button type="button" className="btn btn-gold" onClick={onShowMap}>
           {copy.showMap}
         </button>
