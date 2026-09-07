@@ -7,7 +7,6 @@ import {
   parseTheme,
   readStoredTheme,
   writeStoredTheme,
-  type Theme,
 } from "./theme";
 
 describe("parseTheme", () => {
