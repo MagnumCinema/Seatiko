@@ -3,12 +3,22 @@ html[data-theme="dark"] {
   --site-bg: #0f1410;
   --site-fg: #f3efe6;
   --site-muted: #9aa89a;
-  --site-surface: rgba(255, 255, 255, 0.045);
+  --site-surface: rgba(255, 255, 255, 0.06);
   --site-border: rgba(255, 255, 255, 0.12);
   --site-accent: #e9b96e;
   --auth-card-bg: rgba(18, 46, 36, 0.96);
   --auth-card-fg: #f3efe6;
   --auth-card-muted: #9aa89a;
+  --input-bg: #243028;
+  --input-fg: #f3efe6;
+  --input-border: rgba(255, 255, 255, 0.14);
+  /* Keep legacy FA tokens in sync so forms / shell flip with theme */
+  --fa-bg: #0f1410;
+  --fa-surface: #161c16;
+  --fa-surface-2: #243028;
+  --fa-border: rgba(255, 255, 255, 0.1);
+  --fa-text: #f3efe6;
+  --fa-muted: #9aa690;
 }
 
 html[data-theme="light"] {
@@ -22,11 +32,20 @@ html[data-theme="light"] {
   --auth-card-bg: #fffaf2;
   --auth-card-fg: #1a2420;
   --auth-card-muted: #6c7871;
+  --input-bg: #ffffff;
+  --input-fg: #1a2420;
+  --input-border: rgba(26, 36, 32, 0.16);
+  --fa-bg: #f4f0e8;
+  --fa-surface: #fffaf2;
+  --fa-surface-2: #ffffff;
+  --fa-border: rgba(26, 36, 32, 0.12);
+  --fa-text: #1a2420;
+  --fa-muted: #5c6b63;
 }
 
 .site-body {
-  background: var(--site-bg);
-  color: var(--site-fg);
+  background: var(--site-bg) !important;
+  color: var(--site-fg) !important;
 }
 
 .auth-page {
@@ -34,6 +53,7 @@ html[data-theme="light"] {
     radial-gradient(ellipse at 80% 0%, rgba(45, 90, 61, 0.2), transparent 45%),
     var(--site-bg);
   color: var(--site-fg);
+  min-height: 100vh;
 }
 
 .auth-card {
@@ -49,6 +69,34 @@ html[data-theme="light"] {
   color: var(--auth-card-muted);
 }
 
+.auth-card .field label {
+  color: var(--auth-card-muted);
+}
+
+.auth-card .field input,
+.auth-card .field textarea,
+.auth-card .field select {
+  background: var(--input-bg);
+  color: var(--input-fg);
+  border-color: var(--input-border);
+  color-scheme: inherit;
+}
+
+.auth-card .field input::placeholder {
+  color: var(--auth-card-muted);
+  opacity: 0.85;
+}
+
+.auth-card .auth-hint,
+.auth-card .auth-links,
+.auth-card .auth-error {
+  color: var(--auth-card-muted);
+}
+
+.auth-card .auth-links a {
+  color: var(--site-accent);
+}
+
 /* 2026 premium hospitality system                                             */
 /* ========================================================================== */
 
@@ -61,7 +109,7 @@ html[data-theme="light"] {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: #f5ead8;
+  color: var(--site-fg, #f5ead8);
   font-family: var(--font-sans), sans-serif;
   font-size: 1.02rem;
   font-weight: 750;
@@ -84,37 +132,55 @@ html[data-theme="light"] {
 }
 
 .site-header.solid {
-  background: rgba(18, 46, 36, 0.96);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--site-bg) 88%, var(--auth-card-bg));
+  border-bottom-color: var(--site-border);
+  backdrop-filter: blur(12px);
 }
 
 .site-nav {
   gap: 22px;
-  color: rgba(246, 239, 226, 0.68);
+  color: var(--site-muted);
   font-size: 0.82rem;
   font-weight: 550;
 }
 
+.site-nav a {
+  color: inherit;
+}
+
+.site-nav a:hover {
+  color: var(--site-fg);
+}
+
 .site-nav-login {
-  color: #f7f0e4 !important;
+  color: var(--site-fg) !important;
 }
 
 .site-nav-cta {
   padding: 10px 15px;
-  border: 1px solid rgba(233, 185, 110, 0.46);
+  border: 1px solid color-mix(in srgb, var(--site-accent) 46%, transparent);
   border-radius: 10px;
-  color: #f1c98c !important;
+  color: var(--site-accent) !important;
   transition: background 160ms ease, border-color 160ms ease;
 }
 
 .site-nav-cta:hover {
-  border-color: #e9b96e;
-  background: rgba(233, 185, 110, 0.1);
+  border-color: var(--site-accent);
+  background: color-mix(in srgb, var(--site-accent) 12%, transparent);
 }
 
 .site-lang {
   padding-left: 6px;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 1px solid var(--site-border);
+}
+
+.site-lang button {
+  color: var(--site-muted);
+}
+
+.site-lang button.on {
+  color: var(--site-accent);
+  background: color-mix(in srgb, var(--site-accent) 12%, transparent);
 }
 
 .site-theme-toggle {
@@ -1266,10 +1332,11 @@ html[data-theme="light"] {
 .owner-register-card .field label { color: var(--auth-card-muted); font-size: .72rem; font-weight: 760; }
 .owner-register-card .field input {
   height: 48px;
-  color: var(--auth-card-fg);
-  border-color: var(--site-border);
+  color: var(--input-fg);
+  border-color: var(--input-border);
   border-radius: 11px;
-  background: var(--site-surface);
+  background: var(--input-bg);
+  color-scheme: inherit;
 }
 .owner-register-card .field input:focus { outline: 2px solid color-mix(in srgb, var(--site-accent) 22%, transparent); border-color: var(--site-accent); }
 .owner-form-legal { margin: 0; color: var(--auth-card-muted); font-size: .7rem; line-height: 1.55; }

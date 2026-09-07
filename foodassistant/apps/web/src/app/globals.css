@@ -455,11 +455,12 @@ a {
   width: 100%;
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid var(--fa-border);
-  background: var(--fa-surface-2);
-  color: var(--fa-text);
+  border: 1px solid var(--input-border, var(--fa-border));
+  background: var(--input-bg, var(--fa-surface-2));
+  color: var(--input-fg, var(--fa-text));
   font-size: 0.95rem;
   font-family: inherit;
+  color-scheme: inherit;
 }
 
 .field textarea {
