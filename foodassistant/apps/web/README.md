@@ -3,7 +3,7 @@
 Публичный сайт, кабинет владельца, админ, discover.
 
 > **Репозиторий:** [`../../../README.md`](../../../README.md)  
-> **Продукт:** [`../../../virtual-restaurant/docs/README.md`](../../../virtual-restaurant/docs/README.md)  
+> **Документация:** [`../../../docs/README.md`](../../../docs/README.md)  
 > **Runbook:** [`../../README.md`](../../README.md) · **Engineering:** [`../../../docs/ENGINEERING.md`](../../../docs/ENGINEERING.md)
 
 ## Local (без Docker)

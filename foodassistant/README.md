@@ -3,8 +3,8 @@
 Код платформы: сайт, кабинет владельца, Android, API, модерация, CRM sync.
 
 > **Сначала:** [`../README.md`](../README.md) (карта всего репозитория)  
-> **Продуктовые правила:** [`../virtual-restaurant/docs/README.md`](../virtual-restaurant/docs/README.md)  
->   — профиль гостя / избранное / оплата / 18+: [`APP_LOGIC.md` §8](../virtual-restaurant/docs/APP_LOGIC.md)  
+> **Продуктовые правила:** [`../docs/README.md`](../docs/README.md)  
+>   — профиль гостя / избранное / оплата / 18+: [`APP_LOGIC.md` §8](../docs/APP_LOGIC.md)  
 > **Инженерия (Docker, API, production):** [`../docs/ENGINEERING.md`](../docs/ENGINEERING.md)
 
 Этот файл — **практический runbook + скриншоты**. Не дублирует полный API/Docker guide: подробности в `docs/ENGINEERING.md`.
@@ -70,13 +70,13 @@ flutter run --dart-define=API_URL=http://10.0.2.2
 
 - FoodAssistant владеет аккаунтами, ролями, паролями, модерацией и публикацией.
 - Twenty — CRM-проекция и Timeline.
-- Правила sync и поля: [`TWENTY_CRM_INTEGRATION.md`](../virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md) и раздел CRM в [`ENGINEERING.md`](../docs/ENGINEERING.md).
+- Правила sync и поля: [`TWENTY_CRM_INTEGRATION.md`](../docs/TWENTY_CRM_INTEGRATION.md) и раздел CRM в [`ENGINEERING.md`](../docs/ENGINEERING.md).
 
 ---
 
 ## Путь владельца ресторана (кратко + скриншоты)
 
-Канон статусов и полей: [`RESTAURANT_OWNER_FLOW.md`](../virtual-restaurant/docs/RESTAURANT_OWNER_FLOW.md).
+Канон статусов и полей: [`RESTAURANT_OWNER_FLOW.md`](../docs/RESTAURANT_OWNER_FLOW.md).
 
 1. http://localhost/register — аккаунт владельца → http://localhost/cabinet  
 2. «Добавить ресторан»: название, описание, кухня, часы, адрес+точка на карте, телефон/email, сайт (опц.), цена, ≥1 фото  
@@ -88,7 +88,7 @@ flutter run --dart-define=API_URL=http://10.0.2.2
 
 ## Карта и план столиков
 
-Канон: [`MAP_ARCHITECTURE.md`](../virtual-restaurant/docs/MAP_ARCHITECTURE.md).
+Канон: [`MAP_ARCHITECTURE.md`](../docs/MAP_ARCHITECTURE.md).
 
 - MapLibre + OpenFreeMap / OSM; точки из API  
 - План зала: зелёный / жёлтый / красный / выбранный  
@@ -101,7 +101,7 @@ flutter run --dart-define=API_URL=http://10.0.2.2
 
 ## Twenty CRM (скриншоты и локальные заметки)
 
-Канон полей и webhook: [`TWENTY_CRM_INTEGRATION.md`](../virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md), bootstrap — [`ENGINEERING.md`](../docs/ENGINEERING.md).
+Канон полей и webhook: [`TWENTY_CRM_INTEGRATION.md`](../docs/TWENTY_CRM_INTEGRATION.md), bootstrap — [`ENGINEERING.md`](../docs/ENGINEERING.md).
 
 | FoodAssistant | Twenty | Ключ |
 |---|---|---|

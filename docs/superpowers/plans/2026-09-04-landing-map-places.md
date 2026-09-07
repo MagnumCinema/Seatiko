@@ -29,7 +29,7 @@
 | `foodassistant/apps/web/src/app/premium.css` | Legend + muted pin / badge styles if needed |
 | `foodassistant/apps/web/src/lib/site-copy.ts` | Hero feature cards + map body/legend/coming-soon |
 | `foodassistant/apps/web/src/app/page.tsx` | Wire new hero card copy keys |
-| `virtual-restaurant/docs/MAP_ARCHITECTURE.md` | Document hybrid Google overlay |
+| `docs/MAP_ARCHITECTURE.md` | Document hybrid Google overlay |
 
 ---
 
@@ -734,7 +734,7 @@ git commit -m "feat(web): hero cards show product features"
 ### Task 7: Update MAP_ARCHITECTURE.md
 
 **Files:**
-- Modify: `virtual-restaurant/docs/MAP_ARCHITECTURE.md`
+- Modify: `docs/MAP_ARCHITECTURE.md`
 
 - [ ] **Step 1: Replace “restaurants only from store” claim**
 
@@ -749,7 +749,7 @@ Document:
 - [ ] **Step 2: Commit**
 
 ```bash
-git add virtual-restaurant/docs/MAP_ARCHITECTURE.md
+git add docs/MAP_ARCHITECTURE.md
 git commit -m "docs: map architecture hybrid Google overlay"
 ```
 

@@ -136,7 +136,7 @@ Add/update keys in `site-copy.ts` for:
 
 ## Docs touch-up
 
-Update `virtual-restaurant/docs/MAP_ARCHITECTURE.md` so it no longer claims restaurants come only from the FoodAssistant store; document the hybrid Google overlay + `in_database` flag.
+Update `docs/MAP_ARCHITECTURE.md` so it no longer claims restaurants come only from the FoodAssistant store; document the hybrid Google overlay + `in_database` flag.
 
 ## Future hook (out of scope now)
 

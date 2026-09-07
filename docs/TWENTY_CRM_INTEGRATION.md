@@ -105,4 +105,4 @@ Self-hosted локальная CRM работает с `OUTBOUND_HTTP_SAFE_MODE_
 5. Запустить reconcile и убедиться, что число People, Companies и Reservations не изменилось.
 6. Перезапустить API и проверить повторный вход и сохранность заявок.
 
-Подробная инструкция и скриншоты: [`../../foodassistant/README.md`](../../foodassistant/README.md).
+Подробная инструкция и скриншоты: [`../foodassistant/README.md`](../foodassistant/README.md).

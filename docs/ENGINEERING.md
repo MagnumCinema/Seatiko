@@ -1,7 +1,8 @@
 # FoodAssistant — Engineering & operations
 
 > **Canonical entry for the whole repo:** [`../README.md`](../README.md)  
-> **Product rules (guest flows, profile, alcohol, UX):** [`../virtual-restaurant/docs/README.md`](../virtual-restaurant/docs/README.md)  
+> **All documentation index:** [`README.md`](./README.md)  
+> **Product rules (guest flows, profile, alcohol, UX):** [`APP_LOGIC.md`](./APP_LOGIC.md) · [`UX_SCREENS.md`](./UX_SCREENS.md)  
 > **Code runbook + screenshots:** [`../foodassistant/README.md`](../foodassistant/README.md)
 
 This file is the full engineering / Docker / API / CRM / production guide formerly living at the repository root README. Content is preserved here so the root can stay a short documentation map.
@@ -141,27 +142,29 @@ Backend напрямую не публикует порт `8080` на компь
 - OpenStreetMap — геоданные;
 - FoodAssistant API — точки ресторанов и их состояние.
 
-![Карта ресторанов](foodassistant/docs/images/08-site-map.jpg)
+![Карта ресторанов](../foodassistant/docs/images/08-site-map.jpg)
 
 ## Структура репозитория
 
 ```text
-project1/
-├── README.md                         # эта документация
+Virtual-restaurant-/
+├── README.md                         # главный вход (карта документации)
 ├── docker-compose.yml                # весь локальный стек
 ├── .env                              # настройки Docker/Twenty
 ├── .env.keys                         # API key и webhook secret CRM
 ├── config/nginx/                     # единый reverse proxy
+├── docs/                             # вся документация, прототип, диаграммы
+│   ├── README.md                     # индекс docs
+│   ├── ENGINEERING.md                # этот файл
+│   ├── APP_LOGIC.md · UX_SCREENS.md · …  # продукт
+│   ├── prototype/ · diagrams/
+│   └── superpowers/
 ├── foodassistant/
 │   ├── apps/web/                     # Next.js, TypeScript, MapLibre
 │   ├── apps/mobile/                  # Flutter Android
 │   ├── services/api/                 # Go, Gin, JWT, storage, CRM sync
 │   ├── docs/images/                  # скриншоты README
 │   └── README.md                     # пошаговая инструкция со скриншотами
-├── virtual-restaurant/
-│   ├── prototype/                    # UX-прототип
-│   ├── diagrams/                     # проектные схемы
-│   └── docs/                         # продуктовая и CRM-документация
 └── twenty/                           # исходный код Twenty CRM
 ```
 
@@ -227,7 +230,7 @@ sequenceDiagram
     App->>API: order / waiter-call
 ```
 
-![Интерактивный план столиков](foodassistant/docs/images/09-web-table-map.jpg)
+![Интерактивный план столиков](../foodassistant/docs/images/09-web-table-map.jpg)
 
 ## Модель данных
 
@@ -359,9 +362,9 @@ curl -s http://localhost/api/v1/cities | jq
 | публичный ресторан | Company `venueId` | Venue ID |
 | бронь | `Reservations` | `foodassistantReservationId` |
 
-![Синхронизированные рестораны](foodassistant/docs/images/10-crm-restaurants-sync.png)
+![Синхронизированные рестораны](../foodassistant/docs/images/10-crm-restaurants-sync.png)
 
-![Синхронизированные бронирования](foodassistant/docs/images/11-crm-reservations-sync.png)
+![Синхронизированные бронирования](../foodassistant/docs/images/11-crm-reservations-sync.png)
 
 ### Направления синхронизации
 
@@ -390,7 +393,7 @@ Events: All Objects / All
 Secret: значение TWENTY_WEBHOOK_SECRET
 ```
 
-![Webhook Twenty](foodassistant/docs/images/12-crm-webhook.png)
+![Webhook Twenty](../foodassistant/docs/images/12-crm-webhook.png)
 
 Для локального Docker Twenty использует:
 
@@ -425,7 +428,7 @@ cd ../../..
 docker compose up -d --force-recreate api
 ```
 
-Подробные правила: [virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md](virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md).
+Подробные правила: [TWENTY_CRM_INTEGRATION.md](./TWENTY_CRM_INTEGRATION.md).
 
 ## API
 
@@ -861,8 +864,9 @@ curl -I http://crm.localhost/
 ## Дополнительная документация
 
 - [Корень репозитория — карта документации](../README.md)
-- [Продуктовая документация](../virtual-restaurant/docs/README.md)
+- [Индекс docs](./README.md)
+- [Продуктовая логика](./APP_LOGIC.md)
 - [Пошаговая инструкция FoodAssistant со скриншотами](../foodassistant/README.md)
-- [Правила двусторонней CRM-интеграции](../virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md)
+- [Правила двусторонней CRM-интеграции](./TWENTY_CRM_INTEGRATION.md)
 - [Android](../foodassistant/apps/mobile/README.md)
 - [Web](../foodassistant/apps/web/README.md)

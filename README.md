@@ -4,70 +4,66 @@
 
 **Пилот:** Бельцы, Молдова · **Языки:** RU / EN / RO
 
-> Локальная разработка и демо. Перед production см. [docs/ENGINEERING.md — Безопасность и production](docs/ENGINEERING.md#безопасность-и-production).
+> Локальная разработка и демо. Перед production: [docs/ENGINEERING.md — Безопасность и production](docs/ENGINEERING.md#безопасность-и-production).
 
 ---
 
 ## Start here (для людей и AI)
 
-Этот файл — **единственная общая точка входа**. Не ищите «главный README» в подпапках: отсюда ветки ведут ко всем остальным документам.
+Этот файл — **единственная общая точка входа**. Вся документация лежит в [`docs/`](docs/).
 
 | Нужно | Открыть |
 |--------|---------|
-| **Правила продукта** (бронь, QR, профиль гостя, алкоголь 18+, избранное, оплата, UX) | [`virtual-restaurant/docs/README.md`](virtual-restaurant/docs/README.md) → особенно [`APP_LOGIC.md`](virtual-restaurant/docs/APP_LOGIC.md), [`UX_SCREENS.md`](virtual-restaurant/docs/UX_SCREENS.md) |
-| **Инженерия** (Docker, API, роли, CRM sync, тесты, production) | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) |
-| **Запуск кода + скриншоты** (кабинет владельца, карта, CRM webhook) | [`foodassistant/README.md`](foodassistant/README.md) |
-| **Прототип / диаграммы** | [`virtual-restaurant/prototype/`](virtual-restaurant/prototype/), [`virtual-restaurant/diagrams/`](virtual-restaurant/diagrams/) |
+| **Индекс всей документации** | [`docs/README.md`](docs/README.md) |
+| **Правила продукта** (бронь, QR, профиль, 18+, избранное, оплата, UX) | [`docs/APP_LOGIC.md`](docs/APP_LOGIC.md), [`docs/UX_SCREENS.md`](docs/UX_SCREENS.md) |
+| **Инженерия** (Docker, API, CRM ops, тесты, production) | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) |
+| **Запуск кода + скриншоты** | [`foodassistant/README.md`](foodassistant/README.md) |
+| **Прототип / диаграммы** | [`docs/prototype/`](docs/prototype/), [`docs/diagrams/`](docs/diagrams/) |
 
-### Источники истины (не дублировать вслепую)
+### Источники истины
 
 | Тема | Канон |
 |------|--------|
-| Бизнес-логика, auth, профиль гостя, алкоголь | `virtual-restaurant/docs/APP_LOGIC.md` |
-| Экраны и переходы | `virtual-restaurant/docs/UX_SCREENS.md` |
-| Строки RU/EN/RO | `virtual-restaurant/docs/I18N.md` |
-| Кабинет владельца | `virtual-restaurant/docs/RESTAURANT_OWNER_FLOW.md` |
-| CRM sync | `virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md` |
-| Карта (MapLibre) | `virtual-restaurant/docs/MAP_ARCHITECTURE.md` |
-| Docker / API / ops | `docs/ENGINEERING.md` |
-| Скриншоты и demo checklist | `foodassistant/README.md` |
+| Бизнес-логика, auth, профиль гостя, алкоголь | [`docs/APP_LOGIC.md`](docs/APP_LOGIC.md) |
+| Экраны и переходы | [`docs/UX_SCREENS.md`](docs/UX_SCREENS.md) |
+| Строки RU/EN/RO | [`docs/I18N.md`](docs/I18N.md) |
+| Кабинет владельца | [`docs/RESTAURANT_OWNER_FLOW.md`](docs/RESTAURANT_OWNER_FLOW.md) |
+| CRM sync | [`docs/TWENTY_CRM_INTEGRATION.md`](docs/TWENTY_CRM_INTEGRATION.md) |
+| Карта (MapLibre) | [`docs/MAP_ARCHITECTURE.md`](docs/MAP_ARCHITECTURE.md) |
+| Docker / API / ops | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) |
+| Скриншоты и demo checklist | [`foodassistant/README.md`](foodassistant/README.md) |
 
 ---
 
-## Карта документации
+## Карта репозитория
 
 ```text
-README.md  ← вы здесь (hub)
-├── virtual-restaurant/                 продукт + прототип
-│   ├── README.md                       вход в продуктовую ветку
-│   ├── docs/
-│   │   ├── README.md                   индекс docs
-│   │   ├── APP_LOGIC.md                ★ бизнес-логика
-│   │   ├── UX_SCREENS.md               ★ экраны
-│   │   ├── I18N.md
-│   │   ├── RESTAURANT_OWNER_FLOW.md
-│   │   ├── TWENTY_CRM_INTEGRATION.md
-│   │   ├── MAP_ARCHITECTURE.md
-│   │   └── CHANGELOG.md
-│   ├── prototype/index.html
-│   └── diagrams/foodassistant.drawio
-├── docs/
-│   └── ENGINEERING.md                  ★ инженерия (бывший длинный root README)
-├── foodassistant/                      код
-│   ├── README.md                       runbook + скриншоты
-│   ├── apps/web/
-│   ├── apps/mobile/
-│   └── services/api/
-└── twenty/                             vendored CRM (не править как продукт FA)
+README.md                 ← вы здесь (hub)
+docs/                     ← вся документация в одном месте
+├── README.md             индекс docs
+├── APP_LOGIC.md          ★ продукт
+├── UX_SCREENS.md         ★ экраны
+├── I18N.md
+├── RESTAURANT_OWNER_FLOW.md
+├── TWENTY_CRM_INTEGRATION.md
+├── MAP_ARCHITECTURE.md
+├── CHANGELOG.md
+├── ENGINEERING.md        ★ инженерия
+├── prototype/
+├── diagrams/
+└── superpowers/          спеки/планы агентов
+foodassistant/            код
+├── README.md             runbook + скриншоты
+├── apps/web/
+├── apps/mobile/
+└── services/api/
+twenty/                   vendored CRM (не продукт FA)
+docker-compose.yml
 ```
-
-Спеки/планы агентов: [`docs/superpowers/`](docs/superpowers/).
 
 ---
 
 ## Быстрый запуск
-
-Из **корня репозитория**:
 
 ```bash
 docker compose up -d --build
@@ -83,7 +79,7 @@ curl http://localhost/healthz
 | http://localhost/discover | подбор предпочтений (web) |
 | http://crm.localhost/ | Twenty CRM |
 
-Подробности, env, CRM bootstrap, API examples, backup: **[`docs/ENGINEERING.md`](docs/ENGINEERING.md)**.
+Подробности: [`docs/ENGINEERING.md`](docs/ENGINEERING.md).
 
 Android:
 
@@ -94,33 +90,18 @@ flutter run --dart-define=API_URL=http://10.0.2.2
 
 ---
 
-## Репозиторий (кратко)
+## Гостевой профиль
 
-| Путь | Содержимое |
-|------|------------|
-| `foodassistant/apps/web` | Next.js — сайт, кабинет, админ |
-| `foodassistant/apps/mobile` | Flutter Android — гостевой клиент |
-| `foodassistant/services/api` | Go API |
-| `virtual-restaurant/` | продуктовые docs, прототип, диаграммы |
-| `twenty/` | Twenty CRM (docker) |
-| `docker-compose.yml` | локальный стек |
-
----
-
-## Гостевой профиль (напоминание)
-
-Профиль гостя описан в продуктовых docs, не в engineering:
-
-- [`APP_LOGIC.md` §8.3](virtual-restaurant/docs/APP_LOGIC.md) — имя, фамилия, **как обращаться**, телефон, аллергии/диета, способы оплаты, избранное, история  
-- [`APP_LOGIC.md` §8.4](virtual-restaurant/docs/APP_LOGIC.md) — 18+ / алкоголь: **подтверждение staff + ID**, флаг `alcohol_preorder_allowed` (не самочекбокс в профиле)  
-- [`UX_SCREENS.md` §13](virtual-restaurant/docs/UX_SCREENS.md) — wireframe профиля  
+- [`docs/APP_LOGIC.md` §8.3](docs/APP_LOGIC.md) — имя, фамилия, **как обращаться**, телефон, диета, оплата, избранное, история  
+- [`docs/APP_LOGIC.md` §8.4](docs/APP_LOGIC.md) — 18+ / алкоголь: staff + ID → `alcohol_preorder_allowed`  
+- [`docs/UX_SCREENS.md` §13](docs/UX_SCREENS.md) — wireframe профиля  
 
 ---
 
 ## Для AI / агентов
 
 1. Читать этот `README.md` первым.  
-2. Менять продукт → сверяться с `virtual-restaurant/docs/APP_LOGIC.md` (+ UX / I18N).  
-3. Менять инфраструктуру / API / Docker → `docs/ENGINEERING.md`.  
-4. Не считать `foodassistant/apps/*/README.md` источником продуктовых правил (там только указатели / шаблоны фреймворка).  
+2. Вся документация — только в `docs/` (+ `foodassistant/README.md` для скриншотов).  
+3. Менять продукт → `docs/APP_LOGIC.md` (+ UX / I18N).  
+4. Менять инфраструктуру → `docs/ENGINEERING.md`.  
 5. Не дублировать длинные разделы: править канон и ссылаться сюда.

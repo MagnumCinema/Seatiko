@@ -2,7 +2,7 @@
 
 Документ описывает полный путь пользователя — от первого входа до целевого действия (бронь, заказ, вызов официанта), а также логику для персонала и ресторанов.
 
-> Связанные документы: [README](./README.md) · [I18N](./I18N.md) · [UX Screens](./UX_SCREENS.md) · [Changelog](./CHANGELOG.md) · [Диаграммы](../diagrams/) · [Прототип](../prototype/)
+> Связанные документы: [README](./README.md) · [I18N](./I18N.md) · [UX Screens](./UX_SCREENS.md) · [Changelog](./CHANGELOG.md) · [Диаграммы](./diagrams/) · [Прототип](./prototype/)
 
 ---
 
