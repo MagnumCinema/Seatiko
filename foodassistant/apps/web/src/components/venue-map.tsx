@@ -137,6 +137,7 @@ export function VenueMap({
   const [userGeo, setUserGeo] = useState<{ lat: number; lng: number } | null>(
     null,
   );
+  const [nearbyDenied, setNearbyDenied] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapState, setMapState] = useState<MapState>("loading");
@@ -160,13 +161,24 @@ export function VenueMap({
   }, [locale]);
 
   useEffect(() => {
-    if (!preferences?.practical.includes("nearby")) return;
-    if (!navigator.geolocation) return;
+    if (!preferences?.practical.includes("nearby")) {
+      setNearbyDenied(false);
+      setUserGeo(null);
+      return;
+    }
+    if (!navigator.geolocation) {
+      setNearbyDenied(true);
+      return;
+    }
+    setNearbyDenied(false);
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setUserGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => {
+        setNearbyDenied(false);
+        setUserGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
       () => {
-        /* nearby ignored when permission denied or timed out */
+        setUserGeo(null);
+        setNearbyDenied(true);
       },
       { enableHighAccuracy: true, timeout: 8000 },
     );
@@ -617,6 +629,12 @@ export function VenueMap({
         ) : (
           <p className="venue-map-address">
             {preferences && !loading ? discoverCopy.filtersEmpty : copy.empty}
+          </p>
+        )}
+
+        {nearbyDenied && (
+          <p className="venue-map-address" role="status">
+            {discoverCopy.nearbyDenied}
           </p>
         )}
 
