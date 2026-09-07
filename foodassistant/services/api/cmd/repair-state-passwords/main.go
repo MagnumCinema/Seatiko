@@ -46,6 +46,7 @@ func main() {
 	}
 	passwords := map[string]string{
 		"admin@foodassistant.local":    "admin123",
+		"guest@foodassistant.local":    "guest123",
 		"qa-owner@foodassistant.local": "secret123",
 		"qa-guest@foodassistant.local": "secret123",
 		"yuliitezary@gmail.com":        pilotPassword,

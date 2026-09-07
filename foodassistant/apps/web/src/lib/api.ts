@@ -526,6 +526,7 @@ export async function updateMe(input: {
 export function redirectPathForRole(role?: string | null): string {
   if (role === "admin") return "/admin";
   if (role === "restaurant") return "/cabinet";
+  if (role === "guest") return "/account";
   return "/";
 }
 

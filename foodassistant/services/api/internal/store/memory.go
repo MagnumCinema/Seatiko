@@ -336,6 +336,23 @@ func (s *MemoryStore) seed() {
 		}
 		s.users[admin.ID] = admin
 	}
+
+	guestHash, err := bcrypt.GenerateFromPassword([]byte("guest123"), bcrypt.DefaultCost)
+	if err == nil {
+		guest := models.User{
+			ID:           "user-guest-demo",
+			Email:        "guest@foodassistant.local",
+			PasswordHash: string(guestHash),
+			FirstName:    "Demo",
+			LastName:     "Guest",
+			DisplayName:  "Demo Guest",
+			Locale:       "ru",
+			Role:         models.RoleGuest,
+			CreatedAt:    time.Now().UTC(),
+			UpdatedAt:    time.Now().UTC(),
+		}
+		s.users[guest.ID] = guest
+	}
 }
 
 func (s *MemoryStore) refreshFreeTablesLocked(venueID string) {

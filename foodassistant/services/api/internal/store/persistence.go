@@ -60,6 +60,7 @@ func NewPersistent(path string) (*MemoryStore, error) {
 	}
 	s.applyState(state)
 	s.backfillVenueMediaLocked()
+	s.ensureDemoUsersLocked()
 	return s, nil
 }
 
@@ -89,6 +90,37 @@ func (s *MemoryStore) backfillVenueMediaLocked() {
 			changed = true
 		}
 		s.venues[id] = current
+	}
+	if changed {
+		s.persistBestEffortLocked()
+	}
+}
+
+// ensureDemoUsersLocked adds development demo accounts missing from older persisted state.
+func (s *MemoryStore) ensureDemoUsersLocked() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	demo := NewMemory()
+	changed := false
+	for id, user := range demo.users {
+		if _, exists := s.users[id]; exists {
+			continue
+		}
+		// Also skip if same email already registered under another id.
+		emailTaken := false
+		for _, existing := range s.users {
+			if strings.EqualFold(existing.Email, user.Email) {
+				emailTaken = true
+				break
+			}
+		}
+		if emailTaken {
+			continue
+		}
+		s.users[id] = user
+		changed = true
+		log.Printf("seeded missing demo user %s (%s)", user.Email, user.Role)
 	}
 	if changed {
 		s.persistBestEffortLocked()

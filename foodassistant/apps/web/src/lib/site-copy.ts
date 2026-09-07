@@ -72,7 +72,7 @@ const copy = {
       review: "Проверка 1–3 рабочих дня", history: "История действий сохраняется автоматически", account: "Аккаунт владельца", connect: "Подключить ресторан", intro: "Сначала создаём личный доступ. Данные ресторана вы заполните следующим шагом в кабинете.",
       first: "Имя", last: "Фамилия", email: "Рабочий email", password: "Пароль", passwordHint: "Не менее 6 символов", legal: "Создавая аккаунт, вы подтверждаете, что имеете право представлять заведение и предоставлять данные для публикации.", creating: "Создаём кабинет…", continue: "Продолжить в кабинет", exists: "Уже есть аккаунт?", login: "Войти", taken: "Этот email уже зарегистрирован", failed: "Не удалось создать аккаунт. Попробуйте ещё раз.",
     },
-    login: { title: "Войти", body: "Кабинет ресторана или панель модерации.", password: "Пароль", busy: "Вход…", action: "Войти", invalid: "Неверный email или пароль", failed: "Ошибка входа", demo: "Админ (демо):", noAccount: "Нет аккаунта?", register: "Регистрация" },
+    login: { title: "Войти", body: "Кабинет ресторана, панель модерации или гостевой профиль.", password: "Пароль", busy: "Вход…", action: "Войти", invalid: "Неверный email или пароль", failed: "Ошибка входа", demo: "Админ (демо):", demoGuest: "Гость (демо):", noAccount: "Нет аккаунта?", register: "Регистрация" },
   },
   en: {
     header: { map: "Map", how: "How it works", business: "For restaurants", book: "Book", login: "Sign in", connect: "Connect restaurant", nav: "Main navigation", language: "Language", account: "Account", theme: "Theme", themeDark: "Dark", themeLight: "Light" },
@@ -140,7 +140,7 @@ const copy = {
       review: "Review in 1–3 business days", history: "Activity history is saved automatically", account: "Owner account", connect: "Connect restaurant", intro: "First, create your personal access. You will enter restaurant details in the next workspace step.",
       first: "First name", last: "Last name", email: "Work email", password: "Password", passwordHint: "At least 6 characters", legal: "By creating an account, you confirm that you may represent the venue and provide data for publication.", creating: "Creating workspace…", continue: "Continue to workspace", exists: "Already have an account?", login: "Sign in", taken: "This email is already registered", failed: "Could not create the account. Please try again.",
     },
-    login: { title: "Sign in", body: "Restaurant workspace or moderation panel.", password: "Password", busy: "Signing in…", action: "Sign in", invalid: "Incorrect email or password", failed: "Sign-in failed", demo: "Admin (demo):", noAccount: "No account?", register: "Register" },
+    login: { title: "Sign in", body: "Restaurant workspace, moderation panel, or guest profile.", password: "Password", busy: "Signing in…", action: "Sign in", invalid: "Incorrect email or password", failed: "Sign-in failed", demo: "Admin (demo):", demoGuest: "Guest (demo):", noAccount: "No account?", register: "Register" },
   },
   ro: {
     header: { map: "Hartă", how: "Cum funcționează", business: "Pentru restaurante", book: "Rezervare", login: "Autentificare", connect: "Conectează restaurant", nav: "Navigare principală", language: "Limbă", account: "Profil", theme: "Temă", themeDark: "Întunecat", themeLight: "Deschis" },
@@ -208,7 +208,7 @@ const copy = {
       review: "Verificare în 1–3 zile lucrătoare", history: "Istoricul acțiunilor se salvează automat", account: "Cont de proprietar", connect: "Conectează restaurant", intro: "Mai întâi creăm accesul personal. Datele restaurantului se completează la pasul următor în cabinet.",
       first: "Prenume", last: "Nume", email: "Email de serviciu", password: "Parolă", passwordHint: "Cel puțin 6 caractere", legal: "Prin crearea contului confirmi că ai dreptul să reprezinți localul și să furnizezi date pentru publicare.", creating: "Creăm cabinetul…", continue: "Continuă în cabinet", exists: "Ai deja cont?", login: "Autentificare", taken: "Acest email este deja înregistrat", failed: "Contul nu a putut fi creat. Încearcă din nou.",
     },
-    login: { title: "Autentificare", body: "Cabinetul restaurantului sau panoul de moderare.", password: "Parolă", busy: "Autentificare…", action: "Autentificare", invalid: "Email sau parolă incorectă", failed: "Autentificarea a eșuat", demo: "Admin (demo):", noAccount: "Nu ai cont?", register: "Înregistrare" },
+    login: { title: "Autentificare", body: "Cabinetul restaurantului, panoul de moderare sau profilul oaspetelui.", password: "Parolă", busy: "Autentificare…", action: "Autentificare", invalid: "Email sau parolă incorectă", failed: "Autentificarea a eșuat", demo: "Admin (demo):", demoGuest: "Oaspete (demo):", noAccount: "Nu ai cont?", register: "Înregistrare" },
   },
 } as const;
 

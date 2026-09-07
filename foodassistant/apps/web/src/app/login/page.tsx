@@ -81,8 +81,14 @@ function LoginForm() {
         </button>
       </form>
       <div className="auth-hint">
-        {copy.demo}{" "}
-        <code>admin@foodassistant.local</code> / <code>admin123</code>
+        <div>
+          {copy.demo}{" "}
+          <code>admin@foodassistant.local</code> / <code>admin123</code>
+        </div>
+        <div>
+          {copy.demoGuest}{" "}
+          <code>guest@foodassistant.local</code> / <code>guest123</code>
+        </div>
       </div>
       <p className="auth-links">
         {copy.noAccount} <Link href="/register">{copy.register}</Link>

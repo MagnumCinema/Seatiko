@@ -176,14 +176,17 @@ Virtual-restaurant-/
 | Владелец | `restaurant` | `/cabinet` | анкета ресторана, фото, история, брони |
 | Администратор | `admin` | `/admin` | модерация, публикация, CRM reconcile |
 
-Администратора нельзя зарегистрировать публичным запросом. Локальный seed-аккаунт:
+Администратора нельзя зарегистрировать публичным запросом. Локальные seed-аккаунты:
 
 ```text
 email: admin@foodassistant.local
 password: admin123
+
+email: guest@foodassistant.local
+password: guest123
 ```
 
-Это только development-аккаунт.
+Это только development-аккаунты.
 
 ### Подключение ресторана
 
