@@ -1979,3 +1979,83 @@ html[data-theme="light"] {
     justify-content: center;
   }
 }
+
+/* Shared guest profile ( /account + app-shell ) */
+.guest-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: var(--site-fg, var(--fa-text, inherit));
+}
+
+.guest-profile-page {
+  width: min(100%, 28rem);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.guest-profile-embedded {
+  padding: 0;
+}
+
+.guest-profile-panel {
+  margin: 0.15rem 0 0.65rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--site-border, var(--fa-border, rgba(0, 0, 0, 0.12)));
+  border-radius: 12px;
+  background: var(--site-surface, var(--fa-surface, transparent));
+  color: var(--site-fg, var(--fa-text, inherit));
+}
+
+.guest-profile-panel-toggle {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--site-border, var(--fa-border, rgba(0, 0, 0, 0.12)));
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.guest-profile-textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.guest-profile-theme-btn,
+.guest-profile-remove-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  width: auto;
+}
+
+.guest-profile-payment-row {
+  border-bottom-color: color-mix(
+    in oklab,
+    var(--site-border, var(--fa-border, rgba(0, 0, 0, 0.12))) 70%,
+    transparent
+  );
+}
+
+.guest-profile-age {
+  align-items: flex-start;
+}
+
+.guest-profile-age-badge {
+  max-width: 60%;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--site-border, var(--fa-border, rgba(0, 0, 0, 0.12)));
+  background: color-mix(
+    in oklab,
+    var(--site-surface, var(--fa-surface-2, transparent)) 88%,
+    transparent
+  );
+  color: var(--site-muted, var(--fa-muted, inherit));
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: right;
+}
