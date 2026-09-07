@@ -1,10 +1,42 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
+import { ActiveFiltersBar } from "@/components/discover/active-filters-bar";
 import { useLocale } from "@/components/locale-provider";
+import {
+  decodePreferences,
+  hasAnyPreference,
+} from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
+
+function HomeMapSection() {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).home;
+  const searchParams = useSearchParams();
+  const prefs = useMemo(
+    () => decodePreferences(searchParams.toString()),
+    [searchParams],
+  );
+  const filtered = hasAnyPreference(prefs);
+
+  return (
+    <section className="landing-map-section" id="map">
+      <div className="section-heading split">
+        <div>
+          <span className="eyebrow">{copy.mapEyebrow}</span>
+          <h2 style={{ whiteSpace: "pre-line" }}>{copy.mapTitle}</h2>
+        </div>
+        <p>{copy.mapBody}</p>
+      </div>
+      {filtered && <ActiveFiltersBar prefs={prefs} />}
+      <VenueMap preferences={filtered ? prefs : undefined} />
+    </section>
+  );
+}
 
 export default function HomePage() {
   const { locale } = useLocale();
@@ -59,16 +91,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="landing-map-section" id="map">
-        <div className="section-heading split">
-          <div>
-            <span className="eyebrow">{copy.mapEyebrow}</span>
-            <h2 style={{ whiteSpace: "pre-line" }}>{copy.mapTitle}</h2>
-          </div>
-          <p>{copy.mapBody}</p>
-        </div>
-        <VenueMap />
-      </section>
+      <Suspense fallback={null}>
+        <HomeMapSection />
+      </Suspense>
 
       <section className="landing-features" id="how">
         <div className="section-heading centered">

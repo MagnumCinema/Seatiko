@@ -10,6 +10,11 @@ import {
   type LocaleCode,
   type MapPlace,
 } from "@/lib/api";
+import {
+  filterAndRankPlaces,
+  type DiscoverPreferences,
+} from "@/lib/discover-preferences";
+import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
 
 type MapState = "loading" | "ready" | "error";
@@ -112,19 +117,39 @@ function FreeMapFallback({ places, locale }: { places: MapPlace[]; locale: Local
   );
 }
 
-export function VenueMap({ compact = false }: { compact?: boolean }) {
+export function VenueMap({
+  compact = false,
+  preferences,
+}: {
+  compact?: boolean;
+  preferences?: DiscoverPreferences;
+}) {
   const { locale } = useLocale();
   const copy = mapCopy[locale];
+  const discoverCopy = getSiteCopy(locale).discover;
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const placesRef = useRef<MapPlace[]>([]);
   const localeRef = useRef(locale);
   const fittedPlacesRef = useRef("");
-  const [places, setPlaces] = useState<MapPlace[]>([]);
+  const [allPlaces, setAllPlaces] = useState<MapPlace[]>([]);
+  const [userGeo, setUserGeo] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapState, setMapState] = useState<MapState>("loading");
+
+  const ranked = useMemo(() => {
+    if (!preferences) return allPlaces.map((place) => ({ place, score: 0 }));
+    return filterAndRankPlaces(allPlaces, preferences, {
+      userLat: userGeo?.lat,
+      userLng: userGeo?.lng,
+    });
+  }, [allPlaces, preferences, userGeo]);
+
+  const places = useMemo(() => ranked.map((r) => r.place), [ranked]);
 
   useEffect(() => {
     placesRef.current = places;
@@ -133,6 +158,19 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     localeRef.current = locale;
   }, [locale]);
+
+  useEffect(() => {
+    if (!preferences?.practical.includes("nearby")) return;
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        setUserGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {
+        /* nearby ignored when permission denied or timed out */
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  }, [preferences]);
 
   function showVenuePopup(place: MapPlace, map: maplibregl.Map) {
     const labels = mapCopy[localeRef.current];
@@ -209,7 +247,7 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
       .then((data) => {
         if (!active) return;
         const sorted = sortPlaces(data.places ?? []);
-        setPlaces(sorted);
+        setAllPlaces(sorted);
         setSelectedId(sorted[0]?.id ?? null);
       })
       .finally(() => {
@@ -578,7 +616,7 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
           </>
         ) : (
           <p className="venue-map-address">
-            {copy.empty}
+            {preferences && !loading ? discoverCopy.filtersEmpty : copy.empty}
           </p>
         )}
 
@@ -593,6 +631,9 @@ export function VenueMap({ compact = false }: { compact?: boolean }) {
               <b>{index + 1}</b>
               <span>
                 {pickLocale(place.name, locale)}
+                {preferences && index < 3 && (
+                  <em className="venue-map-badge">{discoverCopy.recommended}</em>
+                )}
                 {place.in_database && (
                   <em className="venue-map-badge">{copy.bookableBadge}</em>
                 )}
