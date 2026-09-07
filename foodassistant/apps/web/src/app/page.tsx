@@ -23,8 +23,11 @@ export default function HomePage() {
             {copy.lead}
           </p>
           <div className="landing-ctas">
-            <Link href="#map" className="btn btn-gold">
+            <Link href="/discover" className="btn btn-gold">
               {copy.find} <span>→</span>
+            </Link>
+            <Link href="#map" className="btn btn-outline">
+              {copy.browseMap}
             </Link>
             <Link href="/business" className="btn btn-outline">
               {copy.connect}
