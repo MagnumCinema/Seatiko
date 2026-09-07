@@ -1,24 +1,37 @@
-# FoodAssistant
+# FoodAssistant — code runbook
 
-FoodAssistant — единая ресторанная платформа: публичный сайт, кабинет владельца, гостевой Android-клиент, API, модерация и Twenty CRM. Карта и бронирование встроены в сайт и мобильное приложение; отдельное картографическое приложение не требуется.
+Код платформы: сайт, кабинет владельца, Android, API, модерация, CRM sync.
+
+> **Сначала:** [`../README.md`](../README.md) (карта всего репозитория)  
+> **Продуктовые правила:** [`../virtual-restaurant/docs/README.md`](../virtual-restaurant/docs/README.md)  
+>   — профиль гостя / избранное / оплата / 18+: [`APP_LOGIC.md` §8](../virtual-restaurant/docs/APP_LOGIC.md)  
+> **Инженерия (Docker, API, production):** [`../docs/ENGINEERING.md`](../docs/ENGINEERING.md)
+
+Этот файл — **практический runbook + скриншоты**. Не дублирует полный API/Docker guide: подробности в `docs/ENGINEERING.md`.
+
+---
 
 ## Что работает
 
 | Часть | Назначение | Адрес / путь |
 |---|---|---|
-| Публичный сайт | Презентация и карта опубликованных ресторанов | http://localhost/ |
+| Публичный сайт | Презентация, карта, discover | http://localhost/ |
 | Кабинет владельца | Анкета, фото, статус, бронирования и история | http://localhost/cabinet |
-| Гостевой web-сценарий | Карточка ресторана и интерактивный план столиков | http://localhost/demo |
-| Админка | Модерация и публикация ресторанов | http://localhost/admin |
+| Гостевой web | Карточка ресторана и план столиков (`/venues/…`, `/book`) | http://localhost/ |
+| Админка | Модерация и публикация | http://localhost/admin |
 | Android | Карта, рестораны, план зала и бронирование | `apps/mobile` |
 | API | Пользователи, анкеты, рестораны, столики, брони и CRM sync | `services/api` |
 | Twenty CRM | Владельцы, рестораны, гости, брони и Timeline | http://crm.localhost/ |
 
-Сайт поддерживает RU, EN и RO. Выбранный язык хранится в браузере и применяется на публичных страницах и в кабинете.
+Сайт: RU / EN / RO (язык в браузере + кабинет).
+
+> Примечание: в старых заметках встречался `/demo`. Актуальные гостевые сценарии на сайте — через карту, `/venues/[id]`, `/book`, `/discover`.
+
+---
 
 ## Быстрый запуск
 
-Из корня `/Users/iulian/Documents/work/project1`:
+Из **корня репозитория** (не из этой папки):
 
 ```bash
 docker compose up -d --build
@@ -26,18 +39,20 @@ docker compose ps
 curl http://localhost/healthz
 ```
 
-Данные API сохраняются в Docker volume `api-data`, фотографии — в `api-uploads`. Перезапуск или пересборка API больше не удаляет аккаунты, заявки, бронирования и хеши паролей.
+Данные API — Docker volume `api-data`, фото — `api-uploads`. Полный runbook: [`docs/ENGINEERING.md`](../docs/ENGINEERING.md).
 
 ### Android
 
 ```bash
-cd /Users/iulian/Documents/work/project1/foodassistant/apps/mobile
+cd foodassistant/apps/mobile
 flutter run --dart-define=API_URL=http://10.0.2.2
 ```
 
-`10.0.2.2` — адрес компьютера из стандартного Android Emulator.
+`10.0.2.2` — host machine из стандартного Android Emulator. Подробнее: [`apps/mobile/README.md`](apps/mobile/README.md).
 
-## Архитектура и источники истины
+---
+
+## Архитектура (кратко)
 
 ```text
 Сайт / Android / кабинет владельца
@@ -54,184 +69,110 @@ flutter run --dart-define=API_URL=http://10.0.2.2
 ```
 
 - FoodAssistant владеет аккаунтами, ролями, паролями, модерацией и публикацией.
-- Twenty хранит рабочую CRM-проекцию и Timeline для команды ресторана.
-- Синхронизация FoodAssistant → CRM запускается после изменений и каждые 15 секунд для восстановления после временных ошибок.
-- CRM → FoodAssistant работает через HMAC-подписанный webhook.
-- Upsert выполняется по стабильным FoodAssistant ID, поэтому повторный запуск не создаёт дубли.
-- События, сделанные нашим API-ключом, игнорируются входящим webhook, чтобы не возникал цикл обновлений.
+- Twenty — CRM-проекция и Timeline.
+- Правила sync и поля: [`TWENTY_CRM_INTEGRATION.md`](../virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md) и раздел CRM в [`ENGINEERING.md`](../docs/ENGINEERING.md).
 
-## Путь владельца ресторана
+---
 
-### 1. Регистрация
+## Путь владельца ресторана (кратко + скриншоты)
 
-1. Открыть http://localhost/register.
-2. Указать имя владельца, email, телефон и пароль.
-3. После регистрации открыть кабинет владельца.
-4. Гости используют публичный сайт или Android и не видят инструменты владельца.
+Канон статусов и полей: [`RESTAURANT_OWNER_FLOW.md`](../virtual-restaurant/docs/RESTAURANT_OWNER_FLOW.md).
 
-### 2. Анкета ресторана
+1. http://localhost/register — аккаунт владельца → http://localhost/cabinet  
+2. «Добавить ресторан»: название, описание, кухня, часы, адрес+точка на карте, телефон/email, сайт (опц.), цена, ≥1 фото  
+3. Черновик сохраняется; перед фото текстовые поля уходят в API  
+4. Отправка при готовности **7/7** → `DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED` (или `REJECTED` с причиной)  
+5. Статусы модерации/публикации меняет только FoodAssistant, не CRM  
 
-В кабинете нажать `Добавить ресторан` и заполнить:
+---
 
-1. название и описание;
-2. кухню и часы работы;
-3. адрес и точку на встроенной карте;
-4. телефон и email заведения;
-5. сайт ресторана, если он есть;
-6. ценовой уровень и средний чек;
-7. минимум одну фотографию.
+## Карта и план столиков
 
-Черновик автоматически сохраняется. Перед загрузкой фото текущие текстовые поля отправляются в API, поэтому добавление изображения не очищает уже заполненную форму.
+Канон: [`MAP_ARCHITECTURE.md`](../virtual-restaurant/docs/MAP_ARCHITECTURE.md).
 
-### 3. Готовность и модерация
-
-Кнопка отправки активируется при готовности 7/7:
-
-- название и описание;
-- адрес;
-- координаты;
-- кухня;
-- контакты;
-- часы работы;
-- фотографии.
-
-Далее заявка проходит `DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED` или возвращается как `REJECTED` с причиной. Только FoodAssistant может менять эти статусы и публиковать ресторан.
-
-## Бесплатная карта и план столиков
-
-Карта работает без Google Cloud, банковской карты и платного API:
-
-- MapLibre GL JS на сайте;
-- MapLibre Native во Flutter;
-- бесплатные тайлы OpenFreeMap;
-- данные OpenStreetMap;
-- точки ресторанов из FoodAssistant API.
+- MapLibre + OpenFreeMap / OSM; точки из API  
+- План зала: зелёный / жёлтый / красный / выбранный  
 
 ![Карта ресторанов на сайте](docs/images/08-site-map.jpg)
 
-При бронировании гость видит одинаковый интерактивный план зала на сайте и Android:
-
-- зелёный — стол свободен;
-- жёлтый — забронирован;
-- красный — занят;
-- выделенный — выбран гостем.
-
 ![Выбор столика на сайте](docs/images/09-web-table-map.jpg)
 
-## Совместимость с Twenty CRM
+---
 
-### Соответствие данных
+## Twenty CRM (скриншоты и локальные заметки)
 
-| FoodAssistant | Twenty | Стабильный ключ |
+Канон полей и webhook: [`TWENTY_CRM_INTEGRATION.md`](../virtual-restaurant/docs/TWENTY_CRM_INTEGRATION.md), bootstrap — [`ENGINEERING.md`](../docs/ENGINEERING.md).
+
+| FoodAssistant | Twenty | Ключ |
 |---|---|---|
-| Владелец или гость | `People` | `foodassistantUserId` |
-| Заявка/ресторан | `Companies` | `foodassistantId` |
-| Опубликованное заведение | поле Company `venueId` | FoodAssistant Venue ID |
-| Бронирование | `Reservations` | `foodassistantReservationId` |
+| Владелец или гость | People | `foodassistantUserId` |
+| Заявка/ресторан | Companies | `foodassistantId` |
+| Опубликованное заведение | Company `venueId` | Venue ID |
+| Бронирование | Reservations | `foodassistantReservationId` |
 
-Для ресторанов в `Companies` синхронизируются описание, кухня, часы, адрес, координаты, контакты, сайт, ценовой уровень, средний чек, фото, статус, причина возврата и время последнего изменения. Владелец связывается с Company. Бронь связывается одновременно с рестораном и гостем.
+![Рестораны в CRM](docs/images/10-crm-restaurants-sync.png)
 
-![Рестораны, созданные из FoodAssistant](docs/images/10-crm-restaurants-sync.png)
+![Бронирования в CRM](docs/images/11-crm-reservations-sync.png)
 
-В `Reservations` хранятся дата, гости, стол, email, статус и источник `WEB` или `ANDROID`.
+CRM может править безопасные поля Person/Company/рабочий статус брони; **не** пароли, роли, модерацию, публикацию. Входящие изменения → `CRM_PROFILE_UPDATED` в истории кабинета.
 
-![Бронирования FoodAssistant в CRM](docs/images/11-crm-reservations-sync.png)
+Seed-рестораны карты не уходят в CRM, пока нет заявки владельца.
 
-### Разрешённые изменения из CRM
+### Секреты и webhook
 
-Менеджер может вручную менять:
-
-- имя, контакты и язык Person;
-- название, описание, кухню, график, контакты, сайт, адрес, координаты и цены ресторана;
-- рабочий статус брони: `CONFIRMED`, `CHECKED_IN`, `CANCELLED`, `NO_SHOW`.
-
-CRM не может менять пароли, роли, владельца заявки, модерацию или публикацию. Эти ограничения предотвращают конфликт и случайную публикацию ресторана из CRM.
-
-Каждое разрешённое входящее изменение создаёт запись `CRM_PROFILE_UPDATED` в истории кабинета, а Twenty сохраняет собственный Timeline.
-
-### Какие записи синхронизируются
-
-В CRM отправляются бизнес-записи, связанные с реальной заявкой ресторана. Встроенные seed-рестораны для демонстрации карты не отправляются, пока владелец не создаст для них заявку. Это не даёт CRM смешивать тестовые точки и подключённые рестораны.
-
-На момент настройки проверено:
-
-- 2 Restaurant Companies;
-- 3 People;
-- 1 Reservation связана с опубликованным рестораном;
-- 0 демо Opportunities, 0 демо Dashboards и 0 активных демо Workflows.
-
-## Настройка API и webhook
-
-Секреты хранятся только в `/Users/iulian/Documents/work/project1/.env.keys` с правами `600`. Файл игнорируется Git.
-
-```env
-TWENTY_API_KEY=секрет_из_Twenty
-TWENTY_WEBHOOK_SECRET=отдельный_случайный_секрет
-```
-
-Шаблон: `/Users/iulian/Documents/work/project1/.env.keys.example`.
-
-Для нового workspace сначала создайте API key в `Settings → MCP & APIs → API`, затем подготовьте поля CRM:
+Секреты — в корневом `.env.keys` (см. политику в [`ENGINEERING.md`](../docs/ENGINEERING.md#секреты-в-приватном-репозитории)). Шаблон: `.env.keys.example`.
 
 ```bash
-cd /Users/iulian/Documents/work/project1/foodassistant/services/api
-set -a
-source ../../../.env.keys
-set +a
+cd foodassistant/services/api
+set -a && source ../../../.env.keys && set +a
 TWENTY_BASE_URL=http://crm.localhost go run ./cmd/crm-bootstrap
 ```
 
-После этого создайте webhook в `Settings → MCP & APIs → Webhooks`:
+Webhook: `http://host.docker.internal/api/v1/integrations/twenty/webhook`, secret = `TWENTY_WEBHOOK_SECRET`.
 
-- локальный URL: `http://host.docker.internal/api/v1/integrations/twenty/webhook`;
-- события: все объекты / все операции;
-- Secret: то же значение, что `TWENTY_WEBHOOK_SECRET`;
-- описание: `FoodAssistant bidirectional CRM sync`.
+![Webhook Twenty](docs/images/12-crm-webhook.png)
 
-![Активный webhook Twenty](docs/images/12-crm-webhook.png)
+Локально compose может отключать Twenty outbound safe mode для Docker DNS; в production — HTTPS webhook и safe mode on.
 
-Локальный compose устанавливает `OUTBOUND_HTTP_SAFE_MODE_ENABLED=false` только для self-hosted Twenty, иначе защита SSRF блокирует Docker-адрес. В production оставьте safe mode включённым и используйте публичный HTTPS webhook.
-
-## Контроль и восстановление
-
-Проверить состояние:
+### Контроль
 
 ```bash
 curl http://localhost/healthz
 curl http://localhost/api/v1/integrations/twenty/status
 ```
 
-Ответ должен содержать `enabled: true`, `healthy: true` и `last_success_at`. Если CRM временно недоступна, проект продолжает сохранять данные локально; следующий reconcile повторит idempotent upsert.
+Ожидается `enabled: true`, `healthy: true`, `last_success_at`.
+
+---
 
 ## Проверка перед демонстрацией
 
-1. Переключить RU → EN → RO на сайте.
-2. Проверить карту на главной странице.
-3. Открыть `/demo` и выбрать столик на плане зала.
-4. Открыть `/cabinet`, проверить 7/7, фото, статус и историю.
-5. В CRM открыть Companies, People и Reservations и проверить связи.
-6. Изменить безопасное тестовое поле в CRM и убедиться, что оно появилось в FoodAssistant.
-7. Вернуть исходное значение и убедиться, что дубль записи не появился.
-8. Перезапустить API и повторно проверить вход и данные.
+1. RU → EN → RO на сайте  
+2. Карта на главной  
+3. Выбор стола на плане (`/venues/…` или `/book`)  
+4. `/cabinet` — 7/7, фото, статус, история  
+5. CRM: Companies, People, Reservations и связи  
+6. Изменить безопасное поле в CRM → увидеть в FoodAssistant; без дубля записи  
+7. Перезапуск API → данные и логин на месте  
+
+---
 
 ## Тесты
 
 ```bash
-cd /Users/iulian/Documents/work/project1/foodassistant/services/api
-go test ./...
-
-cd /Users/iulian/Documents/work/project1/foodassistant/apps/web
-npm run lint
-npm run build -- --webpack
-
-cd /Users/iulian/Documents/work/project1/foodassistant/apps/mobile
-flutter analyze
-flutter test
+cd foodassistant/services/api && go test ./...
+cd foodassistant/apps/web && npm run lint && npm test && npm run build
+cd foodassistant/apps/mobile && flutter analyze && flutter test
 ```
+
+Полный список: [`ENGINEERING.md` — Тестирование](../docs/ENGINEERING.md#тестирование).
+
+---
 
 ## Безопасность
 
-- Никогда не добавляйте `.env.keys` в Git и не переносите ключ в `NEXT_PUBLIC_*`.
-- После показа ключа в терминале, чате или скриншоте немедленно создайте новый и отзовите старый.
-- Для production создайте отдельную CRM-роль с минимальными правами вместо Admin.
-- Используйте HTTPS, production JWT secret, резервное копирование persistent volume и PostgreSQL для масштабирования.
+- Не класть секреты в `NEXT_PUBLIC_*`  
+- После утечки ключа — ротация  
+- Production: отдельная CRM-роль, HTTPS, сильный JWT, backup volumes / PostgreSQL  
+
+Детали: [`ENGINEERING.md` — Безопасность и production](../docs/ENGINEERING.md#безопасность-и-production).
