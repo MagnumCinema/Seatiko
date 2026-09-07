@@ -142,5 +142,8 @@
   "profile.favorites": "Избранное",
   "profile.saved": "Данные профиля сохранены",
   "profile.guest": "Гость",
-  "profile.sign_in": "Войти"
+  "profile.sign_in": "Войти",
+  "theme.toggle": "Тема",
+  "theme.dark": "Тёмная",
+  "theme.light": "Светлая"
 }

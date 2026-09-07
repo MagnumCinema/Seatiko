@@ -142,5 +142,8 @@
   "profile.favorites": "Favorite",
   "profile.saved": "Profil salvat",
   "profile.guest": "Oaspete",
-  "profile.sign_in": "Autentificare"
+  "profile.sign_in": "Autentificare",
+  "theme.toggle": "Temă",
+  "theme.dark": "Întunecat",
+  "theme.light": "Deschis"
 }

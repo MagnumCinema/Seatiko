@@ -142,5 +142,8 @@
   "profile.favorites": "Favorites",
   "profile.saved": "Profile saved",
   "profile.guest": "Guest",
-  "profile.sign_in": "Sign in"
+  "profile.sign_in": "Sign in",
+  "theme.toggle": "Theme",
+  "theme.dark": "Dark",
+  "theme.light": "Light"
 }

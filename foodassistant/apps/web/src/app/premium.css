@@ -1,3 +1,53 @@
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --site-bg: #0f1410;
+  --site-fg: #f3efe6;
+  --site-muted: #9aa89a;
+  --site-surface: rgba(255, 255, 255, 0.045);
+  --site-border: rgba(255, 255, 255, 0.12);
+  --site-accent: #e9b96e;
+  --auth-card-bg: rgba(18, 46, 36, 0.96);
+  --auth-card-fg: #f3efe6;
+  --auth-card-muted: #9aa89a;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --site-bg: #f4f0e8;
+  --site-fg: #1a2420;
+  --site-muted: #5c6b63;
+  --site-surface: #fffaf2;
+  --site-border: rgba(26, 36, 32, 0.12);
+  --site-accent: #246046;
+  --auth-card-bg: #fffaf2;
+  --auth-card-fg: #1a2420;
+  --auth-card-muted: #6c7871;
+}
+
+.site-body {
+  background: var(--site-bg);
+  color: var(--site-fg);
+}
+
+.auth-page {
+  background:
+    radial-gradient(ellipse at 80% 0%, rgba(45, 90, 61, 0.2), transparent 45%),
+    var(--site-bg);
+  color: var(--site-fg);
+}
+
+.auth-card {
+  color: var(--auth-card-fg);
+}
+
+.auth-card h1 {
+  color: var(--auth-card-fg);
+}
+
+.auth-card > p {
+  color: var(--auth-card-muted);
+}
+
 /* 2026 premium hospitality system                                             */
 /* ========================================================================== */
 
@@ -1168,10 +1218,10 @@
   max-width: none;
   margin: 0;
   padding: 38px;
-  color: #193a2f;
-  border: 1px solid rgba(43, 75, 63, .12);
+  color: var(--auth-card-fg);
+  border: 1px solid var(--site-border);
   border-radius: 26px;
-  background: rgba(255, 253, 248, .9);
+  background: var(--auth-card-bg);
   box-shadow: 0 28px 80px rgba(43, 66, 56, .12);
 }
 .owner-register-card h2 {
@@ -1181,7 +1231,7 @@
   font-weight: 580;
   letter-spacing: -.03em;
 }
-.auth-card.owner-register-card > p { margin: 0 0 28px; color: #6c7871; font-size: .87rem; line-height: 1.55; }
+.auth-card.owner-register-card > p { margin: 0 0 28px; color: var(--auth-card-muted); font-size: .87rem; line-height: 1.55; }
 .owner-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .owner-register-card .field label { color: #415c52; font-size: .72rem; font-weight: 760; }
 .owner-register-card .field input {
