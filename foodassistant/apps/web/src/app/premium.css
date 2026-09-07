@@ -2059,3 +2059,33 @@ html[data-theme="light"] {
   line-height: 1.35;
   text-align: right;
 }
+
+.account-page {
+  min-height: 100vh;
+  color: var(--site-fg);
+  background:
+    radial-gradient(ellipse at 80% 0%, rgba(45, 90, 61, 0.2), transparent 45%),
+    var(--site-bg);
+}
+
+.account-main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 5.5rem 1.25rem 4rem;
+}
+
+.account-loading {
+  margin: 6rem auto 0;
+  text-align: center;
+  color: var(--site-muted);
+}
+
+.account-toast {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--site-border);
+  background: var(--site-surface);
+  color: var(--site-fg);
+  font-size: 0.88rem;
+}
