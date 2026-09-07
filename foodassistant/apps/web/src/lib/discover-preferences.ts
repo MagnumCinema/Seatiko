@@ -143,7 +143,7 @@ export function decodePreferences(search: string): DiscoverPreferences {
   };
 }
 
-export function toggleId<T extends string>(list: T[], id: T): T[] {
+export function toggleId<T extends string | number>(list: T[], id: T): T[] {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
