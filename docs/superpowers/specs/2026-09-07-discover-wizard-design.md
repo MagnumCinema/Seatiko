@@ -7,7 +7,7 @@ Status: approved for implementation after user review of this spec
 
 1. Let guests choose what they want (food type, restaurant type, budget, occasion, practical needs) **before** searching on the map.
 2. Provide a **guided AI-style chat** (scripted chips, no external LLM in v1) that helps fill the same preferences.
-3. Redirect to the existing landing map with those preferences applied as filters.
+3. Redirect to the existing landing map with those preferences applied as **filters + fit ranking** (recommend best matches first).
 4. Keep a secondary path to browse the unfiltered map.
 
 ## Non-goals
@@ -29,6 +29,7 @@ Status: approved for implementation after user review of this spec
 | Skip behavior | Primary CTA → wizard; secondary “Browse map” → unfiltered map |
 | Platform | Web first; Flutter later |
 | Architecture | Hybrid stepper + optional guided chat sharing one preference state |
+| Map results | Filter matches **and** rank by fit score (recommendations first) |
 
 ## Approach
 
@@ -37,7 +38,7 @@ Status: approved for implementation after user review of this spec
 - Structured multi-step chips are the source of truth.
 - Collapsible “Ask for help” guided chat runs a fixed script and writes into the same state.
 - “Show map” encodes preferences into the URL and navigates to the map section.
-- `VenueMap` filters client-side against `GET /api/v1/map/places` results.
+- `VenueMap` filters and **ranks** client-side against `GET /api/v1/map/places` results (best fit first).
 
 ## User flow
 
@@ -52,7 +53,8 @@ Status: approved for implementation after user review of this spec
 
 3. **Redirect to map**
    - Navigate to `/?cuisine=…&budget=…#map` (query string **before** hash so the app can read prefs; `#map` scrolls to the map section)
-   - Map applies filters and shows an “Active filters” bar (Edit / Clear)
+   - Map filters to matches, **sorts by fit score** (recommendations), and shows an “Active filters” bar (Edit / Clear)
+   - Side list / panel leads with top recommended places; map can fit bounds to the top matches
 
 4. **Skip / clear**
    - From discover: skip → unfiltered map
@@ -77,6 +79,24 @@ Shared type: `DiscoverPreferences`.
 - Google-only pins included unless “Partners only”.
 - Filtering is **client-side** on map places for v1.
 - Prefs encoded in the query string (e.g. `cuisine=italian,asian&budget=2&practical=free_tables`) for share/refresh.
+
+### Recommendation ranking (fit score)
+
+After hard filters (dimensions that can exclude places), remaining places get a **fit score** and are sorted descending:
+
+| Signal | Weight idea (v1) |
+|---|---|
+| Cuisine overlap | High |
+| Budget / `price_level` match | High |
+| Practical match (open now, free tables, partner) | Medium–high |
+| Restaurant-type heuristic match | Medium |
+| Occasion soft match | Medium (bonus only; never the sole reason to exclude) |
+| Rating (when present) | Low tie-breaker |
+| Nearby distance (when geolocation available) | Low–medium tie-breaker |
+
+- Side list shows places in score order; optional “Recommended” label on the top few.
+- Equal scores keep a stable secondary sort (e.g. rating, then name).
+- With **no prefs**, ranking falls back to the current default map order (no fake scores).
 
 ## Discover UI
 
@@ -112,7 +132,7 @@ Shared type: `DiscoverPreferences`.
 | `components/discover/preference-stepper.tsx` | Steps + chips |
 | `components/discover/guided-chat.tsx` | Scripted dialogue UI |
 | `components/discover/preference-summary.tsx` | Sticky picks + Show map |
-| `lib/discover-preferences.ts` | Types, chip catalogs, URL encode/decode, filter predicate |
+| `lib/discover-preferences.ts` | Types, chip catalogs, URL encode/decode, filter predicate, fit-score ranking |
 | `lib/guided-chat-script.ts` | Turn order + assistant copy keys |
 | Landing `page.tsx` | Hero CTAs updated |
 | `venue-map.tsx` (or thin wrapper) | Apply filters from URL / search params |
@@ -126,7 +146,7 @@ Shared type: `DiscoverPreferences`.
 ### Data flow
 
 ```
-chips / chat → DiscoverPreferences → URL query → VenueMap filter → markers + list
+chips / chat → DiscoverPreferences → URL query → VenueMap filter + fit rank → markers + recommended list
 ```
 
 ### i18n
@@ -148,12 +168,13 @@ All labels and assistant messages live in `site-copy` (RU/EN/RO). Preference **I
 
 - Unit: URL encode/decode of prefs.
 - Unit: filter predicate against sample `MapPlace` fixtures.
+- Unit: fit-score ranking order for mixed matches / ties.
 - Unit: guided chat script advances and writes into shared prefs.
 - Manual: hero → discover → show map; browse map skip; edit/clear on map; mobile chat collapse.
 
 ## Success criteria
 
-- Guest can set preferences (or use guided chat) and land on a map showing only matching places.
+- Guest can set preferences (or use guided chat) and land on a map showing matching places, **ranked by fit** (best recommendations first).
 - Guest can skip straight to the full map from the landing page.
 - Guest can edit or clear active filters from the map.
 - No external LLM dependency for v1.
