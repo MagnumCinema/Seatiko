@@ -86,14 +86,17 @@ export function CabinetOpsPanel({ venueId }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    setBusy(true);
-    reload()
-      .catch(() => {
-        if (!cancelled) setMessage("Не удалось загрузить операционные данные");
-      })
-      .finally(() => {
-        if (!cancelled) setBusy(false);
-      });
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setBusy(true);
+      reload()
+        .catch(() => {
+          if (!cancelled) setMessage("Не удалось загрузить операционные данные");
+        })
+        .finally(() => {
+          if (!cancelled) setBusy(false);
+        });
+    });
     return () => {
       cancelled = true;
     };

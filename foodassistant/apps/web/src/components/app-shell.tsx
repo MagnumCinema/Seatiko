@@ -223,7 +223,9 @@ export function AppShell({
   useEffect(() => {
     if (!initialVenueId) return;
     let cancelled = false;
-    setBusy(true);
+    queueMicrotask(() => {
+      if (!cancelled) setBusy(true);
+    });
     fetchVenue(initialVenueId)
       .then((v) => {
         if (cancelled) return;

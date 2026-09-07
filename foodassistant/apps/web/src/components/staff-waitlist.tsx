@@ -49,7 +49,9 @@ export function StaffWaitlist({ venueId }: { venueId: string }) {
   }, [venueId]);
 
   useEffect(() => {
-    void refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
     const timer = setInterval(() => void refresh(), POLL_MS);
     return () => clearInterval(timer);
   }, [refresh]);

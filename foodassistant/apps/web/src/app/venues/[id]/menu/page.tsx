@@ -25,7 +25,9 @@ export default function VenueMenuPage() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (alive) setLoading(true);
+    });
     Promise.all([
       fetchVenue(venueId),
       fetchMenu(venueId).catch(() => [] as MenuItem[]),

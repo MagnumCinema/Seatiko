@@ -1,14 +1,57 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
+import { ActiveFiltersBar } from "@/components/discover/active-filters-bar";
 import { useLocale } from "@/components/locale-provider";
+import {
+  decodePreferences,
+  hasAnyPreference,
+} from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
+
+function HomeMapSection() {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).home;
+  const searchParams = useSearchParams();
+  const prefs = useMemo(
+    () => decodePreferences(searchParams.toString()),
+    [searchParams],
+  );
+  const filtered = hasAnyPreference(prefs);
+
+  return (
+    <section className="landing-map-section" id="map">
+      <div className="section-heading split">
+        <div>
+          <span className="eyebrow">{copy.mapEyebrow}</span>
+          <h2 style={{ whiteSpace: "pre-line" }}>{copy.mapTitle}</h2>
+        </div>
+        <p>{copy.mapBody}</p>
+      </div>
+      {filtered && <ActiveFiltersBar prefs={prefs} />}
+      <VenueMap preferences={filtered ? prefs : undefined} />
+    </section>
+  );
+}
 
 export default function HomePage() {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).home;
+
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash !== "map" && hash !== "how") return;
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(hash)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <div className="landing">
@@ -23,12 +66,26 @@ export default function HomePage() {
             {copy.lead}
           </p>
           <div className="landing-ctas">
-            <Link href="#map" className="btn btn-gold">
-              {copy.find} <span>→</span>
+            <Link href="/discover" className="btn btn-gold btn-hero-find">
+              {copy.find} <span aria-hidden>→</span>
             </Link>
-            <Link href="/business" className="btn btn-outline">
-              {copy.connect}
-            </Link>
+            <div className="landing-ctas-secondary">
+              <a
+                href="#map"
+                className="btn btn-outline"
+                onClick={(event) => {
+                  event.preventDefault();
+                  document
+                    .getElementById("map")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                {copy.browseMap}
+              </a>
+              <Link href="/business" className="btn btn-outline">
+                {copy.connect}
+              </Link>
+            </div>
           </div>
           <div className="hero-trust">
             <span><strong>3</strong> {copy.pilot}</span>
@@ -40,25 +97,20 @@ export default function HomePage() {
         <div className="landing-visual">
           <div className="hero-image" />
           <div className="hero-floating-card hero-booking-card">
-            <span className="hero-card-icon">✓</span>
-            <div><small>{copy.confirmed}</small><strong>La Plăcinte · 19:30</strong></div>
+            <span className="hero-card-icon">⌖</span>
+            <div>
+              <small>{copy.heroCard1Title}</small>
+              <strong>{copy.heroCard1Body}</strong>
+            </div>
           </div>
           <div className="hero-floating-card hero-table-card">
             <span className="hero-table-dot" />
-            <div><strong>{copy.freeTables}</strong><small>{copy.updated}</small></div>
+            <div>
+              <strong>{copy.heroCard2Title}</strong>
+              <small>{copy.heroCard2Body}</small>
+            </div>
           </div>
         </div>
-      </section>
-
-      <section className="landing-map-section" id="map">
-        <div className="section-heading split">
-          <div>
-            <span className="eyebrow">{copy.mapEyebrow}</span>
-            <h2 style={{ whiteSpace: "pre-line" }}>{copy.mapTitle}</h2>
-          </div>
-          <p>{copy.mapBody}</p>
-        </div>
-        <VenueMap />
       </section>
 
       <section className="landing-features" id="how">
@@ -77,6 +129,10 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <Suspense fallback={null}>
+        <HomeMapSection />
+      </Suspense>
 
       <section className="owner-cta">
         <div>

@@ -68,6 +68,35 @@ export type VenuePlaces = {
   live_google: boolean;
 };
 
+export type MapPlace = {
+  id: string;
+  name: LocalizedString;
+  lat: number;
+  lng: number;
+  address: LocalizedString;
+  rating?: number;
+  google_place_id?: string;
+  in_database: boolean;
+  venue_id?: string;
+  free_tables?: number;
+  open_now?: boolean | null;
+  cuisine?: string[];
+  price_level?: number;
+  average_check?: number;
+  website?: string;
+};
+
+export type MapPlacesResponse = {
+  city_id: string;
+  center: { lat: number; lng: number };
+  places: MapPlace[];
+  source: {
+    google_enabled: boolean;
+    google_count: number;
+    database_count: number;
+  };
+};
+
 export type TableStatus = "FREE" | "RESERVED" | "OCCUPIED" | "CLEANING";
 
 export type Table = {
@@ -384,6 +413,15 @@ export async function fetchVenues(cityId = "city-balti"): Promise<Venue[]> {
     query: { city_id: cityId },
   });
   return data.venues ?? [];
+}
+
+export async function fetchMapPlaces(
+  cityId = "city-balti",
+): Promise<MapPlacesResponse> {
+  return apiFetch<MapPlacesResponse>("/api/v1/map/places", {
+    auth: false,
+    query: { city_id: cityId },
+  });
 }
 
 export async function fetchVenue(id: string): Promise<Venue> {

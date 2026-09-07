@@ -1,7 +1,7 @@
 # FoodAssistant — Changelog
 
 История изменений **документации**, **прототипа** и **диаграмм**.  
-Код приложения пока не ведётся — см. [README](./README.md).
+Код приложения: [`../foodassistant/`](../foodassistant/) · вход: [`../README.md`](../README.md) · индекс docs: [README](./README.md).
 
 Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).  
 Версии документов: **MAJOR.MINOR** (minor — новые экраны/логика, patch — правки формулировок и визуал прототипа).

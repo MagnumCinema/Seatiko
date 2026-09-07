@@ -47,7 +47,9 @@ export function WebBooking({ venueId }: { venueId: string }) {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (alive) setLoading(true);
+    });
     Promise.all([
       fetchVenue(venueId),
       fetchTables(venueId),

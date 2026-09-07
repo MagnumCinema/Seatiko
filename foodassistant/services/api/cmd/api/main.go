@@ -73,6 +73,7 @@ func main() {
 		v1.POST("/integrations/twenty/webhook", api.TwentyWebhook)
 		v1.GET("/cities", api.ListCities)
 		v1.GET("/venues", api.ListVenues)
+		v1.GET("/map/places", api.ListMapPlaces)
 		v1.GET("/venues/:id", api.GetVenue)
 		v1.GET("/venues/:id/places", api.GetVenuePlaces)
 		v1.GET("/venues/:id/tables", api.ListTables)

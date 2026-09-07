@@ -21,3 +21,6 @@ dist/
 **/android/.gradle/
 **/android/local.properties
 **/ios/Pods/
+
+# Git worktrees (local checkouts)
+.worktrees/
