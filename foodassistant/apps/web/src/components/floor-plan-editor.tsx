@@ -61,17 +61,12 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
     [tables, selectedKey],
   );
 
-  useEffect(() => {
-    if (!zones.includes(activeZone)) {
-      setActiveZone(zones[0] || "hall");
-    }
-  }, [zones, activeZone]);
-
-  useEffect(() => {
-    if (selectedKey && !tables.some((t) => t.key === selectedKey)) {
-      setSelectedKey(tables[0]?.key ?? null);
-    }
-  }, [tables, selectedKey]);
+  if (!zones.includes(activeZone)) {
+    setActiveZone(zones[0] || "hall");
+  }
+  if (selectedKey && !tables.some((t) => t.key === selectedKey)) {
+    setSelectedKey(tables[0]?.key ?? null);
+  }
 
   const moveToPointer = useCallback(
     (key: string, clientX: number, clientY: number) => {

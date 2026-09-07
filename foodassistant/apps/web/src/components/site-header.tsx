@@ -36,7 +36,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
           <span>FoodAssistant</span>
         </Link>
         <nav className="site-nav" aria-label={copy.nav}>
-          <a
+          <Link
             href="/#map"
             onClick={(event) => {
               event.preventDefault();
@@ -44,8 +44,8 @@ export function SiteHeader({ variant = "solid" }: Props) {
             }}
           >
             {copy.map}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/#how"
             onClick={(event) => {
               event.preventDefault();
@@ -53,7 +53,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
             }}
           >
             {copy.how}
-          </a>
+          </Link>
           <Link href="/business">{copy.business}</Link>
           <Link href="/book">{copy.book}</Link>
           <div className="site-lang" role="group" aria-label={copy.language}>

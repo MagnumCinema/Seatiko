@@ -162,15 +162,17 @@ export function VenueMap({
 
   useEffect(() => {
     if (!preferences?.practical.includes("nearby")) {
-      setNearbyDenied(false);
-      setUserGeo(null);
+      queueMicrotask(() => {
+        setNearbyDenied(false);
+        setUserGeo(null);
+      });
       return;
     }
     if (!navigator.geolocation) {
-      setNearbyDenied(true);
+      queueMicrotask(() => setNearbyDenied(true));
       return;
     }
-    setNearbyDenied(false);
+    queueMicrotask(() => setNearbyDenied(false));
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setNearbyDenied(false);

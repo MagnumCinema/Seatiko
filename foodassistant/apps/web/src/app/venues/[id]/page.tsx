@@ -43,8 +43,11 @@ export default function VenuePage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      if (!active) return;
+      setLoading(true);
+      setError(null);
+    });
     Promise.all([
       fetchVenue(venueId),
       fetchTables(venueId),
