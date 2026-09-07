@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { Table } from "@/lib/api";
 import { listZonesFromTables, normalizeZone, zoneLabel } from "@/lib/floor-zones";
 
@@ -83,15 +83,9 @@ export function TableFloorPlan({
   const zones = useMemo(() => listZonesFromTables(tables), [tables]);
   const [activeZone, setActiveZone] = useState(zones[0] || "hall");
 
-  useEffect(() => {
-    setLocalSelected(selectedId ?? null);
-  }, [selectedId]);
-
-  useEffect(() => {
-    if (!zones.includes(activeZone)) {
-      setActiveZone(zones[0] || "hall");
-    }
-  }, [zones, activeZone]);
+  if (!zones.includes(activeZone)) {
+    setActiveZone(zones[0] || "hall");
+  }
 
   const visible = useMemo(
     () => tables.filter((t) => normalizeZone(t.zone) === activeZone),

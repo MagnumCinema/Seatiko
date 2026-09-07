@@ -28,7 +28,8 @@ export const CHAT_STEPS: ChatStep[] = [
   { dimension: "practical", questionKey: "practical" },
 ];
 
-export function nextChatStepIndex(current: number, _skipped: boolean): number {
+export function nextChatStepIndex(current: number, skipped: boolean): number {
+  void skipped;
   return Math.min(current + 1, CHAT_STEPS.length);
 }
 
