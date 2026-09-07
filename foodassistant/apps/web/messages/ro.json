@@ -151,6 +151,8 @@
   "profile.payments_add": "Adaugă card (previzualizare)",
   "profile.payments_demo": "Card •••• 4242",
   "profile.favorites_empty": "Niciun local favorit încă",
+  "profile.favorites_add": "Adaugă la favorite",
+  "profile.favorites_added": "Adăugat la favorite",
   "profile.favorites_remove": "Elimină",
   "profile.age18": "Vârsta 18+",
   "profile.age18_unverified": "Vârsta nu a fost confirmată de personal",

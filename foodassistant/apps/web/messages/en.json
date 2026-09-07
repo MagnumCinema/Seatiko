@@ -151,6 +151,8 @@
   "profile.payments_add": "Add card (preview)",
   "profile.payments_demo": "Card •••• 4242",
   "profile.favorites_empty": "No favorite venues yet",
+  "profile.favorites_add": "Add to favorites",
+  "profile.favorites_added": "Added to favorites",
   "profile.favorites_remove": "Remove",
   "profile.age18": "Age 18+",
   "profile.age18_unverified": "Age not verified by staff",

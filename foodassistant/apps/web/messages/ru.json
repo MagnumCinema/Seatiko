@@ -151,6 +151,8 @@
   "profile.payments_add": "Добавить карту (превью)",
   "profile.payments_demo": "Карта •••• 4242",
   "profile.favorites_empty": "Пока нет избранных заведений",
+  "profile.favorites_add": "Добавить в избранное",
+  "profile.favorites_added": "Добавлено в избранное",
   "profile.favorites_remove": "Удалить",
   "profile.age18": "Возраст 18+",
   "profile.age18_unverified": "Возраст не подтверждён официантом",

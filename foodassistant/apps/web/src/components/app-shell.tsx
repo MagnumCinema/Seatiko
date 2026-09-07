@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { GuestProfile } from "@/components/guest-profile";
 import { useLocale, type Locale } from "@/components/locale-provider";
 import { TableFloorPlan } from "@/components/table-floor-plan";
 import { VenueMenu } from "@/components/venue-menu";
@@ -29,7 +30,6 @@ import {
   pickLocale,
   priceLevelLabel,
   register,
-  updateMe,
   watchTable,
   confirmArrival,
   type City,
@@ -149,7 +149,7 @@ export function AppShell({
   );
   const [payTotal, setPayTotal] = useState(0);
 
-  const [profileDraft, setProfileDraft] = useState({
+  const [, setProfileDraft] = useState({
     first_name: "",
     last_name: "",
     display_name: "",
@@ -603,23 +603,6 @@ export function AppShell({
     setSession(null);
     setSessionOrders([]);
     go("map");
-  }
-
-  async function saveProfile() {
-    if (!getToken()) {
-      setAuthOpen(true);
-      return;
-    }
-    setBusy(true);
-    try {
-      const u = await updateMe({ ...profileDraft, locale });
-      setUser(u);
-      showToast(t("profile.saved"));
-    } catch {
-      showToast(t("common.error"));
-    } finally {
-      setBusy(false);
-    }
   }
 
   function finishOnboarding() {
@@ -1478,103 +1461,25 @@ export function AppShell({
 
           {screen === "profile" && (
             <div className="fa-content">
-              <h3 className="fa-h3">{t("profile.title")}</h3>
-              {!user ? (
-                <button
-                  type="button"
-                  className="fa-btn fa-btn-primary"
-                  onClick={() => setAuthOpen(true)}
-                >
-                  {t("profile.sign_in")}
-                </button>
-              ) : (
-                <>
-                  <p className="fa-muted">{user.email}</p>
-                  <label className="fa-field">
-                    <span>{t("profile.first_name")}</span>
-                    <input
-                      value={profileDraft.first_name}
-                      onChange={(e) =>
-                        setProfileDraft((p) => ({
-                          ...p,
-                          first_name: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="fa-field">
-                    <span>{t("profile.last_name")}</span>
-                    <input
-                      value={profileDraft.last_name}
-                      onChange={(e) =>
-                        setProfileDraft((p) => ({
-                          ...p,
-                          last_name: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="fa-field">
-                    <span>{t("profile.display_name")}</span>
-                    <input
-                      value={profileDraft.display_name}
-                      onChange={(e) =>
-                        setProfileDraft((p) => ({
-                          ...p,
-                          display_name: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="fa-btn fa-btn-primary"
-                    onClick={() => void saveProfile()}
-                  >
-                    {t("common.save")}
-                  </button>
-                </>
-              )}
-              <div className="fa-row">
-                <span>{t("profile.language")}</span>
-                <div className="fa-lang-row compact">
-                  {(["ru", "en", "ro"] as Locale[]).map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      className={`fa-lang ${locale === l ? "active" : ""}`}
-                      onClick={() => setLocale(l)}
-                    >
-                      {l.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="fa-row">
-                <span>{t("profile.allergies")}</span>
-                <span>—</span>
-              </div>
-              <div className="fa-row">
-                <span>{t("profile.payment_methods")}</span>
-                <span>→</span>
-              </div>
-              <div className="fa-row">
-                <span>{t("profile.favorites")}</span>
-                <span>→</span>
-              </div>
-              {user && (
-                <button
-                  type="button"
-                  className="fa-btn fa-btn-secondary"
-                  onClick={() => {
-                    apiLogout();
-                    setUser(null);
-                    showToast(t("auth.logout"));
-                  }}
-                >
-                  {t("auth.logout")}
-                </button>
-              )}
+              <GuestProfile
+                embedded
+                user={user}
+                onRequestSignIn={() => setAuthOpen(true)}
+                onUserUpdated={(u) => {
+                  setUser(u);
+                  setProfileDraft({
+                    first_name: u.first_name || "",
+                    last_name: u.last_name || "",
+                    display_name: u.display_name || "",
+                  });
+                }}
+                onLogout={() => {
+                  apiLogout();
+                  setUser(null);
+                  showToast(t("auth.logout"));
+                }}
+                onToast={showToast}
+              />
             </div>
           )}
         </div>

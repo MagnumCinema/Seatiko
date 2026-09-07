@@ -9,16 +9,24 @@ import { WaitlistPanel } from "@/components/waitlist-panel";
 import { useLocale } from "@/components/locale-provider";
 import { listZonesFromTables } from "@/lib/floor-zones";
 import {
+  fetchMe,
   fetchTables,
   fetchVenue,
   fetchVenuePlaces,
+  getToken,
   mediaUrl,
   pickLocale,
   priceLevelLabel,
   type Table,
+  type User,
   type Venue,
   type VenuePlaces,
 } from "@/lib/api";
+import {
+  addFavoriteVenue,
+  loadGuestLocalPrefs,
+  saveGuestLocalPrefs,
+} from "@/lib/guest-local-prefs";
 
 function Stars({ value }: { value: number }) {
   const full = Math.round(Math.max(0, Math.min(5, value)));
@@ -33,13 +41,15 @@ function Stars({ value }: { value: number }) {
 export default function VenuePage() {
   const params = useParams<{ id: string }>();
   const venueId = params.id;
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [places, setPlaces] = useState<VenuePlaces | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [favorited, setFavorited] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -71,6 +81,35 @@ export default function VenuePage() {
     };
   }, [venueId]);
 
+  useEffect(() => {
+    let alive = true;
+    queueMicrotask(() => {
+      if (!getToken()) {
+        if (alive) {
+          setUser(null);
+          setFavorited(false);
+        }
+        return;
+      }
+      fetchMe()
+        .then((u) => {
+          if (!alive) return;
+          setUser(u);
+          const prefs = loadGuestLocalPrefs(u.id);
+          setFavorited(prefs.favorites.some((f) => f.venueId === venueId));
+        })
+        .catch(() => {
+          if (alive) {
+            setUser(null);
+            setFavorited(false);
+          }
+        });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [venueId]);
+
   const photos = useMemo(() => {
     const fromPlaces = places?.photo_urls ?? [];
     if (fromPlaces.length) return fromPlaces;
@@ -84,6 +123,17 @@ export default function VenuePage() {
   const reviewCount = places?.review_count || venue?.review_count || reviews.length;
   const freeCount = tables.filter((t) => t.status === "FREE").length;
   const zones = listZonesFromTables(tables);
+
+  function addToFavorites() {
+    if (!user || !venue) return;
+    const prefs = loadGuestLocalPrefs(user.id);
+    const next = addFavoriteVenue(prefs, {
+      venueId: venue.id,
+      name: pickLocale(venue.name, locale),
+    });
+    saveGuestLocalPrefs(user.id, next);
+    setFavorited(true);
+  }
 
   if (loading) {
     return (
@@ -105,6 +155,8 @@ export default function VenuePage() {
       </div>
     );
   }
+
+  const loginNext = `/login?next=${encodeURIComponent(`/venues/${venue.id}`)}`;
 
   return (
     <div className="venue-page">
@@ -166,6 +218,22 @@ export default function VenuePage() {
               <Link className="venue-cta ghost" href={`/venues/${venue.id}/menu`}>
                 Меню
               </Link>
+              {user ? (
+                <button
+                  type="button"
+                  className="venue-cta ghost"
+                  disabled={favorited}
+                  onClick={addToFavorites}
+                >
+                  {favorited
+                    ? t("profile.favorites_added")
+                    : t("profile.favorites_add")}
+                </button>
+              ) : (
+                <Link className="venue-cta ghost" href={loginNext}>
+                  {t("profile.favorites_add")}
+                </Link>
+              )}
               <Link className="venue-cta ghost" href="/">
                 Назад к карте
               </Link>
