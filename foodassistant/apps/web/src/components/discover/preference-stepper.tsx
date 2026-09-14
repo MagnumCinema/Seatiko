@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
   BUDGET_LEVELS,
   CUISINE_IDS,
@@ -10,12 +9,7 @@ import {
   toggleId,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
-import {
-  canSoftAdvanceOnTimer,
-  fillTemplate,
-  formatStepperStatus,
-  planSoftAdvance,
-} from "@/lib/soft-advance";
+import { fillTemplate } from "@/lib/soft-advance";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
 
@@ -65,60 +59,6 @@ export function PreferenceStepper({
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
   const step = STEPS[Math.min(stepIndex, STEPS.length - 1)] as StepKey;
-  const [continuing, setContinuing] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prefsRef = useRef(prefs);
-  prefsRef.current = prefs;
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  function clearAdvanceTimer() {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = null;
-    setContinuing(false);
-  }
-
-  useEffect(() => {
-    if (selectedCountForStep(prefs, step) <= 0) {
-      clearAdvanceTimer();
-    }
-  }, [prefs, step]);
-
-  function scheduleAdvance(nextPrefs: DiscoverPreferences, fromIndex: number) {
-    const selectedCount = selectedCountForStep(nextPrefs, STEPS[fromIndex]);
-    const plan = planSoftAdvance({
-      selectedCount,
-      stepIndex: fromIndex,
-      totalSteps: STEPS.length,
-    });
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = null;
-    if (plan.type === "cancel") {
-      setContinuing(false);
-      return;
-    }
-    setContinuing(true);
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null;
-      setContinuing(false);
-      if (
-        canSoftAdvanceOnTimer({
-          selectedCount: selectedCountForStep(
-            prefsRef.current,
-            STEPS[fromIndex],
-          ),
-          stepIndex: fromIndex,
-          totalSteps: STEPS.length,
-        })
-      ) {
-        onStepChange(fromIndex + 1);
-      }
-    }, plan.ms);
-  }
 
   function chipsForStep(): { id: string; label: string; selected: boolean }[] {
     switch (step) {
@@ -201,19 +141,13 @@ export function PreferenceStepper({
         break;
     }
     onPrefsChange(nextPrefs);
-    scheduleAdvance(nextPrefs, stepIndex);
   }
 
   const selectedCount = selectedCountForStep(prefs, step);
-  const status = formatStepperStatus({
-    stepLabel: fillTemplate(copy.stepOf, {
-      n: stepIndex + 1,
-      total: STEPS.length,
-    }),
-    selectedLabel: fillTemplate(copy.selectedCount, { n: selectedCount }),
-    continuingLabel: copy.continuing,
-    continuing,
-  });
+  const status = `${fillTemplate(copy.stepOf, {
+    n: stepIndex + 1,
+    total: STEPS.length,
+  })} · ${fillTemplate(copy.selectedCount, { n: selectedCount })}`;
 
   return (
     <div className="discover-stepper">
@@ -228,10 +162,7 @@ export function PreferenceStepper({
               ]
                 .filter(Boolean)
                 .join(" ")}
-              onClick={() => {
-                clearAdvanceTimer();
-                onStepChange(i);
-              }}
+              onClick={() => onStepChange(i)}
             >
               <span className="discover-stepper-num" aria-hidden>
                 {i + 1}
@@ -275,10 +206,7 @@ export function PreferenceStepper({
           type="button"
           className="btn btn-outline"
           disabled={stepIndex === 0}
-          onClick={() => {
-            clearAdvanceTimer();
-            onStepChange(stepIndex - 1);
-          }}
+          onClick={() => onStepChange(stepIndex - 1)}
         >
           {copy.back}
         </button>
@@ -289,7 +217,6 @@ export function PreferenceStepper({
           type="button"
           className="btn btn-outline"
           onClick={() => {
-            clearAdvanceTimer();
             if (stepIndex < STEPS.length - 1) onStepChange(stepIndex + 1);
           }}
           disabled={stepIndex >= STEPS.length - 1}
