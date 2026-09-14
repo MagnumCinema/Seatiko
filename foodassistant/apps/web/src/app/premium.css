@@ -1745,86 +1745,122 @@ html[data-theme="light"] {
 .discover-layout {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 1.5rem;
-  align-items: start;
+  gap: 1.65rem;
+  align-items: stretch;
   margin-bottom: 1.5rem;
 }
 
 .discover-stepper {
-  padding: 1.35rem 1.4rem 1.5rem;
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.45rem 1.45rem 1.35rem;
   border: 1px solid var(--fa-border);
-  border-radius: 18px;
+  border-radius: 20px;
   background:
-    linear-gradient(160deg, rgba(28, 42, 32, 0.92), rgba(18, 28, 22, 0.88));
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--fa-surface-2) 88%, var(--fa-surface)),
+      var(--fa-surface)
+    );
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--fa-text) 12%, transparent);
 }
 
-.discover-stepper h2 {
-  margin: 0 0 1rem;
-  color: #f3efe6;
+.discover-stepper-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discover-stepper-rail button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--fa-border);
+  border-radius: 999px;
+  color: var(--fa-muted);
+  background: color-mix(in srgb, var(--fa-bg) 35%, transparent);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.discover-stepper-rail button:hover {
+  color: var(--fa-text);
+  border-color: color-mix(in srgb, var(--fa-gold) 40%, transparent);
+}
+
+.discover-stepper-rail button.on {
+  color: #1a1510;
+  border-color: transparent;
+  background: var(--fa-gold);
+}
+
+.discover-stepper-rail button.done:not(.on) {
+  color: var(--fa-text);
+  border-color: color-mix(in srgb, var(--fa-green) 35%, transparent);
+}
+
+.discover-stepper-num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fa-text) 10%, transparent);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.discover-stepper-rail button.on .discover-stepper-num {
+  background: color-mix(in srgb, #1a1510 14%, transparent);
+}
+
+.discover-stepper-check {
+  font-size: 0.75em;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.discover-stepper-body h2 {
+  margin: 0 0 0.35rem;
+  color: var(--fa-text);
   font-family: var(--font-display), Fraunces, serif;
   font-size: 1.35rem;
   font-weight: 550;
   letter-spacing: -0.02em;
 }
 
-.discover-stepper-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0 0 1.15rem;
-  padding: 0;
-  list-style: none;
-}
-
-.discover-stepper-tabs button {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
+.discover-stepper-hint {
+  margin: 0 0 1rem;
   color: var(--fa-muted);
-  background: transparent;
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.discover-stepper-tabs button:hover {
-  color: var(--fa-text);
-  border-color: rgba(196, 165, 116, 0.28);
-}
-
-.discover-stepper-tabs button.on {
-  color: #1a1510;
-  border-color: transparent;
-  background: var(--fa-gold);
-}
-
-.discover-stepper-nav {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--fa-border);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .discover-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .discover-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0.55rem 1rem;
   border: 1px solid color-mix(in oklab, var(--fa-gold) 45%, transparent);
-  background: transparent;
-  color: var(--fa-text);
-  padding: 0.45rem 0.85rem;
   border-radius: 999px;
+  color: var(--fa-text);
+  background: transparent;
   font: inherit;
-  font-size: 0.86rem;
+  font-size: 0.92rem;
   font-weight: 550;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
@@ -1844,6 +1880,50 @@ html[data-theme="light"] {
   border-color: var(--fa-gold);
   color: #1a1510;
   font-weight: 650;
+}
+
+.discover-stepper-nav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--fa-border);
+}
+
+.discover-stepper-status {
+  margin: 0;
+  text-align: center;
+  color: var(--fa-muted);
+  font-size: 0.78rem;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .discover-stepper-rail-label {
+    display: none;
+  }
+
+  .discover-stepper-nav {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "status status"
+      "back continue";
+  }
+
+  .discover-stepper-status {
+    grid-area: status;
+  }
+
+  .discover-stepper-nav .btn:first-child {
+    grid-area: back;
+  }
+
+  .discover-stepper-nav .btn:last-child {
+    grid-area: continue;
+  }
 }
 
 .discover-chat {
