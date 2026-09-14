@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import {
   BUDGET_LEVELS,
   CUISINE_IDS,
@@ -9,6 +10,12 @@ import {
   toggleId,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
+import {
+  canSoftAdvanceOnTimer,
+  fillTemplate,
+  formatStepperStatus,
+  planSoftAdvance,
+} from "@/lib/soft-advance";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
 
@@ -31,6 +38,24 @@ type Props = {
   onStepChange: (index: number) => void;
 };
 
+function selectedCountForStep(
+  prefs: DiscoverPreferences,
+  step: StepKey,
+): number {
+  switch (step) {
+    case "cuisine":
+      return prefs.cuisine.length;
+    case "restaurantType":
+      return prefs.restaurantType.length;
+    case "budget":
+      return prefs.budget.length;
+    case "occasion":
+      return prefs.occasion.length;
+    case "practical":
+      return prefs.practical.length;
+  }
+}
+
 export function PreferenceStepper({
   stepIndex,
   prefs,
@@ -40,6 +65,49 @@ export function PreferenceStepper({
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
   const step = STEPS[Math.min(stepIndex, STEPS.length - 1)] as StepKey;
+  const [continuing, setContinuing] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  function clearAdvanceTimer() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+    setContinuing(false);
+  }
+
+  function scheduleAdvance(nextPrefs: DiscoverPreferences, fromIndex: number) {
+    const selectedCount = selectedCountForStep(nextPrefs, STEPS[fromIndex]);
+    const plan = planSoftAdvance({
+      selectedCount,
+      stepIndex: fromIndex,
+      totalSteps: STEPS.length,
+    });
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+    if (plan.type === "cancel") {
+      setContinuing(false);
+      return;
+    }
+    setContinuing(true);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      setContinuing(false);
+      if (
+        canSoftAdvanceOnTimer({
+          selectedCount: selectedCountForStep(nextPrefs, STEPS[fromIndex]),
+          stepIndex: fromIndex,
+          totalSteps: STEPS.length,
+        })
+      ) {
+        onStepChange(fromIndex + 1);
+      }
+    }, plan.ms);
+  }
 
   function chipsForStep(): { id: string; label: string; selected: boolean }[] {
     switch (step) {
@@ -80,93 +148,142 @@ export function PreferenceStepper({
   }
 
   function toggle(id: string) {
+    let nextPrefs: DiscoverPreferences;
     switch (step) {
       case "cuisine":
-        onPrefsChange({
+        nextPrefs = {
           ...prefs,
           cuisine: toggleId(prefs.cuisine, id as (typeof prefs.cuisine)[number]),
-        });
+        };
         break;
       case "restaurantType":
-        onPrefsChange({
+        nextPrefs = {
           ...prefs,
           restaurantType: toggleId(
             prefs.restaurantType,
             id as (typeof prefs.restaurantType)[number],
           ),
-        });
+        };
         break;
       case "budget": {
         const level = Number(id) as 1 | 2 | 3;
-        onPrefsChange({
+        nextPrefs = {
           ...prefs,
           budget: toggleId(prefs.budget, level),
-        });
+        };
         break;
       }
       case "occasion":
-        onPrefsChange({
+        nextPrefs = {
           ...prefs,
           occasion: toggleId(prefs.occasion, id as (typeof prefs.occasion)[number]),
-        });
+        };
         break;
       case "practical":
-        onPrefsChange({
+        nextPrefs = {
           ...prefs,
           practical: toggleId(
             prefs.practical,
             id as (typeof prefs.practical)[number],
           ),
-        });
+        };
         break;
     }
+    onPrefsChange(nextPrefs);
+    scheduleAdvance(nextPrefs, stepIndex);
   }
+
+  const selectedCount = selectedCountForStep(prefs, step);
+  const status = formatStepperStatus({
+    stepLabel: fillTemplate(copy.stepOf, {
+      n: stepIndex + 1,
+      total: STEPS.length,
+    }),
+    selectedLabel: fillTemplate(copy.selectedCount, { n: selectedCount }),
+    continuingLabel: copy.continuing,
+    continuing,
+  });
 
   return (
     <div className="discover-stepper">
-      <ol className="discover-stepper-tabs" aria-label="Steps">
+      <ol className="discover-stepper-rail" aria-label="Steps">
         {STEPS.map((key, i) => (
           <li key={key}>
             <button
               type="button"
-              className={i === stepIndex ? "on" : ""}
-              onClick={() => onStepChange(i)}
+              className={[
+                i === stepIndex ? "on" : "",
+                i < stepIndex ? "done" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => {
+                clearAdvanceTimer();
+                onStepChange(i);
+              }}
             >
-              {copy.steps[key]}
+              <span className="discover-stepper-num" aria-hidden>
+                {i + 1}
+              </span>
+              <span className="discover-stepper-rail-label">{copy.steps[key]}</span>
+              {i < stepIndex ? (
+                <span className="discover-stepper-check" aria-hidden>
+                  ✓
+                </span>
+              ) : null}
             </button>
           </li>
         ))}
       </ol>
-      <h2>{copy.steps[step]}</h2>
-      <div className="discover-chips" role="group">
-        {chipsForStep().map((chip) => (
-          <button
-            key={chip.id}
-            type="button"
-            className={`discover-chip ${chip.selected ? "on" : ""}`}
-            aria-pressed={chip.selected}
-            onClick={() => toggle(chip.id)}
-          >
-            {chip.label}
-          </button>
-        ))}
+
+      <div className="discover-stepper-body">
+        <h2>{copy.steps[step]}</h2>
+        <p className="discover-stepper-hint">{copy.stepHint}</p>
+        <div className="discover-chips" role="group">
+          {chipsForStep().map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              className={`discover-chip ${chip.selected ? "on" : ""}`}
+              aria-pressed={chip.selected}
+              onClick={() => toggle(chip.id)}
+            >
+              {chip.label}
+              {chip.selected ? (
+                <span className="discover-stepper-check" aria-hidden>
+                  ✓
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
       </div>
+
       <div className="discover-stepper-nav">
         <button
           type="button"
           className="btn btn-outline"
           disabled={stepIndex === 0}
-          onClick={() => onStepChange(stepIndex - 1)}
+          onClick={() => {
+            clearAdvanceTimer();
+            onStepChange(stepIndex - 1);
+          }}
         >
           {copy.back}
         </button>
+        <p className="discover-stepper-status" aria-live="polite">
+          {status}
+        </p>
         <button
           type="button"
           className="btn btn-outline"
+          onClick={() => {
+            clearAdvanceTimer();
+            if (stepIndex < STEPS.length - 1) onStepChange(stepIndex + 1);
+          }}
           disabled={stepIndex >= STEPS.length - 1}
-          onClick={() => onStepChange(stepIndex + 1)}
         >
-          {copy.next}
+          {copy.continue}
         </button>
       </div>
     </div>
