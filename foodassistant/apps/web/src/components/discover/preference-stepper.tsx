@@ -67,6 +67,8 @@ export function PreferenceStepper({
   const step = STEPS[Math.min(stepIndex, STEPS.length - 1)] as StepKey;
   const [continuing, setContinuing] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
 
   useEffect(() => {
     return () => {
@@ -79,6 +81,12 @@ export function PreferenceStepper({
     timerRef.current = null;
     setContinuing(false);
   }
+
+  useEffect(() => {
+    if (selectedCountForStep(prefs, step) <= 0) {
+      clearAdvanceTimer();
+    }
+  }, [prefs, step]);
 
   function scheduleAdvance(nextPrefs: DiscoverPreferences, fromIndex: number) {
     const selectedCount = selectedCountForStep(nextPrefs, STEPS[fromIndex]);
@@ -99,7 +107,10 @@ export function PreferenceStepper({
       setContinuing(false);
       if (
         canSoftAdvanceOnTimer({
-          selectedCount: selectedCountForStep(nextPrefs, STEPS[fromIndex]),
+          selectedCount: selectedCountForStep(
+            prefsRef.current,
+            STEPS[fromIndex],
+          ),
           stepIndex: fromIndex,
           totalSteps: STEPS.length,
         })
