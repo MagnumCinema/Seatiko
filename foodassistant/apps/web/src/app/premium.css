@@ -1892,6 +1892,18 @@ html[data-theme="light"] {
   border-top: 1px solid var(--fa-border);
 }
 
+.discover-stepper-nav.is-first {
+  grid-template-columns: 1fr auto;
+}
+
+.discover-stepper-nav.is-last {
+  grid-template-columns: auto 1fr;
+}
+
+.discover-stepper-nav.is-first.is-last {
+  grid-template-columns: 1fr;
+}
+
 .discover-stepper-status {
   margin: 0;
   text-align: center;
@@ -1899,6 +1911,14 @@ html[data-theme="light"] {
   font-size: 0.78rem;
   font-weight: 550;
   line-height: 1.35;
+}
+
+.discover-stepper-nav.is-first:not(.is-last) .discover-stepper-status {
+  text-align: left;
+}
+
+.discover-stepper-nav.is-last:not(.is-first) .discover-stepper-status {
+  text-align: right;
 }
 
 @media (max-width: 640px) {
@@ -1913,15 +1933,30 @@ html[data-theme="light"] {
       "back continue";
   }
 
-  .discover-stepper-status {
-    grid-area: status;
+  .discover-stepper-nav.is-first {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "status"
+      "continue";
   }
 
-  .discover-stepper-nav .btn:first-child {
+  .discover-stepper-nav.is-last {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "status"
+      "back";
+  }
+
+  .discover-stepper-status {
+    grid-area: status;
+    text-align: center;
+  }
+
+  .discover-stepper-back {
     grid-area: back;
   }
 
-  .discover-stepper-nav .btn:last-child {
+  .discover-stepper-continue {
     grid-area: continue;
   }
 }

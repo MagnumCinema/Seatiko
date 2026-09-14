@@ -201,28 +201,36 @@ export function PreferenceStepper({
         </div>
       </div>
 
-      <div className="discover-stepper-nav">
-        <button
-          type="button"
-          className="btn btn-outline"
-          disabled={stepIndex === 0}
-          onClick={() => onStepChange(stepIndex - 1)}
-        >
-          {copy.back}
-        </button>
+      <div
+        className={[
+          "discover-stepper-nav",
+          stepIndex === 0 ? "is-first" : "",
+          stepIndex >= STEPS.length - 1 ? "is-last" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {stepIndex > 0 ? (
+          <button
+            type="button"
+            className="btn btn-outline discover-stepper-back"
+            onClick={() => onStepChange(stepIndex - 1)}
+          >
+            {copy.back}
+          </button>
+        ) : null}
         <p className="discover-stepper-status" aria-live="polite">
           {status}
         </p>
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={() => {
-            if (stepIndex < STEPS.length - 1) onStepChange(stepIndex + 1);
-          }}
-          disabled={stepIndex >= STEPS.length - 1}
-        >
-          {copy.continue}
-        </button>
+        {stepIndex < STEPS.length - 1 ? (
+          <button
+            type="button"
+            className="btn btn-outline discover-stepper-continue"
+            onClick={() => onStepChange(stepIndex + 1)}
+          >
+            {copy.continue}
+          </button>
+        ) : null}
       </div>
     </div>
   );
