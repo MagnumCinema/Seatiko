@@ -6,12 +6,11 @@ import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
 
 type Props = {
-  prefs: DiscoverPreferences;
-  onShowMap: () => void;
-  onBrowseMap?: () => void;
+  canReset?: boolean;
+  onReset: () => void;
 };
 
-export function PreferenceSummary({ prefs: _prefs, onShowMap, onBrowseMap }: Props) {
+export function PreferenceSummary({ canReset = false, onReset }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
 
@@ -25,12 +24,10 @@ export function PreferenceSummary({ prefs: _prefs, onShowMap, onBrowseMap }: Pro
         <button
           type="button"
           className="btn btn-outline"
-          onClick={() => onBrowseMap?.()}
+          onClick={onReset}
+          disabled={!canReset}
         >
-          {copy.browseMap}
-        </button>
-        <button type="button" className="btn btn-gold" onClick={onShowMap}>
-          {copy.showMap}
+          {copy.reset}
         </button>
       </div>
     </div>
