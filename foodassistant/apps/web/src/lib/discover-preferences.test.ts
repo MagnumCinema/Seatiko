@@ -4,9 +4,24 @@ import {
   encodePreferences,
   decodePreferences,
   filterAndRankPlaces,
+  budgetLevelsFromRange,
+  budgetRangeFromLevels,
   type DiscoverPreferences,
 } from "./discover-preferences";
 import type { MapPlace } from "@/lib/api";
+
+describe("budget range helpers", () => {
+  it("expands inclusive min–max into levels", () => {
+    expect(budgetLevelsFromRange(1, 3)).toEqual([1, 2, 3]);
+    expect(budgetLevelsFromRange(2, 2)).toEqual([2]);
+    expect(budgetLevelsFromRange(3, 1)).toEqual([1, 2, 3]);
+  });
+
+  it("reads range bounds from selected levels", () => {
+    expect(budgetRangeFromLevels([])).toBeNull();
+    expect(budgetRangeFromLevels([2, 3])).toEqual({ min: 2, max: 3 });
+  });
+});
 
 describe("encodePreferences / decodePreferences", () => {
   it("round-trips full prefs", () => {

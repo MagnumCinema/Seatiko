@@ -5,6 +5,12 @@ export type CuisineId =
   | "italian"
   | "asian"
   | "european"
+  | "japanese"
+  | "chinese"
+  | "mexican"
+  | "seafood"
+  | "vegetarian"
+  | "grill"
   | "fast_food"
   | "cafe_sweets";
 
@@ -13,20 +19,31 @@ export type RestaurantTypeId =
   | "cafe"
   | "bar"
   | "fast_food"
-  | "fine_dining";
+  | "fine_dining"
+  | "pub"
+  | "pizzeria"
+  | "bakery"
+  | "wine_bar";
 
 export type OccasionId =
   | "quick_lunch"
   | "date_night"
   | "family"
   | "business"
-  | "group";
+  | "group"
+  | "brunch"
+  | "celebration"
+  | "solo";
 
 export type PracticalId =
   | "open_now"
   | "free_tables"
   | "partners"
-  | "nearby";
+  | "nearby"
+  | "outdoor"
+  | "parking"
+  | "wifi"
+  | "kid_friendly";
 
 export type BudgetLevel = 1 | 2 | 3;
 
@@ -38,38 +55,77 @@ export type DiscoverPreferences = {
   practical: PracticalId[];
 };
 
-export const CUISINE_IDS: CuisineId[] = [
+/** First-row chips shown before “Show more”. */
+export const CUISINE_PRIMARY: CuisineId[] = [
   "moldovan",
   "italian",
   "asian",
   "european",
+];
+export const CUISINE_MORE: CuisineId[] = [
+  "japanese",
+  "chinese",
+  "mexican",
+  "seafood",
+  "vegetarian",
+  "grill",
   "fast_food",
   "cafe_sweets",
 ];
+export const CUISINE_IDS: CuisineId[] = [...CUISINE_PRIMARY, ...CUISINE_MORE];
 
-export const RESTAURANT_TYPE_IDS: RestaurantTypeId[] = [
+export const RESTAURANT_TYPE_PRIMARY: RestaurantTypeId[] = [
   "restaurant",
   "cafe",
   "bar",
+];
+export const RESTAURANT_TYPE_MORE: RestaurantTypeId[] = [
   "fast_food",
   "fine_dining",
+  "pub",
+  "pizzeria",
+  "bakery",
+  "wine_bar",
+];
+export const RESTAURANT_TYPE_IDS: RestaurantTypeId[] = [
+  ...RESTAURANT_TYPE_PRIMARY,
+  ...RESTAURANT_TYPE_MORE,
 ];
 
 export const BUDGET_LEVELS: BudgetLevel[] = [1, 2, 3];
 
-export const OCCASION_IDS: OccasionId[] = [
+export const OCCASION_PRIMARY: OccasionId[] = [
   "quick_lunch",
   "date_night",
   "family",
+];
+export const OCCASION_MORE: OccasionId[] = [
   "business",
   "group",
+  "brunch",
+  "celebration",
+  "solo",
+];
+export const OCCASION_IDS: OccasionId[] = [
+  ...OCCASION_PRIMARY,
+  ...OCCASION_MORE,
 ];
 
-export const PRACTICAL_IDS: PracticalId[] = [
+export const PRACTICAL_PRIMARY: PracticalId[] = [
   "open_now",
   "free_tables",
-  "partners",
   "nearby",
+];
+export const PRACTICAL_MORE: PracticalId[] = [
+  "partners",
+  "outdoor",
+  "parking",
+  "wifi",
+  "kid_friendly",
+];
+export const PRACTICAL_IDS: PracticalId[] = [
+  ...PRACTICAL_PRIMARY,
+  ...PRACTICAL_MORE,
 ];
 
 const CUISINE_SET = new Set<string>(CUISINE_IDS);
@@ -95,6 +151,28 @@ export function hasAnyPreference(prefs: DiscoverPreferences): boolean {
     prefs.occasion.length > 0 ||
     prefs.practical.length > 0
   );
+}
+
+/** Inclusive $–$$$ range → discrete budget levels for filtering. */
+export function budgetLevelsFromRange(
+  min: BudgetLevel,
+  max: BudgetLevel,
+): BudgetLevel[] {
+  const lo = Math.min(min, max) as BudgetLevel;
+  const hi = Math.max(min, max) as BudgetLevel;
+  const levels: BudgetLevel[] = [];
+  for (let n = lo; n <= hi; n += 1) levels.push(n as BudgetLevel);
+  return levels;
+}
+
+export function budgetRangeFromLevels(
+  levels: BudgetLevel[],
+): { min: BudgetLevel; max: BudgetLevel } | null {
+  if (!levels.length) return null;
+  return {
+    min: Math.min(...levels) as BudgetLevel,
+    max: Math.max(...levels) as BudgetLevel,
+  };
 }
 
 function parseList(raw: string | null): string[] {
@@ -161,8 +239,14 @@ export type ScoredPlace = {
 const CUISINE_ALIASES: Record<CuisineId, string[]> = {
   moldovan: ["moldovan", "молдав", "moldoven"],
   italian: ["italian", "итальян", "pizza", "pasta"],
-  asian: ["asian", "азиат", "chinese", "japanese", "sushi", "thai"],
+  asian: ["asian", "азиат", "thai", "korean", "vietnamese"],
   european: ["european", "европ", "french", "german"],
+  japanese: ["japanese", "япон", "sushi", "ramen"],
+  chinese: ["chinese", "китай"],
+  mexican: ["mexican", "мексик", "taco"],
+  seafood: ["seafood", "морепрод", "fish", "рыба"],
+  vegetarian: ["vegetarian", "vegan", "вегетар", "plant"],
+  grill: ["grill", "bbq", "steak", "гриль", "шашлык"],
   fast_food: ["fast food", "fast_food", "burger", "street"],
   cafe_sweets: ["cafe", "coffee", "dessert", "sweet", "кондитер", "кофе"],
 };
@@ -170,9 +254,13 @@ const CUISINE_ALIASES: Record<CuisineId, string[]> = {
 const TYPE_ALIASES: Record<RestaurantTypeId, string[]> = {
   restaurant: ["restaurant", "ресторан"],
   cafe: ["cafe", "coffee", "кафе", "кофе"],
-  bar: ["bar", "pub", "бар"],
+  bar: ["bar", "бар"],
   fast_food: ["fast", "burger", "street"],
-  fine_dining: ["fine", "gourmet", "steak"],
+  fine_dining: ["fine", "gourmet", "мишлен"],
+  pub: ["pub", "паб", "beer"],
+  pizzeria: ["pizza", "pizzeria", "пицц"],
+  bakery: ["bakery", "пекар", "bread", "pastry"],
+  wine_bar: ["wine", "вино", "enoteca"],
 };
 
 function placeText(place: MapPlace): string {
@@ -285,6 +373,21 @@ function occasionBonus(place: MapPlace, occasions: OccasionId[]): number {
       bonus += 6;
     if (o === "business" && price >= 2) bonus += 6;
     if (o === "group" && (place.free_tables ?? 0) >= 2) bonus += 6;
+    if (
+      o === "brunch" &&
+      (text.includes("brunch") || text.includes("cafe") || text.includes("breakfast"))
+    ) {
+      bonus += 7;
+    }
+    if (
+      o === "celebration" &&
+      (price >= 2 || text.includes("party") || text.includes("event"))
+    ) {
+      bonus += 7;
+    }
+    if (o === "solo" && (price <= 2 || text.includes("cafe") || text.includes("bar"))) {
+      bonus += 6;
+    }
   }
   return bonus;
 }
@@ -324,6 +427,17 @@ function scorePlace(
   ) {
     const km = haversineKm(opts.userLat, opts.userLng, place.lat, place.lng);
     score += Math.max(0, 15 - km * 3);
+  }
+  const softText = placeText(place);
+  if (prefs.practical.includes("outdoor") && softText.includes("terrace"))
+    score += 8;
+  if (prefs.practical.includes("parking") && softText.includes("park")) score += 6;
+  if (prefs.practical.includes("wifi") && softText.includes("wifi")) score += 6;
+  if (
+    prefs.practical.includes("kid_friendly") &&
+    (softText.includes("family") || softText.includes("kid"))
+  ) {
+    score += 6;
   }
 
   return score;

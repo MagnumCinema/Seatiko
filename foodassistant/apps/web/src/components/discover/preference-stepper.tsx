@@ -1,12 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   BUDGET_LEVELS,
-  CUISINE_IDS,
-  OCCASION_IDS,
-  PRACTICAL_IDS,
-  RESTAURANT_TYPE_IDS,
+  CUISINE_MORE,
+  CUISINE_PRIMARY,
+  OCCASION_MORE,
+  OCCASION_PRIMARY,
+  PRACTICAL_MORE,
+  PRACTICAL_PRIMARY,
+  RESTAURANT_TYPE_MORE,
+  RESTAURANT_TYPE_PRIMARY,
+  budgetLevelsFromRange,
+  budgetRangeFromLevels,
   toggleId,
+  type BudgetLevel,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
 import { fillTemplate } from "@/lib/soft-advance";
@@ -23,7 +31,7 @@ const STEPS = [
 
 type StepKey = (typeof STEPS)[number];
 
-type BudgetChipKey = "budget1" | "budget2" | "budget3";
+type Chip = { id: string; label: string; selected: boolean };
 
 type Props = {
   stepIndex: number;
@@ -51,6 +59,13 @@ function selectedCountForStep(
   }
 }
 
+function chipLabel(
+  copy: ReturnType<typeof getSiteCopy>["discover"],
+  id: string,
+): string {
+  return copy.chips[id as keyof typeof copy.chips] ?? id;
+}
+
 export function PreferenceStepper({
   stepIndex,
   prefs,
@@ -61,46 +76,57 @@ export function PreferenceStepper({
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
   const step = STEPS[Math.min(stepIndex, STEPS.length - 1)] as StepKey;
+  const [showMore, setShowMore] = useState(false);
 
-  function chipsForStep(): { id: string; label: string; selected: boolean }[] {
+  useEffect(() => {
+    setShowMore(false);
+  }, [stepIndex]);
+
+  function primaryAndMore(): { primary: string[]; more: string[] } {
     switch (step) {
       case "cuisine":
-        return CUISINE_IDS.map((id) => ({
-          id,
-          label: copy.chips[id],
-          selected: prefs.cuisine.includes(id),
-        }));
+        return { primary: CUISINE_PRIMARY, more: CUISINE_MORE };
       case "restaurantType":
-        return RESTAURANT_TYPE_IDS.map((id) => ({
-          id,
-          label: copy.chips[id === "fast_food" ? "fast_food" : id],
-          selected: prefs.restaurantType.includes(id),
-        }));
-      case "budget":
-        return BUDGET_LEVELS.map((level) => {
-          const key = `budget${level}` as BudgetChipKey;
-          return {
-            id: String(level),
-            label: copy.chips[key],
-            selected: prefs.budget.includes(level),
-          };
-        });
+        return { primary: RESTAURANT_TYPE_PRIMARY, more: RESTAURANT_TYPE_MORE };
       case "occasion":
-        return OCCASION_IDS.map((id) => ({
-          id,
-          label: copy.chips[id],
-          selected: prefs.occasion.includes(id),
-        }));
+        return { primary: OCCASION_PRIMARY, more: OCCASION_MORE };
       case "practical":
-        return PRACTICAL_IDS.map((id) => ({
-          id,
-          label: copy.chips[id],
-          selected: prefs.practical.includes(id),
-        }));
+        return { primary: PRACTICAL_PRIMARY, more: PRACTICAL_MORE };
+      case "budget":
+        return { primary: [], more: [] };
     }
   }
 
+  function isSelected(id: string): boolean {
+    switch (step) {
+      case "cuisine":
+        return prefs.cuisine.includes(id as (typeof prefs.cuisine)[number]);
+      case "restaurantType":
+        return prefs.restaurantType.includes(
+          id as (typeof prefs.restaurantType)[number],
+        );
+      case "occasion":
+        return prefs.occasion.includes(id as (typeof prefs.occasion)[number]);
+      case "practical":
+        return prefs.practical.includes(id as (typeof prefs.practical)[number]);
+      case "budget":
+        return false;
+    }
+  }
+
+  const { primary, more } = primaryAndMore();
+  const expanded = showMore;
+
+  function chipsFor(ids: string[]): Chip[] {
+    return ids.map((id) => ({
+      id,
+      label: chipLabel(copy, id),
+      selected: isSelected(id),
+    }));
+  }
+
   function toggle(id: string) {
+    if (more.includes(id)) setShowMore(true);
     let nextPrefs: DiscoverPreferences;
     switch (step) {
       case "cuisine":
@@ -118,14 +144,6 @@ export function PreferenceStepper({
           ),
         };
         break;
-      case "budget": {
-        const level = Number(id) as 1 | 2 | 3;
-        nextPrefs = {
-          ...prefs,
-          budget: toggleId(prefs.budget, level),
-        };
-        break;
-      }
       case "occasion":
         nextPrefs = {
           ...prefs,
@@ -141,8 +159,33 @@ export function PreferenceStepper({
           ),
         };
         break;
+      case "budget":
+        return;
     }
     onPrefsChange(nextPrefs);
+  }
+
+  const range = budgetRangeFromLevels(prefs.budget);
+  const rangeMin = range?.min ?? 1;
+  const rangeMax = range?.max ?? 3;
+  const budgetActive = prefs.budget.length > 0;
+
+  function setRangeBound(which: "min" | "max", value: number) {
+    const next = Math.min(3, Math.max(1, Math.round(value))) as BudgetLevel;
+    let min = which === "min" ? next : rangeMin;
+    let max = which === "max" ? next : rangeMax;
+    if (!budgetActive) {
+      min = next;
+      max = next;
+    }
+    if (min > max) {
+      if (which === "min") max = min;
+      else min = max;
+    }
+    onPrefsChange({
+      ...prefs,
+      budget: budgetLevelsFromRange(min as BudgetLevel, max as BudgetLevel),
+    });
   }
 
   const selectedCount = selectedCountForStep(prefs, step);
@@ -182,25 +225,117 @@ export function PreferenceStepper({
 
       <div className="discover-stepper-body">
         <h2>{copy.steps[step]}</h2>
-        <p className="discover-stepper-hint">{copy.stepHint}</p>
-        <div className="discover-chips" role="group">
-          {chipsForStep().map((chip) => (
-            <button
-              key={chip.id}
-              type="button"
-              className={`discover-chip ${chip.selected ? "on" : ""}`}
-              aria-pressed={chip.selected}
-              onClick={() => toggle(chip.id)}
-            >
-              {chip.label}
-              {chip.selected ? (
-                <span className="discover-stepper-check" aria-hidden>
-                  ✓
+        <p className="discover-stepper-hint">
+          {step === "budget" ? copy.budgetHint : copy.stepHint}
+        </p>
+
+        {step === "budget" ? (
+          <div className="discover-budget">
+            <div className="discover-budget-labels" aria-hidden>
+              {BUDGET_LEVELS.map((level) => (
+                <span
+                  key={level}
+                  className={
+                    budgetActive && level >= rangeMin && level <= rangeMax
+                      ? "on"
+                      : ""
+                  }
+                >
+                  {chipLabel(copy, `budget${level}`)}
                 </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
+              ))}
+            </div>
+            <div className="discover-budget-sliders">
+              <label className="discover-budget-slider">
+                <span>{copy.chips.budget1}</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={1}
+                  value={budgetActive ? rangeMin : 1}
+                  onChange={(e) => setRangeBound("min", Number(e.target.value))}
+                />
+              </label>
+              <label className="discover-budget-slider">
+                <span>{copy.chips.budget3}</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={1}
+                  value={budgetActive ? rangeMax : 3}
+                  onChange={(e) => setRangeBound("max", Number(e.target.value))}
+                />
+              </label>
+            </div>
+            <p className="discover-budget-value">
+              {budgetActive
+                ? `${chipLabel(copy, `budget${rangeMin}`)} – ${chipLabel(copy, `budget${rangeMax}`)}`
+                : copy.budgetAny}
+            </p>
+            {budgetActive ? (
+              <button
+                type="button"
+                className="discover-budget-clear"
+                onClick={() => onPrefsChange({ ...prefs, budget: [] })}
+              >
+                {copy.budgetAny}
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <div className="discover-chips" role="group">
+              {chipsFor(primary).map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  className={`discover-chip ${chip.selected ? "on" : ""}`}
+                  aria-pressed={chip.selected}
+                  onClick={() => toggle(chip.id)}
+                >
+                  {chip.label}
+                  {chip.selected ? (
+                    <span className="discover-stepper-check" aria-hidden>
+                      ✓
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+            {expanded ? (
+              <div className="discover-chips discover-chips-more" role="group">
+                {chipsFor(more).map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    className={`discover-chip ${chip.selected ? "on" : ""}`}
+                    aria-pressed={chip.selected}
+                    onClick={() => toggle(chip.id)}
+                  >
+                    {chip.label}
+                    {chip.selected ? (
+                      <span className="discover-stepper-check" aria-hidden>
+                        ✓
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {more.length > 0 ? (
+              <button
+                type="button"
+                className="discover-show-more"
+                onClick={() => setShowMore((v) => !v)}
+                aria-expanded={expanded}
+              >
+                {expanded ? copy.showLess : copy.showMore}
+              </button>
+            ) : null}
+          </>
+        )}
       </div>
 
       <div
