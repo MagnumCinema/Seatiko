@@ -30,6 +30,7 @@ type Props = {
   prefs: DiscoverPreferences;
   onPrefsChange: (prefs: DiscoverPreferences) => void;
   onStepChange: (index: number) => void;
+  onGoToMap?: () => void;
 };
 
 function selectedCountForStep(
@@ -55,6 +56,7 @@ export function PreferenceStepper({
   prefs,
   onPrefsChange,
   onStepChange,
+  onGoToMap,
 }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).discover;
@@ -205,7 +207,6 @@ export function PreferenceStepper({
         className={[
           "discover-stepper-nav",
           stepIndex === 0 ? "is-first" : "",
-          stepIndex >= STEPS.length - 1 ? "is-last" : "",
         ]
           .filter(Boolean)
           .join(" ")}
@@ -230,7 +231,15 @@ export function PreferenceStepper({
           >
             {copy.continue}
           </button>
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            className="btn btn-gold discover-stepper-continue"
+            onClick={() => onGoToMap?.()}
+          >
+            {copy.goToMap}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -57,6 +57,7 @@ export function DiscoverWizard() {
             prefs={prefs}
             onPrefsChange={setPrefs}
             onStepChange={setStepIndex}
+            onGoToMap={() => scrollToId("discover-map")}
           />
           <GuidedChat
             prefs={prefs}
