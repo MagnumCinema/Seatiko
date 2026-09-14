@@ -4,6 +4,7 @@ import {
   canSoftAdvanceOnTimer,
   planSoftAdvance,
   formatStepperStatus,
+  fillTemplate,
 } from "./soft-advance";
 
 describe("planSoftAdvance", () => {
@@ -54,5 +55,13 @@ describe("formatStepperStatus", () => {
         continuing: true,
       }),
     ).toBe("Step 2 of 5 · 1 selected · Continuing…");
+  });
+});
+
+describe("fillTemplate", () => {
+  it("replaces tokens", () => {
+    expect(fillTemplate("Step {n} of {total}", { n: 2, total: 5 })).toBe(
+      "Step 2 of 5",
+    );
   });
 });
