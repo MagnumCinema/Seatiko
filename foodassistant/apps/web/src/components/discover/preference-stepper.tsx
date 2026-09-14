@@ -237,7 +237,7 @@ export function PreferenceStepper({
             className="btn btn-gold discover-stepper-continue"
             onClick={() => onGoToMap?.()}
           >
-            {copy.goToMap}
+            {copy.seePlaces}
           </button>
         )}
       </div>

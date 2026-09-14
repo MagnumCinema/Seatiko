@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
 import { GuidedChat } from "@/components/discover/guided-chat";
 import { PreferenceStepper } from "@/components/discover/preference-stepper";
-import { PreferenceSummary } from "@/components/discover/preference-summary";
 import { ActiveFiltersBar } from "@/components/discover/active-filters-bar";
 import {
   decodePreferences,
@@ -31,12 +30,24 @@ export function DiscoverWizard() {
   );
   const [prefs, setPrefs] = useState<DiscoverPreferences>(initial);
   const [stepIndex, setStepIndex] = useState(0);
+  const [mapVisible, setMapVisible] = useState(hasAnyPreference(initial));
 
   const filtered = hasAnyPreference(prefs);
+
+  useEffect(() => {
+    if (!mapVisible) return;
+    const t = window.setTimeout(() => scrollToId("discover-map"), 80);
+    return () => window.clearTimeout(t);
+  }, [mapVisible]);
+
+  function showPlaces() {
+    setMapVisible(true);
+  }
 
   function resetPreferences() {
     setPrefs(emptyPreferences());
     setStepIndex(0);
+    setMapVisible(false);
   }
 
   function editPreferences() {
@@ -57,7 +68,7 @@ export function DiscoverWizard() {
             prefs={prefs}
             onPrefsChange={setPrefs}
             onStepChange={setStepIndex}
-            onGoToMap={() => scrollToId("discover-map")}
+            onGoToMap={showPlaces}
           />
           <GuidedChat
             prefs={prefs}
@@ -65,28 +76,26 @@ export function DiscoverWizard() {
             collapsedDefault={true}
           />
         </div>
-        <PreferenceSummary
-          canReset={filtered}
-          onReset={resetPreferences}
-        />
 
-        <section className="discover-map-section" id="discover-map">
-          <div className="section-heading split">
-            <div>
-              <span className="eyebrow">{copy.filtersActive}</span>
-              <h2>{copy.mapTitle}</h2>
+        {mapVisible ? (
+          <section className="discover-map-section" id="discover-map">
+            <div className="section-heading split">
+              <div>
+                <span className="eyebrow">{copy.filtersActive}</span>
+                <h2>{copy.mapTitle}</h2>
+              </div>
+              <p>{copy.mapBody}</p>
             </div>
-            <p>{copy.mapBody}</p>
-          </div>
-          {filtered && (
-            <ActiveFiltersBar
-              prefs={prefs}
-              onEdit={editPreferences}
-              onClear={resetPreferences}
-            />
-          )}
-          <VenueMap preferences={filtered ? prefs : undefined} />
-        </section>
+            {filtered ? (
+              <ActiveFiltersBar
+                prefs={prefs}
+                onEdit={editPreferences}
+                onClear={resetPreferences}
+              />
+            ) : null}
+            <VenueMap preferences={filtered ? prefs : undefined} />
+          </section>
+        ) : null}
       </main>
     </div>
   );

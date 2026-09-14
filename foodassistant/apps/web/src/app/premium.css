@@ -1744,18 +1744,19 @@ html[data-theme="light"] {
 
 .discover-layout {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 1.65rem;
+  grid-template-columns: minmax(0, 1.85fr) minmax(260px, 0.85fr);
+  gap: 1.75rem;
   align-items: stretch;
   margin-bottom: 1.5rem;
 }
 
 .discover-stepper {
   display: grid;
-  gap: 1.1rem;
-  padding: 1.45rem 1.45rem 1.35rem;
+  gap: 1.25rem;
+  min-height: 560px;
+  padding: 1.75rem 1.7rem 1.55rem;
   border: 1px solid var(--fa-border);
-  border-radius: 20px;
+  border-radius: 22px;
   background:
     linear-gradient(
       160deg,
@@ -1828,18 +1829,18 @@ html[data-theme="light"] {
 }
 
 .discover-stepper-body h2 {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.4rem;
   color: var(--fa-text);
   font-family: var(--font-display), Fraunces, serif;
-  font-size: 1.35rem;
+  font-size: clamp(1.55rem, 2.4vw, 1.9rem);
   font-weight: 550;
   letter-spacing: -0.02em;
 }
 
 .discover-stepper-hint {
-  margin: 0 0 1rem;
+  margin: 0 0 1.25rem;
   color: var(--fa-muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
