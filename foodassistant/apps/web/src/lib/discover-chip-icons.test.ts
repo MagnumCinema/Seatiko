@@ -19,7 +19,12 @@ describe("chipIcon", () => {
       "any",
     ];
     for (const id of ids) {
+      expect(chipIcon(id), id).not.toBe("•");
       expect(chipIcon(id).length, id).toBeGreaterThan(0);
     }
+  });
+
+  it("falls back to bullet for unknown ids", () => {
+    expect(chipIcon("unknown-chip-id")).toBe("•");
   });
 });
