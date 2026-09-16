@@ -91,12 +91,12 @@ export const CUISINE_PRIMARY: CuisineId[] = [
   "italian",
   "asian",
   "european",
-];
-export const CUISINE_MORE: CuisineId[] = [
   "japanese",
   "chinese",
   "mexican",
   "seafood",
+];
+export const CUISINE_MORE: CuisineId[] = [
   "vegetarian",
   "grill",
   "fast_food",
@@ -108,11 +108,11 @@ export const RESTAURANT_TYPE_PRIMARY: RestaurantTypeId[] = [
   "restaurant",
   "cafe",
   "bar",
-];
-export const RESTAURANT_TYPE_MORE: RestaurantTypeId[] = [
   "fast_food",
   "fine_dining",
   "pub",
+];
+export const RESTAURANT_TYPE_MORE: RestaurantTypeId[] = [
   "pizzeria",
   "bakery",
   "wine_bar",
@@ -126,14 +126,11 @@ export const OCCASION_PRIMARY: OccasionId[] = [
   "quick_lunch",
   "date_night",
   "family",
-];
-export const OCCASION_MORE: OccasionId[] = [
   "business",
   "group",
   "brunch",
-  "celebration",
-  "solo",
 ];
+export const OCCASION_MORE: OccasionId[] = ["celebration", "solo"];
 export const OCCASION_IDS: OccasionId[] = [
   ...OCCASION_PRIMARY,
   ...OCCASION_MORE,
@@ -143,14 +140,11 @@ export const PRACTICAL_PRIMARY: PracticalId[] = [
   "open_now",
   "free_tables",
   "nearby",
-];
-export const PRACTICAL_MORE: PracticalId[] = [
   "partners",
   "outdoor",
   "parking",
-  "wifi",
-  "kid_friendly",
 ];
+export const PRACTICAL_MORE: PracticalId[] = ["wifi", "kid_friendly"];
 export const PRACTICAL_IDS: PracticalId[] = [
   ...PRACTICAL_PRIMARY,
   ...PRACTICAL_MORE,

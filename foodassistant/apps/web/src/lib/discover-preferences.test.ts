@@ -11,6 +11,18 @@ import {
   BUDGET_MDL_MIN,
   BUDGET_MDL_MAX,
   BUDGET_MDL_STEP,
+  CUISINE_PRIMARY,
+  CUISINE_MORE,
+  RESTAURANT_TYPE_PRIMARY,
+  RESTAURANT_TYPE_MORE,
+  OCCASION_PRIMARY,
+  OCCASION_MORE,
+  PRACTICAL_PRIMARY,
+  PRACTICAL_MORE,
+  CUISINE_IDS,
+  RESTAURANT_TYPE_IDS,
+  OCCASION_IDS,
+  PRACTICAL_IDS,
   type DiscoverPreferences,
 } from "./discover-preferences";
 import type { MapPlace } from "@/lib/api";
@@ -51,6 +63,30 @@ describe("MDL budget helpers", () => {
     expect(budgetPresetRange("any")).toBeNull();
     expect(matchBudgetPreset({ min: 200, max: 400 })).toBe("200_400");
     expect(matchBudgetPreset({ min: 150, max: 400 })).toBeNull();
+  });
+});
+
+describe("primary chip counts", () => {
+  it("shows denser defaults before Show more", () => {
+    expect(CUISINE_PRIMARY).toHaveLength(8);
+    expect(RESTAURANT_TYPE_PRIMARY).toHaveLength(6);
+    expect(OCCASION_PRIMARY).toHaveLength(6);
+    expect(PRACTICAL_PRIMARY).toHaveLength(6);
+  });
+
+  it("keeps PRIMARY+MORE disjoint and covering all ids", () => {
+    expect([...CUISINE_PRIMARY, ...CUISINE_MORE].sort()).toEqual(
+      [...CUISINE_IDS].sort(),
+    );
+    expect([...RESTAURANT_TYPE_PRIMARY, ...RESTAURANT_TYPE_MORE].sort()).toEqual(
+      [...RESTAURANT_TYPE_IDS].sort(),
+    );
+    expect([...OCCASION_PRIMARY, ...OCCASION_MORE].sort()).toEqual(
+      [...OCCASION_IDS].sort(),
+    );
+    expect([...PRACTICAL_PRIMARY, ...PRACTICAL_MORE].sort()).toEqual(
+      [...PRACTICAL_IDS].sort(),
+    );
   });
 });
 
