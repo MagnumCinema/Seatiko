@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import {
-  BUDGET_LEVELS,
+  BUDGET_MDL_MAX,
+  BUDGET_MDL_MIN,
+  BUDGET_MDL_STEP,
+  BUDGET_PRESET_IDS,
   CUISINE_MORE,
   CUISINE_PRIMARY,
   OCCASION_MORE,
@@ -11,12 +14,13 @@ import {
   PRACTICAL_PRIMARY,
   RESTAURANT_TYPE_MORE,
   RESTAURANT_TYPE_PRIMARY,
-  budgetLevelsFromRange,
-  budgetRangeFromLevels,
+  budgetPresetRange,
+  matchBudgetPreset,
+  normalizeBudgetRange,
   toggleId,
-  type BudgetLevel,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
+import { chipIcon } from "@/lib/discover-chip-icons";
 import { fillTemplate } from "@/lib/soft-advance";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
@@ -51,7 +55,7 @@ function selectedCountForStep(
     case "restaurantType":
       return prefs.restaurantType.length;
     case "budget":
-      return prefs.budget.length;
+      return prefs.budget ? 1 : 0;
     case "occasion":
       return prefs.occasion.length;
     case "practical":
@@ -165,29 +169,6 @@ export function PreferenceStepper({
     onPrefsChange(nextPrefs);
   }
 
-  const range = budgetRangeFromLevels(prefs.budget);
-  const rangeMin = range?.min ?? 1;
-  const rangeMax = range?.max ?? 3;
-  const budgetActive = prefs.budget.length > 0;
-
-  function setRangeBound(which: "min" | "max", value: number) {
-    const next = Math.min(3, Math.max(1, Math.round(value))) as BudgetLevel;
-    let min = which === "min" ? next : rangeMin;
-    let max = which === "max" ? next : rangeMax;
-    if (!budgetActive) {
-      min = next;
-      max = next;
-    }
-    if (min > max) {
-      if (which === "min") max = min;
-      else min = max;
-    }
-    onPrefsChange({
-      ...prefs,
-      budget: budgetLevelsFromRange(min as BudgetLevel, max as BudgetLevel),
-    });
-  }
-
   const selectedCount = selectedCountForStep(prefs, step);
   const status = `${fillTemplate(copy.stepOf, {
     n: stepIndex + 1,
@@ -229,84 +210,104 @@ export function PreferenceStepper({
           {step === "budget" ? copy.budgetHint : copy.stepHint}
         </p>
 
-        {step === "budget" ? (
-          <div className="discover-budget">
-            <div className="discover-budget-labels" aria-hidden>
-              {BUDGET_LEVELS.map((level) => (
-                <span
-                  key={level}
-                  className={
-                    budgetActive && level >= rangeMin && level <= rangeMax
-                      ? "on"
-                      : ""
-                  }
-                >
-                  {chipLabel(copy, `budget${level}`)}
-                </span>
-              ))}
-            </div>
-            <div className="discover-budget-sliders">
-              <label className="discover-budget-slider">
-                <span>{copy.chips.budget1}</span>
-                <input
-                  type="range"
-                  min={1}
-                  max={3}
-                  step={1}
-                  value={budgetActive ? rangeMin : 1}
-                  onChange={(e) => setRangeBound("min", Number(e.target.value))}
-                />
-              </label>
-              <label className="discover-budget-slider">
-                <span>{copy.chips.budget3}</span>
-                <input
-                  type="range"
-                  min={1}
-                  max={3}
-                  step={1}
-                  value={budgetActive ? rangeMax : 3}
-                  onChange={(e) => setRangeBound("max", Number(e.target.value))}
-                />
-              </label>
-            </div>
-            <p className="discover-budget-value">
-              {budgetActive
-                ? `${chipLabel(copy, `budget${rangeMin}`)} – ${chipLabel(copy, `budget${rangeMax}`)}`
-                : copy.budgetAny}
-            </p>
-            {budgetActive ? (
-              <button
-                type="button"
-                className="discover-budget-clear"
-                onClick={() => onPrefsChange({ ...prefs, budget: [] })}
+        <div className="discover-stepper-panel">
+          {step === "budget" ? (
+            <div className="discover-budget">
+              <div
+                className="discover-budget-range"
+                role="group"
+                aria-label={copy.steps.budget}
               >
-                {copy.budgetAny}
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <>
-            <div className="discover-chips" role="group">
-              {chipsFor(primary).map((chip) => (
+                <input
+                  type="range"
+                  className="discover-budget-thumb discover-budget-thumb-min"
+                  min={BUDGET_MDL_MIN}
+                  max={BUDGET_MDL_MAX}
+                  step={BUDGET_MDL_STEP}
+                  value={prefs.budget?.min ?? BUDGET_MDL_MIN}
+                  onChange={(e) => {
+                    const min = Number(e.target.value);
+                    const max = prefs.budget?.max ?? BUDGET_MDL_MAX;
+                    onPrefsChange({
+                      ...prefs,
+                      budget: normalizeBudgetRange({
+                        min,
+                        max: Math.max(min, max),
+                      }),
+                    });
+                  }}
+                />
+                <input
+                  type="range"
+                  className="discover-budget-thumb discover-budget-thumb-max"
+                  min={BUDGET_MDL_MIN}
+                  max={BUDGET_MDL_MAX}
+                  step={BUDGET_MDL_STEP}
+                  value={prefs.budget?.max ?? BUDGET_MDL_MAX}
+                  onChange={(e) => {
+                    const max = Number(e.target.value);
+                    const min = prefs.budget?.min ?? BUDGET_MDL_MIN;
+                    onPrefsChange({
+                      ...prefs,
+                      budget: normalizeBudgetRange({
+                        min: Math.min(min, max),
+                        max,
+                      }),
+                    });
+                  }}
+                />
+              </div>
+              <p className="discover-budget-value">
+                {prefs.budget
+                  ? fillTemplate(copy.budgetReadout, {
+                      min: String(prefs.budget.min),
+                      max: String(prefs.budget.max),
+                    })
+                  : copy.budgetAny}
+              </p>
+              <div
+                className="discover-chips discover-budget-presets"
+                role="group"
+              >
+                {BUDGET_PRESET_IDS.map((id) => {
+                  const on = matchBudgetPreset(prefs.budget) === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`discover-chip ${on ? "on" : ""}`}
+                      aria-pressed={on}
+                      onClick={() =>
+                        onPrefsChange({
+                          ...prefs,
+                          budget: budgetPresetRange(id),
+                        })
+                      }
+                    >
+                      <span className="discover-chip-icon" aria-hidden>
+                        {chipIcon(id)}
+                      </span>
+                      <span>{copy.budgetPresets[id]}</span>
+                    </button>
+                  );
+                })}
                 <button
-                  key={chip.id}
                   type="button"
-                  className={`discover-chip ${chip.selected ? "on" : ""}`}
-                  aria-pressed={chip.selected}
-                  onClick={() => toggle(chip.id)}
+                  className={`discover-chip ${prefs.budget == null ? "on" : ""}`}
+                  aria-pressed={prefs.budget == null}
+                  onClick={() => onPrefsChange({ ...prefs, budget: null })}
                 >
-                  {chip.label}
-                  {chip.selected ? (
-                    <span className="discover-stepper-check" aria-hidden>
-                      ✓
-                    </span>
-                  ) : null}
+                  <span className="discover-chip-icon" aria-hidden>
+                    {chipIcon("any")}
+                  </span>
+                  <span>{copy.budgetAny}</span>
                 </button>
-              ))}
+              </div>
             </div>
-            {expanded ? (
-              <div className="discover-chips discover-chips-more" role="group">
-                {chipsFor(more).map((chip) => (
+          ) : (
+            <>
+              <div className="discover-chips" role="group">
+                {chipsFor(primary).map((chip) => (
                   <button
                     key={chip.id}
                     type="button"
@@ -314,7 +315,10 @@ export function PreferenceStepper({
                     aria-pressed={chip.selected}
                     onClick={() => toggle(chip.id)}
                   >
-                    {chip.label}
+                    <span className="discover-chip-icon" aria-hidden>
+                      {chipIcon(chip.id)}
+                    </span>
+                    <span className="discover-chip-label">{chip.label}</span>
                     {chip.selected ? (
                       <span className="discover-stepper-check" aria-hidden>
                         ✓
@@ -323,19 +327,42 @@ export function PreferenceStepper({
                   </button>
                 ))}
               </div>
-            ) : null}
-            {more.length > 0 ? (
-              <button
-                type="button"
-                className="discover-show-more"
-                onClick={() => setShowMore((v) => !v)}
-                aria-expanded={expanded}
-              >
-                {expanded ? copy.showLess : copy.showMore}
-              </button>
-            ) : null}
-          </>
-        )}
+              {expanded ? (
+                <div className="discover-chips discover-chips-more" role="group">
+                  {chipsFor(more).map((chip) => (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      className={`discover-chip ${chip.selected ? "on" : ""}`}
+                      aria-pressed={chip.selected}
+                      onClick={() => toggle(chip.id)}
+                    >
+                      <span className="discover-chip-icon" aria-hidden>
+                        {chipIcon(chip.id)}
+                      </span>
+                      <span className="discover-chip-label">{chip.label}</span>
+                      {chip.selected ? (
+                        <span className="discover-stepper-check" aria-hidden>
+                          ✓
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {more.length > 0 ? (
+                <button
+                  type="button"
+                  className="discover-show-more"
+                  onClick={() => setShowMore((v) => !v)}
+                  aria-expanded={expanded}
+                >
+                  {expanded ? copy.showLess : copy.showMore}
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
 
       <div
