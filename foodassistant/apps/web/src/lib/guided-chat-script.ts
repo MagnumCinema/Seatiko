@@ -1,5 +1,8 @@
 import {
-  type BudgetLevel,
+  BUDGET_PRESET_IDS,
+  budgetPresetRange,
+  normalizeBudgetRange,
+  type BudgetPresetId,
   type CuisineId,
   type DiscoverPreferences,
   type OccasionId,
@@ -61,10 +64,23 @@ export function applyChatAnswer(
         ),
       };
     case "budget": {
-      const levels = ids
-        .map(Number)
-        .filter((n): n is BudgetLevel => n === 1 || n === 2 || n === 3);
-      return { ...prefs, budget: unionIds(prefs.budget, levels) };
+      const raw = ids[0];
+      if (!raw || raw === "any") return { ...prefs, budget: null };
+      if ((BUDGET_PRESET_IDS as readonly string[]).includes(raw)) {
+        const preset = budgetPresetRange(raw as BudgetPresetId);
+        if (preset) return { ...prefs, budget: preset };
+      }
+      const m = /^(\d+)\s*-\s*(\d+)$/.exec(raw);
+      if (m) {
+        return {
+          ...prefs,
+          budget: normalizeBudgetRange({
+            min: Number(m[1]),
+            max: Number(m[2]),
+          }),
+        };
+      }
+      return prefs;
     }
     case "occasion":
       return {

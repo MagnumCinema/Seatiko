@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BUDGET_LEVELS,
+  BUDGET_PRESET_IDS,
   CUISINE_IDS,
   OCCASION_IDS,
   PRACTICAL_IDS,
@@ -18,8 +18,6 @@ import {
 } from "@/lib/guided-chat-script";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
-
-type BudgetChipKey = "budget1" | "budget2" | "budget3";
 
 type Props = {
   prefs: DiscoverPreferences;
@@ -59,10 +57,13 @@ export function GuidedChat({
           label: copy.chips[id],
         }));
       case "budget":
-        return BUDGET_LEVELS.map((b) => {
-          const key = `budget${b}` as BudgetChipKey;
-          return { id: String(b), label: copy.chips[key] };
-        });
+        return [
+          ...BUDGET_PRESET_IDS.map((id) => ({
+            id,
+            label: copy.budgetPresets[id],
+          })),
+          { id: "any", label: copy.budgetAny },
+        ];
       case "occasion":
         return OCCASION_IDS.map((id) => ({ id, label: copy.chips[id] }));
       case "practical":
