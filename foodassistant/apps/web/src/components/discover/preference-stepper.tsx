@@ -213,56 +213,6 @@ export function PreferenceStepper({
         <div className="discover-stepper-panel">
           {step === "budget" ? (
             <div className="discover-budget">
-              <div
-                className="discover-budget-range"
-                role="group"
-                aria-label={copy.steps.budget}
-              >
-                <input
-                  type="range"
-                  className="discover-budget-thumb discover-budget-thumb-min"
-                  min={BUDGET_MDL_MIN}
-                  max={BUDGET_MDL_MAX}
-                  step={BUDGET_MDL_STEP}
-                  value={prefs.budget?.min ?? BUDGET_MDL_MIN}
-                  disabled={prefs.budget == null}
-                  aria-label="Minimum (MDL)"
-                  aria-valuetext={`${prefs.budget?.min ?? BUDGET_MDL_MIN} MDL`}
-                  onChange={(e) => {
-                    const min = Number(e.target.value);
-                    const max = prefs.budget?.max ?? BUDGET_MDL_MAX;
-                    onPrefsChange({
-                      ...prefs,
-                      budget: normalizeBudgetRange({
-                        min,
-                        max: Math.max(min, max),
-                      }),
-                    });
-                  }}
-                />
-                <input
-                  type="range"
-                  className="discover-budget-thumb discover-budget-thumb-max"
-                  min={BUDGET_MDL_MIN}
-                  max={BUDGET_MDL_MAX}
-                  step={BUDGET_MDL_STEP}
-                  value={prefs.budget?.max ?? BUDGET_MDL_MAX}
-                  disabled={prefs.budget == null}
-                  aria-label="Maximum (MDL)"
-                  aria-valuetext={`${prefs.budget?.max ?? BUDGET_MDL_MAX} MDL`}
-                  onChange={(e) => {
-                    const max = Number(e.target.value);
-                    const min = prefs.budget?.min ?? BUDGET_MDL_MIN;
-                    onPrefsChange({
-                      ...prefs,
-                      budget: normalizeBudgetRange({
-                        min: Math.min(min, max),
-                        max,
-                      }),
-                    });
-                  }}
-                />
-              </div>
               <p className="discover-budget-value" aria-live="polite">
                 {prefs.budget
                   ? fillTemplate(copy.budgetReadout, {
@@ -271,6 +221,80 @@ export function PreferenceStepper({
                     })
                   : copy.budgetAny}
               </p>
+              <div
+                className={[
+                  "discover-budget-range-wrap",
+                  prefs.budget == null ? "is-idle" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <span className="discover-budget-bound" aria-hidden>
+                  {BUDGET_MDL_MIN}
+                </span>
+                <div
+                  className="discover-budget-range"
+                  role="group"
+                  aria-label={copy.steps.budget}
+                >
+                  <span className="discover-budget-track" aria-hidden />
+                  <input
+                    type="range"
+                    className="discover-budget-thumb discover-budget-thumb-min"
+                    min={BUDGET_MDL_MIN}
+                    max={BUDGET_MDL_MAX}
+                    step={BUDGET_MDL_STEP}
+                    value={prefs.budget?.min ?? BUDGET_MDL_MIN}
+                    disabled={prefs.budget == null}
+                    aria-label="Minimum (MDL)"
+                    aria-valuetext={
+                      prefs.budget == null
+                        ? copy.budgetAny
+                        : `${prefs.budget.min} MDL`
+                    }
+                    onChange={(e) => {
+                      const min = Number(e.target.value);
+                      const max = prefs.budget?.max ?? BUDGET_MDL_MAX;
+                      onPrefsChange({
+                        ...prefs,
+                        budget: normalizeBudgetRange({
+                          min,
+                          max: Math.max(min, max),
+                        }),
+                      });
+                    }}
+                  />
+                  <input
+                    type="range"
+                    className="discover-budget-thumb discover-budget-thumb-max"
+                    min={BUDGET_MDL_MIN}
+                    max={BUDGET_MDL_MAX}
+                    step={BUDGET_MDL_STEP}
+                    value={prefs.budget?.max ?? BUDGET_MDL_MAX}
+                    disabled={prefs.budget == null}
+                    aria-label="Maximum (MDL)"
+                    aria-valuetext={
+                      prefs.budget == null
+                        ? copy.budgetAny
+                        : `${prefs.budget.max} MDL`
+                    }
+                    onChange={(e) => {
+                      const max = Number(e.target.value);
+                      const min = prefs.budget?.min ?? BUDGET_MDL_MIN;
+                      onPrefsChange({
+                        ...prefs,
+                        budget: normalizeBudgetRange({
+                          min: Math.min(min, max),
+                          max,
+                        }),
+                      });
+                    }}
+                  />
+                </div>
+                <span className="discover-budget-bound" aria-hidden>
+                  {BUDGET_MDL_MAX}
+                </span>
+              </div>
               <div
                 className="discover-chips discover-budget-presets"
                 role="group"
