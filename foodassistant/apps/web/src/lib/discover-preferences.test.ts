@@ -80,7 +80,9 @@ describe("encodePreferences / decodePreferences", () => {
       min: 150,
       max: 450,
     });
-    expect(decodePreferences("budget=2,9").budget).toBeNull();
+    const mixed = decodePreferences("cuisine=italian,nope&budget=2,9");
+    expect(mixed.cuisine).toEqual(["italian"]);
+    expect(mixed.budget).toBeNull();
     expect(decodePreferences("budget=abc").budget).toBeNull();
   });
 });

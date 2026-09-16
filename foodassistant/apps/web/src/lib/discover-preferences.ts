@@ -207,6 +207,7 @@ export function priceLevelsForMdlRange(
   const { min, max } = normalizeBudgetRange(range);
   const levels: BudgetLevel[] = [];
   if (max >= 50 && min <= 250) levels.push(1);
+  // Exclusive at 200 so under200 preset ({50,200}) maps to level 1 only.
   if (max > 200 && min <= 550) levels.push(2);
   if (max >= 500 && min <= 1000) levels.push(3);
   return levels;
