@@ -47,10 +47,40 @@ export type PracticalId =
 
 export type BudgetLevel = 1 | 2 | 3;
 
+export type BudgetMdlRange = { min: number; max: number };
+
+export type BudgetPresetId =
+  | "under200"
+  | "200_400"
+  | "400_700"
+  | "700_1000"
+  | "any";
+
+export const BUDGET_MDL_MIN = 50;
+export const BUDGET_MDL_MAX = 1000;
+export const BUDGET_MDL_STEP = 50;
+
+export const BUDGET_PRESET_IDS: Exclude<BudgetPresetId, "any">[] = [
+  "under200",
+  "200_400",
+  "400_700",
+  "700_1000",
+];
+
+const BUDGET_PRESET_RANGES: Record<
+  Exclude<BudgetPresetId, "any">,
+  BudgetMdlRange
+> = {
+  under200: { min: 50, max: 200 },
+  "200_400": { min: 200, max: 400 },
+  "400_700": { min: 400, max: 700 },
+  "700_1000": { min: 700, max: 1000 },
+};
+
 export type DiscoverPreferences = {
   cuisine: CuisineId[];
   restaurantType: RestaurantTypeId[];
-  budget: BudgetLevel[];
+  budget: BudgetMdlRange | null;
   occasion: OccasionId[];
   practical: PracticalId[];
 };
@@ -91,8 +121,6 @@ export const RESTAURANT_TYPE_IDS: RestaurantTypeId[] = [
   ...RESTAURANT_TYPE_PRIMARY,
   ...RESTAURANT_TYPE_MORE,
 ];
-
-export const BUDGET_LEVELS: BudgetLevel[] = [1, 2, 3];
 
 export const OCCASION_PRIMARY: OccasionId[] = [
   "quick_lunch",
@@ -137,7 +165,7 @@ export function emptyPreferences(): DiscoverPreferences {
   return {
     cuisine: [],
     restaurantType: [],
-    budget: [],
+    budget: null,
     occasion: [],
     practical: [],
   };
@@ -147,32 +175,67 @@ export function hasAnyPreference(prefs: DiscoverPreferences): boolean {
   return (
     prefs.cuisine.length > 0 ||
     prefs.restaurantType.length > 0 ||
-    prefs.budget.length > 0 ||
+    prefs.budget != null ||
     prefs.occasion.length > 0 ||
     prefs.practical.length > 0
   );
 }
 
-/** Inclusive $–$$$ range → discrete budget levels for filtering. */
-export function budgetLevelsFromRange(
-  min: BudgetLevel,
-  max: BudgetLevel,
+function snapMdl(n: number, mode: "floor" | "ceil"): number {
+  const clamped = Math.min(BUDGET_MDL_MAX, Math.max(BUDGET_MDL_MIN, n));
+  const div = clamped / BUDGET_MDL_STEP;
+  const steps =
+    mode === "floor" ? Math.floor(div) : Math.ceil(div);
+  return steps * BUDGET_MDL_STEP;
+}
+
+export function normalizeBudgetRange(range: BudgetMdlRange): BudgetMdlRange {
+  let min = snapMdl(range.min, "floor");
+  let max = snapMdl(range.max, "ceil");
+  if (min > max) {
+    min = snapMdl(range.max, "floor");
+    max = snapMdl(range.min, "ceil");
+  }
+  return { min, max };
+}
+
+/** Soft bands (spec): 50–250→1, 200–550→2, 500–1000→3 (overlap OK). */
+export function priceLevelsForMdlRange(
+  range: BudgetMdlRange | null,
 ): BudgetLevel[] {
-  const lo = Math.min(min, max) as BudgetLevel;
-  const hi = Math.max(min, max) as BudgetLevel;
+  if (!range) return [];
+  const { min, max } = normalizeBudgetRange(range);
   const levels: BudgetLevel[] = [];
-  for (let n = lo; n <= hi; n += 1) levels.push(n as BudgetLevel);
+  if (max >= 50 && min <= 250) levels.push(1);
+  if (max > 200 && min <= 550) levels.push(2);
+  if (max >= 500 && min <= 1000) levels.push(3);
   return levels;
 }
 
-export function budgetRangeFromLevels(
-  levels: BudgetLevel[],
-): { min: BudgetLevel; max: BudgetLevel } | null {
-  if (!levels.length) return null;
-  return {
-    min: Math.min(...levels) as BudgetLevel,
-    max: Math.max(...levels) as BudgetLevel,
-  };
+export function budgetPresetRange(
+  id: BudgetPresetId,
+): BudgetMdlRange | null {
+  if (id === "any") return null;
+  return { ...BUDGET_PRESET_RANGES[id] };
+}
+
+export function matchBudgetPreset(
+  range: BudgetMdlRange | null,
+): BudgetPresetId | null {
+  if (!range) return "any";
+  const n = normalizeBudgetRange(range);
+  for (const id of BUDGET_PRESET_IDS) {
+    const p = BUDGET_PRESET_RANGES[id];
+    if (p.min === n.min && p.max === n.max) return id;
+  }
+  return null;
+}
+
+function parseBudgetParam(raw: string | null): BudgetMdlRange | null {
+  if (!raw) return null;
+  const m = /^(\d+)\s*-\s*(\d+)$/.exec(raw.trim());
+  if (!m) return null;
+  return normalizeBudgetRange({ min: Number(m[1]), max: Number(m[2]) });
 }
 
 function parseList(raw: string | null): string[] {
@@ -189,7 +252,9 @@ export function encodePreferences(prefs: DiscoverPreferences): string {
   if (prefs.restaurantType.length) {
     params.set("type", prefs.restaurantType.join(","));
   }
-  if (prefs.budget.length) params.set("budget", prefs.budget.join(","));
+  if (prefs.budget) {
+    params.set("budget", `${prefs.budget.min}-${prefs.budget.max}`);
+  }
   if (prefs.occasion.length) params.set("occasion", prefs.occasion.join(","));
   if (prefs.practical.length) {
     params.set("practical", prefs.practical.join(","));
@@ -200,9 +265,7 @@ export function encodePreferences(prefs: DiscoverPreferences): string {
 export function decodePreferences(search: string): DiscoverPreferences {
   const qs = search.startsWith("?") ? search.slice(1) : search;
   const params = new URLSearchParams(qs);
-  const budget = parseList(params.get("budget"))
-    .map(Number)
-    .filter((n): n is BudgetLevel => n === 1 || n === 2 || n === 3);
+  const budget = parseBudgetParam(params.get("budget"));
 
   return {
     cuisine: parseList(params.get("cuisine")).filter((id): id is CuisineId =>
@@ -291,14 +354,19 @@ function typeMatches(place: MapPlace, ids: RestaurantTypeId[]): boolean {
   return ids.some((id) => TYPE_ALIASES[id].some((a) => text.includes(a)));
 }
 
-function budgetMatches(place: MapPlace, levels: BudgetLevel[]): boolean {
+function budgetMatches(place: MapPlace, range: BudgetMdlRange | null): boolean {
+  const levels = priceLevelsForMdlRange(range);
   if (!levels.length) return true;
   // Missing price_level: do not hard-exclude (unknown ≠ mismatch).
   if (typeof place.price_level !== "number") return true;
   return levels.includes(place.price_level as BudgetLevel);
 }
 
-function budgetScoreMatches(place: MapPlace, levels: BudgetLevel[]): boolean {
+function budgetScoreMatches(
+  place: MapPlace,
+  range: BudgetMdlRange | null,
+): boolean {
+  const levels = priceLevelsForMdlRange(range);
   if (!levels.length) return false;
   if (typeof place.price_level !== "number") return false;
   return levels.includes(place.price_level as BudgetLevel);
