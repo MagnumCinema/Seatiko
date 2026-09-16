@@ -225,6 +225,9 @@ export function PreferenceStepper({
                   max={BUDGET_MDL_MAX}
                   step={BUDGET_MDL_STEP}
                   value={prefs.budget?.min ?? BUDGET_MDL_MIN}
+                  disabled={prefs.budget == null}
+                  aria-label="Minimum (MDL)"
+                  aria-valuetext={`${prefs.budget?.min ?? BUDGET_MDL_MIN} MDL`}
                   onChange={(e) => {
                     const min = Number(e.target.value);
                     const max = prefs.budget?.max ?? BUDGET_MDL_MAX;
@@ -244,6 +247,9 @@ export function PreferenceStepper({
                   max={BUDGET_MDL_MAX}
                   step={BUDGET_MDL_STEP}
                   value={prefs.budget?.max ?? BUDGET_MDL_MAX}
+                  disabled={prefs.budget == null}
+                  aria-label="Maximum (MDL)"
+                  aria-valuetext={`${prefs.budget?.max ?? BUDGET_MDL_MAX} MDL`}
                   onChange={(e) => {
                     const max = Number(e.target.value);
                     const min = prefs.budget?.min ?? BUDGET_MDL_MIN;
@@ -257,7 +263,7 @@ export function PreferenceStepper({
                   }}
                 />
               </div>
-              <p className="discover-budget-value">
+              <p className="discover-budget-value" aria-live="polite">
                 {prefs.budget
                   ? fillTemplate(copy.budgetReadout, {
                       min: String(prefs.budget.min),
@@ -268,6 +274,7 @@ export function PreferenceStepper({
               <div
                 className="discover-chips discover-budget-presets"
                 role="group"
+                aria-label={copy.budgetHint}
               >
                 {BUDGET_PRESET_IDS.map((id) => {
                   const on = matchBudgetPreset(prefs.budget) === id;
@@ -287,7 +294,9 @@ export function PreferenceStepper({
                       <span className="discover-chip-icon" aria-hidden>
                         {chipIcon(id)}
                       </span>
-                      <span>{copy.budgetPresets[id]}</span>
+                      <span className="discover-chip-label">
+                        {copy.budgetPresets[id]}
+                      </span>
                     </button>
                   );
                 })}
@@ -300,7 +309,7 @@ export function PreferenceStepper({
                   <span className="discover-chip-icon" aria-hidden>
                     {chipIcon("any")}
                   </span>
-                  <span>{copy.budgetAny}</span>
+                  <span className="discover-chip-label">{copy.budgetAny}</span>
                 </button>
               </div>
             </div>
