@@ -8,6 +8,40 @@
 
 ---
 
+## [1.4.4] — 2026-09-08
+
+### Документация
+- Sync: web `/discover` preference wizard + fit-ranked map (`APP_LOGIC` §5.2, `UX_SCREENS` §7)
+- Sync: `GET /api/v1/map/places` in `ENGINEERING.md`; cross-link from `MAP_ARCHITECTURE.md`
+- Sync: `I18N.md` — `theme.*`, expanded `profile.*`, `discover.wizard.*`
+- `docs/README.md`: guest-profile TODO link + discover/map summary
+
+## [1.4.3] — 2026-09-07
+
+### Добавлено
+- Guest `/account`, shared `GuestProfile`, dark/light theme, local favorites/allergies, payment + 18+ stubs
+
+## [1.4.2] — 2026-09-07
+
+### Изменено
+- Staff 18+ grant открывает предзаказ **всех** позиций `requires_age_18`, не только алкоголя
+- Канон флага: `adult_preorder_allowed` (`alcohol_preorder_allowed` — deprecated alias)
+- Меню: `requires_age_18` + `contains_alcohol` (алкоголь ⇒ всегда 18+)
+- i18n: namespace `age18.*` (legacy `alcohol.*` сохранён)
+- `APP_LOGIC.md` §8.4, `UX_SCREENS.md`, `I18N.md`, `docs/README.md`
+
+## [1.4.1] — 2026-09-07
+
+### Добавлено
+- **18+ grant привязан к конкретному официанту/менеджеру** (`alcohol_verified_by_staff_id`): персональная ответственность, если гость фактически младше 18
+- Staff UI warning + i18n keys; guest profile alcohol status read-only with who/when/venue
+- Audit log для grant/revoke обязателен (не «рекомендуется»)
+
+### Изменено
+- `APP_LOGIC.md` §8.4, `UX_SCREENS.md` staff guest card, `I18N.md` alcohol keys, `docs/README.md` summary
+
+---
+
 ## [1.4.0] — 2026-08-09
 
 ### Добавлено

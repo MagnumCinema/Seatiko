@@ -1,3 +1,5 @@
+import { AUTH_CHANGE_EVENT } from "@/lib/header-auth";
+
 // Empty string → same origin through nginx (:80) → /api/v1/...
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -123,6 +125,8 @@ export type User = {
   display_name: string;
   locale: string;
   role?: UserRole | string;
+  diet_preferences?: string[];
+  favorite_venues?: string[];
   created_at: string;
 };
 
@@ -190,6 +194,7 @@ export type Reservation = {
   status: string;
   source?: "WEB" | "ANDROID" | "IOS" | "PHONE" | "WALK_IN";
   arrival_confirmed_at?: string | null;
+  expected_arrival?: string | null;
   created_at: string;
   venue_name?: LocalizedString;
   table_number?: number;
@@ -350,6 +355,7 @@ export function setToken(token: string | null) {
   if (typeof window === "undefined") return;
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 type RequestOpts = {
@@ -443,6 +449,25 @@ export async function fetchTables(venueId: string): Promise<Table[]> {
   return data.tables ?? [];
 }
 
+export type VenueScheduleSlot = {
+  id: string;
+  table_id: string;
+  table_number: number;
+  starts_at: string;
+  ends_at: string;
+  kind: "RESERVATION" | "OCCUPIED" | string;
+};
+
+export async function fetchVenueSchedule(
+  venueId: string,
+): Promise<VenueScheduleSlot[]> {
+  const data = await apiFetch<{ slots: VenueScheduleSlot[] }>(
+    `/api/v1/venues/${venueId}/schedule`,
+    { auth: false },
+  );
+  return data.slots ?? [];
+}
+
 export async function fetchMenu(venueId: string): Promise<MenuItem[]> {
   const data = await apiFetch<{ items?: MenuItem[]; menu?: MenuItem[] }>(
     `/api/v1/venues/${venueId}/menu`,
@@ -514,7 +539,10 @@ export async function updateMe(input: {
   first_name?: string;
   last_name?: string;
   display_name?: string;
+  phone?: string;
   locale?: string;
+  diet_preferences?: string[];
+  favorite_venues?: string[];
 }): Promise<User> {
   const data = await apiFetch<{ user: User }>("/api/v1/me", {
     method: "PATCH",
@@ -526,6 +554,7 @@ export async function updateMe(input: {
 export function redirectPathForRole(role?: string | null): string {
   if (role === "admin") return "/admin";
   if (role === "restaurant") return "/cabinet";
+  if (role === "guest") return "/account";
   return "/";
 }
 
@@ -770,10 +799,11 @@ export async function watchTable(input: {
 
 export async function confirmArrival(
   reservationId: string,
+  input?: { expected_arrival?: string },
 ): Promise<Reservation> {
   const data = await apiFetch<{ reservation: Reservation }>(
     `/api/v1/reservations/${reservationId}/confirm-arrival`,
-    { method: "POST", body: {} },
+    { method: "POST", body: input ?? {} },
   );
   return data.reservation;
 }

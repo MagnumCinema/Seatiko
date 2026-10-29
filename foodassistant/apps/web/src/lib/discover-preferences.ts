@@ -5,6 +5,12 @@ export type CuisineId =
   | "italian"
   | "asian"
   | "european"
+  | "japanese"
+  | "chinese"
+  | "mexican"
+  | "seafood"
+  | "vegetarian"
+  | "grill"
   | "fast_food"
   | "cafe_sweets";
 
@@ -13,63 +19,135 @@ export type RestaurantTypeId =
   | "cafe"
   | "bar"
   | "fast_food"
-  | "fine_dining";
+  | "fine_dining"
+  | "pub"
+  | "pizzeria"
+  | "bakery"
+  | "wine_bar";
 
 export type OccasionId =
   | "quick_lunch"
   | "date_night"
   | "family"
   | "business"
-  | "group";
+  | "group"
+  | "brunch"
+  | "celebration"
+  | "solo";
 
 export type PracticalId =
   | "open_now"
   | "free_tables"
   | "partners"
-  | "nearby";
+  | "nearby"
+  | "outdoor"
+  | "parking"
+  | "wifi"
+  | "kid_friendly";
 
 export type BudgetLevel = 1 | 2 | 3;
+
+export type BudgetMdlRange = { min: number; max: number };
+
+export type BudgetPresetId =
+  | "under200"
+  | "200_400"
+  | "400_700"
+  | "700_1000"
+  | "any";
+
+export const BUDGET_MDL_MIN = 50;
+export const BUDGET_MDL_MAX = 1000;
+export const BUDGET_MDL_STEP = 50;
+
+export const BUDGET_PRESET_IDS: Exclude<BudgetPresetId, "any">[] = [
+  "under200",
+  "200_400",
+  "400_700",
+  "700_1000",
+];
+
+const BUDGET_PRESET_RANGES: Record<
+  Exclude<BudgetPresetId, "any">,
+  BudgetMdlRange
+> = {
+  under200: { min: 50, max: 200 },
+  "200_400": { min: 200, max: 400 },
+  "400_700": { min: 400, max: 700 },
+  "700_1000": { min: 700, max: 1000 },
+};
 
 export type DiscoverPreferences = {
   cuisine: CuisineId[];
   restaurantType: RestaurantTypeId[];
-  budget: BudgetLevel[];
+  budget: BudgetMdlRange | null;
   occasion: OccasionId[];
   practical: PracticalId[];
 };
 
-export const CUISINE_IDS: CuisineId[] = [
+/** First-row chips shown before “Show more”. */
+export const CUISINE_PRIMARY: CuisineId[] = [
   "moldovan",
   "italian",
   "asian",
   "european",
+  "japanese",
+  "chinese",
+  "mexican",
+  "seafood",
+];
+export const CUISINE_MORE: CuisineId[] = [
+  "vegetarian",
+  "grill",
   "fast_food",
   "cafe_sweets",
 ];
+export const CUISINE_IDS: CuisineId[] = [...CUISINE_PRIMARY, ...CUISINE_MORE];
 
-export const RESTAURANT_TYPE_IDS: RestaurantTypeId[] = [
+export const RESTAURANT_TYPE_PRIMARY: RestaurantTypeId[] = [
   "restaurant",
   "cafe",
   "bar",
   "fast_food",
   "fine_dining",
+  "pub",
+];
+export const RESTAURANT_TYPE_MORE: RestaurantTypeId[] = [
+  "pizzeria",
+  "bakery",
+  "wine_bar",
+];
+export const RESTAURANT_TYPE_IDS: RestaurantTypeId[] = [
+  ...RESTAURANT_TYPE_PRIMARY,
+  ...RESTAURANT_TYPE_MORE,
 ];
 
-export const BUDGET_LEVELS: BudgetLevel[] = [1, 2, 3];
-
-export const OCCASION_IDS: OccasionId[] = [
+export const OCCASION_PRIMARY: OccasionId[] = [
   "quick_lunch",
   "date_night",
   "family",
   "business",
   "group",
+  "brunch",
+];
+export const OCCASION_MORE: OccasionId[] = ["celebration", "solo"];
+export const OCCASION_IDS: OccasionId[] = [
+  ...OCCASION_PRIMARY,
+  ...OCCASION_MORE,
 ];
 
-export const PRACTICAL_IDS: PracticalId[] = [
+export const PRACTICAL_PRIMARY: PracticalId[] = [
   "open_now",
   "free_tables",
-  "partners",
   "nearby",
+  "partners",
+  "outdoor",
+  "parking",
+];
+export const PRACTICAL_MORE: PracticalId[] = ["wifi", "kid_friendly"];
+export const PRACTICAL_IDS: PracticalId[] = [
+  ...PRACTICAL_PRIMARY,
+  ...PRACTICAL_MORE,
 ];
 
 const CUISINE_SET = new Set<string>(CUISINE_IDS);
@@ -81,7 +159,7 @@ export function emptyPreferences(): DiscoverPreferences {
   return {
     cuisine: [],
     restaurantType: [],
-    budget: [],
+    budget: null,
     occasion: [],
     practical: [],
   };
@@ -91,10 +169,68 @@ export function hasAnyPreference(prefs: DiscoverPreferences): boolean {
   return (
     prefs.cuisine.length > 0 ||
     prefs.restaurantType.length > 0 ||
-    prefs.budget.length > 0 ||
+    prefs.budget != null ||
     prefs.occasion.length > 0 ||
     prefs.practical.length > 0
   );
+}
+
+function snapMdl(n: number, mode: "floor" | "ceil"): number {
+  const clamped = Math.min(BUDGET_MDL_MAX, Math.max(BUDGET_MDL_MIN, n));
+  const div = clamped / BUDGET_MDL_STEP;
+  const steps =
+    mode === "floor" ? Math.floor(div) : Math.ceil(div);
+  return steps * BUDGET_MDL_STEP;
+}
+
+export function normalizeBudgetRange(range: BudgetMdlRange): BudgetMdlRange {
+  let min = snapMdl(range.min, "floor");
+  let max = snapMdl(range.max, "ceil");
+  if (min > max) {
+    min = snapMdl(range.max, "floor");
+    max = snapMdl(range.min, "ceil");
+  }
+  return { min, max };
+}
+
+/** Soft bands (spec): 50–250→1, 200–550→2, 500–1000→3 (overlap OK). */
+export function priceLevelsForMdlRange(
+  range: BudgetMdlRange | null,
+): BudgetLevel[] {
+  if (!range) return [];
+  const { min, max } = normalizeBudgetRange(range);
+  const levels: BudgetLevel[] = [];
+  if (max >= 50 && min <= 250) levels.push(1);
+  // Exclusive at 200 so under200 preset ({50,200}) maps to level 1 only.
+  if (max > 200 && min <= 550) levels.push(2);
+  if (max >= 500 && min <= 1000) levels.push(3);
+  return levels;
+}
+
+export function budgetPresetRange(
+  id: BudgetPresetId,
+): BudgetMdlRange | null {
+  if (id === "any") return null;
+  return { ...BUDGET_PRESET_RANGES[id] };
+}
+
+export function matchBudgetPreset(
+  range: BudgetMdlRange | null,
+): BudgetPresetId | null {
+  if (!range) return "any";
+  const n = normalizeBudgetRange(range);
+  for (const id of BUDGET_PRESET_IDS) {
+    const p = BUDGET_PRESET_RANGES[id];
+    if (p.min === n.min && p.max === n.max) return id;
+  }
+  return null;
+}
+
+function parseBudgetParam(raw: string | null): BudgetMdlRange | null {
+  if (!raw) return null;
+  const m = /^(\d+)\s*-\s*(\d+)$/.exec(raw.trim());
+  if (!m) return null;
+  return normalizeBudgetRange({ min: Number(m[1]), max: Number(m[2]) });
 }
 
 function parseList(raw: string | null): string[] {
@@ -111,7 +247,9 @@ export function encodePreferences(prefs: DiscoverPreferences): string {
   if (prefs.restaurantType.length) {
     params.set("type", prefs.restaurantType.join(","));
   }
-  if (prefs.budget.length) params.set("budget", prefs.budget.join(","));
+  if (prefs.budget) {
+    params.set("budget", `${prefs.budget.min}-${prefs.budget.max}`);
+  }
   if (prefs.occasion.length) params.set("occasion", prefs.occasion.join(","));
   if (prefs.practical.length) {
     params.set("practical", prefs.practical.join(","));
@@ -122,9 +260,7 @@ export function encodePreferences(prefs: DiscoverPreferences): string {
 export function decodePreferences(search: string): DiscoverPreferences {
   const qs = search.startsWith("?") ? search.slice(1) : search;
   const params = new URLSearchParams(qs);
-  const budget = parseList(params.get("budget"))
-    .map(Number)
-    .filter((n): n is BudgetLevel => n === 1 || n === 2 || n === 3);
+  const budget = parseBudgetParam(params.get("budget"));
 
   return {
     cuisine: parseList(params.get("cuisine")).filter((id): id is CuisineId =>
@@ -161,8 +297,14 @@ export type ScoredPlace = {
 const CUISINE_ALIASES: Record<CuisineId, string[]> = {
   moldovan: ["moldovan", "молдав", "moldoven"],
   italian: ["italian", "итальян", "pizza", "pasta"],
-  asian: ["asian", "азиат", "chinese", "japanese", "sushi", "thai"],
+  asian: ["asian", "азиат", "thai", "korean", "vietnamese"],
   european: ["european", "европ", "french", "german"],
+  japanese: ["japanese", "япон", "sushi", "ramen"],
+  chinese: ["chinese", "китай"],
+  mexican: ["mexican", "мексик", "taco"],
+  seafood: ["seafood", "морепрод", "fish", "рыба"],
+  vegetarian: ["vegetarian", "vegan", "вегетар", "plant"],
+  grill: ["grill", "bbq", "steak", "гриль", "шашлык"],
   fast_food: ["fast food", "fast_food", "burger", "street"],
   cafe_sweets: ["cafe", "coffee", "dessert", "sweet", "кондитер", "кофе"],
 };
@@ -170,9 +312,13 @@ const CUISINE_ALIASES: Record<CuisineId, string[]> = {
 const TYPE_ALIASES: Record<RestaurantTypeId, string[]> = {
   restaurant: ["restaurant", "ресторан"],
   cafe: ["cafe", "coffee", "кафе", "кофе"],
-  bar: ["bar", "pub", "бар"],
+  bar: ["bar", "бар"],
   fast_food: ["fast", "burger", "street"],
-  fine_dining: ["fine", "gourmet", "steak"],
+  fine_dining: ["fine", "gourmet", "мишлен"],
+  pub: ["pub", "паб", "beer"],
+  pizzeria: ["pizza", "pizzeria", "пицц"],
+  bakery: ["bakery", "пекар", "bread", "pastry"],
+  wine_bar: ["wine", "вино", "enoteca"],
 };
 
 function placeText(place: MapPlace): string {
@@ -203,14 +349,19 @@ function typeMatches(place: MapPlace, ids: RestaurantTypeId[]): boolean {
   return ids.some((id) => TYPE_ALIASES[id].some((a) => text.includes(a)));
 }
 
-function budgetMatches(place: MapPlace, levels: BudgetLevel[]): boolean {
+function budgetMatches(place: MapPlace, range: BudgetMdlRange | null): boolean {
+  const levels = priceLevelsForMdlRange(range);
   if (!levels.length) return true;
   // Missing price_level: do not hard-exclude (unknown ≠ mismatch).
   if (typeof place.price_level !== "number") return true;
   return levels.includes(place.price_level as BudgetLevel);
 }
 
-function budgetScoreMatches(place: MapPlace, levels: BudgetLevel[]): boolean {
+function budgetScoreMatches(
+  place: MapPlace,
+  range: BudgetMdlRange | null,
+): boolean {
+  const levels = priceLevelsForMdlRange(range);
   if (!levels.length) return false;
   if (typeof place.price_level !== "number") return false;
   return levels.includes(place.price_level as BudgetLevel);
@@ -285,6 +436,21 @@ function occasionBonus(place: MapPlace, occasions: OccasionId[]): number {
       bonus += 6;
     if (o === "business" && price >= 2) bonus += 6;
     if (o === "group" && (place.free_tables ?? 0) >= 2) bonus += 6;
+    if (
+      o === "brunch" &&
+      (text.includes("brunch") || text.includes("cafe") || text.includes("breakfast"))
+    ) {
+      bonus += 7;
+    }
+    if (
+      o === "celebration" &&
+      (price >= 2 || text.includes("party") || text.includes("event"))
+    ) {
+      bonus += 7;
+    }
+    if (o === "solo" && (price <= 2 || text.includes("cafe") || text.includes("bar"))) {
+      bonus += 6;
+    }
   }
   return bonus;
 }
@@ -324,6 +490,17 @@ function scorePlace(
   ) {
     const km = haversineKm(opts.userLat, opts.userLng, place.lat, place.lng);
     score += Math.max(0, 15 - km * 3);
+  }
+  const softText = placeText(place);
+  if (prefs.practical.includes("outdoor") && softText.includes("terrace"))
+    score += 8;
+  if (prefs.practical.includes("parking") && softText.includes("park")) score += 6;
+  if (prefs.practical.includes("wifi") && softText.includes("wifi")) score += 6;
+  if (
+    prefs.practical.includes("kid_friendly") &&
+    (softText.includes("family") || softText.includes("kid"))
+  ) {
+    score += 6;
   }
 
   return score;

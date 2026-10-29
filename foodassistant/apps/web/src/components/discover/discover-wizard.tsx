@@ -5,7 +5,6 @@ import { SiteHeader } from "@/components/site-header";
 import { VenueMap } from "@/components/venue-map";
 import { GuidedChat } from "@/components/discover/guided-chat";
 import { PreferenceStepper } from "@/components/discover/preference-stepper";
-import { PreferenceSummary } from "@/components/discover/preference-summary";
 import { ActiveFiltersBar } from "@/components/discover/active-filters-bar";
 import {
   decodePreferences,
@@ -29,44 +28,31 @@ export function DiscoverWizard() {
     () => decodePreferences(searchParams.toString()),
     [searchParams],
   );
-  const [prefs, setPrefs] = useState(initial);
+  const [prefs, setPrefs] = useState<DiscoverPreferences>(initial);
   const [stepIndex, setStepIndex] = useState(0);
   const [mapVisible, setMapVisible] = useState(hasAnyPreference(initial));
-  const [appliedPrefs, setAppliedPrefs] = useState<DiscoverPreferences | null>(
-    hasAnyPreference(initial) ? initial : null,
-  );
+
+  const filtered = hasAnyPreference(prefs);
 
   useEffect(() => {
-    if (mapVisible) {
-      const t = window.setTimeout(() => scrollToId("discover-map"), 80);
-      return () => window.clearTimeout(t);
-    }
-  }, [mapVisible, appliedPrefs]);
+    if (!mapVisible) return;
+    const t = window.setTimeout(() => scrollToId("discover-map"), 80);
+    return () => window.clearTimeout(t);
+  }, [mapVisible]);
 
-  function revealMap(next: DiscoverPreferences | null) {
-    setAppliedPrefs(next);
+  function showPlaces() {
     setMapVisible(true);
   }
 
-  function showRecommendations() {
-    revealMap(prefs);
-  }
-
-  function browseFullMap() {
-    revealMap(null);
-  }
-
-  function clearMapFilters() {
+  function resetPreferences() {
     setPrefs(emptyPreferences());
-    setAppliedPrefs(null);
-    scrollToId("discover-map");
+    setStepIndex(0);
+    setMapVisible(false);
   }
 
   function editPreferences() {
     scrollToId("discover-top");
   }
-
-  const filtered = Boolean(appliedPrefs && hasAnyPreference(appliedPrefs));
 
   return (
     <div className="discover-page">
@@ -82,6 +68,7 @@ export function DiscoverWizard() {
             prefs={prefs}
             onPrefsChange={setPrefs}
             onStepChange={setStepIndex}
+            onGoToMap={showPlaces}
           />
           <GuidedChat
             prefs={prefs}
@@ -89,31 +76,26 @@ export function DiscoverWizard() {
             collapsedDefault={true}
           />
         </div>
-        <PreferenceSummary
-          prefs={prefs}
-          onShowMap={showRecommendations}
-          onBrowseMap={browseFullMap}
-        />
 
-        {mapVisible && (
+        {mapVisible ? (
           <section className="discover-map-section" id="discover-map">
             <div className="section-heading split">
               <div>
                 <span className="eyebrow">{copy.filtersActive}</span>
-                <h2>{copy.showMap}</h2>
+                <h2>{copy.mapTitle}</h2>
               </div>
-              <p>{copy.lead}</p>
+              <p>{copy.mapBody}</p>
             </div>
-            {filtered && appliedPrefs && (
+            {filtered ? (
               <ActiveFiltersBar
-                prefs={appliedPrefs}
+                prefs={prefs}
                 onEdit={editPreferences}
-                onClear={clearMapFilters}
+                onClear={resetPreferences}
               />
-            )}
-            <VenueMap preferences={filtered ? appliedPrefs ?? undefined : undefined} />
+            ) : null}
+            <VenueMap preferences={filtered ? prefs : undefined} />
           </section>
-        )}
+        ) : null}
       </main>
     </div>
   );

@@ -9,7 +9,7 @@ import { useLocale } from "@/components/locale-provider";
 import { fetchVenues, pickLocale, type Venue } from "@/lib/api";
 
 function BookChooser() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const [venues, setVenues] = useState<Venue[]>([]);
 
   useEffect(() => {
@@ -19,23 +19,26 @@ function BookChooser() {
   }, []);
 
   return (
-    <div className="web-book-chooser">
+    <div className="web-book-chooser venue-page-wrap">
+      <p className="venue-page-kicker">{t("venue.book")}</p>
       <h1>Выберите ресторан</h1>
-      <p>Откройте заведение и забронируйте стол прямо на сайте — полноценная страница, не телефон</p>
+      <p>
+        Откройте заведение и забронируйте стол прямо на сайте
+      </p>
       <ul className="web-book-chooser-list">
         {venues.map((v) => (
           <li key={v.id}>
             <Link href={`/book?venue=${encodeURIComponent(v.id)}`}>
               <strong>{pickLocale(v.name, locale)}</strong>
               <span>
-                ★ {v.rating} · {v.free_tables} своб. · ~{v.average_check} MDL
+                ★ {v.rating} · {v.free_tables} · ~{v.average_check} MDL
               </span>
             </Link>
           </li>
         ))}
       </ul>
       <p className="web-book-chooser-alt">
-        Или откройте ресторан с <Link href="/">карты</Link>
+        Или откройте ресторан с <Link href="/">{t("nav.map").toLowerCase()}</Link>
       </p>
     </div>
   );
@@ -49,10 +52,11 @@ function BookInner() {
 }
 
 export default function BookPage() {
+  const { t } = useLocale();
   return (
-    <div className="book-page web-book-page">
+    <div className="venue-page book-page web-book-page">
       <SiteHeader variant="solid" />
-      <Suspense fallback={<div className="web-book-loading">Loading…</div>}>
+      <Suspense fallback={<div className="venue-page-loading">{t("venue.loading")}</div>}>
         <BookInner />
       </Suspense>
     </div>

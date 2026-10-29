@@ -212,6 +212,15 @@ func (a *API) ListTables(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tables": a.Store.ListTables(c.Param("id"))})
 }
 
+func (a *API) ListVenueSchedule(c *gin.Context) {
+	slots, err := a.Store.ListVenueSchedule(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "venue_not_found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"slots": slots})
+}
+
 func (a *API) ListMenu(c *gin.Context) {
 	items, err := a.Store.ListMenu(c.Param("id"))
 	if err != nil {
@@ -309,11 +318,13 @@ func (a *API) Me(c *gin.Context) {
 }
 
 type updateMeReq struct {
-	FirstName   *string `json:"first_name"`
-	LastName    *string `json:"last_name"`
-	DisplayName *string `json:"display_name"`
-	Phone       *string `json:"phone"`
-	Locale      *string `json:"locale"`
+	FirstName       *string   `json:"first_name"`
+	LastName        *string   `json:"last_name"`
+	DisplayName     *string   `json:"display_name"`
+	Phone           *string   `json:"phone"`
+	Locale          *string   `json:"locale"`
+	DietPreferences *[]string `json:"diet_preferences"`
+	FavoriteVenues  *[]string `json:"favorite_venues"`
 }
 
 func (a *API) UpdateMe(c *gin.Context) {
@@ -323,11 +334,13 @@ func (a *API) UpdateMe(c *gin.Context) {
 		return
 	}
 	u, err := a.Store.UpdateUser(a.userID(c), store.UserProfileUpdate{
-		FirstName:   req.FirstName,
-		LastName:    req.LastName,
-		DisplayName: req.DisplayName,
-		Phone:       req.Phone,
-		Locale:      req.Locale,
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		DisplayName:     req.DisplayName,
+		Phone:           req.Phone,
+		Locale:          req.Locale,
+		DietPreferences: req.DietPreferences,
+		FavoriteVenues:  req.FavoriteVenues,
 	})
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user_not_found"})
@@ -372,7 +385,11 @@ func (a *API) ListReservations(c *gin.Context) {
 }
 
 func (a *API) ConfirmArrival(c *gin.Context) {
-	r, err := a.Store.ConfirmArrival(a.userID(c), c.Param("id"))
+	var body struct {
+		ExpectedArrival *time.Time `json:"expected_arrival"`
+	}
+	_ = c.ShouldBindJSON(&body)
+	r, err := a.Store.ConfirmArrival(a.userID(c), c.Param("id"), body.ExpectedArrival)
 	switch err {
 	case nil:
 		a.triggerCRM()

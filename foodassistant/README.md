@@ -15,9 +15,10 @@
 
 | Часть | Назначение | Адрес / путь |
 |---|---|---|
-| Публичный сайт | Презентация, карта, discover | http://localhost/ |
+| Публичный сайт | Презентация, карта (`map/places`), discover wizard | http://localhost/ · `/discover` · `/#map` |
 | Кабинет владельца | Анкета, фото, статус, бронирования и история | http://localhost/cabinet |
 | Гостевой web | Карточка ресторана и план столиков (`/venues/…`, `/book`) | http://localhost/ |
+| Гостевой кабинет (web) | Профиль: имя, тема, избранное, аллергии, оплата, 18+ (UI / localStorage) | http://localhost/account |
 | Админка | Модерация и публикация | http://localhost/admin |
 | Android | Карта, рестораны, план зала и бронирование | `apps/mobile` |
 | API | Пользователи, анкеты, рестораны, столики, брони и CRM sync | `services/api` |
@@ -26,6 +27,16 @@
 Сайт: RU / EN / RO (язык в браузере + кабинет).
 
 > Примечание: в старых заметках встречался `/demo`. Актуальные гостевые сценарии на сайте — через карту, `/venues/[id]`, `/book`, `/discover`.
+
+## TODO features (guest profile)
+
+Local / UI-only in the current web guest cabinet — still to build on the backend:
+
+- [ ] Favorites sync (API + DB; replace `localStorage`)
+- [ ] Allergies / diet on `User` + `updateMe`
+- [ ] Adult 18+ fields (`adult_preorder_allowed`, verifier metadata) + staff grant API
+- [ ] Real payment methods / gateway (replace placeholders)
+- [ ] Optional: follow `prefers-color-scheme` when the user has not chosen a theme
 
 ---
 

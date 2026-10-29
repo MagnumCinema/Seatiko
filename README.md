@@ -76,7 +76,7 @@ curl http://localhost/healthz
 | http://localhost/ | сайт |
 | http://localhost/cabinet | кабинет владельца |
 | http://localhost/admin | модерация |
-| http://localhost/discover | подбор предпочтений (web) |
+| http://localhost/discover | подбор предпочтений (web wizard → карта) |
 | http://crm.localhost/ | Twenty CRM |
 
 Подробности: [`docs/ENGINEERING.md`](docs/ENGINEERING.md).

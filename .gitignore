@@ -24,3 +24,6 @@ dist/
 
 # Git worktrees (local checkouts)
 .worktrees/
+
+# Local brainstorm / visual companion sessions
+.superpowers/

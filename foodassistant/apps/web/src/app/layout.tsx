@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import "./premium.css";
 import { LocaleProvider } from "@/components/locale-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const sans = Manrope({
   variable: "--font-sans",
@@ -30,9 +31,15 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" className={`${sans.variable} ${display.variable} ${inter.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-[#0f1410] text-[#f3efe6] antialiased">
-        <LocaleProvider>{children}</LocaleProvider>
+    <html
+      lang="ru"
+      className={`${sans.variable} ${display.variable} ${inter.variable} h-full`}
+      data-theme="dark"
+    >
+      <body className="min-h-full flex flex-col antialiased site-body">
+        <LocaleProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

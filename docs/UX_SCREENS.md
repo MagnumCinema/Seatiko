@@ -290,6 +290,43 @@ Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)
 
 ## 7. Discover (Tab 2) 🔓
 
+> **Web (актуально):** первичный CTA лендинга ведёт на **`/discover`** — мастер предпочтений (stepper + scripted chat), затем редирект на карту с фильтрами и ранжированием. См. `APP_LOGIC.md` §5.2.  
+> **Mobile Tab 2 / AI-чат / праздничные подборки** — целевая модель ниже; LLM и кураторские коллекции — следующие фазы.
+
+### 7.1. Web: `/discover` → карта
+
+```
+┌─────────────────────────────┐
+│ Что вы ищете?               │
+│ [Смотреть карту]            │
+├─────────────────────────────┤
+│ Stepper: кухня → тип →      │
+│ бюджет → повод → практика   │
+│ [chips multi-select]        │
+├─────────────────────────────┤
+│ «Попросить помощи» (чат)    │
+│ scripted chips, без LLM     │
+├─────────────────────────────┤
+│ Ваш выбор · [Показать…]     │
+└─────────────────────────────┘
+         │ Show map
+         ▼
+   /?cuisine=…&budget=…#map
+   Active filters · fit rank
+```
+
+| Действие | Переход |
+|----------|---------|
+| Show recommendations | → `/?…#map` — фильтр + fit-score, бар «Активные предпочтения» |
+| Browse map / Skip | → `/#map` без фильтров |
+| Edit на карте | → `/discover` с восстановленными prefs |
+| Clear на карте | → полный каталог `map/places` |
+
+**Платформа v1:** web. Flutter parity — позже, та же модель `DiscoverPreferences`.  
+**API:** новых endpoint’ов нет; клиент фильтрует `GET /api/v1/map/places`. `POST /discover/ai` остаётся для keyword/AI (mobile / фаза LLM).
+
+### 7.2. Mobile / целевой Tab «Подбор»
+
 ```
 ┌─────────────────────────────┐
 │ Что хочешь сегодня?         │
@@ -315,7 +352,7 @@ Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)
 | Holiday card | → Holiday Collection → Venue list |
 | Quick filter | → Filtered map / list |
 
-**Лимит без auth:** 3 AI-запроса/день → Auth Modal
+**Лимит без auth (AI):** 3 AI-запроса/день → Auth Modal
 
 ---
 
@@ -444,15 +481,15 @@ Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)
 - Cart FAB with badge  
 - **Cart screen:** items, комментарий, «Отправить на кухню»
 
-**Алкоголь в меню:**
+**Товары 18+ в меню** (`requires_age_18`; алкоголь — частный случай с `contains_alcohol`):
 
-| Контекст | Алкоголь |
-|----------|----------|
-| Сессия за столом (QR) | ✅ Доступен (заказ в зале) |
-| Предзаказ к брони | ✅ только при `alcohol_preorder_allowed` |
-| Без разрешения | Позиции скрыты или disabled + подсказка «Алкоголь можно заказать только в ресторане» |
+| Контекст | Позиции `requires_age_18` |
+|----------|---------------------------|
+| Сессия за столом (QR) | ✅ Доступны (заказ в зале; алкоголь — очная проверка при подаче) |
+| Предзаказ к брони | ✅ только при `adult_preorder_allowed` (alias: `alcohol_preorder_allowed`) |
+| Без разрешения | Позиции скрыты или disabled + подсказка про подтверждение возраста staff |
 
-См. `APP_LOGIC.md` §8.4 — подтверждение совершеннолетия staff, grant/revoke, поля в БД.
+См. `APP_LOGIC.md` §8.4 — staff grant, персональная ответственность, поля в БД.
 
 ---
 
@@ -481,6 +518,8 @@ Tap → соответствующий detail / session
 
 ## 13. Profile (Tab 4) 🔒
 
+> **Web:** тот же UI доступен по `/account` (общий компонент `GuestProfile` с Tab 4).
+
 ```
 ┌─────────────────────────────┐
 │ Профиль                     │
@@ -493,6 +532,7 @@ Tap → соответствующий detail / session
 │ Аллергии / диета          — │
 │ Способы оплаты            → │
 │ Избранное                 → │
+│ Возраст 18+      (read-only)│
 ├─────────────────────────────┤
 │ [Выход из аккаунта]         │
 └─────────────────────────────┘
@@ -504,7 +544,11 @@ Tap → соответствующий detail / session
 | Фамилия | ✅ | `last_name` |
 | Как обращаться | ✅ | `display_name` |
 | Язык | ✅ (отдельный picker) | `locale` |
-| Аллергии / диета | → экран настроек | `diet_preferences` |
+| Тема (dark/light) | ✅ header / profile toggle | `localStorage` `fa-theme` (web) |
+| Аллергии / диета | → панель / настройки | web v1: `localStorage` по `user.id`; API `diet_preferences` — TODO |
+| Способы оплаты | → панель (placeholder) | UI only до gateway |
+| Избранное | → панель | web v1: `localStorage`; sync API — TODO |
+| Возраст 18+ / предзаказ 18+ | ❌ только просмотр | `adult_preorder_allowed` + who/when/venue |
 | Выход из аккаунта | — | logout |
 
 ---
@@ -532,7 +576,7 @@ Trigger: бронь, заказ, QR session, Orders tab, Profile tab, AI limit, 
 | Call detail | Стол, причина, «Принять» |
 | Table detail | Orders, mark served |
 | Manual order | Add items to table |
-| **Client / Guest card** | Подтвердить совершеннолетие · Grant/Revoke предзаказ алкоголя |
+| **Client / Guest card** | Подтвердить совершеннолетие · Grant/Revoke предзаказ **товаров 18+** (алкоголь и прочие) · **предупреждение: grant на вашем staff-аккаунте и вашей ответственности** |
 
 ---
 
@@ -542,8 +586,8 @@ Trigger: бронь, заказ, QR session, Orders tab, Profile tab, AI limit, 
 |---------|---------|
 | Floor live map | Drag-drop, manual status |
 | Reservations | Today queue |
-| Menu CMS | Categories, items, stop-list, **`contains_alcohol`** |
-| **Clients** | Профиль гостя · alcohol preorder grant/revoke · audit log |
+| Menu CMS | Categories, items, stop-list, **`requires_age_18`**, **`contains_alcohol`** |
+| **Clients** | Профиль гостя · adult/18+ preorder grant/revoke · audit log |
 | QR generator | Print table QR |
 | Analytics | Occupancy, revenue |
 

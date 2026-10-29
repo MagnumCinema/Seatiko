@@ -155,9 +155,11 @@ type User struct {
 	LastName     string    `json:"last_name"`
 	DisplayName  string    `json:"display_name"`
 	Locale       string    `json:"locale"`
-	Role         string    `json:"role"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Role            string    `json:"role"`
+	DietPreferences []string  `json:"diet_preferences,omitempty"`
+	FavoriteVenues  []string  `json:"favorite_venues,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type ApplicationStatus string
@@ -237,6 +239,7 @@ type Reservation struct {
 	Status             ReservationStatus `json:"status"`
 	Source             string            `json:"source"`
 	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
+	ExpectedArrival    *time.Time        `json:"expected_arrival,omitempty"`
 	CreatedAt          time.Time         `json:"created_at"`
 	UpdatedAt          time.Time         `json:"updated_at"`
 	// Guest list enrichment (filled on read, not persisted separately).
@@ -260,6 +263,16 @@ type RestaurantReservation struct {
 	Status             ReservationStatus `json:"status"`
 	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
 	CreatedAt          time.Time         `json:"created_at"`
+}
+
+// VenueScheduleSlot is the public busy window for a table — no guest PII.
+type VenueScheduleSlot struct {
+	ID          string    `json:"id"`
+	TableID     string    `json:"table_id"`
+	TableNumber int       `json:"table_number"`
+	StartsAt    time.Time `json:"starts_at"`
+	EndsAt      time.Time `json:"ends_at"`
+	Kind        string    `json:"kind"` // RESERVATION | OCCUPIED
 }
 
 type TableWatch struct {

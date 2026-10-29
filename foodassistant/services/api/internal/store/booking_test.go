@@ -45,7 +45,7 @@ func TestCreateReservationAndQRSession(t *testing.T) {
 		t.Fatalf("table status = %s", table.Status)
 	}
 
-	confirmed, err := mem.ConfirmArrival(guest.ID, reservation.ID)
+	confirmed, err := mem.ConfirmArrival(guest.ID, reservation.ID, nil)
 	if err != nil {
 		t.Fatalf("confirm arrival: %v", err)
 	}
