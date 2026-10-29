@@ -2,14 +2,12 @@
 
 import { useId, useMemo, useState } from "react";
 import type { Table } from "@/lib/api";
-import { listZonesFromTables, normalizeZone, zoneLabel } from "@/lib/floor-zones";
-
-const STATUS_LABEL: Record<Table["status"], string> = {
-  FREE: "Свободен",
-  RESERVED: "Забронирован",
-  OCCUPIED: "Занят",
-  CLEANING: "Уборка",
-};
+import { useLocale, type MessageKey } from "@/components/locale-provider";
+import {
+  listZonesFromTables,
+  normalizeZone,
+  zoneLabel as fallbackZoneLabel,
+} from "@/lib/floor-zones";
 
 export function tableStatusClass(status: Table["status"] | string | undefined) {
   switch (status) {
@@ -64,19 +62,52 @@ export function SeatingMarks({ seats }: { seats: number }) {
   );
 }
 
+const ZONE_KEYS: Record<string, MessageKey> = {
+  hall: "floor.zone.hall",
+  terrace: "floor.zone.terrace",
+  street: "floor.zone.street",
+  garden: "floor.zone.garden",
+  bar: "floor.zone.bar",
+};
+
+const STATUS_KEYS: Record<Table["status"], MessageKey> = {
+  FREE: "table.status_free",
+  RESERVED: "table.status_reserved",
+  OCCUPIED: "table.status_occupied",
+  CLEANING: "floor.leg_clean",
+};
+
 export function TableFloorPlan({
   tables,
   selectedId,
   compact = false,
   onTableClick,
   bookHref,
+  onReserve,
+  onNotifyFree,
+  onImComing,
+  notifySetIds,
+  comingArrivalById,
+  comingSetIds,
+  sheetMessage,
+  hideSheet = false,
 }: {
   tables: Table[];
   selectedId?: string;
   compact?: boolean;
   onTableClick?: (table: Table) => void;
   bookHref?: string;
+  onReserve?: (table: Table) => void;
+  onNotifyFree?: (table: Table) => void;
+  onImComing?: (table: Table) => void;
+  notifySetIds?: Set<string>;
+  comingArrivalById?: Record<string, string>;
+  comingSetIds?: Set<string>;
+  sheetMessage?: string | null;
+  /** When true, reservation actions are rendered outside (see TableReserveSheet). */
+  hideSheet?: boolean;
 }) {
+  const { t, locale } = useLocale();
   const tipId = useId();
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [localSelected, setLocalSelected] = useState<string | null>(selectedId ?? null);
@@ -88,27 +119,61 @@ export function TableFloorPlan({
   }
 
   const visible = useMemo(
-    () => tables.filter((t) => normalizeZone(t.zone) === activeZone),
+    () => tables.filter((table) => normalizeZone(table.zone) === activeZone),
     [tables, activeZone],
   );
 
+  function zLabel(zone?: string | null) {
+    const id = normalizeZone(zone);
+    const key = ZONE_KEYS[id];
+    return key ? t(key) : fallbackZoneLabel(zone);
+  }
+
+  function statusLabel(status: Table["status"]) {
+    return t(STATUS_KEYS[status]);
+  }
+
+  function formatClock(value?: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  }
+
   const activeId = selectedId ?? localSelected;
-  const active = tables.find((t) => t.id === activeId) ?? null;
-  const hovered = tables.find((t) => t.id === hoverId) ?? null;
-  const tipTable = hovered ?? (active && normalizeZone(active.zone) === activeZone ? active : null);
+  const active = tables.find((table) => table.id === activeId) ?? null;
+  const hovered = tables.find((table) => table.id === hoverId) ?? null;
+  const tipTable =
+    hovered ?? (active && normalizeZone(active.zone) === activeZone ? active : null);
 
   function handleSelect(table: Table) {
     setLocalSelected(table.id);
     onTableClick?.(table);
   }
 
+  const notifyDone = active ? notifySetIds?.has(active.id) : false;
+  const comingArrivalIso = active
+    ? comingArrivalById?.[active.id]
+    : undefined;
+  const comingDone = Boolean(
+    comingArrivalIso || (active && comingSetIds?.has(active.id)),
+  );
+  const comingTimeLabel = comingArrivalIso
+    ? new Date(comingArrivalIso).toLocaleTimeString(locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : active
+      ? formatClock(active.reserved_for)
+      : "—";
+
   return (
     <div className={`fa-floor schematic ${compact ? "compact" : ""}`}>
       {zones.length > 1 && (
-        <div className="floor-zone-tabs guest" role="tablist" aria-label="Зоны заведения">
+        <div className="floor-zone-tabs guest" role="tablist" aria-label={t("floor.zones")}>
           {zones.map((zone) => {
             const free = tables.filter(
-              (t) => normalizeZone(t.zone) === zone && t.status === "FREE",
+              (table) => normalizeZone(table.zone) === zone && table.status === "FREE",
             ).length;
             return (
               <button
@@ -119,8 +184,8 @@ export function TableFloorPlan({
                 className={activeZone === zone ? "on" : ""}
                 onClick={() => setActiveZone(zone)}
               >
-                {zoneLabel(zone)}
-                <small>{free} своб.</small>
+                {zLabel(zone)}
+                <small>{t("floor.free_short", { count: free })}</small>
               </button>
             );
           })}
@@ -130,16 +195,18 @@ export function TableFloorPlan({
       <div
         className="fa-floor-room schematic"
         role="application"
-        aria-label={`План · ${zoneLabel(activeZone)}`}
+        aria-label={t("floor.plan", { zone: zLabel(activeZone) })}
       >
         <div className="fa-floor-zone bar" aria-hidden>
-          BAR
+          {t("floor.bar")}
         </div>
         <div className="fa-floor-zone kitchen" aria-hidden>
-          {activeZone === "street" || activeZone === "terrace" ? "Снаружи" : "Кухня"}
+          {activeZone === "street" || activeZone === "terrace"
+            ? t("floor.outside")
+            : t("floor.kitchen")}
         </div>
         <div className="fa-floor-zone entrance" aria-hidden>
-          Вход ↑
+          {t("floor.entrance")}
         </div>
 
         {visible.map((table, index) => {
@@ -169,7 +236,7 @@ export function TableFloorPlan({
               }}
               aria-pressed={isSelected}
               aria-describedby={tipTable?.id === table.id ? tipId : undefined}
-              aria-label={`Стол №${table.number}, ${table.seats} мест, ${STATUS_LABEL[table.status]}, ${zoneLabel(table.zone)}`}
+              aria-label={t("table.title", { n: table.number })}
               onMouseEnter={() => setHoverId(table.id)}
               onMouseLeave={() => setHoverId((id) => (id === table.id ? null : id))}
               onFocus={() => setHoverId(table.id)}
@@ -183,44 +250,237 @@ export function TableFloorPlan({
         })}
 
         {visible.length === 0 && (
-          <div className="fa-floor-empty">В зоне «{zoneLabel(activeZone)}» пока нет столов</div>
+          <div className="fa-floor-empty">
+            {t("floor.empty", { zone: zLabel(activeZone) })}
+          </div>
         )}
 
         {tipTable && (
           <div id={tipId} className="fa-floor-tip schematic" role="status">
             <div className="fa-floor-tip-top">
-              <strong>Стол №{tipTable.number}</strong>
+              <strong>{t("table.title", { n: tipTable.number })}</strong>
               <span className={`fa-floor-tip-status ${tableStatusClass(tipTable.status)}`}>
-                {STATUS_LABEL[tipTable.status]}
+                {statusLabel(tipTable.status)}
               </span>
             </div>
             <p>
-              {zoneLabel(tipTable.zone)} · {tipTable.seats} мест
-              {tipTable.status === "FREE" ? " · можно забронировать" : ""}
+              {zLabel(tipTable.zone)} · {t("table.seats", { n: tipTable.seats })}
+              {tipTable.status === "FREE" ? t("floor.bookable") : ""}
+              {tipTable.status === "OCCUPIED"
+                ? ` · ${t("table.arrived_at", { time: formatClock(tipTable.occupied_since) })}`
+                : ""}
+              {tipTable.status === "RESERVED"
+                ? ` · ${t("table.reserved_for", { time: formatClock(tipTable.reserved_for) })}`
+                : ""}
             </p>
           </div>
         )}
       </div>
 
-      {active && (
-        <div className="fa-floor-sheet schematic">
-          <div>
-            <p className="fa-floor-sheet-kicker">
-              Выбранный стол · {zoneLabel(active.zone)}
-            </p>
-            <strong>№{active.number}</strong>
-            <span className={`fa-floor-tip-status ${tableStatusClass(active.status)}`}>
-              {STATUS_LABEL[active.status]}
-            </span>
-            <small>{active.seats} мест за столом</small>
-          </div>
-          {bookHref && active.status === "FREE" ? (
-            <a className="fa-floor-sheet-cta" href={bookHref}>
-              Забронировать
-            </a>
-          ) : null}
-        </div>
+      {active && !hideSheet && (
+        <TableReserveSheet
+          table={active}
+          bookHref={bookHref}
+          onReserve={onReserve}
+          onNotifyFree={onNotifyFree}
+          onImComing={onImComing}
+          notifyDone={notifyDone}
+          comingDone={comingDone}
+          comingTimeLabel={comingTimeLabel}
+          sheetMessage={sheetMessage}
+        />
       )}
+    </div>
+  );
+}
+
+export function TableReserveSheet({
+  table,
+  bookHref,
+  onReserve,
+  onNotifyFree,
+  onImComing,
+  notifyDone = false,
+  comingDone = false,
+  comingTimeLabel,
+  sheetMessage,
+  className = "",
+}: {
+  table: Table;
+  bookHref?: string;
+  onReserve?: (table: Table) => void;
+  onNotifyFree?: (table: Table) => void;
+  onImComing?: (table: Table) => void;
+  notifyDone?: boolean;
+  comingDone?: boolean;
+  comingTimeLabel?: string;
+  sheetMessage?: string | null;
+  className?: string;
+}) {
+  const { t, locale } = useLocale();
+
+  function zLabel(zone?: string | null) {
+    const id = normalizeZone(zone);
+    const key = ZONE_KEYS[id];
+    return key ? t(key) : fallbackZoneLabel(zone);
+  }
+
+  function statusLabel(status: Table["status"]) {
+    return t(STATUS_KEYS[status]);
+  }
+
+  function formatClock(value?: string | null) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function handleReserve() {
+    if (onReserve) {
+      onReserve(table);
+      return;
+    }
+    if (bookHref) {
+      window.location.assign(bookHref);
+    }
+  }
+
+  const arrivalLabel =
+    comingTimeLabel ?? formatClock(table.reserved_for);
+
+  return (
+    <div className={`fa-floor-sheet schematic ${className}`.trim()}>
+      <div className="fa-floor-sheet-main">
+        <p className="fa-floor-sheet-kicker">
+          {t("floor.selected", { zone: zLabel(table.zone) })}
+        </p>
+
+        <div className="fa-floor-sheet-title">
+          <strong>{t("table.title", { n: table.number })}</strong>
+          <span className={`fa-floor-tip-status ${tableStatusClass(table.status)}`}>
+            {statusLabel(table.status)}
+          </span>
+        </div>
+
+        <ul className="fa-floor-sheet-meta">
+          <li>
+            <span>{t("floor.sheet_zone")}</span>
+            <b>{zLabel(table.zone)}</b>
+          </li>
+          <li>
+            <span>{t("floor.sheet_seats")}</span>
+            <b>{table.seats}</b>
+          </li>
+          <li>
+            <span>{t("floor.sheet_status")}</span>
+            <b>{statusLabel(table.status)}</b>
+          </li>
+        </ul>
+
+        {table.status === "FREE" && (
+          <div className="fa-floor-sheet-facts">
+            <p className="fa-floor-sheet-lead">{t("floor.sheet_free_lead")}</p>
+            <p>{t("floor.sheet_free_body")}</p>
+          </div>
+        )}
+
+        {table.status === "OCCUPIED" && (
+          <div className="fa-floor-sheet-facts">
+            <p className="fa-floor-sheet-lead">
+              {t("table.arrived_at", { time: formatClock(table.occupied_since) })}
+            </p>
+            <p>{t("table.arrived_hint")}</p>
+            <p>{t("floor.sheet_occupied_body")}</p>
+          </div>
+        )}
+
+        {table.status === "RESERVED" && (
+          <div className="fa-floor-sheet-facts">
+            <p className="fa-floor-sheet-lead">
+              {t("table.reserved_for", { time: formatClock(table.reserved_for) })}
+            </p>
+            <ul>
+              <li>
+                {t("table.rule_session_start", {
+                  time: formatClock(
+                    table.reserved_for
+                      ? new Date(
+                          new Date(table.reserved_for).getTime() - 60 * 60_000,
+                        ).toISOString()
+                      : undefined,
+                  ),
+                })}
+              </li>
+              <li>
+                {t("table.rule_release", {
+                  time: formatClock(
+                    table.reserved_for
+                      ? new Date(
+                          new Date(table.reserved_for).getTime() - 15 * 60_000,
+                        ).toISOString()
+                      : undefined,
+                  ),
+                })}
+              </li>
+            </ul>
+          </div>
+        )}
+
+        {table.status === "CLEANING" && (
+          <div className="fa-floor-sheet-facts">
+            <p className="fa-floor-sheet-lead">{t("floor.sheet_cleaning_lead")}</p>
+            <p>{t("floor.sheet_cleaning_body")}</p>
+          </div>
+        )}
+
+        {sheetMessage ? (
+          <p className="fa-floor-sheet-msg">{sheetMessage}</p>
+        ) : null}
+      </div>
+
+      <div className="fa-floor-sheet-actions">
+        {table.status === "FREE" && (onReserve || bookHref) ? (
+          onReserve ? (
+            <button
+              type="button"
+              className="fa-floor-sheet-cta"
+              onClick={handleReserve}
+            >
+              {t("table.book_this")}
+            </button>
+          ) : (
+            <a className="fa-floor-sheet-cta" href={bookHref}>
+              {t("table.book_this")}
+            </a>
+          )
+        ) : null}
+        {table.status === "OCCUPIED" && onNotifyFree ? (
+          <button
+            type="button"
+            className="fa-floor-sheet-cta ghost"
+            disabled={notifyDone}
+            onClick={() => onNotifyFree(table)}
+          >
+            {notifyDone ? t("table.notify_set") : `🔔 ${t("table.notify_free")}`}
+          </button>
+        ) : null}
+        {table.status === "RESERVED" && onImComing ? (
+          <button
+            type="button"
+            className="fa-floor-sheet-cta ghost"
+            disabled={comingDone}
+            onClick={() => onImComing(table)}
+          >
+            {comingDone
+              ? t("table.im_coming_set", { time: arrivalLabel })
+              : `✓ ${t("table.im_coming")}`}
+          </button>
+        ) : null}
+        {table.status === "CLEANING" ? (
+          <p className="fa-floor-sheet-actions-note">{t("floor.sheet_cleaning_wait")}</p>
+        ) : null}
+      </div>
     </div>
   );
 }

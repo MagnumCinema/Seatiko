@@ -210,6 +210,8 @@ func (s *MemoryStore) seed() {
 	now := time.Now()
 	occupied := now.Add(-40 * time.Minute)
 	reserved := now.Add(45 * time.Minute)
+	reservedDemo := now.Add(50 * time.Minute)
+	resDemoID := "res-demo-venue-2-t7"
 
 	tables := []models.Table{
 		{ID: "t1", VenueID: "venue-1", Number: 1, Seats: 2, Status: models.TableFree, X: 0.2, Y: 0.3, Zone: "hall"},
@@ -218,7 +220,7 @@ func (s *MemoryStore) seed() {
 		{ID: "t4", VenueID: "venue-1", Number: 4, Seats: 6, Status: models.TableReserved, ReservedFor: &reserved, X: 0.35, Y: 0.65, Zone: "terrace"},
 		{ID: "t5", VenueID: "venue-1", Number: 5, Seats: 2, Status: models.TableFree, X: 0.65, Y: 0.65, Zone: "terrace"},
 		{ID: "t6", VenueID: "venue-2", Number: 1, Seats: 2, Status: models.TableFree, X: 0.3, Y: 0.4, Zone: "hall"},
-		{ID: "t7", VenueID: "venue-2", Number: 2, Seats: 2, Status: models.TableFree, X: 0.6, Y: 0.4, Zone: "hall"},
+		{ID: "t7", VenueID: "venue-2", Number: 2, Seats: 2, Status: models.TableReserved, ReservedFor: &reservedDemo, ReservationID: &resDemoID, X: 0.6, Y: 0.4, Zone: "hall"},
 		{ID: "t8", VenueID: "venue-2", Number: 3, Seats: 4, Status: models.TableFree, X: 0.45, Y: 0.7, Zone: "street"},
 		{ID: "t9", VenueID: "venue-2", Number: 4, Seats: 2, Status: models.TableOccupied, OccupiedSince: &occupied, X: 0.75, Y: 0.7, Zone: "street"},
 		{ID: "t10", VenueID: "venue-2", Number: 5, Seats: 6, Status: models.TableFree, X: 0.2, Y: 0.75, Zone: "street"},
@@ -233,6 +235,47 @@ func (s *MemoryStore) seed() {
 	}
 	for id := range s.venues {
 		s.refreshFreeTablesLocked(id)
+	}
+
+	s.reservations[resDemoID] = models.Reservation{
+		ID:          resDemoID,
+		UserID:      "user-guest-demo",
+		VenueID:     "venue-2",
+		TableID:     "t7",
+		Guests:      2,
+		ReservedFor: reservedDemo.UTC(),
+		Status:      models.ReservationConfirmed,
+		Source:      models.ReservationSourceWeb,
+		CreatedAt:   now.UTC(),
+		UpdatedAt:   now.UTC(),
+	}
+
+	// Extra venue-2 bookings for the owner day-calendar demo (today).
+	calSlots := []struct {
+		id      string
+		tableID string
+		guests  int
+		at      time.Time
+		status  models.ReservationStatus
+	}{
+		{"res-demo-venue-2-cal-12", "t6", 2, time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location()), models.ReservationConfirmed},
+		{"res-demo-venue-2-cal-1430", "t8", 4, time.Date(now.Year(), now.Month(), now.Day(), 14, 30, 0, 0, now.Location()), models.ReservationConfirmed},
+		{"res-demo-venue-2-cal-18", "t10", 6, time.Date(now.Year(), now.Month(), now.Day(), 18, 0, 0, 0, now.Location()), models.ReservationConfirmed},
+		{"res-demo-venue-2-cal-20", "t6", 2, time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, now.Location()), models.ReservationCheckedIn},
+	}
+	for _, slot := range calSlots {
+		s.reservations[slot.id] = models.Reservation{
+			ID:          slot.id,
+			UserID:      "user-guest-demo",
+			VenueID:     "venue-2",
+			TableID:     slot.tableID,
+			Guests:      slot.guests,
+			ReservedFor: slot.at.UTC(),
+			Status:      slot.status,
+			Source:      models.ReservationSourceWeb,
+			CreatedAt:   now.UTC(),
+			UpdatedAt:   now.UTC(),
+		}
 	}
 
 	menu := []models.MenuItem{
@@ -614,7 +657,7 @@ func (s *MemoryStore) CreateReservation(userID, venueID, tableID string, guests 
 	return res, nil
 }
 
-func (s *MemoryStore) ConfirmArrival(userID, reservationID string) (models.Reservation, error) {
+func (s *MemoryStore) ConfirmArrival(userID, reservationID string, expectedArrival *time.Time) (models.Reservation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.persistBestEffortLocked()
@@ -628,6 +671,13 @@ func (s *MemoryStore) ConfirmArrival(userID, reservationID string) (models.Reser
 	}
 	if r.Status != models.ReservationConfirmed {
 		return models.Reservation{}, ErrConflict
+	}
+	if expectedArrival != nil {
+		ea := expectedArrival.UTC()
+		if ea.After(r.ReservedFor) {
+			return models.Reservation{}, ErrConflict
+		}
+		r.ExpectedArrival = &ea
 	}
 	now := time.Now().UTC()
 	r.ArrivalConfirmedAt = &now
@@ -1229,6 +1279,74 @@ func (s *MemoryStore) ListApplicationActivity(requesterID, appID string) ([]mode
 
 	out := append([]models.ApplicationActivity(nil), s.activities[appID]...)
 	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
+	return out, nil
+}
+
+func (s *MemoryStore) ListVenueSchedule(venueID string) ([]models.VenueScheduleSlot, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if _, ok := s.venues[venueID]; !ok {
+		return nil, ErrNotFound
+	}
+
+	const slotMinutes = 90
+	out := make([]models.VenueScheduleSlot, 0)
+
+	for _, reservation := range s.reservations {
+		if reservation.VenueID != venueID {
+			continue
+		}
+		if reservation.Status == models.ReservationCancelled || reservation.Status == models.ReservationNoShow {
+			continue
+		}
+		table := s.tables[reservation.TableID]
+		start := reservation.ReservedFor
+		end := start.Add(slotMinutes * time.Minute)
+		out = append(out, models.VenueScheduleSlot{
+			ID:          reservation.ID,
+			TableID:     reservation.TableID,
+			TableNumber: table.Number,
+			StartsAt:    start,
+			EndsAt:      end,
+			Kind:        "RESERVATION",
+		})
+	}
+
+	for _, table := range s.tables {
+		if table.VenueID != venueID || table.Status != models.TableOccupied || table.OccupiedSince == nil {
+			continue
+		}
+		// Skip if already covered by a reservation slot for the same table overlapping now.
+		start := table.OccupiedSince.UTC()
+		end := start.Add(slotMinutes * time.Minute)
+		// Stale occupied markers (ended long ago) should not pollute the day board.
+		if end.Before(time.Now().UTC().Add(-2 * time.Hour)) {
+			continue
+		}
+		covered := false
+		for _, slot := range out {
+			if slot.TableID == table.ID && !end.Before(slot.StartsAt) && !start.After(slot.EndsAt) {
+				covered = true
+				break
+			}
+		}
+		if covered {
+			continue
+		}
+		out = append(out, models.VenueScheduleSlot{
+			ID:          "occ-" + table.ID,
+			TableID:     table.ID,
+			TableNumber: table.Number,
+			StartsAt:    start,
+			EndsAt:      end,
+			Kind:        "OCCUPIED",
+		})
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].StartsAt.Before(out[j].StartsAt)
+	})
 	return out, nil
 }
 

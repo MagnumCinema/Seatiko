@@ -1,4 +1,4 @@
-# Guest personal profile (cabinet) — web
+1# Guest personal profile (cabinet) — web
 
 Date: 2026-09-07  
 Status: approved for implementation after user review of this spec

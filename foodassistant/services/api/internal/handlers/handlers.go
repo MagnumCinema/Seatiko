@@ -212,6 +212,15 @@ func (a *API) ListTables(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tables": a.Store.ListTables(c.Param("id"))})
 }
 
+func (a *API) ListVenueSchedule(c *gin.Context) {
+	slots, err := a.Store.ListVenueSchedule(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "venue_not_found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"slots": slots})
+}
+
 func (a *API) ListMenu(c *gin.Context) {
 	items, err := a.Store.ListMenu(c.Param("id"))
 	if err != nil {
@@ -372,7 +381,11 @@ func (a *API) ListReservations(c *gin.Context) {
 }
 
 func (a *API) ConfirmArrival(c *gin.Context) {
-	r, err := a.Store.ConfirmArrival(a.userID(c), c.Param("id"))
+	var body struct {
+		ExpectedArrival *time.Time `json:"expected_arrival"`
+	}
+	_ = c.ShouldBindJSON(&body)
+	r, err := a.Store.ConfirmArrival(a.userID(c), c.Param("id"), body.ExpectedArrival)
 	switch err {
 	case nil:
 		a.triggerCRM()

@@ -22,7 +22,7 @@ import {
 } from "@/lib/api";
 
 export function WebBooking({ venueId }: { venueId: string }) {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [selected, setSelected] = useState<Table | null>(null);
@@ -50,17 +50,14 @@ export function WebBooking({ venueId }: { venueId: string }) {
     queueMicrotask(() => {
       if (alive) setLoading(true);
     });
-    Promise.all([
-      fetchVenue(venueId),
-      fetchTables(venueId),
-    ])
+    Promise.all([fetchVenue(venueId), fetchTables(venueId)])
       .then(([v, tb]) => {
         if (!alive) return;
         setVenue(v);
         setTables(tb);
       })
       .catch(() => {
-        if (alive) setError("Ресторан не найден");
+        if (alive) setError("not_found");
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -71,7 +68,7 @@ export function WebBooking({ venueId }: { venueId: string }) {
   }, [venueId]);
 
   const freeCount = useMemo(
-    () => tables.filter((t) => t.status === "FREE").length,
+    () => tables.filter((table) => table.status === "FREE").length,
     [tables],
   );
   const zones = useMemo(() => listZonesFromTables(tables), [tables]);
@@ -103,7 +100,7 @@ export function WebBooking({ venueId }: { venueId: string }) {
       }
       setAuthOpen(false);
     } catch (e) {
-      setError(e instanceof ApiError ? e.code : "Ошибка входа");
+      setError(e instanceof ApiError ? e.code : "auth_failed");
     } finally {
       setBusy(false);
     }
@@ -126,7 +123,7 @@ export function WebBooking({ venueId }: { venueId: string }) {
       if (e instanceof ApiError && e.status === 401) {
         setAuthOpen(true);
       } else {
-        setError(e instanceof ApiError ? e.code : "Не удалось забронировать");
+        setError(e instanceof ApiError ? e.code : "book_failed");
       }
     } finally {
       setBusy(false);
@@ -134,34 +131,38 @@ export function WebBooking({ venueId }: { venueId: string }) {
   }
 
   if (loading) {
-    return <div className="web-book-loading">Загружаем ресторан…</div>;
+    return <div className="venue-page-loading">{t("venue.loading")}</div>;
   }
+
   if (!venue) {
     return (
-      <div className="web-book-loading">
-        <p>{error || "Ресторан не найден"}</p>
-        <Link href="/">На карту</Link>
+      <div className="venue-page-empty">
+        <h1>{error === "not_found" ? t("venue.not_found") : error || t("venue.not_found")}</h1>
+        <Link href="/">{t("venue.back_map")}</Link>
       </div>
     );
   }
 
+  const venueName = pickLocale(venue.name, locale);
+
   if (done) {
     return (
       <div className="web-book-done">
+        <p className="venue-page-kicker">{t("venue.book")}</p>
         <h1>Бронь подтверждена</h1>
         <p>
-          {pickLocale(venue.name, locale)} · стол №{selected?.number} ·{" "}
-          {guests} гост. · {new Date(time).toLocaleString()}
+          {venueName} · стол №{selected?.number} · {guests} ·{" "}
+          {new Date(time).toLocaleString(locale)}
         </p>
         <p className="web-book-muted">
           История броней — в приложении (тот же email) или после входа на сайте.
         </p>
         <div className="web-book-actions">
-          <Link className="web-book-btn primary" href={`/venues/${venue.id}`}>
+          <Link className="venue-cta venue-cta-primary" href={`/venues/${venue.id}`}>
             К ресторану
           </Link>
-          <Link className="web-book-btn ghost" href="/">
-            На карту
+          <Link className="venue-cta ghost" href="/">
+            {t("venue.back_map")}
           </Link>
         </div>
       </div>
@@ -169,59 +170,87 @@ export function WebBooking({ venueId }: { venueId: string }) {
   }
 
   return (
-    <div className="web-book">
-      <div className="web-book-top">
-        <Link href={`/venues/${venue.id}`} className="web-book-back">
-          ← {pickLocale(venue.name, locale)}
+    <div className="web-book venue-page-wrap">
+      <nav className="venue-breadcrumb" aria-label="Breadcrumb">
+        <Link href={`/venues/${venue.id}`}>← {venueName}</Link>
+        <span aria-hidden>/</span>
+        <span>{t("venue.book")}</span>
+        <Link href="/" className="web-book-map-link">
+          {t("nav.map")}
         </Link>
-        <Link href="/" className="web-book-back muted">
-          Карта
-        </Link>
-      </div>
+      </nav>
 
-      <section className="web-book-hero">
-        <div
-          className="web-book-hero-media"
-          style={
-            photo
-              ? { backgroundImage: `url(${mediaUrl(photo)})` }
-              : undefined
-          }
-        />
-        <div className="web-book-hero-copy">
-          <p className="web-book-kicker">Бронирование на сайте</p>
-          <h1>{pickLocale(venue.name, locale)}</h1>
-          <p>
-            ★ {venue.rating} · {venue.cuisine?.slice(0, 3).join(", ")} ·{" "}
-            {priceLevelLabel(venue.price_level)}
-          </p>
-          <p className="web-book-muted">{pickLocale(venue.address, locale)}</p>
-          <span className="web-book-pill">{freeCount} столов свободно</span>
-          <p>{pickLocale(venue.description, locale)}</p>
-          <div className="web-book-hero-actions">
-            <Link
-              className="web-book-btn ghost"
-              href={`/venues/${venue.id}/menu`}
-            >
-              Открыть меню
+      <section className="venue-hero web-book-hero">
+        <div className="venue-hero-media">
+          <div className="venue-hero-frame">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={mediaUrl(photo)} alt={venueName} />
+            ) : (
+              <div className="venue-hero-fallback" />
+            )}
+            <div className="venue-hero-overlays">
+              <span className={`venue-status-badge ${venue.open_now ? "open" : "closed"}`}>
+                {venue.open_now ? t("venue.open") : t("venue.closed")}
+              </span>
+            </div>
+            <div className="venue-free-float">
+              <b>{freeCount}</b>
+              <span>{t("venue.free_tables")}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="venue-hero-copy">
+          <p className="venue-page-kicker">{t("venue.book")}</p>
+          <h1>{venueName}</h1>
+          <p className="venue-page-address">⌖ {pickLocale(venue.address, locale)}</p>
+          <div className="venue-rating-row">
+            <strong>★ {venue.rating.toFixed(1)}</strong>
+            <span>
+              {venue.cuisine?.slice(0, 3).join(" · ")} · {priceLevelLabel(venue.price_level)}
+            </span>
+          </div>
+          <p className="venue-page-desc">{pickLocale(venue.description, locale)}</p>
+          <div className="venue-page-actions">
+            <Link className="venue-cta ghost" href={`/venues/${venue.id}/menu`}>
+              {t("venue.menu")}
+            </Link>
+            <Link className="venue-cta ghost" href={`/venues/${venue.id}`}>
+              К ресторану
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="web-book-main">
+      <section className="web-book-main venue-section">
         <div className="web-book-floor">
-          <div className="web-book-section-head">
-            <h2>Выберите стол</h2>
-            <p>Зал, улица или терраса — переключайте вкладки на плане</p>
+          <div className="venue-section-head">
+            <div>
+              <h2>Выберите стол</h2>
+              <p>{t("venue.floor_live")}</p>
+            </div>
+            <div className="venue-floor-legend">
+              <span>
+                <i className="free" /> {t("floor.leg_free")}
+              </span>
+              <span>
+                <i className="reserved" /> {t("floor.leg_res")}
+              </span>
+              <span>
+                <i className="occupied" /> {t("floor.leg_occ")}
+              </span>
+            </div>
           </div>
-          <TableFloorPlan
-            tables={tables}
-            selectedId={selected?.id}
-            onTableClick={(table) => {
-              if (table.status === "FREE") setSelected(table);
-            }}
-          />
+          <div className="venue-floor-stage">
+            <TableFloorPlan
+              tables={tables}
+              selectedId={selected?.id}
+              onTableClick={(table) => {
+                if (table.status === "FREE") setSelected(table);
+              }}
+            />
+          </div>
         </div>
 
         <aside className="web-book-side">
@@ -230,7 +259,11 @@ export function WebBooking({ venueId }: { venueId: string }) {
             Стол
             <input
               readOnly
-              value={selected ? `№${selected.number} · ${selected.seats} мест` : "Выберите на плане"}
+              value={
+                selected
+                  ? `№${selected.number} · ${selected.seats} мест`
+                  : "Выберите на плане"
+              }
             />
           </label>
           <label>
@@ -251,14 +284,16 @@ export function WebBooking({ venueId }: { venueId: string }) {
               onChange={(e) => setTime(e.target.value)}
             />
           </label>
-          {error && <p className="web-book-error">{error}</p>}
+          {error && error !== "not_found" && (
+            <p className="web-book-error">{error}</p>
+          )}
           <button
             type="button"
-            className="web-book-btn primary"
+            className="venue-cta venue-cta-primary"
             disabled={!selected || busy}
             onClick={() => void book()}
           >
-            {busy ? "Бронируем…" : "Подтвердить бронь"}
+            {busy ? "Бронируем…" : t("res.confirm_book")}
           </button>
           <p className="web-book-muted tiny">
             Нужен аккаунт: история броней, чеки и повторные визиты.
@@ -274,19 +309,19 @@ export function WebBooking({ venueId }: { venueId: string }) {
       {authOpen && (
         <div className="web-book-auth" role="dialog" aria-modal>
           <div className="web-book-auth-card">
-            <h3>{authMode === "login" ? "Войти" : "Регистрация"}</h3>
-            <p className="web-book-muted">Чтобы сохранить бронь в аккаунте</p>
+            <h3>{authMode === "login" ? t("auth.login") : t("auth.register")}</h3>
+            <p className="web-book-muted">{t("auth.body")}</p>
             {authMode === "register" && (
               <>
                 <input
-                  placeholder="Имя"
+                  placeholder={t("auth.first_name")}
                   value={authForm.first_name}
                   onChange={(e) =>
                     setAuthForm((f) => ({ ...f, first_name: e.target.value }))
                   }
                 />
                 <input
-                  placeholder="Фамилия"
+                  placeholder={t("auth.last_name")}
                   value={authForm.last_name}
                   onChange={(e) =>
                     setAuthForm((f) => ({ ...f, last_name: e.target.value }))
@@ -296,7 +331,7 @@ export function WebBooking({ venueId }: { venueId: string }) {
             )}
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t("auth.email")}
               value={authForm.email}
               onChange={(e) =>
                 setAuthForm((f) => ({ ...f, email: e.target.value }))
@@ -304,7 +339,7 @@ export function WebBooking({ venueId }: { venueId: string }) {
             />
             <input
               type="password"
-              placeholder="Пароль"
+              placeholder={t("auth.password")}
               value={authForm.password}
               onChange={(e) =>
                 setAuthForm((f) => ({ ...f, password: e.target.value }))
@@ -313,24 +348,24 @@ export function WebBooking({ venueId }: { venueId: string }) {
             {error && <p className="web-book-error">{error}</p>}
             <button
               type="button"
-              className="web-book-btn primary"
+              className="venue-cta venue-cta-primary"
               disabled={busy}
               onClick={() => void submitAuth()}
             >
-              {authMode === "login" ? "Войти" : "Создать аккаунт"}
+              {authMode === "login" ? t("auth.login") : t("auth.register")}
             </button>
             <button
               type="button"
-              className="web-book-btn ghost"
+              className="venue-cta ghost"
               onClick={() =>
                 setAuthMode((m) => (m === "login" ? "register" : "login"))
               }
             >
-              {authMode === "login" ? "Создать аккаунт" : "Уже есть аккаунт?"}
+              {authMode === "login" ? t("auth.switch_register") : t("auth.switch_login")}
             </button>
             <button
               type="button"
-              className="web-book-btn ghost"
+              className="venue-cta ghost"
               onClick={() => setAuthOpen(false)}
             >
               Закрыть

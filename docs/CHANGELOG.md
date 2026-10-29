@@ -8,6 +8,14 @@
 
 ---
 
+## [1.4.4] — 2026-09-08
+
+### Документация
+- Sync: web `/discover` preference wizard + fit-ranked map (`APP_LOGIC` §5.2, `UX_SCREENS` §7)
+- Sync: `GET /api/v1/map/places` in `ENGINEERING.md`; cross-link from `MAP_ARCHITECTURE.md`
+- Sync: `I18N.md` — `theme.*`, expanded `profile.*`, `discover.wizard.*`
+- `docs/README.md`: guest-profile TODO link + discover/map summary
+
 ## [1.4.3] — 2026-09-07
 
 ### Добавлено

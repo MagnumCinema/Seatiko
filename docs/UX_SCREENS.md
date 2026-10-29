@@ -290,6 +290,43 @@ Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)
 
 ## 7. Discover (Tab 2) 🔓
 
+> **Web (актуально):** первичный CTA лендинга ведёт на **`/discover`** — мастер предпочтений (stepper + scripted chat), затем редирект на карту с фильтрами и ранжированием. См. `APP_LOGIC.md` §5.2.  
+> **Mobile Tab 2 / AI-чат / праздничные подборки** — целевая модель ниже; LLM и кураторские коллекции — следующие фазы.
+
+### 7.1. Web: `/discover` → карта
+
+```
+┌─────────────────────────────┐
+│ Что вы ищете?               │
+│ [Смотреть карту]            │
+├─────────────────────────────┤
+│ Stepper: кухня → тип →      │
+│ бюджет → повод → практика   │
+│ [chips multi-select]        │
+├─────────────────────────────┤
+│ «Попросить помощи» (чат)    │
+│ scripted chips, без LLM     │
+├─────────────────────────────┤
+│ Ваш выбор · [Показать…]     │
+└─────────────────────────────┘
+         │ Show map
+         ▼
+   /?cuisine=…&budget=…#map
+   Active filters · fit rank
+```
+
+| Действие | Переход |
+|----------|---------|
+| Show recommendations | → `/?…#map` — фильтр + fit-score, бар «Активные предпочтения» |
+| Browse map / Skip | → `/#map` без фильтров |
+| Edit на карте | → `/discover` с восстановленными prefs |
+| Clear на карте | → полный каталог `map/places` |
+
+**Платформа v1:** web. Flutter parity — позже, та же модель `DiscoverPreferences`.  
+**API:** новых endpoint’ов нет; клиент фильтрует `GET /api/v1/map/places`. `POST /discover/ai` остаётся для keyword/AI (mobile / фаза LLM).
+
+### 7.2. Mobile / целевой Tab «Подбор»
+
 ```
 ┌─────────────────────────────┐
 │ Что хочешь сегодня?         │
@@ -315,7 +352,7 @@ Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)
 | Holiday card | → Holiday Collection → Venue list |
 | Quick filter | → Filtered map / list |
 
-**Лимит без auth:** 3 AI-запроса/день → Auth Modal
+**Лимит без auth (AI):** 3 AI-запроса/день → Auth Modal
 
 ---
 
@@ -507,7 +544,10 @@ Tap → соответствующий detail / session
 | Фамилия | ✅ | `last_name` |
 | Как обращаться | ✅ | `display_name` |
 | Язык | ✅ (отдельный picker) | `locale` |
-| Аллергии / диета | → экран настроек | `diet_preferences` |
+| Тема (dark/light) | ✅ header / profile toggle | `localStorage` `fa-theme` (web) |
+| Аллергии / диета | → панель / настройки | web v1: `localStorage` по `user.id`; API `diet_preferences` — TODO |
+| Способы оплаты | → панель (placeholder) | UI only до gateway |
+| Избранное | → панель | web v1: `localStorage`; sync API — TODO |
 | Возраст 18+ / предзаказ 18+ | ❌ только просмотр | `adult_preorder_allowed` + who/when/venue |
 | Выход из аккаунта | — | logout |
 

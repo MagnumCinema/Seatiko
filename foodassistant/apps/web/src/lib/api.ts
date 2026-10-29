@@ -1,3 +1,5 @@
+import { AUTH_CHANGE_EVENT } from "@/lib/header-auth";
+
 // Empty string → same origin through nginx (:80) → /api/v1/...
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -190,6 +192,7 @@ export type Reservation = {
   status: string;
   source?: "WEB" | "ANDROID" | "IOS" | "PHONE" | "WALK_IN";
   arrival_confirmed_at?: string | null;
+  expected_arrival?: string | null;
   created_at: string;
   venue_name?: LocalizedString;
   table_number?: number;
@@ -350,6 +353,7 @@ export function setToken(token: string | null) {
   if (typeof window === "undefined") return;
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
 }
 
 type RequestOpts = {
@@ -441,6 +445,25 @@ export async function fetchTables(venueId: string): Promise<Table[]> {
     { auth: false },
   );
   return data.tables ?? [];
+}
+
+export type VenueScheduleSlot = {
+  id: string;
+  table_id: string;
+  table_number: number;
+  starts_at: string;
+  ends_at: string;
+  kind: "RESERVATION" | "OCCUPIED" | string;
+};
+
+export async function fetchVenueSchedule(
+  venueId: string,
+): Promise<VenueScheduleSlot[]> {
+  const data = await apiFetch<{ slots: VenueScheduleSlot[] }>(
+    `/api/v1/venues/${venueId}/schedule`,
+    { auth: false },
+  );
+  return data.slots ?? [];
 }
 
 export async function fetchMenu(venueId: string): Promise<MenuItem[]> {
@@ -771,10 +794,11 @@ export async function watchTable(input: {
 
 export async function confirmArrival(
   reservationId: string,
+  input?: { expected_arrival?: string },
 ): Promise<Reservation> {
   const data = await apiFetch<{ reservation: Reservation }>(
     `/api/v1/reservations/${reservationId}/confirm-arrival`,
-    { method: "POST", body: {} },
+    { method: "POST", body: input ?? {} },
   );
   return data.reservation;
 }

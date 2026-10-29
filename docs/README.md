@@ -62,11 +62,13 @@ Prototype may simplify UI; **logic is always fixed in these docs first**.
 - Onboarding → city → map (pilot: Bălți)
 - Bottom nav: QR + Map / Discover / Orders / Profile
 - Auth required for booking, order, notify, “I’m coming”, favorites, history
+- **Web:** `/discover` preference wizard → filtered/ranked city map; landing map uses `GET /api/v1/map/places` (partners + Google food pins)
 
 ### Guest profile (`APP_LOGIC` §8.3, `UX_SCREENS` §13)
 - First name, last name, **preferred name** (`display_name`), phone, locale
 - Allergies / diet, payment methods, favorites, order/booking history
 - Age 18+: **staff-bound** ID check → `adult_preorder_allowed` (unlocks **all** `requires_age_18` menu items, not only alcohol; alias `alcohol_preorder_allowed`). Guest profile: read-only who/when/venue. The **named waiter/manager** who granted is responsible if the guest was not actually 18+ — §8.4
+- **Web:** `/account` + Profile tab share `GuestProfile`; dark/light theme (`fa-theme`). Local-only / stub follow-ups: [`foodassistant/README.md` — TODO features](../foodassistant/README.md#todo-features-guest-profile)
 
 ### Floor / QR / age-restricted
 - Table states, notify when free, “I’m coming”, QR session

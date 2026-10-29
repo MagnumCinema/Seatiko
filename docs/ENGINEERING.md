@@ -461,8 +461,9 @@ API=http://localhost/api/v1
 | `GET` | `/venues/:id` | карточка ресторана |
 | `GET` | `/venues/:id/tables` | схема столиков |
 | `GET` | `/venues/:id/menu` | меню |
+| `GET` | `/map/places?city_id=city-balti` | гибридный каталог точек карты (Google Places + DB; см. [MAP_ARCHITECTURE.md](./MAP_ARCHITECTURE.md)) |
 | `GET` | `/collections` | тематические подборки |
-| `POST` | `/discover/ai` | поиск ресторанов по запросу |
+| `POST` | `/discover/ai` | keyword/AI-поиск (mobile / legacy; web wizard не вызывает) |
 | `POST` | `/auth/register` | регистрация гостя/владельца |
 | `POST` | `/auth/login` | получение JWT |
 | `GET` | `/integrations/twenty/status` | состояние CRM sync |
@@ -513,13 +514,16 @@ API=http://localhost/api/v1
 curl -s "$API/cities" | jq
 curl -s "$API/venues?city_id=city-balti" | jq
 
+# Гибридная карта (партнёры + Google food places)
+curl -s "$API/map/places?city_id=city-balti" | jq '{source, n:(.places|length), in_db:(.places|map(select(.in_database))|length)}'
+
 VENUE_ID=$(curl -s "$API/venues?city_id=city-balti" | jq -r '.venues[0].id')
 curl -s "$API/venues/$VENUE_ID" | jq
 curl -s "$API/venues/$VENUE_ID/tables" | jq
 curl -s "$API/venues/$VENUE_ID/menu" | jq
 ```
 
-AI-поиск:
+AI/keyword-поиск (не используется web `/discover` wizard):
 
 ```bash
 curl -s -X POST "$API/discover/ai" \

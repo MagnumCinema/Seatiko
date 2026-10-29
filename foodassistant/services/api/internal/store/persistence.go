@@ -61,6 +61,7 @@ func NewPersistent(path string) (*MemoryStore, error) {
 	s.applyState(state)
 	s.backfillVenueMediaLocked()
 	s.ensureDemoUsersLocked()
+	s.ensureDemoFloorExamplesLocked()
 	return s, nil
 }
 
@@ -123,6 +124,64 @@ func (s *MemoryStore) ensureDemoUsersLocked() {
 		log.Printf("seeded missing demo user %s (%s)", user.Email, user.Role)
 	}
 	if changed {
+		s.persistBestEffortLocked()
+	}
+}
+
+// ensureDemoFloorExamplesLocked restores occupied + reserved demo tables used on
+// the public venue floor map (APP_LOGIC §5.3 / prototype floor examples).
+func (s *MemoryStore) ensureDemoFloorExamplesLocked() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	demo := NewMemory()
+	changed := false
+	for _, id := range []string{"t3", "t4", "t7", "t9", "t11"} {
+		fresh, ok := demo.tables[id]
+		if !ok {
+			continue
+		}
+		current, ok := s.tables[id]
+		if !ok {
+			s.tables[id] = fresh
+			changed = true
+			continue
+		}
+		if current.Status == fresh.Status &&
+			((current.OccupiedSince == nil) == (fresh.OccupiedSince == nil)) &&
+			((current.ReservedFor == nil) == (fresh.ReservedFor == nil)) &&
+			((current.ReservationID == nil) == (fresh.ReservationID == nil)) {
+			continue
+		}
+		current.Status = fresh.Status
+		current.OccupiedSince = fresh.OccupiedSince
+		current.ReservedFor = fresh.ReservedFor
+		current.ReservationID = fresh.ReservationID
+		s.tables[id] = current
+		changed = true
+	}
+	for id, res := range demo.reservations {
+		existing, exists := s.reservations[id]
+		if !exists {
+			s.reservations[id] = res
+			changed = true
+			continue
+		}
+		// Refresh demo calendar slot times / statuses when seed changes.
+		if strings.HasPrefix(id, "res-demo-venue-2") {
+			existing.ReservedFor = res.ReservedFor
+			existing.Status = res.Status
+			existing.TableID = res.TableID
+			existing.Guests = res.Guests
+			existing.UpdatedAt = res.UpdatedAt
+			s.reservations[id] = existing
+			changed = true
+		}
+	}
+	if changed {
+		for venueID := range s.venues {
+			s.refreshFreeTablesLocked(venueID)
+		}
 		s.persistBestEffortLocked()
 	}
 }

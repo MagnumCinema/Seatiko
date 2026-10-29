@@ -77,6 +77,7 @@ func main() {
 		v1.GET("/venues/:id", api.GetVenue)
 		v1.GET("/venues/:id/places", api.GetVenuePlaces)
 		v1.GET("/venues/:id/tables", api.ListTables)
+		v1.GET("/venues/:id/schedule", api.ListVenueSchedule)
 		v1.GET("/venues/:id/menu", api.ListMenu)
 		v1.GET("/venues/:id/waitlist/summary", api.GetWaitlistSummary)
 		v1.GET("/collections", api.ListCollections)

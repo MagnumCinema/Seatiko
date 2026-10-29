@@ -1,3 +1,4 @@
+
 # Discover preference box polish (hybrid soft auto-advance)
 
 Date: 2026-09-14  

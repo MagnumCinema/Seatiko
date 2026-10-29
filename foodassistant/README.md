@@ -15,7 +15,7 @@
 
 | Часть | Назначение | Адрес / путь |
 |---|---|---|
-| Публичный сайт | Презентация, карта, discover | http://localhost/ |
+| Публичный сайт | Презентация, карта (`map/places`), discover wizard | http://localhost/ · `/discover` · `/#map` |
 | Кабинет владельца | Анкета, фото, статус, бронирования и история | http://localhost/cabinet |
 | Гостевой web | Карточка ресторана и план столиков (`/venues/…`, `/book`) | http://localhost/ |
 | Гостевой кабинет (web) | Профиль: имя, тема, избранное, аллергии, оплата, 18+ (UI / localStorage) | http://localhost/account |
