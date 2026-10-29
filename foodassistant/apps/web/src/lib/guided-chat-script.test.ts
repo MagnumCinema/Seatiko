@@ -32,9 +32,12 @@ describe("guided-chat-script", () => {
     const keepItalian = applyChatAnswer(withAsian, "cuisine", ["italian"]);
     expect(keepItalian.cuisine).toEqual(["italian", "asian"]);
 
-    const withBudget = applyChatAnswer(withAsian, "budget", ["2"]);
-    const unionBudget = applyChatAnswer(withBudget, "budget", ["1"]);
-    expect(unionBudget.budget).toEqual([2, 1]);
+    const withBudget = applyChatAnswer(withAsian, "budget", ["200_400"]);
+    expect(withBudget.budget).toEqual({ min: 200, max: 400 });
+    const cleared = applyChatAnswer(withBudget, "budget", ["any"]);
+    expect(cleared.budget).toBeNull();
+    const custom = applyChatAnswer(emptyPreferences(), "budget", ["150-450"]);
+    expect(custom.budget).toEqual({ min: 150, max: 450 });
   });
 
   it("skip advances without changing prefs", () => {
