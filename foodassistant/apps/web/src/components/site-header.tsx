@@ -17,6 +17,62 @@ function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function UserIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  );
+}
+
 export function SiteHeader({ variant = "solid" }: Props) {
   const { locale, setLocale } = useLocale();
   const { theme, toggleTheme } = useTheme();
@@ -58,8 +114,12 @@ export function SiteHeader({ variant = "solid" }: Props) {
           <span>FoodAssistant</span>
         </Link>
         <nav className="site-nav" aria-label={copy.nav}>
+          <Link href="/discover" className="site-nav-link">
+            {copy.discover}
+          </Link>
           <Link
             href="/#map"
+            className="site-nav-link"
             onClick={(event) => {
               event.preventDefault();
               goHomeSection("map");
@@ -67,8 +127,12 @@ export function SiteHeader({ variant = "solid" }: Props) {
           >
             {copy.map}
           </Link>
+          <Link href="/book" className="site-nav-link">
+            {copy.book}
+          </Link>
           <Link
             href="/#how"
+            className="site-nav-link"
             onClick={(event) => {
               event.preventDefault();
               goHomeSection("how");
@@ -76,8 +140,9 @@ export function SiteHeader({ variant = "solid" }: Props) {
           >
             {copy.how}
           </Link>
-          <Link href="/business">{copy.business}</Link>
-          <Link href="/book">{copy.book}</Link>
+          <Link href="/business" className="site-nav-secondary">
+            {copy.business}
+          </Link>
           <div className="site-lang" role="group" aria-label={copy.language}>
             {(["ru", "en", "ro"] as Locale[]).map((l) => (
               <button
@@ -95,13 +160,15 @@ export function SiteHeader({ variant = "solid" }: Props) {
             className="site-theme-toggle"
             onClick={toggleTheme}
             aria-label={copy.theme}
+            title={theme === "dark" ? copy.themeLight : copy.themeDark}
           >
-            {theme === "dark" ? copy.themeLight : copy.themeDark}
+            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
           </button>
-          <Link href={authLink.href} className="site-nav-login">
-            {authLabel}
+          <Link href={authLink.href} className="site-nav-login site-nav-primary">
+            <UserIcon />
+            <span>{authLabel}</span>
+            {authed && <span className="site-nav-online-dot" aria-hidden="true" />}
           </Link>
-          <Link href="/register" className="site-nav-cta">{copy.connect}</Link>
         </nav>
       </div>
     </header>
