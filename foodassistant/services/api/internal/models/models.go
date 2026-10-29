@@ -155,9 +155,11 @@ type User struct {
 	LastName     string    `json:"last_name"`
 	DisplayName  string    `json:"display_name"`
 	Locale       string    `json:"locale"`
-	Role         string    `json:"role"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Role            string    `json:"role"`
+	DietPreferences []string  `json:"diet_preferences,omitempty"`
+	FavoriteVenues  []string  `json:"favorite_venues,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type ApplicationStatus string

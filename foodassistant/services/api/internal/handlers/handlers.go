@@ -318,11 +318,13 @@ func (a *API) Me(c *gin.Context) {
 }
 
 type updateMeReq struct {
-	FirstName   *string `json:"first_name"`
-	LastName    *string `json:"last_name"`
-	DisplayName *string `json:"display_name"`
-	Phone       *string `json:"phone"`
-	Locale      *string `json:"locale"`
+	FirstName       *string   `json:"first_name"`
+	LastName        *string   `json:"last_name"`
+	DisplayName     *string   `json:"display_name"`
+	Phone           *string   `json:"phone"`
+	Locale          *string   `json:"locale"`
+	DietPreferences *[]string `json:"diet_preferences"`
+	FavoriteVenues  *[]string `json:"favorite_venues"`
 }
 
 func (a *API) UpdateMe(c *gin.Context) {
@@ -332,11 +334,13 @@ func (a *API) UpdateMe(c *gin.Context) {
 		return
 	}
 	u, err := a.Store.UpdateUser(a.userID(c), store.UserProfileUpdate{
-		FirstName:   req.FirstName,
-		LastName:    req.LastName,
-		DisplayName: req.DisplayName,
-		Phone:       req.Phone,
-		Locale:      req.Locale,
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		DisplayName:     req.DisplayName,
+		Phone:           req.Phone,
+		Locale:          req.Locale,
+		DietPreferences: req.DietPreferences,
+		FavoriteVenues:  req.FavoriteVenues,
 	})
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "user_not_found"})

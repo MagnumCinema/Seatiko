@@ -125,6 +125,8 @@ export type User = {
   display_name: string;
   locale: string;
   role?: UserRole | string;
+  diet_preferences?: string[];
+  favorite_venues?: string[];
   created_at: string;
 };
 
@@ -537,7 +539,10 @@ export async function updateMe(input: {
   first_name?: string;
   last_name?: string;
   display_name?: string;
+  phone?: string;
   locale?: string;
+  diet_preferences?: string[];
+  favorite_venues?: string[];
 }): Promise<User> {
   const data = await apiFetch<{ user: User }>("/api/v1/me", {
     method: "PATCH",

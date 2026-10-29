@@ -73,10 +73,20 @@ export function GuestProfile({
     }
     const nextDraft = draftFromUser(user);
     const loaded = loadGuestLocalPrefs(userId);
+    const serverAllergies = user.diet_preferences?.join(", ");
+    const allergiesValue = loaded.allergies || serverAllergies || "";
+    const effectiveFavorites =
+      loaded.favorites.length > 0
+        ? loaded.favorites
+        : (user.favorite_venues?.map((id) => ({ venueId: id, name: id })) ?? []);
+    const nextPrefs = {
+      allergies: allergiesValue,
+      favorites: effectiveFavorites,
+    };
     queueMicrotask(() => {
       setDraft(nextDraft);
-      setPrefs(loaded);
-      setAllergiesDraft(loaded.allergies);
+      setPrefs(nextPrefs);
+      setAllergiesDraft(allergiesValue);
       setPaymentCards([]);
     });
     // Prefs + draft seed only when the signed-in account changes.
@@ -112,19 +122,37 @@ export function GuestProfile({
     }
   }
 
-  function saveAllergies() {
+  async function saveAllergies() {
     if (!user) return;
     const next = { ...prefs, allergies: allergiesDraft };
     saveGuestLocalPrefs(user.id, next);
     setPrefs(next);
-    toast(t("profile.saved"));
+    try {
+      const dietPrefs = allergiesDraft
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const updated = await updateMe({ diet_preferences: dietPrefs });
+      onUserUpdated?.(updated);
+      toast(t("profile.saved"));
+    } catch {
+      toast(t("profile.saved"));
+    }
   }
 
-  function removeFavorite(venueId: string) {
+  async function removeFavorite(venueId: string) {
     if (!user) return;
     const next = removeFavoriteVenue(prefs, venueId);
     saveGuestLocalPrefs(user.id, next);
     setPrefs(next);
+    try {
+      const updated = await updateMe({
+        favorite_venues: next.favorites.map((f) => f.venueId),
+      });
+      onUserUpdated?.(updated);
+    } catch {
+      /* local save succeeded */
+    }
   }
 
   function addPreviewCard() {

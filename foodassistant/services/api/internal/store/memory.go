@@ -35,11 +35,13 @@ type OrderItemInput struct {
 }
 
 type UserProfileUpdate struct {
-	FirstName   *string
-	LastName    *string
-	DisplayName *string
-	Phone       *string
-	Locale      *string
+	FirstName       *string
+	LastName        *string
+	DisplayName     *string
+	Phone           *string
+	Locale          *string
+	DietPreferences *[]string
+	FavoriteVenues  *[]string
 }
 
 type ApplicationUpdate struct {
@@ -598,6 +600,12 @@ func (s *MemoryStore) UpdateUser(id string, patch UserProfileUpdate) (models.Use
 	}
 	if patch.Locale != nil && *patch.Locale != "" {
 		u.Locale = *patch.Locale
+	}
+	if patch.DietPreferences != nil {
+		u.DietPreferences = *patch.DietPreferences
+	}
+	if patch.FavoriteVenues != nil {
+		u.FavoriteVenues = *patch.FavoriteVenues
 	}
 	u.UpdatedAt = time.Now().UTC()
 	s.users[id] = u
