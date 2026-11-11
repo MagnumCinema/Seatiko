@@ -435,7 +435,7 @@ export function GuestProfile({
   const [dietTags, setDietTags] = useState<string[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
-  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [bookingsLoadedFor, setBookingsLoadedFor] = useState<string | null>(null);
   const [busySave, setBusySave] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -479,6 +479,7 @@ export function GuestProfile({
   const [editError, setEditError] = useState<string | null>(null);
 
   const userId = user?.id;
+  const loadingBookings = Boolean(userId) && bookingsLoadedFor !== userId;
 
   // Load user data, preferences, venues, and reservations
   useEffect(() => {
@@ -511,7 +512,6 @@ export function GuestProfile({
 
     // Fetch live venues and reservations
     let alive = true;
-    setLoadingBookings(true);
     Promise.all([
       fetchReservations().catch(() => [] as Reservation[]),
       fetchVenues("city-balti").catch(() => [] as Venue[]),
@@ -524,7 +524,7 @@ export function GuestProfile({
       setVenues(vList);
       setEventInquiries(inqList);
     }).finally(() => {
-      if (alive) setLoadingBookings(false);
+      if (alive) setBookingsLoadedFor(userId);
     });
 
     return () => {
