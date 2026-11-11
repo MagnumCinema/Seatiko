@@ -10716,3 +10716,129 @@ button.venue-tile {
 html[data-theme="light"] .qb-card-action {
   color: #8a6528;
 }
+
+/* ==========================================================================
+   Venue page: "How to get there" (location map + address + directions)
+   ========================================================================== */
+.venue-location {
+  scroll-margin-top: 88px;
+}
+.venue-location-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.venue-location-map {
+  position: relative;
+  min-height: 340px;
+  overflow: hidden;
+  border: 1px solid var(--fa-border);
+  border-radius: 22px;
+  background: var(--fa-surface-2);
+}
+.venue-location-canvas {
+  position: absolute;
+  inset: 0;
+}
+.venue-location-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 20px;
+  color: var(--fa-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  pointer-events: none;
+}
+.venue-location-pin {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  background: linear-gradient(160deg, #f2cd85, #c89645);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  transform: rotate(-45deg);
+}
+.venue-location-pin::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1b140c;
+  transform: translate(-50%, -50%);
+}
+.venue-location-info {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 18px;
+  border: 1px solid var(--fa-border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--fa-surface) 92%, transparent);
+}
+.venue-location-address {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.venue-location-address > div {
+  display: grid;
+  gap: 2px;
+}
+.venue-location-address strong {
+  font-size: 1.02rem;
+  line-height: 1.35;
+}
+.venue-location-address div > span {
+  color: var(--fa-muted);
+  font-size: 0.86rem;
+}
+.venue-location-hours {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  color: var(--fa-text);
+  font-size: 0.92rem;
+}
+.venue-location-actions {
+  display: grid;
+  gap: 10px;
+}
+.venue-location-actions .venue-cta {
+  width: 100%;
+  text-decoration: none;
+}
+.venue-location-all {
+  justify-self: start;
+  color: var(--fa-gold);
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.venue-location-all:hover {
+  text-decoration: underline;
+}
+html[data-theme="light"] .venue-location-info {
+  background: #ffffff;
+  border-color: rgba(26, 36, 32, 0.16);
+}
+html[data-theme="light"] .venue-location-map {
+  border-color: rgba(26, 36, 32, 0.16);
+}
+html[data-theme="light"] .venue-location-all {
+  color: #8a6528;
+}
+@media (max-width: 860px) {
+  .venue-location-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .venue-location-map {
+    min-height: 280px;
+  }
+}

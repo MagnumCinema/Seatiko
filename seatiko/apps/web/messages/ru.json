@@ -477,5 +477,15 @@
   "qb.card_small": "Нет стола на {guests} гостей",
   "qb.later_today": "Около {time} занято — свободно в этот день:",
   "qb.day_full": "На {day} свободных столов нет",
-  "qb.pick_other_day": "Выбрать другой день"
+  "qb.pick_other_day": "Выбрать другой день",
+  "venue.location_tile": "На карте",
+  "venue.location_title": "Как добраться",
+  "venue.location_hint": "Адрес, часы работы и маршрут до ресторана",
+  "venue.location_map_label": "Карта: где находится «{venue}»",
+  "venue.location_map_error": "Карта не загрузилась — откройте маршрут в Google Картах.",
+  "venue.location_no_coords": "Точка на карте пока не указана — ориентируйтесь по адресу.",
+  "venue.location_hours": "Часы работы",
+  "venue.location_route": "Проложить маршрут",
+  "venue.location_google": "Открыть в Google Картах",
+  "venue.location_all": "Все рестораны на карте"
 }

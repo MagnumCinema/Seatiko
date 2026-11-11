@@ -477,5 +477,15 @@
   "qb.card_small": "No table for {guests} guests",
   "qb.later_today": "Busy around {time} — free that day:",
   "qb.day_full": "No free tables {day}",
-  "qb.pick_other_day": "Pick another day"
+  "qb.pick_other_day": "Pick another day",
+  "venue.location_tile": "On the map",
+  "venue.location_title": "How to get there",
+  "venue.location_hint": "Address, opening hours and directions",
+  "venue.location_map_label": "Map: where {venue} is",
+  "venue.location_map_error": "The map did not load — open directions in Google Maps.",
+  "venue.location_no_coords": "No map pin yet — use the address.",
+  "venue.location_hours": "Opening hours",
+  "venue.location_route": "Get directions",
+  "venue.location_google": "Open in Google Maps",
+  "venue.location_all": "All restaurants on the map"
 }
