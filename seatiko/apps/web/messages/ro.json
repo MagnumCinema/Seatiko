@@ -477,5 +477,15 @@
   "qb.card_small": "Nicio masă pentru {guests} oaspeți",
   "qb.later_today": "Ocupat în jurul orei {time} — liber în acea zi:",
   "qb.day_full": "Nicio masă liberă {day}",
-  "qb.pick_other_day": "Alegeți altă zi"
+  "qb.pick_other_day": "Alegeți altă zi",
+  "venue.location_tile": "Pe hartă",
+  "venue.location_title": "Cum ajungeți",
+  "venue.location_hint": "Adresa, programul și traseul până la restaurant",
+  "venue.location_map_label": "Hartă: unde se află «{venue}»",
+  "venue.location_map_error": "Harta nu s-a încărcat — deschideți traseul în Google Maps.",
+  "venue.location_no_coords": "Locația pe hartă nu este încă indicată — folosiți adresa.",
+  "venue.location_hours": "Program",
+  "venue.location_route": "Traseu",
+  "venue.location_google": "Deschide în Google Maps",
+  "venue.location_all": "Toate restaurantele pe hartă"
 }

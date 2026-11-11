@@ -8,6 +8,7 @@ import { TableFloorPlan, TableReserveSheet, isMyTable } from "@/components/table
 import { WaitlistPanel } from "@/components/waitlist-panel";
 import { BookingPopup } from "@/components/booking-popup";
 import { EventPopup } from "@/components/event-popup";
+import { VENUE_LOCATION_ANCHOR, VenueLocationMap } from "@/components/venue-location-map";
 import { parseBookingParams } from "@/lib/booking-link";
 import { ComingPopup } from "@/components/coming-popup";
 import { VenueBookingRules } from "@/components/venue-booking-rules";
@@ -451,15 +452,24 @@ export default function VenuePage() {
                     <span className="venue-tile-desc">{t("venue.menu_sub")}</span>
                   </span>
                 </Link>
-                <Link className="venue-tile" href="/">
+                <a
+                  className="venue-tile"
+                  href={`#${VENUE_LOCATION_ANCHOR}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    document
+                      .getElementById(VENUE_LOCATION_ANCHOR)
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
                   <span className="venue-tile-icon">
                     <MapPinIcon />
                   </span>
                   <span className="venue-tile-text">
-                    <span className="venue-tile-name">{t("venue.back_map")}</span>
+                    <span className="venue-tile-name">{t("venue.location_tile")}</span>
                     <span className="venue-tile-desc">{pickLocale(venue.address, locale)}</span>
                   </span>
-                </Link>
+                </a>
                 <button
                   type="button"
                   className="venue-tile"
@@ -648,6 +658,8 @@ export default function VenuePage() {
             onAuthRequired={() => requireAuth(t("auth.reason_waitlist"))}
           />
         </section>
+
+        <VenueLocationMap venue={venue} />
 
         <EventPopup
           venue={venue}
