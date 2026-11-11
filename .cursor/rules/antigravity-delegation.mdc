@@ -1,0 +1,56 @@
+---
+description: Delegate heavy analysis and bulk work to the Antigravity CLI (agy) on the approved account
+alwaysApply: true
+---
+
+# Delegating work to Antigravity (`agy`)
+
+The user approved offloading costly work to Antigravity CLI (`agy`, `~/.local/bin/agy`)
+running under **koleagemini3@gmail.com**. Use it freely for heavy tasks; no need to ask first.
+
+## Before delegating
+
+Confirm the active account (latest CLI log must show the approved email):
+
+```bash
+rg -o 'email=[^,\s]+' "$(ls -t ~/.gemini/antigravity-cli/log/*.log | head -1)" | sort -u
+```
+
+If it is any other account, do not delegate — tell the user.
+
+## What to delegate
+
+- Audits and analysis: page/i18n/a11y/mobile-layout audits, code reviews, dependency or dead-code scans, docs summaries.
+- Bulk mechanical work in files you are not editing at the same time (e.g. extracting strings into `site-copy.ts` for another page).
+
+Keep small edits, final decisions and verification yourself.
+
+## Model
+
+Always pass `--model`. Default: `gemini-3.8-flash-high` (quota is plentiful) — use it for almost everything.
+Claude models (`claude-opus-4-6-thinking`, `claude-sonnet-4-6`) are allowed but their quota is very small:
+use them sparingly, only for a short, genuinely hard task where Gemini fell short. Prefer narrow prompts
+with exact paths so the run stays small. If Claude hits a limit, fall back to Gemini.
+Check `agy models` if an ID fails.
+
+## How
+
+```bash
+# Read-only analysis (default choice)
+agy -p "<task + exact paths + expected output format>" --model gemini-3.8-flash-high --mode plan --print-timeout 600s
+
+# Edits in an agreed set of files
+agy -p "<task>; only modify: <files>" --model gemini-3.8-flash-high --mode accept-edits --print-timeout 900s
+
+# Follow-up in the same conversation
+agy -c -p "<follow-up>" --model gemini-3.8-flash-high --mode plan
+```
+
+- Long runs: start in background and keep working; collect output later.
+- `--output-format json` when the result is parsed by a script.
+
+## After
+
+- Never trust results blindly: re-check claims in code, then run `tsc`, `eslint`, Go tests and screenshots as usual.
+- Never let `agy` and you edit the same files concurrently; review `git diff` of its changes.
+- Always report each `agy` use to the user in 1–2 lines: model, mode (plan / accept-edits), what was delegated, what came back and what you did with it (used / re-checked / discarded).

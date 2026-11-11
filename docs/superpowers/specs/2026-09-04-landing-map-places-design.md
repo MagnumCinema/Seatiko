@@ -5,7 +5,7 @@ Status: approved for implementation after user review of this spec
 
 ## Goal
 
-1. Keep the landing hero photo; replace the two decorative floating cards with real FoodAssistant feature messaging.
+1. Keep the landing hero photo; replace the two decorative floating cards with real Seatiko feature messaging.
 2. Show on the city map all food-related establishments from Google Places around Bălți, and clearly mark which ones exist in our database vs which do not.
 3. Leave room for a future “view menu for any place” flow without building it now.
 
@@ -25,7 +25,7 @@ Status: approved for implementation after user review of this spec
 | External places source | Google Places (Nearby / food types) merged with DB venues |
 | Visual distinction | Different pin color + “can book” badge only for in-database places |
 | Membership flag | Explicit `in_database` boolean; missing/`false` means not in our DB |
-| Click on non-DB place | Popup with name/rating + “Coming soon to FoodAssistant” |
+| Click on non-DB place | Popup with name/rating + “Coming soon to Seatiko” |
 | Matching rule | Exact `google_place_id` match only |
 
 ## Approach
@@ -34,7 +34,7 @@ Status: approved for implementation after user review of this spec
 
 - New public API: `GET /api/v1/map/places` (city-scoped, default Bălți).
 - Server calls Google Places API (New) for food-related places near the city center.
-- Server loads published venues from the FoodAssistant store.
+- Server loads published venues from the Seatiko store.
 - Server merges into a single list of map points with an explicit `in_database` flag.
 - Web `VenueMap` consumes this endpoint instead of (or in addition to, then replaced by) `GET /venues` for pin data.
 
@@ -66,7 +66,7 @@ Rules:
 - `in_database` is always present. Default is `false`.
 - `in_database: true` only when the place is linked to a published venue (matched by `google_place_id`, or the row is a DB-only venue without a Google counterpart).
 - For Google-only places: `id` may be the Google place id (or a stable prefixed id); `venue_id` is omitted; booking fields (`free_tables`, etc.) are empty/zero.
-- For DB venues matched to Google: keep FoodAssistant operational fields from the venue; prefer venue name/address for display consistency; set `venue_id` and `in_database: true`.
+- For DB venues matched to Google: keep Seatiko operational fields from the venue; prefer venue name/address for display consistency; set `venue_id` and `in_database: true`.
 - For DB venues with no Google match: still emit a point with `in_database: true` so our partners are never hidden when Google misses them.
 
 ### Response envelope
@@ -121,7 +121,7 @@ No fake venue names or hardcoded times (remove “La Plăcinte · 19:30” / “
 - Legend under or over the map explaining both states.
 - Popup / panel:
   - In DB: current behavior (name, free tables, links to venue page + book).
-  - Not in DB: name, optional rating/address, copy “Coming soon to FoodAssistant”; no book CTA.
+  - Not in DB: name, optional rating/address, copy “Coming soon to Seatiko”; no book CTA.
 - Right panel list: show both kinds; visually distinguish in-database rows (e.g. badge). Prefer sorting in-database first, then others by rating/name.
 - Keep MapLibre + OpenFreeMap tiles (base map unchanged).
 
@@ -131,12 +131,12 @@ Add/update keys in `site-copy.ts` for:
 
 - Hero floating card titles/bodies (both cards).
 - Map legend labels.
-- “Coming soon to FoodAssistant” popup line.
+- “Coming soon to Seatiko” popup line.
 - Optional short map section body tweak if current copy still says “only our restaurants”.
 
 ## Docs touch-up
 
-Update `docs/MAP_ARCHITECTURE.md` so it no longer claims restaurants come only from the FoodAssistant store; document the hybrid Google overlay + `in_database` flag.
+Update `docs/MAP_ARCHITECTURE.md` so it no longer claims restaurants come only from the Seatiko store; document the hybrid Google overlay + `in_database` flag.
 
 ## Future hook (out of scope now)
 

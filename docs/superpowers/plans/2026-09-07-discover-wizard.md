@@ -16,36 +16,36 @@
 
 | File | Responsibility |
 |---|---|
-| `foodassistant/apps/web/package.json` | Add `vitest` + `test` script |
-| `foodassistant/apps/web/vitest.config.ts` | Vitest config (node env, `@/` alias) |
-| `foodassistant/apps/web/src/lib/discover-preferences.ts` | Types, chip catalogs, URL codec, filter + fit-score rank |
-| `foodassistant/apps/web/src/lib/discover-preferences.test.ts` | Unit tests for codec / filter / rank |
-| `foodassistant/apps/web/src/lib/guided-chat-script.ts` | Scripted turn order + helpers that update prefs |
-| `foodassistant/apps/web/src/lib/guided-chat-script.test.ts` | Unit tests for chat progression |
-| `foodassistant/apps/web/src/lib/site-copy.ts` | Discover + map filter bar copy (RU/EN/RO) |
-| `foodassistant/apps/web/src/components/discover/preference-stepper.tsx` | 5-step chip UI |
-| `foodassistant/apps/web/src/components/discover/guided-chat.tsx` | Scripted chat panel UI |
-| `foodassistant/apps/web/src/components/discover/preference-summary.tsx` | Sticky picks + Show map |
-| `foodassistant/apps/web/src/components/discover/discover-wizard.tsx` | Shared state + layout + redirect |
-| `foodassistant/apps/web/src/components/discover/active-filters-bar.tsx` | Map-section Edit / Clear bar |
-| `foodassistant/apps/web/src/app/discover/page.tsx` | `/discover` route |
-| `foodassistant/apps/web/src/app/page.tsx` | Hero CTAs + pass URL prefs into map |
-| `foodassistant/apps/web/src/components/venue-map.tsx` | Accept ranked places / prefs; optional empty state |
-| `foodassistant/apps/web/src/app/premium.css` | Discover + filter-bar styles |
+| `seatiko/apps/web/package.json` | Add `vitest` + `test` script |
+| `seatiko/apps/web/vitest.config.ts` | Vitest config (node env, `@/` alias) |
+| `seatiko/apps/web/src/lib/discover-preferences.ts` | Types, chip catalogs, URL codec, filter + fit-score rank |
+| `seatiko/apps/web/src/lib/discover-preferences.test.ts` | Unit tests for codec / filter / rank |
+| `seatiko/apps/web/src/lib/guided-chat-script.ts` | Scripted turn order + helpers that update prefs |
+| `seatiko/apps/web/src/lib/guided-chat-script.test.ts` | Unit tests for chat progression |
+| `seatiko/apps/web/src/lib/site-copy.ts` | Discover + map filter bar copy (RU/EN/RO) |
+| `seatiko/apps/web/src/components/discover/preference-stepper.tsx` | 5-step chip UI |
+| `seatiko/apps/web/src/components/discover/guided-chat.tsx` | Scripted chat panel UI |
+| `seatiko/apps/web/src/components/discover/preference-summary.tsx` | Sticky picks + Show map |
+| `seatiko/apps/web/src/components/discover/discover-wizard.tsx` | Shared state + layout + redirect |
+| `seatiko/apps/web/src/components/discover/active-filters-bar.tsx` | Map-section Edit / Clear bar |
+| `seatiko/apps/web/src/app/discover/page.tsx` | `/discover` route |
+| `seatiko/apps/web/src/app/page.tsx` | Hero CTAs + pass URL prefs into map |
+| `seatiko/apps/web/src/components/venue-map.tsx` | Accept ranked places / prefs; optional empty state |
+| `seatiko/apps/web/src/app/premium.css` | Discover + filter-bar styles |
 
 ---
 
 ### Task 1: Vitest + preference types, catalogs, URL codec (TDD)
 
 **Files:**
-- Modify: `foodassistant/apps/web/package.json`
-- Create: `foodassistant/apps/web/vitest.config.ts`
-- Create: `foodassistant/apps/web/src/lib/discover-preferences.ts`
-- Create: `foodassistant/apps/web/src/lib/discover-preferences.test.ts`
+- Modify: `seatiko/apps/web/package.json`
+- Create: `seatiko/apps/web/vitest.config.ts`
+- Create: `seatiko/apps/web/src/lib/discover-preferences.ts`
+- Create: `seatiko/apps/web/src/lib/discover-preferences.test.ts`
 
 - [ ] **Step 1: Add Vitest**
 
-In `foodassistant/apps/web`:
+In `seatiko/apps/web`:
 
 ```bash
 npm install -D vitest
@@ -58,7 +58,7 @@ Update `package.json` scripts:
 "test:watch": "vitest"
 ```
 
-Create `foodassistant/apps/web/vitest.config.ts`:
+Create `seatiko/apps/web/vitest.config.ts`:
 
 ```ts
 import path from "node:path";
@@ -78,7 +78,7 @@ export default defineConfig({
 
 - [ ] **Step 2: Write failing codec tests**
 
-Create `foodassistant/apps/web/src/lib/discover-preferences.test.ts`:
+Create `seatiko/apps/web/src/lib/discover-preferences.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -121,14 +121,14 @@ describe("encodePreferences / decodePreferences", () => {
 - [ ] **Step 3: Run tests — expect FAIL**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npm test -- src/lib/discover-preferences.test.ts
 ```
 
 Expected: FAIL (module not found / exports missing).
 
 - [ ] **Step 4: Implement types, catalogs, codec**
 
-Create `foodassistant/apps/web/src/lib/discover-preferences.ts`:
+Create `seatiko/apps/web/src/lib/discover-preferences.ts`:
 
 ```ts
 import type { MapPlace } from "@/lib/api";
@@ -304,7 +304,7 @@ export function filterAndRankPlaces(
 - [ ] **Step 5: Run tests — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npm test -- src/lib/discover-preferences.test.ts
 ```
 
 Expected: PASS for the three codec tests. (If `filterAndRankPlaces` is imported only in later tests, codec suite alone passes.)
@@ -312,10 +312,10 @@ Expected: PASS for the three codec tests. (If `filterAndRankPlaces` is imported 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add foodassistant/apps/web/package.json foodassistant/apps/web/package-lock.json \
-  foodassistant/apps/web/vitest.config.ts \
-  foodassistant/apps/web/src/lib/discover-preferences.ts \
-  foodassistant/apps/web/src/lib/discover-preferences.test.ts
+git add seatiko/apps/web/package.json seatiko/apps/web/package-lock.json \
+  seatiko/apps/web/vitest.config.ts \
+  seatiko/apps/web/src/lib/discover-preferences.ts \
+  seatiko/apps/web/src/lib/discover-preferences.test.ts
 git commit -m "feat(web): add discover preferences types and URL codec"
 ```
 
@@ -324,8 +324,8 @@ git commit -m "feat(web): add discover preferences types and URL codec"
 ### Task 2: Filter + fit-score ranking (TDD)
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/discover-preferences.ts`
-- Modify: `foodassistant/apps/web/src/lib/discover-preferences.test.ts`
+- Modify: `seatiko/apps/web/src/lib/discover-preferences.ts`
+- Modify: `seatiko/apps/web/src/lib/discover-preferences.test.ts`
 
 - [ ] **Step 1: Append failing filter/rank tests**
 
@@ -426,7 +426,7 @@ describe("filterAndRankPlaces", () => {
 - [ ] **Step 2: Run tests — expect FAIL**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npm test -- src/lib/discover-preferences.test.ts
 ```
 
 Expected: FAIL with `not implemented` or wrong results.
@@ -617,7 +617,7 @@ export function filterAndRankPlaces(
 - [ ] **Step 4: Run tests — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npm test -- src/lib/discover-preferences.test.ts
 ```
 
 Expected: all PASS. Adjust alias/score weights only if a test fails for a clear reason.
@@ -625,8 +625,8 @@ Expected: all PASS. Adjust alias/score weights only if a test fails for a clear 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/discover-preferences.ts \
-  foodassistant/apps/web/src/lib/discover-preferences.test.ts
+git add seatiko/apps/web/src/lib/discover-preferences.ts \
+  seatiko/apps/web/src/lib/discover-preferences.test.ts
 git commit -m "feat(web): filter and rank map places by discover prefs"
 ```
 
@@ -635,8 +635,8 @@ git commit -m "feat(web): filter and rank map places by discover prefs"
 ### Task 3: Guided chat script (TDD)
 
 **Files:**
-- Create: `foodassistant/apps/web/src/lib/guided-chat-script.ts`
-- Create: `foodassistant/apps/web/src/lib/guided-chat-script.test.ts`
+- Create: `seatiko/apps/web/src/lib/guided-chat-script.ts`
+- Create: `seatiko/apps/web/src/lib/guided-chat-script.test.ts`
 
 - [ ] **Step 1: Write failing script tests**
 
@@ -676,12 +676,12 @@ describe("guided-chat-script", () => {
 - [ ] **Step 2: Run — expect FAIL**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/guided-chat-script.test.ts
+cd seatiko/apps/web && npm test -- src/lib/guided-chat-script.test.ts
 ```
 
 - [ ] **Step 3: Implement script**
 
-Create `foodassistant/apps/web/src/lib/guided-chat-script.ts`:
+Create `seatiko/apps/web/src/lib/guided-chat-script.ts`:
 
 ```ts
 import {
@@ -748,14 +748,14 @@ export function isChatComplete(stepIndex: number): boolean {
 - [ ] **Step 4: Run — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/guided-chat-script.test.ts
+cd seatiko/apps/web && npm test -- src/lib/guided-chat-script.test.ts
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/guided-chat-script.ts \
-  foodassistant/apps/web/src/lib/guided-chat-script.test.ts
+git add seatiko/apps/web/src/lib/guided-chat-script.ts \
+  seatiko/apps/web/src/lib/guided-chat-script.test.ts
 git commit -m "feat(web): add guided discover chat script helpers"
 ```
 
@@ -764,7 +764,7 @@ git commit -m "feat(web): add guided discover chat script helpers"
 ### Task 4: site-copy for discover + map filter bar
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/site-copy.ts`
+- Modify: `seatiko/apps/web/src/lib/site-copy.ts`
 
 - [ ] **Step 1: Extend copy type shape**
 
@@ -839,7 +839,7 @@ Also update `home.find` remains “Find a restaurant”; add `home.browseMap`.
 - [ ] **Step 2: TypeScript check**
 
 ```bash
-cd foodassistant/apps/web && npx tsc --noEmit
+cd seatiko/apps/web && npx tsc --noEmit
 ```
 
 Expected: PASS (or only pre-existing unrelated errors). Fix missing keys if `getSiteCopy` consumers break.
@@ -847,7 +847,7 @@ Expected: PASS (or only pre-existing unrelated errors). Fix missing keys if `get
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/site-copy.ts
+git add seatiko/apps/web/src/lib/site-copy.ts
 git commit -m "feat(web): add discover wizard and filter-bar copy"
 ```
 
@@ -856,8 +856,8 @@ git commit -m "feat(web): add discover wizard and filter-bar copy"
 ### Task 5: Preference stepper + summary components
 
 **Files:**
-- Create: `foodassistant/apps/web/src/components/discover/preference-stepper.tsx`
-- Create: `foodassistant/apps/web/src/components/discover/preference-summary.tsx`
+- Create: `seatiko/apps/web/src/components/discover/preference-stepper.tsx`
+- Create: `seatiko/apps/web/src/components/discover/preference-summary.tsx`
 
 - [ ] **Step 1: Implement PreferenceStepper**
 
@@ -1098,8 +1098,8 @@ export function buildMapHref(prefs: DiscoverPreferences): string {
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/discover/preference-stepper.tsx \
-  foodassistant/apps/web/src/components/discover/preference-summary.tsx
+git add seatiko/apps/web/src/components/discover/preference-stepper.tsx \
+  seatiko/apps/web/src/components/discover/preference-summary.tsx
 git commit -m "feat(web): add discover stepper and preference summary"
 ```
 
@@ -1108,7 +1108,7 @@ git commit -m "feat(web): add discover stepper and preference summary"
 ### Task 6: Guided chat UI
 
 **Files:**
-- Create: `foodassistant/apps/web/src/components/discover/guided-chat.tsx`
+- Create: `seatiko/apps/web/src/components/discover/guided-chat.tsx`
 
 - [ ] **Step 1: Implement GuidedChat**
 
@@ -1258,7 +1258,7 @@ Note: multi-select in chat can be a follow-up enhancement; v1 sends one chip per
 - [ ] **Step 2: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/discover/guided-chat.tsx
+git add seatiko/apps/web/src/components/discover/guided-chat.tsx
 git commit -m "feat(web): add guided discover chat panel"
 ```
 
@@ -1267,8 +1267,8 @@ git commit -m "feat(web): add guided discover chat panel"
 ### Task 7: Discover wizard page + route
 
 **Files:**
-- Create: `foodassistant/apps/web/src/components/discover/discover-wizard.tsx`
-- Create: `foodassistant/apps/web/src/app/discover/page.tsx`
+- Create: `seatiko/apps/web/src/components/discover/discover-wizard.tsx`
+- Create: `seatiko/apps/web/src/app/discover/page.tsx`
 
 - [ ] **Step 1: Implement DiscoverWizard**
 
@@ -1348,7 +1348,7 @@ Pass that into `GuidedChat` only after mount, or keep chat collapsed by default 
 
 - [ ] **Step 2: Create page**
 
-`foodassistant/apps/web/src/app/discover/page.tsx`:
+`seatiko/apps/web/src/app/discover/page.tsx`:
 
 ```tsx
 "use client";
@@ -1368,7 +1368,7 @@ export default function DiscoverPage() {
 - [ ] **Step 3: Smoke-check route**
 
 ```bash
-cd foodassistant/apps/web && npm run build
+cd seatiko/apps/web && npm run build
 ```
 
 Expected: build succeeds; `/discover` in routes.
@@ -1376,8 +1376,8 @@ Expected: build succeeds; `/discover` in routes.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/discover/discover-wizard.tsx \
-  foodassistant/apps/web/src/app/discover/page.tsx
+git add seatiko/apps/web/src/components/discover/discover-wizard.tsx \
+  seatiko/apps/web/src/app/discover/page.tsx
 git commit -m "feat(web): add /discover preference wizard page"
 ```
 
@@ -1386,8 +1386,8 @@ git commit -m "feat(web): add /discover preference wizard page"
 ### Task 8: Landing hero CTAs
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/app/page.tsx`
-- Modify: `foodassistant/apps/web/src/lib/site-copy.ts` (if `browseMap` not already on `home`)
+- Modify: `seatiko/apps/web/src/app/page.tsx`
+- Modify: `seatiko/apps/web/src/lib/site-copy.ts` (if `browseMap` not already on `home`)
 
 - [ ] **Step 1: Update hero CTAs**
 
@@ -1412,7 +1412,7 @@ Ensure `home.browseMap` exists in all three locales (Task 4). If three buttons f
 - [ ] **Step 2: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/app/page.tsx foodassistant/apps/web/src/lib/site-copy.ts
+git add seatiko/apps/web/src/app/page.tsx seatiko/apps/web/src/lib/site-copy.ts
 git commit -m "feat(web): route Find CTA through discover wizard"
 ```
 
@@ -1421,9 +1421,9 @@ git commit -m "feat(web): route Find CTA through discover wizard"
 ### Task 9: Active filters bar + VenueMap ranking
 
 **Files:**
-- Create: `foodassistant/apps/web/src/components/discover/active-filters-bar.tsx`
-- Modify: `foodassistant/apps/web/src/app/page.tsx`
-- Modify: `foodassistant/apps/web/src/components/venue-map.tsx`
+- Create: `seatiko/apps/web/src/components/discover/active-filters-bar.tsx`
+- Modify: `seatiko/apps/web/src/app/page.tsx`
+- Modify: `seatiko/apps/web/src/components/venue-map.tsx`
 
 - [ ] **Step 1: ActiveFiltersBar**
 
@@ -1582,9 +1582,9 @@ useEffect(() => {
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/discover/active-filters-bar.tsx \
-  foodassistant/apps/web/src/app/page.tsx \
-  foodassistant/apps/web/src/components/venue-map.tsx
+git add seatiko/apps/web/src/components/discover/active-filters-bar.tsx \
+  seatiko/apps/web/src/app/page.tsx \
+  seatiko/apps/web/src/components/venue-map.tsx
 git commit -m "feat(web): apply discover prefs as ranked map recommendations"
 ```
 
@@ -1593,7 +1593,7 @@ git commit -m "feat(web): apply discover prefs as ranked map recommendations"
 ### Task 10: Discover styles
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/app/premium.css` (or `globals.css` if discover styles fit better with existing landing tokens)
+- Modify: `seatiko/apps/web/src/app/premium.css` (or `globals.css` if discover styles fit better with existing landing tokens)
 
 - [ ] **Step 1: Add CSS**
 
@@ -1648,7 +1648,7 @@ Tune to match existing landing look; do not introduce purple/cream AI-default pa
 - [ ] **Step 2: Visual pass**
 
 ```bash
-cd foodassistant/apps/web && npm run dev
+cd seatiko/apps/web && npm run dev
 ```
 
 Check `/discover` desktop + narrow viewport and `/?cuisine=italian#map`.
@@ -1656,7 +1656,7 @@ Check `/discover` desktop + narrow viewport and `/?cuisine=italian#map`.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/app/premium.css
+git add seatiko/apps/web/src/app/premium.css
 git commit -m "style(web): layout discover wizard and active filters bar"
 ```
 
@@ -1667,7 +1667,7 @@ git commit -m "style(web): layout discover wizard and active filters bar"
 - [ ] **Step 1: Unit tests**
 
 ```bash
-cd foodassistant/apps/web && npm test
+cd seatiko/apps/web && npm test
 ```
 
 Expected: all discover unit tests PASS.
@@ -1675,7 +1675,7 @@ Expected: all discover unit tests PASS.
 - [ ] **Step 2: Build**
 
 ```bash
-cd foodassistant/apps/web && npm run build
+cd seatiko/apps/web && npm run build
 ```
 
 Expected: success.

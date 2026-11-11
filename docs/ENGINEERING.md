@@ -1,9 +1,9 @@
-# FoodAssistant — Engineering & operations
+# Seatiko — Engineering & operations
 
 > **Canonical entry for the whole repo:** [`../README.md`](../README.md)  
 > **All documentation index:** [`README.md`](./README.md)  
 > **Product rules (guest flows, profile, alcohol, UX):** [`APP_LOGIC.md`](./APP_LOGIC.md) · [`UX_SCREENS.md`](./UX_SCREENS.md)  
-> **Code runbook + screenshots:** [`../foodassistant/README.md`](../foodassistant/README.md)
+> **Code runbook + screenshots:** [`../seatiko/README.md`](../seatiko/README.md)
 
 This file is the full engineering / Docker / API / CRM / production guide formerly living at the repository root README. Content is preserved here so the root can stay a short documentation map.
 
@@ -140,9 +140,9 @@ Backend напрямую не публикует порт `8080` на компь
 - MapLibre Native — Flutter;
 - OpenFreeMap — векторные тайлы;
 - OpenStreetMap — геоданные;
-- FoodAssistant API — точки ресторанов и их состояние.
+- Seatiko API — точки ресторанов и их состояние.
 
-![Карта ресторанов](../foodassistant/docs/images/08-site-map.jpg)
+![Карта ресторанов](../seatiko/docs/images/08-site-map.jpg)
 
 ## Структура репозитория
 
@@ -159,7 +159,7 @@ Virtual-restaurant-/
 │   ├── APP_LOGIC.md · UX_SCREENS.md · …  # продукт
 │   ├── prototype/ · diagrams/
 │   └── superpowers/
-├── foodassistant/
+├── seatiko/
 │   ├── apps/web/                     # Next.js, TypeScript, MapLibre
 │   ├── apps/mobile/                  # Flutter Android
 │   ├── services/api/                 # Go, Gin, JWT, storage, CRM sync
@@ -179,10 +179,10 @@ Virtual-restaurant-/
 Администратора нельзя зарегистрировать публичным запросом. Локальные seed-аккаунты:
 
 ```text
-email: admin@foodassistant.local
+email: admin@seatiko.local
 password: admin123
 
-email: guest@foodassistant.local
+email: guest@seatiko.local
 password: guest123
 ```
 
@@ -218,7 +218,7 @@ stateDiagram-v2
 sequenceDiagram
     actor Guest as Гость
     participant App as Web / Android
-    participant API as FoodAssistant API
+    participant API as Seatiko API
     participant CRM as Twenty CRM
 
     Guest->>App: выбирает ресторан и стол
@@ -233,7 +233,7 @@ sequenceDiagram
     App->>API: order / waiter-call
 ```
 
-![Интерактивный план столиков](../foodassistant/docs/images/09-web-table-map.jpg)
+![Интерактивный план столиков](../seatiko/docs/images/09-web-table-map.jpg)
 
 ## Модель данных
 
@@ -323,7 +323,7 @@ curl -s http://localhost/api/v1/cities | jq
 ```json
 {
   "status": "ok",
-  "service": "foodassistant-api",
+  "service": "seatiko-api",
   "crm": {
     "enabled": true,
     "healthy": true,
@@ -358,27 +358,27 @@ curl -s http://localhost/api/v1/cities | jq
 
 ### Сопоставление объектов
 
-| FoodAssistant | Twenty | Ключ синхронизации |
+| Seatiko | Twenty | Ключ синхронизации |
 |---|---|---|
-| владелец или гость | `People` | `foodassistantUserId` |
-| заявка/ресторан | `Companies` | `foodassistantId` |
+| владелец или гость | `People` | `seatikoUserId` |
+| заявка/ресторан | `Companies` | `seatikoId` |
 | публичный ресторан | Company `venueId` | Venue ID |
-| бронь | `Reservations` | `foodassistantReservationId` |
+| бронь | `Reservations` | `seatikoReservationId` |
 
-![Синхронизированные рестораны](../foodassistant/docs/images/10-crm-restaurants-sync.png)
+![Синхронизированные рестораны](../seatiko/docs/images/10-crm-restaurants-sync.png)
 
-![Синхронизированные бронирования](../foodassistant/docs/images/11-crm-reservations-sync.png)
+![Синхронизированные бронирования](../seatiko/docs/images/11-crm-reservations-sync.png)
 
 ### Направления синхронизации
 
-FoodAssistant → Twenty:
+Seatiko → Twenty:
 
 - reconcile после важных изменений;
 - фоновая сверка каждые 15 секунд;
 - idempotent upsert по стабильным ID;
 - автоматическое восстановление после временной ошибки.
 
-Twenty → FoodAssistant:
+Twenty → Seatiko:
 
 - HMAC SHA-256 webhook;
 - проверка timestamp;
@@ -396,7 +396,7 @@ Events: All Objects / All
 Secret: значение TWENTY_WEBHOOK_SECRET
 ```
 
-![Webhook Twenty](../foodassistant/docs/images/12-crm-webhook.png)
+![Webhook Twenty](../seatiko/docs/images/12-crm-webhook.png)
 
 Для локального Docker Twenty использует:
 
@@ -417,7 +417,7 @@ TWENTY_OUTBOUND_HTTP_SAFE_MODE_ENABLED=false
 5. запустить bootstrap стабильных ID:
 
 ```bash
-cd foodassistant/services/api
+cd seatiko/services/api
 set -a
 source ../../../.env.keys
 set +a
@@ -469,13 +469,26 @@ API=http://localhost/api/v1
 | `GET` | `/integrations/twenty/status` | состояние CRM sync |
 | `POST` | `/integrations/twenty/webhook` | подписанный webhook Twenty |
 
+### Поиск свободных столов (TODO: перенести на сервер)
+
+Сейчас (пилот, 10 ресторанов) страница `/book` загружает `GET /venues`, затем для каждого ресторана `GET /venues/:id/tables` и `GET /venues/:id/schedule` и считает свободные времена в браузере (`apps/web/src/lib/venue-availability.ts`, тесты рядом). Это 1 + 2·N запросов и логика, продублированная на клиенте.
+
+Целевой вариант — один публичный маршрут:
+
+| Метод | Маршрут | Назначение |
+|---|---|---|
+| `GET` | `/availability?city_id=&at=<ISO>&guests=N&duration_min=M&window_min=90&limit=4` | рестораны, где есть стол на `guests` на `duration_min` около `at`; для каждого — ближайшие свободные начала и подходящий стол |
+
+Ответ: `{ "venues": [{ "venue_id", "duration_min", "exact": bool, "slots": [{ "starts_at", "table_id" }] }] }`, отсортировано: точное совпадение → ближе по времени → рейтинг.
+Требования: та же проверка пересечений, что в `CreateReservationWithDuration` (`tableBusyAtLocked`, окна броней, занятые столы, `booking_interval_min`, `max_visit_duration_min`, часы работы); тесты в `store` на совпадение с созданием брони. После внедрения `venue-availability.ts` остаётся только для отображения.
+
 ### Маршруты пользователя с JWT
 
 | Метод | Маршрут | Назначение |
 |---|---|---|
 | `GET/PATCH` | `/me` | профиль пользователя |
-| `POST/GET` | `/reservations` | создать / получить свои брони |
-| `POST` | `/reservations/:id/confirm-arrival` | подтвердить приход |
+| `POST/GET` | `/reservations` | создать / получить свои брони; `duration_min` — длительность, выбранная гостем (30 … `max_visit_duration_min`) |
+| `POST` | `/reservations/:id/confirm-arrival` | подтвердить приход; `expected_arrival` — до `reserved_for` + 30 мин (опоздание) |
 | `POST` | `/tables/:id/watch` | наблюдать за столом 2 часа |
 | `POST` | `/sessions/qr` | открыть QR-сессию |
 | `GET/POST` | `/sessions/:id` / `/sessions/:id/close` | получить / закрыть сессию |
@@ -596,7 +609,7 @@ curl -s -X POST "$API/restaurant/applications/$APPLICATION_ID/submit" \
 ```bash
 ADMIN_RESPONSE=$(curl -s -X POST "$API/auth/login" \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@foodassistant.local","password":"admin123"}')
+  -d '{"email":"admin@seatiko.local","password":"admin123"}')
 
 ADMIN_TOKEN=$(jq -r '.token' <<<"$ADMIN_RESPONSE")
 
@@ -700,12 +713,12 @@ curl -s -X POST "$API/admin/integrations/twenty/reconcile" \
 
 ## Постоянное хранение и резервные копии
 
-### FoodAssistant
+### Seatiko
 
 API использует atomic JSON snapshot:
 
 ```text
-/app/data/foodassistant-state.json
+/app/data/seatiko-state.json
 ```
 
 Он содержит пользователей с bcrypt-хешами, заявки, рестораны, столы, брони, сессии, заказы и историю. Запись выполняется через временный файл и atomic rename. Файл внутри volume имеет права `600`.
@@ -732,14 +745,14 @@ docker volume ls | rg 'virtual-restaurant|twenty'
 ### Backend
 
 ```bash
-cd foodassistant/services/api
+cd seatiko/services/api
 go test ./...
 ```
 
 ### Web
 
 ```bash
-cd foodassistant/apps/web
+cd seatiko/apps/web
 npm ci
 npm run lint
 npm run build -- --webpack
@@ -748,7 +761,7 @@ npm run build -- --webpack
 ### Android
 
 ```bash
-cd foodassistant/apps/mobile
+cd seatiko/apps/mobile
 flutter pub get
 flutter analyze
 flutter test
@@ -862,7 +875,7 @@ curl -I http://crm.localhost/
 - добавить rate limiting и защиту login/register;
 - добавить подтверждение email и восстановление пароля;
 - заменить demo QR token на подписанные одноразовые токены;
-- перенести FoodAssistant state из JSON в PostgreSQL перед несколькими API replicas;
+- перенести Seatiko state из JSON в PostgreSQL перед несколькими API replicas;
 - перенести uploads в S3-совместимое хранилище;
 - настроить мониторинг, audit retention и резервные копии;
 - закрепить точную версию Twenty вместо `latest`;
@@ -873,7 +886,7 @@ curl -I http://crm.localhost/
 - [Корень репозитория — карта документации](../README.md)
 - [Индекс docs](./README.md)
 - [Продуктовая логика](./APP_LOGIC.md)
-- [Пошаговая инструкция FoodAssistant со скриншотами](../foodassistant/README.md)
+- [Пошаговая инструкция Seatiko со скриншотами](../seatiko/README.md)
 - [Правила двусторонней CRM-интеграции](./TWENTY_CRM_INTEGRATION.md)
-- [Android](../foodassistant/apps/mobile/README.md)
-- [Web](../foodassistant/apps/web/README.md)
+- [Android](../seatiko/apps/mobile/README.md)
+- [Web](../seatiko/apps/web/README.md)
