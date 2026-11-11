@@ -87,7 +87,7 @@ Nested panels (allergies, payments, favorites) live inside `GuestProfile` for v1
 
 ## Docs / TODO features
 
-Add a **TODO features** section (prefer `foodassistant/README.md`, cross-link from `docs/README.md` if useful) listing at least:
+Add a **TODO features** section (prefer `seatiko/README.md`, cross-link from `docs/README.md` if useful) listing at least:
 
 - [ ] Backend favorites sync (API + DB)
 - [ ] Allergies / diet on `User` + `updateMe`

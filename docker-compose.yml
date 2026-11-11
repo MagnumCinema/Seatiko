@@ -18,7 +18,7 @@ services:
 
   api:
     build:
-      context: ./foodassistant/services/api
+      context: ./seatiko/services/api
       dockerfile: Dockerfile
     expose:
       - "8080"
@@ -31,10 +31,10 @@ services:
       - api-uploads:/app/data/uploads
     environment:
       ADDR: ":8080"
-      JWT_SECRET: ${JWT_SECRET:-dev-foodassistant-change-me}
+      JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
       APP_ENV: ${APP_ENV:-development}
       UPLOAD_DIR: /app/data/uploads
-      DATA_FILE: /app/data/foodassistant-state.json
+      DATA_FILE: /app/data/seatiko-state.json
       TWENTY_BASE_URL: http://twenty-server:3000
       TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
 
   web:
     build:
-      context: ./foodassistant/apps/web
+      context: ./seatiko/apps/web
       dockerfile: Dockerfile
       args:
         # Browser calls same origin via nginx :80 → /api/...

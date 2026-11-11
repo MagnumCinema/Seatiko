@@ -16,16 +16,16 @@
 
 | File | Responsibility |
 |---|---|
-| `foodassistant/apps/web/src/lib/discover-preferences.ts` | MDL budget type, clamp/snap, presets, URL encode/decode, soft `price_level` map, expanded PRIMARY lists, `hasAnyPreference` |
-| `foodassistant/apps/web/src/lib/discover-preferences.test.ts` | Tests for budget helpers, URL, filter/score with MDL |
-| `foodassistant/apps/web/src/lib/discover-chip-icons.ts` | Pure chip-id → glyph string map |
-| `foodassistant/apps/web/src/lib/discover-chip-icons.test.ts` | Coverage that every chip id has an icon |
-| `foodassistant/apps/web/src/lib/guided-chat-script.ts` | Apply budget answers as MDL presets / ranges |
-| `foodassistant/apps/web/src/lib/guided-chat-script.test.ts` | Update budget assertions |
-| `foodassistant/apps/web/src/lib/site-copy.ts` | EN/RU/RO budget + preset labels; drop `$`/`$$`/`$$$` |
-| `foodassistant/apps/web/src/components/discover/preference-stepper.tsx` | Tile chips, icons, MDL range + presets, selectedCount for budget |
-| `foodassistant/apps/web/src/components/discover/guided-chat.tsx` | Budget options = presets |
-| `foodassistant/apps/web/src/app/premium.css` | Tile grid, inner panel, dual-range track, drop stepper `min-height: 560px` |
+| `seatiko/apps/web/src/lib/discover-preferences.ts` | MDL budget type, clamp/snap, presets, URL encode/decode, soft `price_level` map, expanded PRIMARY lists, `hasAnyPreference` |
+| `seatiko/apps/web/src/lib/discover-preferences.test.ts` | Tests for budget helpers, URL, filter/score with MDL |
+| `seatiko/apps/web/src/lib/discover-chip-icons.ts` | Pure chip-id → glyph string map |
+| `seatiko/apps/web/src/lib/discover-chip-icons.test.ts` | Coverage that every chip id has an icon |
+| `seatiko/apps/web/src/lib/guided-chat-script.ts` | Apply budget answers as MDL presets / ranges |
+| `seatiko/apps/web/src/lib/guided-chat-script.test.ts` | Update budget assertions |
+| `seatiko/apps/web/src/lib/site-copy.ts` | EN/RU/RO budget + preset labels; drop `$`/`$$`/`$$$` |
+| `seatiko/apps/web/src/components/discover/preference-stepper.tsx` | Tile chips, icons, MDL range + presets, selectedCount for budget |
+| `seatiko/apps/web/src/components/discover/guided-chat.tsx` | Budget options = presets |
+| `seatiko/apps/web/src/app/premium.css` | Tile grid, inner panel, dual-range track, drop stepper `min-height: 560px` |
 
 Out of scope: chat script rewrite beyond budget options, map chrome, Flutter, real venue MDL prices API.
 
@@ -34,12 +34,12 @@ Out of scope: chat script rewrite beyond budget options, map chrome, Flutter, re
 ### Task 1: MDL budget model helpers (TDD)
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/discover-preferences.ts`
-- Modify: `foodassistant/apps/web/src/lib/discover-preferences.test.ts`
+- Modify: `seatiko/apps/web/src/lib/discover-preferences.ts`
+- Modify: `seatiko/apps/web/src/lib/discover-preferences.test.ts`
 
 - [ ] **Step 1: Replace budget helper tests with MDL-focused failing tests**
 
-In `foodassistant/apps/web/src/lib/discover-preferences.test.ts`, replace the `budget range helpers` describe block and update encode/decode + filter tests that use `budget: [n]`:
+In `seatiko/apps/web/src/lib/discover-preferences.test.ts`, replace the `budget range helpers` describe block and update encode/decode + filter tests that use `budget: [n]`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -172,14 +172,14 @@ Keep the existing `place()` helper and other filter tests unchanged except budge
 Run:
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/discover-preferences.test.ts
 ```
 
 Expected: FAIL (missing exports / type errors on `budget: { min, max }`).
 
 - [ ] **Step 3: Implement MDL budget model**
 
-In `foodassistant/apps/web/src/lib/discover-preferences.ts`:
+In `seatiko/apps/web/src/lib/discover-preferences.ts`:
 
 1. Replace `BudgetLevel` usage on prefs with:
 
@@ -313,7 +313,7 @@ function budgetScoreMatches(
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/discover-preferences.test.ts
 ```
 
 Expected: PASS
@@ -321,7 +321,7 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/discover-preferences.ts foodassistant/apps/web/src/lib/discover-preferences.test.ts
+git add seatiko/apps/web/src/lib/discover-preferences.ts seatiko/apps/web/src/lib/discover-preferences.test.ts
 git commit -m "$(cat <<'EOF'
 feat(web): model discover budget as MDL range
 
@@ -334,8 +334,8 @@ EOF
 ### Task 2: Expand primary chip lists
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/discover-preferences.ts`
-- Modify: `foodassistant/apps/web/src/lib/discover-preferences.test.ts` (add count assertions)
+- Modify: `seatiko/apps/web/src/lib/discover-preferences.ts`
+- Modify: `seatiko/apps/web/src/lib/discover-preferences.test.ts` (add count assertions)
 
 - [ ] **Step 1: Write failing primary-count test**
 
@@ -385,7 +385,7 @@ describe("primary chip counts", () => {
 - [ ] **Step 2: Run test — expect FAIL on lengths**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-preferences.test.ts -t "primary chip counts"
+cd seatiko/apps/web && npx vitest run src/lib/discover-preferences.test.ts -t "primary chip counts"
 ```
 
 - [ ] **Step 3: Move ids into PRIMARY**
@@ -450,13 +450,13 @@ Keep `*_IDS` as `[...PRIMARY, ...MORE]`.
 - [ ] **Step 4: Re-run tests — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/discover-preferences.test.ts
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/discover-preferences.ts foodassistant/apps/web/src/lib/discover-preferences.test.ts
+git add seatiko/apps/web/src/lib/discover-preferences.ts seatiko/apps/web/src/lib/discover-preferences.test.ts
 git commit -m "$(cat <<'EOF'
 feat(web): show more discover chips by default
 
@@ -469,8 +469,8 @@ EOF
 ### Task 3: Chip icon map (TDD)
 
 **Files:**
-- Create: `foodassistant/apps/web/src/lib/discover-chip-icons.ts`
-- Create: `foodassistant/apps/web/src/lib/discover-chip-icons.test.ts`
+- Create: `seatiko/apps/web/src/lib/discover-chip-icons.ts`
+- Create: `seatiko/apps/web/src/lib/discover-chip-icons.test.ts`
 
 - [ ] **Step 1: Write failing test**
 
@@ -505,12 +505,12 @@ describe("chipIcon", () => {
 - [ ] **Step 2: Run — expect FAIL (module missing)**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-chip-icons.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/discover-chip-icons.test.ts
 ```
 
 - [ ] **Step 3: Implement icon map**
 
-Create `foodassistant/apps/web/src/lib/discover-chip-icons.ts`:
+Create `seatiko/apps/web/src/lib/discover-chip-icons.ts`:
 
 ```ts
 const ICONS: Record<string, string> = {
@@ -567,13 +567,13 @@ export function chipIcon(id: string): string {
 - [ ] **Step 4: Run — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-chip-icons.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/discover-chip-icons.test.ts
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/discover-chip-icons.ts foodassistant/apps/web/src/lib/discover-chip-icons.test.ts
+git add seatiko/apps/web/src/lib/discover-chip-icons.ts seatiko/apps/web/src/lib/discover-chip-icons.test.ts
 git commit -m "$(cat <<'EOF'
 feat(web): add discover chip icon glyphs
 
@@ -586,9 +586,9 @@ EOF
 ### Task 4: Guided chat budget → presets
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/guided-chat-script.ts`
-- Modify: `foodassistant/apps/web/src/lib/guided-chat-script.test.ts`
-- Modify: `foodassistant/apps/web/src/components/discover/guided-chat.tsx`
+- Modify: `seatiko/apps/web/src/lib/guided-chat-script.ts`
+- Modify: `seatiko/apps/web/src/lib/guided-chat-script.test.ts`
+- Modify: `seatiko/apps/web/src/components/discover/guided-chat.tsx`
 
 - [ ] **Step 1: Update failing chat tests**
 
@@ -606,7 +606,7 @@ In `guided-chat-script.test.ts`, replace budget assertions:
 - [ ] **Step 2: Run — expect FAIL**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/guided-chat-script.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/guided-chat-script.test.ts
 ```
 
 - [ ] **Step 3: Implement applyChatAnswer budget branch**
@@ -661,13 +661,13 @@ Remove `BudgetChipKey` / `budget1` usage.
 - [ ] **Step 4: Run chat + prefs tests — expect PASS** (may still fail typecheck elsewhere until stepper updated; run these two files)
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/guided-chat-script.test.ts src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/guided-chat-script.test.ts src/lib/discover-preferences.test.ts
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/guided-chat-script.ts foodassistant/apps/web/src/lib/guided-chat-script.test.ts foodassistant/apps/web/src/components/discover/guided-chat.tsx
+git add seatiko/apps/web/src/lib/guided-chat-script.ts seatiko/apps/web/src/lib/guided-chat-script.test.ts seatiko/apps/web/src/components/discover/guided-chat.tsx
 git commit -m "$(cat <<'EOF'
 feat(web): map guided-chat budget answers to MDL presets
 
@@ -680,7 +680,7 @@ EOF
 ### Task 5: i18n copy for MDL budget + presets
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/site-copy.ts`
+- Modify: `seatiko/apps/web/src/lib/site-copy.ts`
 
 - [ ] **Step 1: Extend discover copy shape in all three locales**
 
@@ -748,7 +748,7 @@ Keep TypeScript happy: all three locale objects must share the same keys (mirror
 - [ ] **Step 2: Typecheck / quick grep**
 
 ```bash
-cd foodassistant/apps/web && npx tsc --noEmit 2>&1 | head -40
+cd seatiko/apps/web && npx tsc --noEmit 2>&1 | head -40
 ```
 
 Fix any remaining `budget1` references (should be gone after Task 4).
@@ -756,7 +756,7 @@ Fix any remaining `budget1` references (should be gone after Task 4).
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/site-copy.ts
+git add seatiko/apps/web/src/lib/site-copy.ts
 git commit -m "$(cat <<'EOF'
 feat(web): add MDL budget and preset copy
 
@@ -769,7 +769,7 @@ EOF
 ### Task 6: Preference stepper UI (tiles + MDL range)
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/components/discover/preference-stepper.tsx`
+- Modify: `seatiko/apps/web/src/components/discover/preference-stepper.tsx`
 
 - [ ] **Step 1: Update imports and selectedCount**
 
@@ -936,7 +936,7 @@ Structure:
 - [ ] **Step 4: Smoke typecheck**
 
 ```bash
-cd foodassistant/apps/web && npx tsc --noEmit 2>&1 | head -50
+cd seatiko/apps/web && npx tsc --noEmit 2>&1 | head -50
 ```
 
 Fix remaining `budget.length` / `BudgetLevel[]` call sites if any.
@@ -944,7 +944,7 @@ Fix remaining `budget.length` / `BudgetLevel[]` call sites if any.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/discover/preference-stepper.tsx
+git add seatiko/apps/web/src/components/discover/preference-stepper.tsx
 git commit -m "$(cat <<'EOF'
 feat(web): tile chips and MDL budget range in discover stepper
 
@@ -957,7 +957,7 @@ EOF
 ### Task 7: CSS — density, tiles, dual-range, drop min-height
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/app/premium.css`
+- Modify: `seatiko/apps/web/src/app/premium.css`
 
 - [ ] **Step 1: Drop stepper min-height and add panel/grid/tile styles**
 
@@ -1102,7 +1102,7 @@ Optional: `.discover-stepper-body { animation: discover-step-fade 0.18s ease; }`
 - [ ] **Step 2: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/app/premium.css
+git add seatiko/apps/web/src/app/premium.css
 git commit -m "$(cat <<'EOF'
 style(web): densify discover tiles and MDL range UI
 
@@ -1119,7 +1119,7 @@ EOF
 - [ ] **Step 1: Run web unit tests**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/discover-preferences.test.ts src/lib/discover-chip-icons.test.ts src/lib/guided-chat-script.test.ts src/lib/soft-advance.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/discover-preferences.test.ts src/lib/discover-chip-icons.test.ts src/lib/guided-chat-script.test.ts src/lib/soft-advance.test.ts
 ```
 
 Expected: all PASS
@@ -1128,7 +1128,7 @@ Expected: all PASS
 
 ```bash
 cd /path/to/.worktrees/discover-preference-box-polish && \
-docker build --no-cache -t virtual-restaurant-web:latest --build-arg NEXT_PUBLIC_API_URL= foodassistant/apps/web && \
+docker build --no-cache -t virtual-restaurant-web:latest --build-arg NEXT_PUBLIC_API_URL= seatiko/apps/web && \
 cd /path/to/repo-root && docker compose up -d --force-recreate web
 ```
 

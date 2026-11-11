@@ -10,6 +10,7 @@ All project documentation lives here. **Repository entry:** [`../README.md`](../
 |----------|----------|
 | [`APP_LOGIC.md`](./APP_LOGIC.md) | Business logic, auth, guest profile, alcohol/18+, payments, MVP |
 | [`UX_SCREENS.md`](./UX_SCREENS.md) | Screens and navigation |
+| [`WEB_PAGES_STATUS.md`](./WEB_PAGES_STATUS.md) | Web page redesign tracker (done / in progress) |
 | [`I18N.md`](./I18N.md) | RU / EN / RO strings |
 | [`RESTAURANT_OWNER_FLOW.md`](./RESTAURANT_OWNER_FLOW.md) | Owner onboarding & cabinet |
 | [`TWENTY_CRM_INTEGRATION.md`](./TWENTY_CRM_INTEGRATION.md) | CRM sync rules |
@@ -34,7 +35,7 @@ All project documentation lives here. **Repository entry:** [`../README.md`](../
 
 | Document | Contents |
 |----------|----------|
-| [`../foodassistant/README.md`](../foodassistant/README.md) | Screenshots, demo checklist, Android/web pointers |
+| [`../seatiko/README.md`](../seatiko/README.md) | Screenshots, demo checklist, Android/web pointers |
 
 ---
 
@@ -49,7 +50,7 @@ All project documentation lives here. **Repository entry:** [`../README.md`](../
 | Screens / wireframes | [`UX_SCREENS.md`](./UX_SCREENS.md) |
 | UI strings ru/en/ro | [`I18N.md`](./I18N.md) |
 | Clickable demo | [`prototype/index.html`](./prototype/index.html) |
-| Flow diagrams | [`diagrams/foodassistant.drawio`](./diagrams/foodassistant.drawio) |
+| Flow diagrams | [`diagrams/seatiko.drawio`](./diagrams/seatiko.drawio) |
 | Docker / API / ops | [`ENGINEERING.md`](./ENGINEERING.md) |
 
 Prototype may simplify UI; **logic is always fixed in these docs first**.
@@ -68,7 +69,7 @@ Prototype may simplify UI; **logic is always fixed in these docs first**.
 - First name, last name, **preferred name** (`display_name`), phone, locale
 - Allergies / diet, payment methods, favorites, order/booking history
 - Age 18+: **staff-bound** ID check → `adult_preorder_allowed` (unlocks **all** `requires_age_18` menu items, not only alcohol; alias `alcohol_preorder_allowed`). Guest profile: read-only who/when/venue. The **named waiter/manager** who granted is responsible if the guest was not actually 18+ — §8.4
-- **Web:** `/account` + Profile tab share `GuestProfile`; dark/light theme (`fa-theme`). Local-only / stub follow-ups: [`foodassistant/README.md` — TODO features](../foodassistant/README.md#todo-features-guest-profile)
+- **Web:** `/account` + Profile tab share `GuestProfile`; dark/light theme (`fa-theme`). Local-only / stub follow-ups: [`seatiko/README.md` — TODO features](../seatiko/README.md#todo-features-guest-profile)
 
 ### Floor / QR / age-restricted
 - Table states, notify when free, “I’m coming”, QR session
@@ -82,7 +83,7 @@ Prototype may simplify UI; **logic is always fixed in these docs first**.
 # Prototype
 open docs/prototype/index.html
 
-# Diagrams → diagrams.net → File → Open → docs/diagrams/foodassistant.drawio
+# Diagrams → diagrams.net → File → Open → docs/diagrams/seatiko.drawio
 ```
 
 ## Accepted product decisions

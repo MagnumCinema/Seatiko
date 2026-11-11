@@ -1,0 +1,257 @@
+{
+  "app": {
+    "title": "Seatiko"
+  },
+  "common": {
+    "loading": "Loading...",
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "error": "Something went wrong",
+    "save": "Save",
+    "retry": "Retry",
+    "soon": "Soon"
+  },
+  "nav": {
+    "map": "Map",
+    "discover": "Discover",
+    "orders": "Orders",
+    "profile": "Profile",
+    "scan_qr": "Scan QR on site"
+  },
+  "onboarding": {
+    "next": "Next",
+    "skip": "Skip",
+    "start": "Get started",
+    "1": {
+      "title": "Find a place",
+      "body": "On the Bălți map or via AI"
+    },
+    "2": {
+      "title": "Book a table",
+      "body": "Pick a table on the floor map"
+    },
+    "3": {
+      "title": "Pre-order food",
+      "body": "Food ready when you arrive"
+    },
+    "4": {
+      "title": "Scan QR",
+      "body": "Order and call waiter at your table"
+    }
+  },
+  "city": {
+    "title": "Choose a city",
+    "pilot": "Pilot city",
+    "current": "Current",
+    "soon": "Soon"
+  },
+  "map": {
+    "city": "Bălți",
+    "change_city": "Change city",
+    "search": "Search venues...",
+    "free_tables": "{} tables free",
+    "loading": "Loading...",
+    "map_label": "Map"
+  },
+  "discover": {
+    "title": "What do you want today?",
+    "placeholder": "I want something spicy nearby…",
+    "chip_near": "Nearby",
+    "chip_budget": "Budget",
+    "chip_romantic": "Romantic",
+    "chip_fast": "Quick",
+    "holiday": "Holiday picks",
+    "ai_ask": "Ask AI",
+    "empty": "No suggestions yet"
+  },
+  "venue": {
+    "open": "Open",
+    "closed": "Closed",
+    "floor_map": "Floor map",
+    "book": "Book table",
+    "menu": "Menu",
+    "about": "About",
+    "avg_check": "Avg check {} MDL",
+    "menu_preview": "Popular dishes",
+    "see_full_menu": "See full menu"
+  },
+  "waitlist": {
+    "no_tables": "No free tables",
+    "live_queue": "Live queue",
+    "join_hint": "Join the queue — we'll ping you when a table frees up. Wait",
+    "join_hint_soon": "Join the queue — there's barely any wait right now",
+    "in_queue": "{} in queue",
+    "guests": "Guests",
+    "guests_n": "{} guests",
+    "join": "Join the queue",
+    "leave": "Leave the queue",
+    "waiting_title": "You're in the queue",
+    "ready_title": "Your table is ready",
+    "ready_hint": "Come to the host — we hold the table for a short while",
+    "ready_table": "Table {} · come to the host",
+    "already": "You're already in this venue's queue",
+    "error": "Action failed",
+    "wait_soon": "A table is about to free up",
+    "wait_min": "≈ {} min",
+    "wait_hour": "≈ {} h",
+    "wait_hour_min": "≈ {} h {} min"
+  },
+  "floor": {
+    "leg_free": "Free",
+    "leg_res": "Reserved",
+    "leg_occ": "Occupied",
+    "leg_yours": "Yours",
+    "select_table": "Select table",
+    "today": "Today"
+  },
+  "table": {
+    "title": "Table #{}",
+    "status_free": "Free",
+    "status_occupied": "Occupied",
+    "status_reserved": "Reserved",
+    "status_yours": "Your table",
+    "arrived_at": "Seated at {}",
+    "arrived_hint": "Estimated free in ~1–1.5 h after seating",
+    "reserved_for": "Reserved for {}",
+    "notify_free": "Notify when free",
+    "notify_set": "We will notify you when the table is free",
+    "notify_confirm_title": "Confirm notification",
+    "notify_confirm_body": "Send push when table #{} is free?",
+    "im_coming": "I'm coming",
+    "im_coming_set": "Arrival confirmed. We expect you at {}",
+    "im_coming_confirm_title": "Confirm arrival",
+    "im_coming_confirm_body": "Will you arrive at {}?",
+    "im_coming_ok": "Yes, I'm coming",
+    "book_this": "Book this table",
+    "seats": "{} seats",
+    "go_session": "Open session"
+  },
+  "reservation": {
+    "title": "Confirm reservation",
+    "venue": "Venue",
+    "table": "Table",
+    "time": "Time",
+    "guests": "Guests",
+    "preorder": "+ Pre-order dishes",
+    "preorder_hint": "When you pre-order dishes, food will be on the table when you arrive or served shortly after.",
+    "confirm_book": "Confirm booking",
+    "success": "Reservation confirmed",
+    "book_only": "Reservation only"
+  },
+  "scan": {
+    "title": "Scan QR",
+    "hint": "Point the camera at the table QR code",
+    "token_placeholder": "venue-1:t1",
+    "simulate": "Open session",
+    "manual": "Enter manually",
+    "torch": "Torch",
+    "invalid": "Could not open a table with this code",
+    "no_camera": "No camera access — allow it or enter the code manually"
+  },
+  "order_choice": {
+    "sub": "How would you like to order?",
+    "app": "Order in the app",
+    "waiter": "Call a waiter"
+  },
+  "session": {
+    "your_table": "Table #{} · {}",
+    "menu": "Menu",
+    "waiter": "Call waiter",
+    "active_order": "Active order",
+    "preparing": "preparing",
+    "ready": "ready",
+    "bill": "Bill",
+    "release": "Release table",
+    "empty_orders": "No active orders yet",
+    "released": "Table released"
+  },
+  "waiter": {
+    "initial_title": "Order with waiter",
+    "initial_sub": "The waiter will come to your table and take your order verbally. Session starts automatically.",
+    "initial_call": "Call waiter",
+    "session_title": "Call waiter",
+    "session_sub": "Choose a reason — the waiter will be notified",
+    "reason_order": "Place order",
+    "reason_bill": "Bill",
+    "reason_question": "Question",
+    "reason_other": "Other",
+    "send": "Send call",
+    "coming": "Waiter is on the way..."
+  },
+  "menu": {
+    "title": "Menu",
+    "cart": "Cart",
+    "add": "Add",
+    "checkout": "Place order",
+    "empty": "Menu unavailable",
+    "cart_empty": "Cart is empty",
+    "total": "Total",
+    "alcohol_hint": "Alcohol can only be ordered at the venue",
+    "browse_hint": "This is the restaurant menu. Kitchen orders start after you check in (QR) or with a reservation preorder.",
+    "book_to_order": "Book a table",
+    "preorder_saved": "List saved with your booking · kitchen gets it after check-in"
+  },
+  "payment": {
+    "title": "Payment",
+    "total": "Total",
+    "pay_app": "Pay in app",
+    "pay_venue": "Pay at venue",
+    "status_paid": "Paid",
+    "status_pending": "Awaiting payment at venue",
+    "done": "Done"
+  },
+  "orders": {
+    "title": "Orders",
+    "active": "Active",
+    "history": "History",
+    "active_res": "Active reservation",
+    "session": "Current session",
+    "empty": "No orders or reservations yet",
+    "need_auth": "Sign in to see bookings and orders",
+    "spent": "Spent",
+    "bookings": "Bookings",
+    "checks": "Receipts",
+    "table": "Table",
+    "guests": "guests",
+    "when": "Time",
+    "status": "Status",
+    "receipt": "Receipt"
+  },
+  "profile": {
+    "title": "Profile",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "display_name": "Preferred name",
+    "language": "Language",
+    "allergies": "Allergies / diet",
+    "payment_methods": "Payment methods",
+    "favorites": "Favorites",
+    "saved": "Profile saved",
+    "guest": "Your account",
+    "sign_in": "Sign in",
+    "logout": "Log out of account",
+    "account_benefits": "Booking history, receipts, spend and return visits — in one place",
+    "stat_spent": "Spent",
+    "stat_bookings": "Bookings",
+    "stat_orders": "Orders",
+    "my_history": "My bookings & receipts",
+    "my_history_hint": "Visit and payment history"
+  },
+  "auth": {
+    "login": "Sign in",
+    "register": "Register",
+    "title": "Sign in required",
+    "body": "Account needed to book, order and keep history",
+    "email": "Email",
+    "password": "Password",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "switch_register": "Create account",
+    "switch_login": "Already have an account?"
+  },
+  "errors": {
+    "api": "Failed to load venues"
+  }
+}

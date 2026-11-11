@@ -16,19 +16,19 @@
 
 | File | Responsibility |
 |---|---|
-| `foodassistant/apps/web/src/lib/theme.ts` | Theme type, storage key, read/write, apply to `documentElement` |
-| `foodassistant/apps/web/src/lib/theme.test.ts` | Unit tests for theme helpers |
-| `foodassistant/apps/web/src/components/theme-provider.tsx` | React context + hydrate from `localStorage` |
-| `foodassistant/apps/web/src/lib/guest-local-prefs.ts` | Allergies + favorites scoped by `userId` |
-| `foodassistant/apps/web/src/lib/guest-local-prefs.test.ts` | Unit tests for local prefs |
-| `foodassistant/apps/web/src/components/guest-profile.tsx` | Shared profile UI + nested panels |
-| `foodassistant/apps/web/src/app/account/page.tsx` | `/account` route with header + auth gate |
-| `foodassistant/apps/web/src/components/site-header.tsx` | Account link + theme toggle |
-| `foodassistant/apps/web/src/components/app-shell.tsx` | Profile tab mounts `GuestProfile` |
-| `foodassistant/apps/web/src/app/layout.tsx` | Wrap `ThemeProvider`; theme-aware body classes |
-| `foodassistant/apps/web/src/app/premium.css` | `[data-theme]` tokens; auth + account styles |
-| `foodassistant/apps/web/messages/{ru,en,ro}.json` | New `profile.*` / `theme.*` / `age18.*` keys |
-| `foodassistant/README.md` | **TODO features** backlog |
+| `seatiko/apps/web/src/lib/theme.ts` | Theme type, storage key, read/write, apply to `documentElement` |
+| `seatiko/apps/web/src/lib/theme.test.ts` | Unit tests for theme helpers |
+| `seatiko/apps/web/src/components/theme-provider.tsx` | React context + hydrate from `localStorage` |
+| `seatiko/apps/web/src/lib/guest-local-prefs.ts` | Allergies + favorites scoped by `userId` |
+| `seatiko/apps/web/src/lib/guest-local-prefs.test.ts` | Unit tests for local prefs |
+| `seatiko/apps/web/src/components/guest-profile.tsx` | Shared profile UI + nested panels |
+| `seatiko/apps/web/src/app/account/page.tsx` | `/account` route with header + auth gate |
+| `seatiko/apps/web/src/components/site-header.tsx` | Account link + theme toggle |
+| `seatiko/apps/web/src/components/app-shell.tsx` | Profile tab mounts `GuestProfile` |
+| `seatiko/apps/web/src/app/layout.tsx` | Wrap `ThemeProvider`; theme-aware body classes |
+| `seatiko/apps/web/src/app/premium.css` | `[data-theme]` tokens; auth + account styles |
+| `seatiko/apps/web/messages/{ru,en,ro}.json` | New `profile.*` / `theme.*` / `age18.*` keys |
+| `seatiko/README.md` | **TODO features** backlog |
 | `docs/UX_SCREENS.md` / `docs/CHANGELOG.md` | Note `/account` + theme if product docs need a one-line sync |
 
 ---
@@ -36,12 +36,12 @@
 ### Task 1: Theme helpers (TDD)
 
 **Files:**
-- Create: `foodassistant/apps/web/src/lib/theme.ts`
-- Create: `foodassistant/apps/web/src/lib/theme.test.ts`
+- Create: `seatiko/apps/web/src/lib/theme.ts`
+- Create: `seatiko/apps/web/src/lib/theme.test.ts`
 
 - [ ] **Step 1: Write failing tests**
 
-Create `foodassistant/apps/web/src/lib/theme.test.ts`:
+Create `seatiko/apps/web/src/lib/theme.test.ts`:
 
 ```ts
 import { describe, expect, it, beforeEach } from "vitest";
@@ -86,7 +86,7 @@ describe("readStoredTheme / writeStoredTheme", () => {
 - [ ] **Step 2: Run tests — expect FAIL**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/theme.test.ts
+cd seatiko/apps/web && npm test -- src/lib/theme.test.ts
 ```
 
 Expected: FAIL (module not found).
@@ -130,7 +130,7 @@ export function applyThemeToDocument(theme: Theme): void {
 - [ ] **Step 4: Run tests — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/theme.test.ts
+cd seatiko/apps/web && npm test -- src/lib/theme.test.ts
 ```
 
 Expected: PASS. (If Vitest lacks `localStorage`, set `environment: "happy-dom"` or `"jsdom"` in `vitest.config.ts` for these tests, or mock `globalThis.localStorage` in the test file.)
@@ -138,7 +138,7 @@ Expected: PASS. (If Vitest lacks `localStorage`, set `environment: "happy-dom"` 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/theme.ts foodassistant/apps/web/src/lib/theme.test.ts foodassistant/apps/web/vitest.config.ts
+git add seatiko/apps/web/src/lib/theme.ts seatiko/apps/web/src/lib/theme.test.ts seatiko/apps/web/vitest.config.ts
 git commit -m "feat(web): add theme storage helpers with tests"
 ```
 
@@ -147,10 +147,10 @@ git commit -m "feat(web): add theme storage helpers with tests"
 ### Task 2: ThemeProvider + CSS tokens + layout
 
 **Files:**
-- Create: `foodassistant/apps/web/src/components/theme-provider.tsx`
-- Modify: `foodassistant/apps/web/src/app/layout.tsx`
-- Modify: `foodassistant/apps/web/src/app/premium.css` (top of file: theme tokens)
-- Modify: `foodassistant/apps/web/messages/ru.json`, `en.json`, `ro.json`
+- Create: `seatiko/apps/web/src/components/theme-provider.tsx`
+- Modify: `seatiko/apps/web/src/app/layout.tsx`
+- Modify: `seatiko/apps/web/src/app/premium.css` (top of file: theme tokens)
+- Modify: `seatiko/apps/web/messages/ru.json`, `en.json`, `ro.json`
 
 - [ ] **Step 1: Add i18n keys**
 
@@ -287,7 +287,7 @@ Update `.auth-page` / `.auth-card` (and owner-register card) to use `var(--auth-
 - [ ] **Step 5: Manual smoke**
 
 ```bash
-cd foodassistant/apps/web && npm run dev
+cd seatiko/apps/web && npm run dev
 ```
 
 Open `/` and `/login`; in DevTools set `document.documentElement.dataset.theme = "light"` then `"dark"` — backgrounds should flip. (Header toggle comes in Task 3.)
@@ -295,12 +295,12 @@ Open `/` and `/login`; in DevTools set `document.documentElement.dataset.theme =
 - [ ] **Step 6: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/theme-provider.tsx \
-  foodassistant/apps/web/src/app/layout.tsx \
-  foodassistant/apps/web/src/app/premium.css \
-  foodassistant/apps/web/messages/ru.json \
-  foodassistant/apps/web/messages/en.json \
-  foodassistant/apps/web/messages/ro.json
+git add seatiko/apps/web/src/components/theme-provider.tsx \
+  seatiko/apps/web/src/app/layout.tsx \
+  seatiko/apps/web/src/app/premium.css \
+  seatiko/apps/web/messages/ru.json \
+  seatiko/apps/web/messages/en.json \
+  seatiko/apps/web/messages/ro.json
 git commit -m "feat(web): add ThemeProvider and dark/light CSS tokens"
 ```
 
@@ -309,7 +309,7 @@ git commit -m "feat(web): add ThemeProvider and dark/light CSS tokens"
 ### Task 3: Header theme toggle + Account link
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/components/site-header.tsx`
+- Modify: `seatiko/apps/web/src/components/site-header.tsx`
 
 - [ ] **Step 1: Wire toggle and Account**
 
@@ -340,9 +340,9 @@ Toggle on `/` and `/login`; preference survives refresh (`localStorage fa-theme`
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/site-header.tsx \
-  foodassistant/apps/web/src/lib/site-copy.ts \
-  foodassistant/apps/web/src/app/premium.css
+git add seatiko/apps/web/src/components/site-header.tsx \
+  seatiko/apps/web/src/lib/site-copy.ts \
+  seatiko/apps/web/src/app/premium.css
 git commit -m "feat(web): add header theme toggle and Account link"
 ```
 
@@ -351,8 +351,8 @@ git commit -m "feat(web): add header theme toggle and Account link"
 ### Task 4: Guest local prefs (TDD)
 
 **Files:**
-- Create: `foodassistant/apps/web/src/lib/guest-local-prefs.ts`
-- Create: `foodassistant/apps/web/src/lib/guest-local-prefs.test.ts`
+- Create: `seatiko/apps/web/src/lib/guest-local-prefs.ts`
+- Create: `seatiko/apps/web/src/lib/guest-local-prefs.test.ts`
 
 - [ ] **Step 1: Write failing tests**
 
@@ -410,7 +410,7 @@ describe("guest-local-prefs", () => {
 - [ ] **Step 2: Run — expect FAIL**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/guest-local-prefs.test.ts
+cd seatiko/apps/web && npm test -- src/lib/guest-local-prefs.test.ts
 ```
 
 - [ ] **Step 3: Implement**
@@ -494,14 +494,14 @@ export function removeFavoriteVenue(
 - [ ] **Step 4: Run — expect PASS**
 
 ```bash
-cd foodassistant/apps/web && npm test -- src/lib/guest-local-prefs.test.ts
+cd seatiko/apps/web && npm test -- src/lib/guest-local-prefs.test.ts
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/guest-local-prefs.ts \
-  foodassistant/apps/web/src/lib/guest-local-prefs.test.ts
+git add seatiko/apps/web/src/lib/guest-local-prefs.ts \
+  seatiko/apps/web/src/lib/guest-local-prefs.test.ts
 git commit -m "feat(web): add guest local prefs helper for allergies and favorites"
 ```
 
@@ -510,9 +510,9 @@ git commit -m "feat(web): add guest local prefs helper for allergies and favorit
 ### Task 5: `GuestProfile` component
 
 **Files:**
-- Create: `foodassistant/apps/web/src/components/guest-profile.tsx`
-- Modify: `foodassistant/apps/web/messages/{ru,en,ro}.json`
-- Modify: `foodassistant/apps/web/src/app/premium.css`
+- Create: `seatiko/apps/web/src/components/guest-profile.tsx`
+- Modify: `seatiko/apps/web/messages/{ru,en,ro}.json`
+- Modify: `seatiko/apps/web/src/app/premium.css`
 
 - [ ] **Step 1: Add message keys**
 
@@ -576,11 +576,11 @@ Add `.guest-profile`, panel, and age badge styles using theme tokens.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/guest-profile.tsx \
-  foodassistant/apps/web/messages/ru.json \
-  foodassistant/apps/web/messages/en.json \
-  foodassistant/apps/web/messages/ro.json \
-  foodassistant/apps/web/src/app/premium.css
+git add seatiko/apps/web/src/components/guest-profile.tsx \
+  seatiko/apps/web/messages/ru.json \
+  seatiko/apps/web/messages/en.json \
+  seatiko/apps/web/messages/ro.json \
+  seatiko/apps/web/src/app/premium.css
 git commit -m "feat(web): add shared GuestProfile component"
 ```
 
@@ -589,7 +589,7 @@ git commit -m "feat(web): add shared GuestProfile component"
 ### Task 6: `/account` page
 
 **Files:**
-- Create: `foodassistant/apps/web/src/app/account/page.tsx`
+- Create: `seatiko/apps/web/src/app/account/page.tsx`
 
 - [ ] **Step 1: Implement page**
 
@@ -688,8 +688,8 @@ Visit `/account` signed out → CTA to login. Sign in → return to `/account` w
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/app/account/page.tsx \
-  foodassistant/apps/web/src/app/login/page.tsx
+git add seatiko/apps/web/src/app/account/page.tsx \
+  seatiko/apps/web/src/app/login/page.tsx
 git commit -m "feat(web): add /account guest profile page"
 ```
 
@@ -698,8 +698,8 @@ git commit -m "feat(web): add /account guest profile page"
 ### Task 7: Wire app-shell Profile tab + favorite from venue (minimal)
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/components/app-shell.tsx`
-- Modify: `foodassistant/apps/web/src/app/venues/[id]/page.tsx` (optional heart / “Add to favorites”)
+- Modify: `seatiko/apps/web/src/components/app-shell.tsx`
+- Modify: `seatiko/apps/web/src/app/venues/[id]/page.tsx` (optional heart / “Add to favorites”)
 
 - [ ] **Step 1: Replace Profile tab body**
 
@@ -751,8 +751,8 @@ If unsigned, prompt login. This satisfies “working favorites” beyond remove-
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/app-shell.tsx \
-  foodassistant/apps/web/src/app/venues/[id]/page.tsx
+git add seatiko/apps/web/src/components/app-shell.tsx \
+  seatiko/apps/web/src/app/venues/[id]/page.tsx
 git commit -m "feat(web): mount GuestProfile in app shell and enable favorite venues"
 ```
 
@@ -761,7 +761,7 @@ git commit -m "feat(web): mount GuestProfile in app shell and enable favorite ve
 ### Task 8: README TODO features + product doc touch
 
 **Files:**
-- Modify: `foodassistant/README.md`
+- Modify: `seatiko/README.md`
 - Modify: `docs/CHANGELOG.md` (patch note)
 - Modify: `docs/UX_SCREENS.md` (one line: Profile also at `/account`)
 
@@ -788,7 +788,7 @@ Under a new patch entry (e.g. `[1.4.3]` or next free): guest `/account`, shared 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add foodassistant/README.md docs/CHANGELOG.md docs/UX_SCREENS.md
+git add seatiko/README.md docs/CHANGELOG.md docs/UX_SCREENS.md
 git commit -m "docs: note guest profile TODO features and /account surface"
 ```
 
@@ -799,7 +799,7 @@ git commit -m "docs: note guest profile TODO features and /account surface"
 - [ ] **Step 1: Lint + unit tests**
 
 ```bash
-cd foodassistant/apps/web && npm test && npm run lint
+cd seatiko/apps/web && npm test && npm run lint
 ```
 
 Expected: all tests PASS; eslint exit 0.

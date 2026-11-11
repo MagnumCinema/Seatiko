@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace hero floating marketing cards with real product features, and show Google food places on the city map with an explicit `in_database` flag (bookable badge only for FoodAssistant venues).
+**Goal:** Replace hero floating marketing cards with real product features, and show Google food places on the city map with an explicit `in_database` flag (bookable badge only for Seatiko venues).
 
 **Architecture:** Backend merges Google Places nearby food results with published venues into `GET /api/v1/map/places`. Matching is exact `google_place_id` only; missing/`false` `in_database` means not ours. Web `VenueMap` consumes that endpoint with two pin styles + legend + coming-soon popup. Hero cards keep the photo and swap copy via `site-copy`.
 
@@ -16,19 +16,19 @@
 
 | File | Responsibility |
 |---|---|
-| `foodassistant/services/api/internal/models/map_place.go` | `MapPlace` + `MapPlacesResponse` JSON types |
-| `foodassistant/services/api/internal/places/normalize.go` | Strip `places/` prefix from Google IDs |
-| `foodassistant/services/api/internal/places/nearby.go` | `SearchNearbyFood` + in-memory TTL cache |
-| `foodassistant/services/api/internal/places/merge.go` | Pure merge: venues + Google → `[]MapPlace` |
-| `foodassistant/services/api/internal/places/merge_test.go` | Unit tests for normalize + merge |
-| `foodassistant/services/api/internal/places/nearby_test.go` | Cache key / disabled client tests |
-| `foodassistant/services/api/internal/handlers/handlers.go` | `ListMapPlaces` handler |
-| `foodassistant/services/api/cmd/api/main.go` | Register `GET /map/places` |
-| `foodassistant/apps/web/src/lib/api.ts` | `MapPlace` type + `fetchMapPlaces` |
-| `foodassistant/apps/web/src/components/venue-map.tsx` | Pins, legend, popup/panel by `in_database` |
-| `foodassistant/apps/web/src/app/premium.css` | Legend + muted pin / badge styles if needed |
-| `foodassistant/apps/web/src/lib/site-copy.ts` | Hero feature cards + map body/legend/coming-soon |
-| `foodassistant/apps/web/src/app/page.tsx` | Wire new hero card copy keys |
+| `seatiko/services/api/internal/models/map_place.go` | `MapPlace` + `MapPlacesResponse` JSON types |
+| `seatiko/services/api/internal/places/normalize.go` | Strip `places/` prefix from Google IDs |
+| `seatiko/services/api/internal/places/nearby.go` | `SearchNearbyFood` + in-memory TTL cache |
+| `seatiko/services/api/internal/places/merge.go` | Pure merge: venues + Google → `[]MapPlace` |
+| `seatiko/services/api/internal/places/merge_test.go` | Unit tests for normalize + merge |
+| `seatiko/services/api/internal/places/nearby_test.go` | Cache key / disabled client tests |
+| `seatiko/services/api/internal/handlers/handlers.go` | `ListMapPlaces` handler |
+| `seatiko/services/api/cmd/api/main.go` | Register `GET /map/places` |
+| `seatiko/apps/web/src/lib/api.ts` | `MapPlace` type + `fetchMapPlaces` |
+| `seatiko/apps/web/src/components/venue-map.tsx` | Pins, legend, popup/panel by `in_database` |
+| `seatiko/apps/web/src/app/premium.css` | Legend + muted pin / badge styles if needed |
+| `seatiko/apps/web/src/lib/site-copy.ts` | Hero feature cards + map body/legend/coming-soon |
+| `seatiko/apps/web/src/app/page.tsx` | Wire new hero card copy keys |
 | `docs/MAP_ARCHITECTURE.md` | Document hybrid Google overlay |
 
 ---
@@ -36,14 +36,14 @@
 ### Task 1: MapPlace models + ID normalize + merge (TDD)
 
 **Files:**
-- Create: `foodassistant/services/api/internal/models/map_place.go`
-- Create: `foodassistant/services/api/internal/places/normalize.go`
-- Create: `foodassistant/services/api/internal/places/merge.go`
-- Create: `foodassistant/services/api/internal/places/merge_test.go`
+- Create: `seatiko/services/api/internal/models/map_place.go`
+- Create: `seatiko/services/api/internal/places/normalize.go`
+- Create: `seatiko/services/api/internal/places/merge.go`
+- Create: `seatiko/services/api/internal/places/merge_test.go`
 
 - [ ] **Step 1: Write failing merge tests**
 
-Create `foodassistant/services/api/internal/places/merge_test.go`:
+Create `seatiko/services/api/internal/places/merge_test.go`:
 
 ```go
 package places
@@ -51,7 +51,7 @@ package places
 import (
 	"testing"
 
-	"github.com/foodassistant/api/internal/models"
+	"github.com/seatiko/api/internal/models"
 )
 
 func TestNormalizePlaceID(t *testing.T) {
@@ -142,14 +142,14 @@ func TestMergeMapPlaces_UnmatchedVenueStillEmitted(t *testing.T) {
 - [ ] **Step 2: Run tests — expect fail**
 
 ```bash
-docker run --rm -v "/Users/cristianchilat/WebstormProjects/Virtual-restaurant-/foodassistant/services/api:/src" -w /src golang:1.25-alpine go test ./internal/places/ -count=1
+docker run --rm -v "/Users/cristianchilat/WebstormProjects/Virtual-restaurant-/seatiko/services/api:/src" -w /src golang:1.25-alpine go test ./internal/places/ -count=1
 ```
 
 Expected: FAIL (missing types/functions).
 
 - [ ] **Step 3: Implement models + normalize + merge**
 
-`foodassistant/services/api/internal/models/map_place.go`:
+`seatiko/services/api/internal/models/map_place.go`:
 
 ```go
 package models
@@ -187,7 +187,7 @@ type MapPlacesResponse struct {
 }
 ```
 
-`foodassistant/services/api/internal/places/normalize.go`:
+`seatiko/services/api/internal/places/normalize.go`:
 
 ```go
 package places
@@ -200,12 +200,12 @@ func NormalizePlaceID(id string) string {
 }
 ```
 
-`foodassistant/services/api/internal/places/merge.go`:
+`seatiko/services/api/internal/places/merge.go`:
 
 ```go
 package places
 
-import "github.com/foodassistant/api/internal/models"
+import "github.com/seatiko/api/internal/models"
 
 // GoogleFoodPlace is a minimal nearby-search hit used for map merge.
 type GoogleFoodPlace struct {
@@ -306,10 +306,10 @@ Same docker `go test` command as Step 2. Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/services/api/internal/models/map_place.go \
-  foodassistant/services/api/internal/places/normalize.go \
-  foodassistant/services/api/internal/places/merge.go \
-  foodassistant/services/api/internal/places/merge_test.go
+git add seatiko/services/api/internal/models/map_place.go \
+  seatiko/services/api/internal/places/normalize.go \
+  seatiko/services/api/internal/places/merge.go \
+  seatiko/services/api/internal/places/merge_test.go
 git commit -m "feat(api): add map place merge with in_database flag"
 ```
 
@@ -318,9 +318,9 @@ git commit -m "feat(api): add map place merge with in_database flag"
 ### Task 2: Google nearby search + short TTL cache
 
 **Files:**
-- Modify: `foodassistant/services/api/internal/places/client.go`
-- Create: `foodassistant/services/api/internal/places/nearby.go`
-- Create: `foodassistant/services/api/internal/places/nearby_test.go`
+- Modify: `seatiko/services/api/internal/places/client.go`
+- Create: `seatiko/services/api/internal/places/nearby.go`
+- Create: `seatiko/services/api/internal/places/nearby_test.go`
 
 - [ ] **Step 1: Write failing test for disabled client**
 
@@ -449,8 +449,8 @@ Note: `post` is already on `Client` in `client.go` and shared.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/services/api/internal/places/nearby.go \
-  foodassistant/services/api/internal/places/nearby_test.go
+git add seatiko/services/api/internal/places/nearby.go \
+  seatiko/services/api/internal/places/nearby_test.go
 git commit -m "feat(api): search Google nearby food places with TTL cache"
 ```
 
@@ -459,8 +459,8 @@ git commit -m "feat(api): search Google nearby food places with TTL cache"
 ### Task 3: `GET /api/v1/map/places` handler
 
 **Files:**
-- Modify: `foodassistant/services/api/internal/handlers/handlers.go`
-- Modify: `foodassistant/services/api/cmd/api/main.go`
+- Modify: `seatiko/services/api/internal/handlers/handlers.go`
+- Modify: `seatiko/services/api/cmd/api/main.go`
 
 - [ ] **Step 1: Add handler `ListMapPlaces`**
 
@@ -526,8 +526,8 @@ Expected: JSON with `places` array; `in_database` always present; when Google ke
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/services/api/internal/handlers/handlers.go \
-  foodassistant/services/api/cmd/api/main.go
+git add seatiko/services/api/internal/handlers/handlers.go \
+  seatiko/services/api/cmd/api/main.go
 git commit -m "feat(api): expose GET /api/v1/map/places"
 ```
 
@@ -536,7 +536,7 @@ git commit -m "feat(api): expose GET /api/v1/map/places"
 ### Task 4: Web API client for map places
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/api.ts`
+- Modify: `seatiko/apps/web/src/lib/api.ts`
 
 - [ ] **Step 1: Add types + fetcher after `VenuePlaces`**
 
@@ -583,7 +583,7 @@ export async function fetchMapPlaces(
 - [ ] **Step 2: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/api.ts
+git add seatiko/apps/web/src/lib/api.ts
 git commit -m "feat(web): add fetchMapPlaces client types"
 ```
 
@@ -592,8 +592,8 @@ git commit -m "feat(web): add fetchMapPlaces client types"
 ### Task 5: VenueMap uses map places + dual pin styles
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/components/venue-map.tsx`
-- Modify: `foodassistant/apps/web/src/app/premium.css` (legend styles)
+- Modify: `seatiko/apps/web/src/components/venue-map.tsx`
+- Modify: `seatiko/apps/web/src/app/premium.css` (legend styles)
 
 - [ ] **Step 1: Switch data load from `fetchVenues` to `fetchMapPlaces`**
 
@@ -651,8 +651,8 @@ Open `http://localhost/#map` — ours green + badge, others muted, coming-soon p
 - [ ] **Step 6: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/venue-map.tsx \
-  foodassistant/apps/web/src/app/premium.css
+git add seatiko/apps/web/src/components/venue-map.tsx \
+  seatiko/apps/web/src/app/premium.css
 git commit -m "feat(web): map pins distinguish in_database places"
 ```
 
@@ -661,8 +661,8 @@ git commit -m "feat(web): map pins distinguish in_database places"
 ### Task 6: Hero floating cards → product features + map section copy
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/site-copy.ts`
-- Modify: `foodassistant/apps/web/src/app/page.tsx`
+- Modify: `seatiko/apps/web/src/lib/site-copy.ts`
+- Modify: `seatiko/apps/web/src/app/page.tsx`
 
 - [ ] **Step 1: Replace hero card keys in all locales**
 
@@ -696,7 +696,7 @@ heroCard2Body: "Alegi locul și comanzi la masă",
 
 Update `mapBody` to mention both our venues and other food places (ours bookable):
 
-RU: `На карте — заведения города. Точки FoodAssistant можно забронировать; остальные отмечены как «скоро».`
+RU: `На карте — заведения города. Точки Seatiko можно забронировать; остальные отмечены как «скоро».`
 
 - [ ] **Step 2: Wire `page.tsx` cards**
 
@@ -724,8 +724,8 @@ Remove fake “La Plăcinte · 19:30” / “12 tables”.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/site-copy.ts \
-  foodassistant/apps/web/src/app/page.tsx
+git add seatiko/apps/web/src/lib/site-copy.ts \
+  seatiko/apps/web/src/app/page.tsx
 git commit -m "feat(web): hero cards show product features"
 ```
 
@@ -742,7 +742,7 @@ Document:
 
 - Base tiles still OpenFreeMap / MapLibre (no Google Maps tiles).
 - Place catalog: hybrid — Google Nearby food + published venues.
-- Membership: JSON field `in_database` (default false); true only for FoodAssistant venues (matched by `google_place_id` or DB-only).
+- Membership: JSON field `in_database` (default false); true only for Seatiko venues (matched by `google_place_id` or DB-only).
 - Endpoint: `GET /api/v1/map/places`.
 - Future: menus for any `google_place_id` (out of scope).
 

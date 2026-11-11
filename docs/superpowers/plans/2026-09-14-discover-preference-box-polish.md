@@ -16,11 +16,11 @@
 
 | File | Responsibility |
 |---|---|
-| `foodassistant/apps/web/src/lib/soft-advance.ts` | Pure soft-auto-advance rules + status formatting helpers |
-| `foodassistant/apps/web/src/lib/soft-advance.test.ts` | Unit tests for schedule/cancel/fire rules |
-| `foodassistant/apps/web/src/lib/site-copy.ts` | New discover strings (RU/EN/RO): hint, step status parts, continuing, continue label |
-| `foodassistant/apps/web/src/components/discover/preference-stepper.tsx` | Numbered rail, hint, larger chips, footer status, wire soft advance |
-| `foodassistant/apps/web/src/app/premium.css` | Stepper / chip / rail / footer visual polish + motion |
+| `seatiko/apps/web/src/lib/soft-advance.ts` | Pure soft-auto-advance rules + status formatting helpers |
+| `seatiko/apps/web/src/lib/soft-advance.test.ts` | Unit tests for schedule/cancel/fire rules |
+| `seatiko/apps/web/src/lib/site-copy.ts` | New discover strings (RU/EN/RO): hint, step status parts, continuing, continue label |
+| `seatiko/apps/web/src/components/discover/preference-stepper.tsx` | Numbered rail, hint, larger chips, footer status, wire soft advance |
+| `seatiko/apps/web/src/app/premium.css` | Stepper / chip / rail / footer visual polish + motion |
 
 Out of scope (do not modify unless tiny spacing only): `guided-chat.tsx`, `active-filters-bar.tsx`, `preference-summary.tsx`, preference encode/filter logic.
 
@@ -29,12 +29,12 @@ Out of scope (do not modify unless tiny spacing only): `guided-chat.tsx`, `activ
 ### Task 1: Soft auto-advance helpers (TDD)
 
 **Files:**
-- Create: `foodassistant/apps/web/src/lib/soft-advance.ts`
-- Create: `foodassistant/apps/web/src/lib/soft-advance.test.ts`
+- Create: `seatiko/apps/web/src/lib/soft-advance.ts`
+- Create: `seatiko/apps/web/src/lib/soft-advance.test.ts`
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `foodassistant/apps/web/src/lib/soft-advance.test.ts`:
+Create `seatiko/apps/web/src/lib/soft-advance.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -102,14 +102,14 @@ describe("formatStepperStatus", () => {
 Run:
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/soft-advance.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/soft-advance.test.ts
 ```
 
 Expected: FAIL (module `./soft-advance` not found).
 
 - [ ] **Step 3: Implement minimal helpers**
 
-Create `foodassistant/apps/web/src/lib/soft-advance.ts`:
+Create `seatiko/apps/web/src/lib/soft-advance.ts`:
 
 ```ts
 export const SOFT_ADVANCE_MS = 800;
@@ -152,7 +152,7 @@ export function formatStepperStatus(input: {
 Run:
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/soft-advance.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/soft-advance.test.ts
 ```
 
 Expected: PASS (all tests).
@@ -160,7 +160,7 @@ Expected: PASS (all tests).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/soft-advance.ts foodassistant/apps/web/src/lib/soft-advance.test.ts
+git add seatiko/apps/web/src/lib/soft-advance.ts seatiko/apps/web/src/lib/soft-advance.test.ts
 git commit -m "$(cat <<'EOF'
 feat(web): add soft-advance helpers for discover stepper
 
@@ -173,7 +173,7 @@ EOF
 ### Task 2: Discover copy (RU / EN / RO)
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/lib/site-copy.ts`
+- Modify: `seatiko/apps/web/src/lib/site-copy.ts`
 
 - [ ] **Step 1: Add strings to each locale’s `discover` object**
 
@@ -241,7 +241,7 @@ describe("fillTemplate", () => {
 - [ ] **Step 3: Run soft-advance tests**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/soft-advance.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/soft-advance.test.ts
 ```
 
 Expected: PASS.
@@ -249,7 +249,7 @@ Expected: PASS.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/lib/site-copy.ts foodassistant/apps/web/src/lib/soft-advance.ts foodassistant/apps/web/src/lib/soft-advance.test.ts
+git add seatiko/apps/web/src/lib/site-copy.ts seatiko/apps/web/src/lib/soft-advance.ts seatiko/apps/web/src/lib/soft-advance.test.ts
 git commit -m "$(cat <<'EOF'
 feat(web): add discover stepper status and hint copy
 
@@ -262,7 +262,7 @@ EOF
 ### Task 3: Wire PreferenceStepper UI + soft auto-advance
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/components/discover/preference-stepper.tsx`
+- Modify: `seatiko/apps/web/src/components/discover/preference-stepper.tsx`
 
 - [ ] **Step 1: Replace stepper markup**
 
@@ -475,7 +475,7 @@ Notes for implementer:
 - [ ] **Step 2: Typecheck / lint the stepper file**
 
 ```bash
-cd foodassistant/apps/web && npx tsc --noEmit 2>&1 | head -40
+cd seatiko/apps/web && npx tsc --noEmit 2>&1 | head -40
 ```
 
 Expected: no errors related to `discover` copy keys / soft-advance imports. If `site-copy` typings are inferred from the object literal, adding keys in all three locales is enough.
@@ -483,7 +483,7 @@ Expected: no errors related to `discover` copy keys / soft-advance imports. If `
 - [ ] **Step 3: Re-run unit tests**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/soft-advance.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/soft-advance.test.ts
 ```
 
 Expected: PASS.
@@ -491,7 +491,7 @@ Expected: PASS.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/components/discover/preference-stepper.tsx foodassistant/apps/web/src/lib/site-copy.ts
+git add seatiko/apps/web/src/components/discover/preference-stepper.tsx seatiko/apps/web/src/lib/site-copy.ts
 git commit -m "$(cat <<'EOF'
 feat(web): polish discover stepper rail, chips wiring, soft advance
 
@@ -504,7 +504,7 @@ EOF
 ### Task 4: CSS polish for rail, chips, box, footer
 
 **Files:**
-- Modify: `foodassistant/apps/web/src/app/premium.css` (discover stepper section ~`.discover-stepper` through `.discover-chip.on`)
+- Modify: `seatiko/apps/web/src/app/premium.css` (discover stepper section ~`.discover-stepper` through `.discover-chip.on`)
 
 - [ ] **Step 1: Replace / extend discover stepper styles**
 
@@ -682,7 +682,7 @@ Expected: web image rebuilt and container restarted.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add foodassistant/apps/web/src/app/premium.css
+git add seatiko/apps/web/src/app/premium.css
 git commit -m "$(cat <<'EOF'
 style(web): polish discover stepper rail, chips, and footer
 
@@ -699,7 +699,7 @@ EOF
 - [ ] **Step 1: Run unit tests**
 
 ```bash
-cd foodassistant/apps/web && npx vitest run src/lib/soft-advance.test.ts src/lib/discover-preferences.test.ts
+cd seatiko/apps/web && npx vitest run src/lib/soft-advance.test.ts src/lib/discover-preferences.test.ts
 ```
 
 Expected: PASS.
@@ -707,7 +707,7 @@ Expected: PASS.
 - [ ] **Step 2: Typecheck**
 
 ```bash
-cd foodassistant/apps/web && npx tsc --noEmit
+cd seatiko/apps/web && npx tsc --noEmit
 ```
 
 Expected: exit 0.

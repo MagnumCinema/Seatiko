@@ -1,4 +1,4 @@
-# FoodAssistant — Virtual Restaurant
+# Seatiko — Virtual Restaurant
 
 Единая ресторанная платформа для гостей, владельцев заведений и модерации: публичный сайт, кабинет владельца, Android-клиент, Go API, карта, схема столиков и Twenty CRM.
 
@@ -16,8 +16,9 @@
 |--------|---------|
 | **Индекс всей документации** | [`docs/README.md`](docs/README.md) |
 | **Правила продукта** (бронь, QR, профиль, 18+, избранное, оплата, UX) | [`docs/APP_LOGIC.md`](docs/APP_LOGIC.md), [`docs/UX_SCREENS.md`](docs/UX_SCREENS.md) |
+| **Статус редизайна страниц сайта** (готово / в работе) | [`docs/WEB_PAGES_STATUS.md`](docs/WEB_PAGES_STATUS.md) |
 | **Инженерия** (Docker, API, CRM ops, тесты, production) | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) |
-| **Запуск кода + скриншоты** | [`foodassistant/README.md`](foodassistant/README.md) |
+| **Запуск кода + скриншоты** | [`seatiko/README.md`](seatiko/README.md) |
 | **Прототип / диаграммы** | [`docs/prototype/`](docs/prototype/), [`docs/diagrams/`](docs/diagrams/) |
 
 ### Источники истины
@@ -31,7 +32,7 @@
 | CRM sync | [`docs/TWENTY_CRM_INTEGRATION.md`](docs/TWENTY_CRM_INTEGRATION.md) |
 | Карта (MapLibre) | [`docs/MAP_ARCHITECTURE.md`](docs/MAP_ARCHITECTURE.md) |
 | Docker / API / ops | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) |
-| Скриншоты и demo checklist | [`foodassistant/README.md`](foodassistant/README.md) |
+| Скриншоты и demo checklist | [`seatiko/README.md`](seatiko/README.md) |
 
 ---
 
@@ -43,6 +44,7 @@ docs/                     ← вся документация в одном ме
 ├── README.md             индекс docs
 ├── APP_LOGIC.md          ★ продукт
 ├── UX_SCREENS.md         ★ экраны
+├── WEB_PAGES_STATUS.md   статус редизайна страниц сайта
 ├── I18N.md
 ├── RESTAURANT_OWNER_FLOW.md
 ├── TWENTY_CRM_INTEGRATION.md
@@ -52,7 +54,7 @@ docs/                     ← вся документация в одном ме
 ├── prototype/
 ├── diagrams/
 └── superpowers/          спеки/планы агентов
-foodassistant/            код
+seatiko/            код
 ├── README.md             runbook + скриншоты
 ├── apps/web/
 ├── apps/mobile/
@@ -84,7 +86,7 @@ curl http://localhost/healthz
 Android:
 
 ```bash
-cd foodassistant/apps/mobile
+cd seatiko/apps/mobile
 flutter run --dart-define=API_URL=http://10.0.2.2
 ```
 
@@ -101,7 +103,7 @@ flutter run --dart-define=API_URL=http://10.0.2.2
 ## Для AI / агентов
 
 1. Читать этот `README.md` первым.  
-2. Вся документация — только в `docs/` (+ `foodassistant/README.md` для скриншотов).  
+2. Вся документация — только в `docs/` (+ `seatiko/README.md` для скриншотов).  
 3. Менять продукт → `docs/APP_LOGIC.md` (+ UX / I18N).  
 4. Менять инфраструктуру → `docs/ENGINEERING.md`.  
 5. Не дублировать длинные разделы: править канон и ссылаться сюда.

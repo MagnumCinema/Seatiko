@@ -1,8 +1,8 @@
-# FoodAssistant — спецификация экранов (UX)
+# Seatiko — спецификация экранов (UX)
 
 Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)  
 Бизнес-логика: [`APP_LOGIC.md`](./APP_LOGIC.md) · Локализация: [`I18N.md`](./I18N.md) · История: [`CHANGELOG.md`](./CHANGELOG.md)  
-Диаграмма навигации: [`./diagrams/foodassistant.drawio`](./diagrams/foodassistant.drawio) → вкладка **Screen Map**
+Диаграмма навигации: [`./diagrams/seatiko.drawio`](./diagrams/seatiko.drawio) → вкладка **Screen Map**
 
 > **Принцип:** всё, что влияет на поведение приложения (переходы, auth, push, правила времени), описано здесь и в `APP_LOGIC.md`. Чисто визуальные детали прототипа (отступы, цвета) в документацию не дублируются.
 
@@ -20,7 +20,7 @@ Wireframe-прототип: [`./prototype/index.html`](./prototype/index.html)
 
 | Элемент | Описание |
 |---------|----------|
-| Логотип | FoodAssistant |
+| Логотип | Seatiko |
 | Loader | Проверка геолокации, языка, сессии |
 
 **→** Онбординг (first run) · **→** Выбор города · **→** Home Map · **→** «Скоро в вашем городе»

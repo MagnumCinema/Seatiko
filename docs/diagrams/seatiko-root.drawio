@@ -1,0 +1,658 @@
+<mxfile host="app.diagrams.net" agent="Seatiko" pages="4">
+  <diagram id="user-flow" name="Путь клиента">
+    <mxGraphModel grid="1" page="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1700" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="uf0" />
+        <mxCell id="uf1" parent="uf0" />
+        <mxCell id="uf-title" parent="uf1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" value="Seatiko — Путь клиента&#xa;Пилот: Бельцы, Молдова" vertex="1">
+          <mxGeometry height="50" width="480" x="480" y="15" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-note" parent="uf1" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" value="Легенда:&#xa;🔵 Экраны&#xa;🟢 Ключевые действия&#xa;🟡 Решения / условия&#xa;🟣 Альтернативные пути&#xa;🔴 Авторизация / оплата&#xa;⬜ Ошибки / блокировки" vertex="1">
+          <mxGeometry height="120" width="190" x="30" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-splash" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Заставка&#xa;Геолокация + язык (RU/EN/RO)" vertex="1">
+          <mxGeometry height="60" width="200" x="640" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-geo" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Город =&#xa;Бельцы?" vertex="1">
+          <mxGeometry height="90" width="140" x="670" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-soon" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="«Скоро в вашем&#xa;городе»&#xa;+ подписка" vertex="1">
+          <mxGeometry height="70" width="130" x="900" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-first" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Первый&#xa;запуск?" vertex="1">
+          <mxGeometry height="80" width="120" x="680" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-onboard" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Онбординг&#xa;(4 слайда)" vertex="1">
+          <mxGeometry height="60" width="140" x="860" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-home" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="Главный экран&#xa;Карта Бельцы 🗺" vertex="1">
+          <mxGeometry height="60" width="200" x="640" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-decision" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Что нужно&#xa;пользователю?" vertex="1">
+          <mxGeometry height="100" width="170" x="655" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-map" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Карта + фильтры&#xa;Поиск заведений" vertex="1">
+          <mxGeometry height="60" width="150" x="110" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-ai" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Вкладка «Подбор»&#xa;AI + праздники" vertex="1">
+          <mxGeometry height="60" width="150" x="310" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="RQR_WJ1zc4EeEfBKk9CF-3" edge="1" parent="uf1" source="uf-qr" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uf-qr-check">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-qr" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Скан QR&#xa;(FAB-кнопка)" vertex="1">
+          <mxGeometry height="60" width="130" x="980" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-venue" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Карточка&#xa;заведения" vertex="1">
+          <mxGeometry height="50" width="140" x="210" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-floor" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Карта зала&#xa;(статусы столиков)" vertex="1">
+          <mxGeometry height="60" width="160" x="200" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-auth" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Нужна&#xa;авторизация?" vertex="1">
+          <mxGeometry height="90" width="130" x="215" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="Ui7t6zg_rgCvmcB2o-3B-7" edge="1" parent="uf1" source="uf-login" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="uf-reserve">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="935" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-login" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Вход /&#xa;Регистрация" vertex="1">
+          <mxGeometry height="50" width="120" x="390" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="RQR_WJ1zc4EeEfBKk9CF-9" edge="1" parent="uf1" source="uf-reserve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uf-preorder-q">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-reserve" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Бронирование&#xa;(дата, время, гости)" vertex="1">
+          <mxGeometry height="55" width="160" x="200" y="935" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-preorder-q" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Предзаказ&#xa;еды?" vertex="1">
+          <mxGeometry height="80" width="130" x="215" y="1060" as="geometry" />
+        </mxCell>
+        <mxCell id="Ui7t6zg_rgCvmcB2o-3B-5" edge="1" parent="uf1" source="uf-preorder" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="uf-book-done">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-preorder" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Меню → Корзина&#xa;→ Оплата (опц.)" vertex="1">
+          <mxGeometry height="55" width="150" x="30" y="1072.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-book-done" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Бронь&#xa;подтверждена ✓" vertex="1">
+          <mxGeometry height="55" width="130" x="400" y="1072.5" as="geometry" />
+        </mxCell>
+        <mxCell id="RQR_WJ1zc4EeEfBKk9CF-6" edge="1" parent="uf1" source="uf-arrive" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="uf-qr2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-arrive" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Приход&#xa;в ресторан" vertex="1">
+          <mxGeometry height="50" width="120" x="630" y="1075" as="geometry" />
+        </mxCell>
+        <mxCell id="RQR_WJ1zc4EeEfBKk9CF-11" edge="1" parent="uf1" source="uf-qr-check" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="uf-session" value="Да">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-qr-check" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Стол&#xa;доступен?" vertex="1">
+          <mxGeometry height="90" width="130" x="980" y="920" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-qr-err" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="Ошибка:&#xa;стол занят /&#xa;чужая бронь" vertex="1">
+          <mxGeometry height="70" width="130" x="1170" y="930" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-session" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="Сессия за столом&lt;br&gt;«Ваш стол №N»&lt;br&gt;Электронное меню&amp;nbsp;&lt;div&gt;/&lt;/div&gt;&lt;div&gt;&amp;nbsp;Вызов официанта&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="170" x="780" y="1190" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-order-mode" parent="uf1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Способ&#xa;заказа?" vertex="1">
+          <mxGeometry height="90" width="140" x="795" y="1300" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-digital" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Цифровой заказ&#xa;Меню → Кухня" vertex="1">
+          <mxGeometry height="55" width="140" x="660" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-verbal" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Вызов официанта&#xa;Устный заказ" vertex="1">
+          <mxGeometry height="55" width="140" x="920" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-preorder-ready" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Предзаказ&#xa;уже готов" vertex="1">
+          <mxGeometry height="50" width="120" x="1080" y="1320" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-pay" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Оплата&#xa;В приложении / в зале" vertex="1">
+          <mxGeometry height="55" width="160" x="785" y="1530" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-end" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#666666;fontColor=#ffffff;strokeColor=#333333;" value="Сессия завершена&#xa;Стол освобождён" vertex="1">
+          <mxGeometry height="45" width="130" x="800" y="1620" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e1" edge="1" parent="uf1" source="uf-splash" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-geo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e2" edge="1" parent="uf1" source="uf-geo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-first" value="Да">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e2b" edge="1" parent="uf1" source="uf-geo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="uf-soon" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e3" edge="1" parent="uf1" source="uf-first" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-onboard" value="Да">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e4" edge="1" parent="uf1" source="uf-first" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-home" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e6" edge="1" parent="uf1" source="uf-home" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e7" edge="1" parent="uf1" source="uf-decision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0;exitY=0;exitDx=0;exitDy=0;" target="uf-map" value="Найти место">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="184.96" y="525" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e8" edge="1" parent="uf1" source="uf-decision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="uf-ai" value="Подбор AI">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="570" />
+              <mxPoint x="490" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e9" edge="1" parent="uf1" source="uf-decision" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-qr" value="Уже здесь">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e10" edge="1" parent="uf1" source="uf-map" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-venue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e11" edge="1" parent="uf1" source="uf-ai" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-venue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e12" edge="1" parent="uf1" source="uf-venue" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-floor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e13" edge="1" parent="uf1" source="uf-floor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e14" edge="1" parent="uf1" source="uf-auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-login" value="Да">
+          <mxGeometry relative="1" x="-0.0109" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e15" edge="1" parent="uf1" source="uf-auth" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-reserve" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e18" edge="1" parent="uf1" source="uf-preorder-q" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="uf-preorder" value="Да">
+          <mxGeometry relative="1" x="-0.0008" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="190" y="1097.5384615384614" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e19" edge="1" parent="uf1" source="uf-preorder-q" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="uf-book-done" value="Нет">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="400" y="1097.4761904761904" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e21" edge="1" parent="uf1" source="uf-book-done" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-arrive">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e26" edge="1" parent="uf1" source="uf-qr-check" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="uf-qr-err" value="Нет">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e27" edge="1" parent="uf1" source="uf-session" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-order-mode">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e28" edge="1" parent="uf1" source="uf-order-mode" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-digital" value="В приложении">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e29" edge="1" parent="uf1" source="uf-order-mode" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-verbal" value="Устно">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e30" edge="1" parent="uf1" source="uf-order-mode" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="uf-preorder-ready" value="Предзаказ">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1010" y="1345" />
+              <mxPoint x="1010" y="1345" />
+            </Array>
+            <mxPoint x="920" y="1335" as="sourcePoint" />
+            <mxPoint x="1125.034482758621" y="1290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e31" edge="1" parent="uf1" source="uf-digital" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e32" edge="1" parent="uf1" source="uf-verbal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-e33" edge="1" parent="uf1" source="uf-preorder-ready" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-pay">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1140" y="1558" />
+              <mxPoint x="865" y="1558" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uf-e34" edge="1" parent="uf1" source="uf-pay" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="uf-end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RQR_WJ1zc4EeEfBKk9CF-10" edge="1" parent="uf1" source="uf-qr2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="uf-session">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="uf-qr2" parent="uf1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Скан QR&#xa;на столике" vertex="1">
+          <mxGeometry height="50" width="130" x="800" y="1075" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="screen-map" name="Карта экранов">
+    <mxGraphModel grid="1" page="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1500" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="sm0" />
+        <mxCell id="sm1" parent="sm0" />
+        <mxCell id="sm-title" parent="sm1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" value="Seatiko — Карта экранов и навигация&#xa;Пилот: Бельцы" vertex="1">
+          <mxGeometry height="50" width="500" x="350" y="15" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-tabs" parent="sm1" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" value="НИЖНЯЯ ПАНЕЛЬ (всегда видна на главных вкладках)" vertex="1">
+          <mxGeometry height="130" width="1550" x="-140" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-tab1" parent="sm-tabs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="🗺 Карта&#xa;(главная)" vertex="1">
+          <mxGeometry height="65" width="130" x="85" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-tab2" parent="sm-tabs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="✨ Подбор&#xa;(AI)" vertex="1">
+          <mxGeometry height="65" width="130" x="395" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-tab3" parent="sm-tabs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="📋 Заказы&#xa;🔒" vertex="1">
+          <mxGeometry height="65" width="130" x="705" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-fab" parent="sm-tabs" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="📷 QR&#xa;(глобальная FAB)" vertex="1">
+          <mxGeometry height="75" width="110" x="1030" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-tab4" parent="sm-tabs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="👤 Профиль&#xa;🔒" vertex="1">
+          <mxGeometry height="65" width="130" x="1335" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-map-stack" parent="sm1" style="swimlane;startSize=25;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Стек «Карта»" vertex="1">
+          <mxGeometry height="360" width="300" x="-140" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="YOeUnyPgn-eJUDo0xyF_-1" edge="1" parent="sm-map-stack" source="sm-map-home" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-search">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-map-home" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;" value="Карта Бельцы + список заведений" vertex="1">
+          <mxGeometry height="45" width="270" x="15" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="YOeUnyPgn-eJUDo0xyF_-2" edge="1" parent="sm-map-stack" source="sm-search" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-filters">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="MAFzi5AewQUbTZ-Ji9tt-6" edge="1" parent="sm-map-stack" source="sm-search" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="sm-venue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-search" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Поиск (overlay)" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="YOeUnyPgn-eJUDo0xyF_-3" edge="1" parent="sm-map-stack" source="sm-filters" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-venue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-filters" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Фильтры (sheet): кухня, цена, расстояние" vertex="1">
+          <mxGeometry height="40" width="270" x="15" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-venue" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Карточка заведения" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-floor" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Карта зала (live-статусы)" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-reserve" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;" value="Бронирование (5 шагов) 🔒" vertex="1">
+          <mxGeometry height="40" width="270" x="15" y="275" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-menu-pre" parent="sm-map-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Предзаказ: Меню → Корзина" vertex="1">
+          <mxGeometry height="30" width="270" x="15" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-disc-stack" parent="sm1" style="swimlane;startSize=25;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Стек «Подбор»" vertex="1">
+          <mxGeometry height="240" width="300" x="170" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-disc-home" parent="sm-disc-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Подбор: AI-чат + быстрые фильтры" vertex="1">
+          <mxGeometry height="40" width="270" x="15" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-ai" parent="sm-disc-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Результаты AI-подбора" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-holiday" parent="sm-disc-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Праздничные подборки (8 марта, NY…)" vertex="1">
+          <mxGeometry height="40" width="270" x="15" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-orders-stack" parent="sm1" style="swimlane;startSize=25;fillColor=#f8cecc;strokeColor=#b85450;" value="Стек «Заказы» 🔒" vertex="1">
+          <mxGeometry height="120" width="300" x="480" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-orders" parent="sm-orders-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Активные: брони + сессии + заказы" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-history" parent="sm-orders-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="История заказов и броней" vertex="1">
+          <mxGeometry height="30" width="270" x="15" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-qr-stack" parent="sm1" style="swimlane;startSize=25;fillColor=#fff2cc;strokeColor=#d6b656;" value="Стек QR / Сессия за столом" vertex="1">
+          <mxGeometry height="320" width="310" x="790" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-scanner" parent="sm-qr-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Сканер QR" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="MAFzi5AewQUbTZ-Ji9tt-2" edge="1" parent="sm-qr-stack" source="sm-session" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="sm-waiter">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint y="99.97" />
+              <mxPoint y="192.49" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sm-session" parent="sm-qr-stack" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;" value="Сессия за столом 🔒" vertex="1">
+          <mxGeometry height="40" width="270" x="15" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="MAFzi5AewQUbTZ-Ji9tt-3" edge="1" parent="sm-qr-stack" source="sm-menu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="sm-payment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-menu" parent="sm-qr-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Меню + Корзина" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="MAFzi5AewQUbTZ-Ji9tt-4" edge="1" parent="sm-qr-stack" source="sm-waiter" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-payment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-waiter" parent="sm-qr-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Вызов официанта (sheet)" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="175" as="geometry" />
+        </mxCell>
+        <mxCell id="MAFzi5AewQUbTZ-Ji9tt-5" edge="1" parent="sm-qr-stack" source="sm-payment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-status">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-payment" parent="sm-qr-stack" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;" value="Оплата 🔒" vertex="1">
+          <mxGeometry height="35" width="270" x="15" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-status" parent="sm-qr-stack" style="rounded=0;whiteSpace=wrap;html=1;" value="Статусы блюд (realtime)" vertex="1">
+          <mxGeometry height="30" width="270" x="15" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-global" parent="sm1" style="swimlane;startSize=25;fillColor=#f8cecc;strokeColor=#b85450;" value="Глобальные модалки" vertex="1">
+          <mxGeometry height="110" width="300" x="1110" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-auth" parent="sm-global" style="rounded=0;whiteSpace=wrap;html=1;" value="Авторизация 🔒" vertex="1">
+          <mxGeometry height="55" width="130" x="15" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-lang" parent="sm-global" style="rounded=0;whiteSpace=wrap;html=1;" value="Язык&#xa;RU / EN / RO" vertex="1">
+          <mxGeometry height="55" width="130" x="155" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-note" parent="sm1" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=12;fontColor=#666666;" value="🔒 = требуется вход в аккаунт" vertex="1">
+          <mxGeometry height="30" width="250" x="430" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se1" edge="1" parent="sm1" source="sm-tab1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-map-stack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se2" edge="1" parent="sm1" source="sm-tab2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-disc-stack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se3" edge="1" parent="sm1" source="sm-fab" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-qr-stack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se5" edge="1" parent="sm1" source="sm-venue" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sm-floor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se6" edge="1" parent="sm1" source="sm-floor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sm-reserve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se7" edge="1" parent="sm1" source="sm-reserve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sm-menu-pre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se8" edge="1" parent="sm1" source="sm-scanner" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sm-session">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se9" edge="1" parent="sm1" source="sm-session" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sm-menu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sm-se12" edge="1" parent="sm1" source="sm-tab3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-orders-stack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="MAFzi5AewQUbTZ-Ji9tt-1" edge="1" parent="sm1" source="sm-tab4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sm-global">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="state-machines" name="Состояния">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1500" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="st0" />
+        <mxCell id="st1" parent="st0" />
+        <mxCell id="st-title" parent="st1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" value="Seatiko — Машины состояний" vertex="1">
+          <mxGeometry height="40" width="400" x="460" as="geometry" />
+        </mxCell>
+        <mxCell id="st-table-lane" parent="st1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" value="Статус столика (синхронизация realtime WebSocket)" vertex="1">
+          <mxGeometry height="240" width="1300" x="60" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="st-free" parent="st-table-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="СВОБОДЕН&#xa;🟢 FREE" vertex="1">
+          <mxGeometry height="65" width="120" x="40" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="st-reserved" parent="st-table-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="ЗАБРОНИРОВАН&#xa;🟡 RESERVED" vertex="1">
+          <mxGeometry height="65" width="140" x="230" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="st-occupied" parent="st-table-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="ЗАНЯТ&#xa;🔴 OCCUPIED" vertex="1">
+          <mxGeometry height="65" width="130" x="450" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="st-cleaning" parent="st-table-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="УБОРКА&#xa;CLEANING" vertex="1">
+          <mxGeometry height="65" width="120" x="710" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="st-te1" edge="1" parent="st-table-lane" source="st-free" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-reserved" value="бронь()">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-te2" edge="1" parent="st-table-lane" source="st-reserved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-occupied" value="QR / check-in">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-te3" edge="1" parent="st-table-lane" source="st-free" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-occupied" value="walk-in QR">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="100" y="55" />
+              <mxPoint x="515" y="55" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="st-te4" edge="1" parent="st-table-lane" source="st-occupied" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-cleaning" value="освободить()">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-te5" edge="1" parent="st-table-lane" source="st-cleaning" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-free" value="авто / персонал">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-te6" edge="1" parent="st-table-lane" source="st-reserved" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="st-free" value="отмена / no-show">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="55" />
+              <mxPoint x="100" y="55" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="st-order-lane" parent="st1" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="Статус заказа" vertex="1">
+          <mxGeometry height="240" width="1300" x="60" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="st-draft" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ЧЕРНОВИК&#xa;DRAFT" vertex="1">
+          <mxGeometry height="55" width="100" x="10" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="st-submitted" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ОТПРАВЛЕН&#xa;SUBMITTED" vertex="1">
+          <mxGeometry height="55" width="110" x="150" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="st-confirmed" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ПОДТВЕРЖДЁН&#xa;CONFIRMED" vertex="1">
+          <mxGeometry height="55" width="120" x="300" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="st-preparing" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;" value="ГОТОВИТСЯ&#xa;PREPARING" vertex="1">
+          <mxGeometry height="55" width="110" x="550" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st-ready" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;" value="ГОТОВ&#xa;READY" vertex="1">
+          <mxGeometry height="55" width="100" x="700" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st-served" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ПОДАН&#xa;SERVED" vertex="1">
+          <mxGeometry height="55" width="100" x="840" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st-paid" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;fontStyle=1" value="ОПЛАЧЕН&#xa;PAID ✓" vertex="1">
+          <mxGeometry height="55" width="100" x="980" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="st-cancel" parent="st-order-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;" value="ОТМЕНЁН&#xa;CANCELLED" vertex="1">
+          <mxGeometry height="45" width="110" x="450" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="st-oe1" edge="1" parent="st-order-lane" source="st-draft" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-submitted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-oe2" edge="1" parent="st-order-lane" source="st-submitted" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-confirmed">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-oe3" edge="1" parent="st-order-lane" source="st-confirmed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-preparing">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="87.5" />
+              <mxPoint x="510" y="122.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="st-oe4" edge="1" parent="st-order-lane" source="st-preparing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-ready">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-oe5" edge="1" parent="st-order-lane" source="st-ready" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-served">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-oe6" edge="1" parent="st-order-lane" source="st-served" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-paid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-oe7" edge="1" parent="st-order-lane" source="st-confirmed" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="st-cancel" value="до начала готовки">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="440" y="87.5" />
+              <mxPoint x="440" y="192.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="st-res-lane" parent="st1" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" value="Статус бронирования" vertex="1">
+          <mxGeometry height="290" width="1300" x="60" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="st-pending" parent="st-res-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ОЖИДАЕТ&#xa;PENDING" vertex="1">
+          <mxGeometry height="55" width="110" x="80" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="st-confirmed-r" parent="st-res-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ПОДТВЕРЖДЕНА&#xa;CONFIRMED" vertex="1">
+          <mxGeometry height="55" width="130" x="310" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="st-checked" parent="st-res-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;" value="ПОСАДКА ✓&#xa;CHECKED_IN" vertex="1">
+          <mxGeometry height="55" width="130" x="460" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="st-noshow" parent="st-res-lane" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;" value="НЕ ЯВИЛСЯ&#xa;NO_SHOW" vertex="1">
+          <mxGeometry height="55" width="110" x="620" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="st-completed" parent="st-res-lane" style="rounded=1;whiteSpace=wrap;html=1;" value="ЗАВЕРШЕНА&#xa;COMPLETED" vertex="1">
+          <mxGeometry height="55" width="130" x="700" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="st-re1" edge="1" parent="st-res-lane" source="st-pending" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-confirmed-r" value="подтверждение">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-re2" edge="1" parent="st-res-lane" source="st-confirmed-r" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-checked" value="скан QR">
+          <mxGeometry relative="1" x="0.5362" as="geometry">
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="st-re3" edge="1" parent="st-res-lane" source="st-confirmed-r" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" target="st-noshow" value="15 мин ожидания">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="st-re4" edge="1" parent="st-res-lane" source="st-checked" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="st-completed" value="оплата / уход">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="staff-flow" name="Персонал">
+    <mxGraphModel dx="876" dy="686" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="sf0" />
+        <mxCell id="sf1" parent="sf0" />
+        <mxCell id="sf-title" parent="sf1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" value="Seatiko — Персонал и подключение ресторанов&#xa;Пилот: Бельцы, Молдова" vertex="1">
+          <mxGeometry height="50" width="600" x="300" y="15" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-onboard" parent="sf1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" value="Подключение ресторана к платформе" vertex="1">
+          <mxGeometry height="200" width="1340" x="60" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-app" parent="sf-onboard" style="rounded=1;whiteSpace=wrap;html=1;" value="1. Заявка&#xa;(название, адрес)" vertex="1">
+          <mxGeometry height="55" width="120" x="30" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-mod" parent="sf-onboard" style="rounded=1;whiteSpace=wrap;html=1;" value="2. Модерация&#xa;платформы" vertex="1">
+          <mxGeometry height="55" width="120" x="190" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-wizard" parent="sf-onboard" style="rounded=1;whiteSpace=wrap;html=1;" value="3. Мастер настройки&#xa;Зал + Меню + QR" vertex="1">
+          <mxGeometry height="65" width="150" x="350" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-test" parent="sf-onboard" style="rounded=1;whiteSpace=wrap;html=1;" value="4. Тестовый режим&#xa;(7 дней)" vertex="1">
+          <mxGeometry height="55" width="130" x="540" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-live" parent="sf-onboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" value="5. Публикация&#xa;на карте Бельцы" vertex="1">
+          <mxGeometry height="55" width="140" x="710" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-wizard-detail" parent="sf-onboard" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" value="Шаги мастера:&#xa;• Профиль (RU/EN/RO)&#xa;• Схема зала&#xa;• Меню + стоп-лист&#xa;• Правила брони&#xa;• Печать QR на столы" vertex="1">
+          <mxGeometry height="110" width="200" x="900" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-oe1" edge="1" parent="sf-onboard" source="sf-app" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-mod">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-oe2" edge="1" parent="sf-onboard" source="sf-mod" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-wizard">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-oe3" edge="1" parent="sf-onboard" source="sf-wizard" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-test">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-oe4" edge="1" parent="sf-onboard" source="sf-test" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-waiter" parent="sf1" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" value="Приложение официанта (mobile)" vertex="1">
+          <mxGeometry height="300" width="640" x="60" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-login" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;" value="Вход" vertex="1">
+          <mxGeometry height="45" width="80" x="30" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-home" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;" value="Мои столы +&#xa;входящие вызовы" vertex="1">
+          <mxGeometry height="55" width="140" x="140" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-call" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;" value="Принять вызов&#xa;(заказ / счёт / вопрос)" vertex="1">
+          <mxGeometry height="55" width="160" x="310" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-table" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;" value="Карточка стола&#xa;Заказы + статусы" vertex="1">
+          <mxGeometry height="55" width="140" x="140" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-manual" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;" value="Устный заказ&#xa;(ввод вручную)" vertex="1">
+          <mxGeometry height="55" width="140" x="320" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-serve" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;" value="Отметить&#xa;«Подано»" vertex="1">
+          <mxGeometry height="45" width="110" x="155" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-w-bill" parent="sf-waiter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;" value="Закрыть счёт&#xa;(оплата в зале)" vertex="1">
+          <mxGeometry height="45" width="130" x="325" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-we1" edge="1" parent="sf-waiter" source="sf-w-login" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-w-home">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-we2" edge="1" parent="sf-waiter" source="sf-w-home" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-w-call">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-we3" edge="1" parent="sf-waiter" source="sf-w-home" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-w-table">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-we4" edge="1" parent="sf-waiter" source="sf-w-call" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-w-manual">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-we5" edge="1" parent="sf-waiter" source="sf-w-table" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-w-serve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-we6" edge="1" parent="sf-waiter" source="sf-w-serve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" target="sf-w-bill">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-admin" parent="sf1" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" value="Веб-панель администратора зала" vertex="1">
+          <mxGeometry height="300" width="640" x="760" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-a-floor" parent="sf-admin" style="rounded=1;whiteSpace=wrap;html=1;" value="Live-карта зала&#xa;Ручное управление" vertex="1">
+          <mxGeometry height="55" width="170" x="30" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-a-res" parent="sf-admin" style="rounded=1;whiteSpace=wrap;html=1;" value="Очередь броней&#xa;на сегодня" vertex="1">
+          <mxGeometry height="55" width="160" x="230" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-a-menu" parent="sf-admin" style="rounded=1;whiteSpace=wrap;html=1;" value="CMS меню&#xa;+ стоп-лист" vertex="1">
+          <mxGeometry height="55" width="160" x="420" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-a-qr" parent="sf-admin" style="rounded=1;whiteSpace=wrap;html=1;" value="Генератор QR&#xa;для столиков" vertex="1">
+          <mxGeometry height="55" width="170" x="30" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-a-analytics" parent="sf-admin" style="rounded=1;whiteSpace=wrap;html=1;" value="Аналитика:&#xa;загрузка, средний чек" vertex="1">
+          <mxGeometry height="55" width="160" x="230" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-a-staff" parent="sf-admin" style="rounded=1;whiteSpace=wrap;html=1;" value="Управление&#xa;официантами" vertex="1">
+          <mxGeometry height="55" width="160" x="420" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-sync" parent="sf1" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;fontStyle=2;fontSize=12;" value="⟷ Синхронизация в реальном времени (WebSocket): клиент ↔ официант ↔ админ ⟷" vertex="1">
+          <mxGeometry height="40" width="600" x="300" y="650" as="geometry" />
+        </mxCell>
+        <mxCell id="sf-push" parent="sf1" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=left;verticalAlign=top;spacingLeft=8;fontSize=11;" value="Push-уведомления:&#xa;• Клиенту: блюдо готово, официант идёт&#xa;• Официанту: вызов, новый заказ&#xa;• Админу: no-show, перегрузка зала" vertex="1">
+          <mxGeometry height="90" width="350" x="60" y="720" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

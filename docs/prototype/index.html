@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>FoodAssistant — UX Prototype</title>
+  <title>Seatiko — UX Prototype</title>
   <style>
     :root {
       --bg: #f4f4f5;
@@ -379,7 +379,7 @@
 <body>
 
 <div class="toolbar">
-  <h1>FoodAssistant — UX Prototype</h1>
+  <h1>Seatiko — UX Prototype</h1>
   <div class="lang-switch">
     <button class="lang-btn active" data-lang="ru">RU</button>
     <button class="lang-btn" data-lang="en">EN</button>
@@ -390,7 +390,7 @@
 <div class="screen-nav" id="screenNav"></div>
 
 <div class="phone" id="phone">
-  <div class="status-bar" id="statusBar">FoodAssistant</div>
+  <div class="status-bar" id="statusBar">Seatiko</div>
 
   <!-- ONBOARDING -->
   <div class="screen no-tab active" id="screen-onboarding">
@@ -1272,8 +1272,8 @@ function showScreen(id) {
   document.getElementById('screenNav').querySelectorAll('button').forEach(b => {
     b.classList.toggle('active', b.dataset.screen === id);
   });
-  const titles = { onboarding:'FoodAssistant', map:'FoodAssistant', 'city-select':t('city_select_title'), discover:t('tab_discover'), venue:'La Plăcinte', floor:t('floor_map'), reservation:t('res_confirm'), scanner:t('scan_qr'), 'order-choice':t('your_table'), session:t('your_table'), 'waiter-initial':t('waiter_initial_title'), 'waiter-session':t('waiter_session_title'), payment:t('payment'), orders:t('orders'), profile:t('profile') };
-  document.getElementById('statusBar').textContent = titles[id] || 'FoodAssistant';
+  const titles = { onboarding:'Seatiko', map:'Seatiko', 'city-select':t('city_select_title'), discover:t('tab_discover'), venue:'La Plăcinte', floor:t('floor_map'), reservation:t('res_confirm'), scanner:t('scan_qr'), 'order-choice':t('your_table'), session:t('your_table'), 'waiter-initial':t('waiter_initial_title'), 'waiter-session':t('waiter_session_title'), payment:t('payment'), orders:t('orders'), profile:t('profile') };
+  document.getElementById('statusBar').textContent = titles[id] || 'Seatiko';
   renderTabs();
   updateCityUI();
   if (id === 'profile') renderProfileFields();
