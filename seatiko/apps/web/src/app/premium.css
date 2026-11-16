@@ -10537,9 +10537,14 @@ html[data-theme="light"] .booking-done-extras svg {
   display: grid;
   gap: 12px;
   padding: 20px;
-  border: 1px dashed var(--fa-border);
+  border: 1px solid var(--fa-border);
   border-radius: 18px;
+  background: color-mix(in srgb, var(--fa-surface) 92%, transparent);
   text-align: center;
+}
+.qb-empty-error {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--fa-danger, #c45c5c) 45%, var(--fa-border));
 }
 .qb-empty p {
   margin: 0;

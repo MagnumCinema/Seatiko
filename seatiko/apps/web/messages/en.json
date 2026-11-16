@@ -454,6 +454,7 @@
   "qb.found": "Free in {count} restaurants",
   "qb.none_title": "No free tables at this time",
   "qb.none_body": "Try another time or day — or send a celebration request for a large group.",
+  "qb.retry": "Try again",
   "qb.try_asap": "Show earliest times",
   "qb.try_next_day": "Next day",
   "qb.catalog_link": "Browse by cuisine and vibe — catalog",

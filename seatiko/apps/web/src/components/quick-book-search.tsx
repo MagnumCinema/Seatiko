@@ -17,11 +17,13 @@ import {
 import { addLocalDays, parseOpeningHours, startOfLocalDay } from "@/lib/booking-slots";
 import { venueBookingHref } from "@/lib/booking-link";
 import { matchesVenueQuery } from "@/lib/venue-filters";
+import { emptyKind, partitionQuickBookResults } from "@/lib/quick-book-partition";
 import { getVenueHours } from "@/lib/venue-hours";
 import { resolveBookingRules } from "@/lib/venue-rules";
 import { availabilityRank, venueAvailability, type VenueAvailability } from "@/lib/venue-availability";
 import { getSiteCopy } from "@/lib/site-copy";
 import { BookingPopup } from "@/components/booking-popup";
+import { QuickBookEmpty } from "@/components/quick-book-empty";
 import { useLocale } from "@/components/locale-provider";
 import { SearchIcon, SparklesIcon } from "@/components/venue-icons";
 
@@ -148,11 +150,26 @@ export function QuickBookSearch() {
   }, [venues, data, searchDay, now, query.guests, query.duration, target]);
 
   const searching = query.text.trim().length > 0;
-  const matched = searching ? results.filter((r) => matchesVenueQuery(r.venue, query.text)) : results;
-  const available = matched.filter((r) => r.availability.slots.length > 0);
-  const unavailable = matched.filter((r) => r.availability.fits && r.availability.slots.length === 0);
-  const tooSmall = matched.filter((r) => !r.availability.fits);
-  const cards = searching ? matched : available;
+  const textMatchIds = searching
+    ? new Set(
+        results.filter((r) => matchesVenueQuery(r.venue, query.text)).map((r) => r.venue.id),
+      )
+    : undefined;
+  const { matched, available, unavailable, tooSmall, cards } = partitionQuickBookResults({
+    results,
+    searching,
+    queryText: query.text,
+    textMatchIds,
+  });
+  const kind = emptyKind({
+    loading,
+    failed,
+    searching,
+    matchedCount: matched.length,
+    availableCount: available.length,
+    tooSmallCount: tooSmall.length,
+    resultsCount: results.length,
+  });
 
   const clock = (d: Date) => d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   const dayLabel = (offset: number) => {
@@ -309,8 +326,6 @@ export function QuickBookSearch() {
         </Link>
       </div>
 
-      {failed ? <p className="web-book-error">{t("common.error")}</p> : null}
-
       {loading ? (
         <div className="qb-grid" aria-hidden="true">
           {Array.from({ length: 4 }, (_, i) => (
@@ -319,43 +334,21 @@ export function QuickBookSearch() {
         </div>
       ) : (
         <>
-          {searching && matched.length === 0 ? (
-            <div className="qb-empty">
-              <p>{t("qb.nothing_body")}</p>
-              <div>
-                <button type="button" className="venue-cta venue-cta-outline" onClick={() => update({ text: "" })}>
-                  {t("qb.find_clear")}
-                </button>
-                <Link href="/discover" className="venue-cta venue-cta-outline">
-                  {t("qb.discover")}
-                </Link>
-              </div>
-            </div>
-          ) : searching ? null : available.length === 0 && !failed && tooSmall.length === results.length && results.length ? (
-            <div className="qb-empty">
-              <p>{t("qb.none_group", { guests: query.guests })}</p>
-            </div>
-          ) : available.length === 0 && !failed ? (
-            <div className="qb-empty">
-              <p>{t("qb.none_body")}</p>
-              <div>
-                {query.time !== "asap" ? (
-                  <button type="button" className="venue-cta venue-cta-outline" onClick={() => update({ time: "asap" })}>
-                    {t("qb.try_asap")}
-                  </button>
-                ) : null}
-                {query.day < DAYS_AHEAD - 1 ? (
-                  <button
-                    type="button"
-                    className="venue-cta venue-cta-outline"
-                    onClick={() => update({ day: query.day + 1 })}
-                  >
-                    {t("qb.try_next_day")}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
+          <QuickBookEmpty
+            kind={kind}
+            failed={failed}
+            guests={query.guests}
+            timeIsAsap={query.time === "asap"}
+            canNextDay={query.day < DAYS_AHEAD - 1}
+            onRetry={() => {
+              setLoading(true);
+              setFailed(false);
+              setReloadKey((k) => k + 1);
+            }}
+            onClearSearch={() => update({ text: "" })}
+            onTryAsap={() => update({ time: "asap" })}
+            onTryNextDay={() => update({ day: query.day + 1 })}
+          />
 
           <div className="qb-grid">
             {cards.map(({ venue, availability, laterToday }) => {
