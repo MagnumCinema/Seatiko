@@ -22,9 +22,9 @@ import { availabilityRank, venueAvailability, type VenueAvailability } from "@/l
 import { getSiteCopy } from "@/lib/site-copy";
 import { BookingPopup } from "@/components/booking-popup";
 import { QuickBookEmpty } from "@/components/quick-book-empty";
+import { QuickBookFind } from "@/components/quick-book-find";
 import { QuickBookResultCard } from "@/components/quick-book-result-card";
 import { useLocale } from "@/components/locale-provider";
-import { SearchIcon, SparklesIcon } from "@/components/venue-icons";
 
 const DAYS_AHEAD = 7;
 const MAX_GUESTS = 20;
@@ -196,34 +196,7 @@ export function QuickBookSearch() {
         <p className="qb-lead">{t("qb.lead")}</p>
       </header>
 
-      <div className="catalog-search-row qb-find">
-        <div className="catalog-search-wrap">
-          <SearchIcon />
-          <input
-            type="search"
-            className="catalog-search-input"
-            placeholder={t("qb.find_placeholder")}
-            value={query.text}
-            maxLength={80}
-            onChange={(e) => update({ text: e.target.value })}
-            aria-label={t("qb.find_label")}
-          />
-          {query.text ? (
-            <button
-              type="button"
-              className="catalog-search-clear"
-              onClick={() => update({ text: "" })}
-              aria-label={t("qb.find_clear")}
-            >
-              ✕
-            </button>
-          ) : null}
-        </div>
-        <Link href="/discover" className="catalog-discover-btn">
-          <SparklesIcon />
-          <span>{t("qb.discover")}</span>
-        </Link>
-      </div>
+      <QuickBookFind value={query.text} onChange={(text) => update({ text })} />
 
       <section className="qb-search" aria-label={t("qb.search_label")}>
         <div className="qb-field">

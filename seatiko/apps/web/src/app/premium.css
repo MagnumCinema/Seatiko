@@ -10746,12 +10746,17 @@ button.venue-tile {
   }
 }
 
-/* /book: find a known venue + taste-match shortcut */
+/* /book: find a known venue + taste-match shortcut (reuses .catalog-search-row) */
 .qb-find {
   margin-top: -4px;
 }
 .qb-find .catalog-search-input::-webkit-search-cancel-button {
   display: none;
+}
+/* Keep discover CTA on one line; stack with search below 720px via .catalog-search-row */
+.qb-find .catalog-discover-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .qb-card.muted {
   border-style: dashed;
