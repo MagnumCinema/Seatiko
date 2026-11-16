@@ -7,9 +7,7 @@ import {
   fetchTables,
   fetchVenueSchedule,
   fetchVenues,
-  mediaUrl,
   pickLocale,
-  priceLevelLabel,
   type Table,
   type Venue,
   type VenueScheduleSlot,
@@ -24,6 +22,7 @@ import { availabilityRank, venueAvailability, type VenueAvailability } from "@/l
 import { getSiteCopy } from "@/lib/site-copy";
 import { BookingPopup } from "@/components/booking-popup";
 import { QuickBookEmpty } from "@/components/quick-book-empty";
+import { QuickBookResultCard } from "@/components/quick-book-result-card";
 import { useLocale } from "@/components/locale-provider";
 import { SearchIcon, SparklesIcon } from "@/components/venue-icons";
 
@@ -351,99 +350,25 @@ export function QuickBookSearch() {
           />
 
           <div className="qb-grid">
-            {cards.map(({ venue, availability, laterToday }) => {
-              const shown = availability.slots.length ? availability : laterToday;
-              const slots = shown?.slots ?? [];
-              const name = pickLocale(venue.name, locale);
-              const photo = venue.photo_urls?.[0] || venue.image_url;
-              const cuisine = venue.cuisine
-                .slice(0, 2)
-                .map((c) => cuisineLabels[c] ?? c)
-                .join(" · ");
-              return (
-                <article
-                  key={venue.id}
-                  className={`qb-card${availability.exact ? " exact" : ""}${slots.length ? "" : " muted"}`}
-                >
-                  <Link href={`/venues/${venue.id}`} className="qb-card-photo" tabIndex={-1} aria-hidden="true">
-                    {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mediaUrl(photo)} alt="" loading="lazy" />
-                    ) : null}
-                  </Link>
-                  <div className="qb-card-body">
-                    <div className="qb-card-title">
-                      <h3>
-                        <Link href={`/venues/${venue.id}`}>{name}</Link>
-                      </h3>
-                      <span className="qb-card-rating">★ {venue.rating.toFixed(1)}</span>
-                    </div>
-                    <p className="qb-card-meta">
-                      {[cuisine, priceLevelLabel(venue.price_level), pickLocale(venue.address, locale)]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <p
-                      className={`qb-card-status${availability.exact ? " exact" : ""}${slots.length ? "" : " none"}`}
-                    >
-                      {!availability.fits
-                        ? t("qb.card_small", { guests: query.guests })
-                        : availability.exact
-                          ? t("qb.exact", { time: clock(availability.exact.start) })
-                          : availability.slots.length
-                            ? target
-                              ? t("qb.nearest")
-                              : t("qb.earliest")
-                            : slots.length
-                              ? t("qb.later_today", { time: target ? clock(target) : "" })
-                              : t("qb.day_full", { day: dayLabel(query.day).toLowerCase() })}
-                    </p>
-                    <div className="qb-slots" role="group" aria-label={t("qb.slots_label", { venue: name })}>
-                      {slots.map((slot) => {
-                        const isExact = availability.exact?.start.getTime() === slot.start.getTime();
-                        return (
-                          <button
-                            key={slot.start.toISOString()}
-                            type="button"
-                            className={isExact ? "on" : ""}
-                            onClick={() =>
-                              setPopup({
-                                venue,
-                                time: slot.start.toISOString(),
-                                durationMin: shown?.durationMin ?? query.duration,
-                                nonce: Date.now(),
-                              })
-                            }
-                          >
-                            {clock(slot.start)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {!availability.fits ? (
-                      <Link className="qb-card-action" href={venueBookingHref(venue.id, { intent: "event" })}>
-                        {t("qb.other_event")} →
-                      </Link>
-                    ) : !slots.length ? (
-                      <button
-                        type="button"
-                        className="qb-card-action"
-                        onClick={() =>
-                          setPopup({ venue, time: null, durationMin: availability.durationMin, nonce: Date.now() })
-                        }
-                      >
-                        {t("qb.pick_other_day")} →
-                      </button>
-                    ) : null}
-                    {slots.length && shown && shown.durationMin !== query.duration ? (
-                      <p className="qb-card-note">
-                        {t("qb.duration_capped", { duration: durationLabel(shown.durationMin) })}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
+            {cards.map((row) => (
+              <QuickBookResultCard
+                key={row.venue.id}
+                venue={row.venue}
+                availability={row.availability}
+                laterToday={row.laterToday}
+                guests={query.guests}
+                durationMin={query.duration}
+                dayLabel={dayLabel(query.day)}
+                target={target}
+                cuisineLabels={cuisineLabels}
+                onPickSlot={(time, durationMin) =>
+                  setPopup({ venue: row.venue, time, durationMin, nonce: Date.now() })
+                }
+                onPickOtherDay={(durationMin) =>
+                  setPopup({ venue: row.venue, time: null, durationMin, nonce: Date.now() })
+                }
+              />
+            ))}
           </div>
 
           {!searching && (unavailable.length || tooSmall.length) ? (

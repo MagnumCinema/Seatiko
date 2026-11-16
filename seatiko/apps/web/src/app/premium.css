@@ -10376,13 +10376,16 @@ html[data-theme="light"] .booking-done-extras svg {
 .qb-results-head h2 {
   margin: 0;
   font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(1.35rem, 2.6vw, 1.7rem);
+  font-size: clamp(1.4rem, 2.2vw, 1.7rem);
   font-weight: 550;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
 }
 .qb-results-head p {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   color: var(--fa-muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 .qb-catalog-link {
   color: var(--fa-gold);
@@ -10397,29 +10400,34 @@ html[data-theme="light"] .booking-done-extras svg {
 .qb-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 .qb-card {
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 14px;
   padding: 14px;
   border: 1px solid var(--fa-border);
   border-radius: 20px;
   background: color-mix(in srgb, var(--fa-surface) 92%, transparent);
-  transition: border-color 160ms ease, transform 160ms ease;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 .qb-card:hover {
   border-color: color-mix(in srgb, var(--fa-gold) 45%, var(--fa-border));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 .qb-card.exact {
   border-color: color-mix(in srgb, var(--state-free) 55%, var(--fa-border));
 }
 .qb-card-photo {
   display: block;
+  align-self: stretch;
+  min-height: 112px;
   overflow: hidden;
   border-radius: 14px;
-  background: var(--fa-surface-2);
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--fa-gold) 18%, transparent), transparent 42%),
+    var(--fa-surface-2);
   aspect-ratio: 1;
 }
 .qb-card-photo img {
@@ -10427,6 +10435,10 @@ html[data-theme="light"] .booking-done-extras svg {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.qb-card:hover .qb-card-photo img {
+  transform: scale(1.04);
 }
 .qb-card-body {
   display: grid;
@@ -10443,9 +10455,10 @@ html[data-theme="light"] .booking-done-extras svg {
 .qb-card-title h3 {
   margin: 0;
   font-family: var(--font-display), Georgia, serif;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .qb-card-title h3 a {
   color: inherit;
@@ -10517,6 +10530,7 @@ html[data-theme="light"] .booking-done-extras svg {
 }
 .qb-card-skeleton {
   min-height: 160px;
+  pointer-events: none;
   background: linear-gradient(
       100deg,
       transparent 20%,
@@ -10603,11 +10617,16 @@ html[data-theme="light"] .qb-card {
 html[data-theme="light"] .qb-search {
   box-shadow: 0 12px 30px rgba(26, 36, 32, 0.08);
 }
-html[data-theme="light"] .qb-catalog-link {
+html[data-theme="light"] .qb-card:hover {
+  box-shadow: 0 8px 22px rgba(26, 36, 32, 0.1);
+}
+html[data-theme="light"] .qb-catalog-link,
+html[data-theme="light"] .qb-card-rating,
+html[data-theme="light"] .qb-card-title h3 a:hover {
   color: #8a6528;
 }
-html[data-theme="light"] .qb-card-rating {
-  color: #8a6528;
+html[data-theme="light"] .qb-slots button:hover {
+  border-color: #8a6528;
 }
 
 @media (max-width: 1080px) {
@@ -10632,17 +10651,29 @@ html[data-theme="light"] .qb-card-rating {
     grid-column: 1 / -1;
   }
   .qb-card {
-    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-columns: 96px minmax(0, 1fr);
     gap: 12px;
     padding: 12px;
+  }
+  .qb-card-photo {
+    min-height: 96px;
   }
   .qb-card-meta {
     white-space: normal;
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .qb-card,
+  .qb-card-photo img,
+  .qb-slots button {
+    transition: none;
+  }
+  .qb-card:hover .qb-card-photo img {
+    transform: none;
+  }
   .qb-card-skeleton {
     animation: none;
+    background: color-mix(in srgb, var(--fa-surface) 92%, transparent);
   }
 }
 
@@ -10724,9 +10755,10 @@ button.venue-tile {
 }
 .qb-card.muted {
   border-style: dashed;
+  opacity: 0.92;
 }
 .qb-card-status.none {
-  color: var(--fa-muted);
+  color: var(--state-occupied-ink);
 }
 .qb-card-action {
   justify-self: start;
