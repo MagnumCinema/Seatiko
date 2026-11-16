@@ -10316,12 +10316,13 @@ html[data-theme="light"] .booking-done-extras svg {
   font-size: 1.02rem;
   line-height: 1.55;
 }
+/* /book filters: days full-width on top, then guests · time · duration */
 .qb-search {
   position: sticky;
   top: 72px;
   z-index: 5;
   display: grid;
-  grid-template-columns: 160px minmax(0, 1.6fr) 170px minmax(0, 1fr);
+  grid-template-columns: 160px 190px minmax(0, 1fr);
   gap: 14px 16px;
   align-items: end;
   padding: 16px 18px;
@@ -10330,6 +10331,10 @@ html[data-theme="light"] .booking-done-extras svg {
   background: color-mix(in srgb, var(--fa-surface) 94%, transparent);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(12px);
+}
+.qb-search .qb-field-days {
+  grid-column: 1 / -1;
+  order: -1;
 }
 .qb-field {
   display: grid;
@@ -10631,11 +10636,7 @@ html[data-theme="light"] .qb-slots button:hover {
 
 @media (max-width: 1080px) {
   .qb-search {
-    grid-template-columns: 150px minmax(0, 1fr) 170px;
-  }
-  .qb-field-days {
-    grid-column: 1 / -1;
-    order: -1;
+    grid-template-columns: 150px 170px minmax(0, 1fr);
   }
   .qb-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -10727,19 +10728,6 @@ button.venue-tile {
   cursor: pointer;
 }
 
-/* /book search bar: days on their own row, then guests · time · duration */
-.qb-search {
-  grid-template-columns: 160px 190px minmax(0, 1fr);
-}
-.qb-search .qb-field-days {
-  grid-column: 1 / -1;
-  order: -1;
-}
-@media (max-width: 640px) {
-  .qb-search {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
 @media (max-width: 520px) {
   .event-popup .event-booking-card h2 {
     padding-right: 44px;

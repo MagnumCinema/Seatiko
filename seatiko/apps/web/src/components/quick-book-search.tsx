@@ -22,6 +22,7 @@ import { availabilityRank, venueAvailability, type VenueAvailability } from "@/l
 import { getSiteCopy } from "@/lib/site-copy";
 import { BookingPopup } from "@/components/booking-popup";
 import { QuickBookEmpty } from "@/components/quick-book-empty";
+import { QuickBookFilters } from "@/components/quick-book-filters";
 import { QuickBookFind } from "@/components/quick-book-find";
 import { QuickBookResultCard } from "@/components/quick-book-result-card";
 import { useLocale } from "@/components/locale-provider";
@@ -198,85 +199,19 @@ export function QuickBookSearch() {
 
       <QuickBookFind value={query.text} onChange={(text) => update({ text })} />
 
-      <section className="qb-search" aria-label={t("qb.search_label")}>
-        <div className="qb-field">
-          <span className="booking-field-label" id="qb-guests-label">
-            {t("res.guests")}
-          </span>
-          <div className="booking-stepper" role="group" aria-labelledby="qb-guests-label">
-            <button
-              type="button"
-              aria-label={t("res.guests_less")}
-              disabled={query.guests <= 1}
-              onClick={() => update({ guests: query.guests - 1 })}
-            >
-              −
-            </button>
-            <output aria-live="polite">{query.guests}</output>
-            <button
-              type="button"
-              aria-label={t("res.guests_more")}
-              disabled={query.guests >= MAX_GUESTS}
-              onClick={() => update({ guests: query.guests + 1 })}
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div className="qb-field qb-field-days">
-          <span className="booking-field-label">{t("res.day")}</span>
-          <div className="booking-slot-days">
-            {Array.from({ length: DAYS_AHEAD }, (_, offset) => (
-              <button
-                key={offset}
-                type="button"
-                className={offset === query.day ? "on" : ""}
-                aria-pressed={offset === query.day}
-                onClick={() => update({ day: offset })}
-              >
-                {dayLabel(offset)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <label className="qb-field">
-          <span className="booking-field-label">{t("res.time")}</span>
-          <select
-            className="qb-select"
-            value={query.time}
-            onChange={(e) => update({ time: e.target.value })}
-          >
-            <option value="asap">{t("qb.time_asap")}</option>
-            {TIME_OPTIONS.map((time) => {
-              const [h, m] = time.split(":").map(Number);
-              return (
-                <option key={time} value={time}>
-                  {clock(new Date(2000, 0, 1, h, m))}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-
-        <div className="qb-field">
-          <span className="booking-field-label">{t("res.duration")}</span>
-          <div className="booking-slot-days">
-            {DURATIONS.map((min) => (
-              <button
-                key={min}
-                type="button"
-                className={min === query.duration ? "on" : ""}
-                aria-pressed={min === query.duration}
-                onClick={() => update({ duration: min })}
-              >
-                {durationLabel(min)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <QuickBookFilters
+        guests={query.guests}
+        day={query.day}
+        time={query.time}
+        duration={query.duration}
+        daysAhead={DAYS_AHEAD}
+        durations={DURATIONS}
+        timeOptions={TIME_OPTIONS}
+        dayLabel={dayLabel}
+        durationLabel={durationLabel}
+        clock={clock}
+        onChange={(patch) => update(patch)}
+      />
 
       <div className="qb-results-head">
         <div>
