@@ -4000,68 +4000,6 @@ html[data-theme="light"] .venue-page .waitlist-form select {
 
 .web-book-error { color: #b05446; margin: 0; font-size: .88rem; }
 
-/* —— Standalone venue menu page —— */
-.menu-page {
-  min-height: 100vh;
-  background:
-    radial-gradient(900px 420px at 10% 0%, rgba(224, 182, 106, 0.08), transparent 55%),
-    var(--fa-bg);
-  color: var(--fa-text);
-}
-.menu-page-loading,
-.menu-page-empty {
-  padding: 64px 24px;
-  text-align: center;
-  color: var(--fa-muted);
-}
-.menu-page-empty a { color: var(--fa-gold); }
-.menu-page-wrap {
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 28px 24px 96px;
-}
-.menu-page-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-.menu-page-back,
-.menu-page-book {
-  color: var(--fa-muted);
-  text-decoration: none;
-  font-weight: 650;
-}
-.menu-page-book { color: var(--fa-gold); }
-.menu-page-hero {
-  margin-bottom: 36px;
-}
-.menu-page-kicker {
-  margin: 0 0 10px;
-  color: var(--fa-gold);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.menu-page-hero h1 {
-  margin: 0;
-  font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(2rem, 3.2vw, 2.8rem);
-  letter-spacing: -0.03em;
-}
-.menu-page-sub {
-  margin: 10px 0 0;
-  color: var(--fa-muted);
-}
-.menu-page-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 40px;
-}
-
 /* —— Virtual waitlist (guest) —— */
 .waitlist-card {
   display: grid;

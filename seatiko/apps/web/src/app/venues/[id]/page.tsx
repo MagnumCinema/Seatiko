@@ -223,6 +223,17 @@ export default function VenuePage() {
     return () => window.clearInterval(timer);
   }, [venueId]);
 
+  const pageReady = !loading && venue !== null;
+  useEffect(() => {
+    if (!pageReady) return;
+    const target = decodeURIComponent(window.location.hash.slice(1));
+    if (!target) return;
+    const frame = requestAnimationFrame(() =>
+      document.getElementById(target)?.scrollIntoView({ block: "start" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [pageReady]);
+
   function requireAuth(reason: string, then?: (user: User) => void) {
     setPendingAuth({ reason, then });
   }
@@ -232,6 +243,8 @@ export default function VenuePage() {
     setPendingAuth(null);
     const u = await fetchMe().catch(() => null);
     applyUser(u);
+    // Sync SiteHeader's cached user so it shows the logged-in name immediately.
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
     if (u && action) action(u);
   }
 
@@ -281,6 +294,8 @@ export default function VenuePage() {
     setSelectedTableId(table.id);
     setBookingOpen(true);
     setComingOpen(false);
+    setEventOpen(false);
+    setQuickOpen(false);
     setSheetMessage(null);
   }
 
@@ -304,6 +319,8 @@ export default function VenuePage() {
     setSelectedTableId(table.id);
     setComingOpen(true);
     setBookingOpen(false);
+    setEventOpen(false);
+    setQuickOpen(false);
     setSheetMessage(null);
   }
 
@@ -327,7 +344,64 @@ export default function VenuePage() {
     return (
       <div className="venue-page">
         <SiteHeader variant="solid" />
-        <p className="venue-page-loading">{t("venue.loading")}</p>
+        <div className="venue-page-wrap">
+          <nav className="venue-breadcrumb" aria-label={t("nav.breadcrumb")}>
+            <span className="skeleton skeleton-text" style={{ width: 80 }} />
+            <span aria-hidden>/</span>
+            <span className="skeleton skeleton-text" style={{ width: 120 }} />
+          </nav>
+
+          <div className="venue-hero">
+            <div className="venue-hero-media">
+              <span className="skeleton skeleton-media" style={{ height: 340 }} />
+            </div>
+            <div className="venue-hero-copy">
+              <span className="skeleton skeleton-text" style={{ width: 60 }} />
+              <span className="skeleton skeleton-title" />
+              <span className="skeleton skeleton-text" style={{ width: "55%" }} />
+
+              <div className="venue-rating-row">
+                <span className="skeleton skeleton-text" style={{ width: 90 }} />
+                <span className="skeleton skeleton-text" style={{ width: 40 }} />
+                <span className="skeleton skeleton-text" style={{ width: 70 }} />
+              </div>
+
+              <span className="skeleton skeleton-text" style={{ width: "100%" }} />
+              <span className="skeleton skeleton-text" style={{ width: "90%" }} />
+              <span className="skeleton skeleton-text" style={{ width: "75%" }} />
+
+              <div className="venue-page-meta">
+                <span className="skeleton skeleton-chip" />
+                <span className="skeleton skeleton-chip" />
+                <span className="skeleton skeleton-chip" />
+              </div>
+
+              <div className="venue-page-actions-primary">
+                <span className="skeleton skeleton-btn" />
+                <span className="skeleton skeleton-btn" />
+              </div>
+            </div>
+          </div>
+
+          <div className="venue-booking-rules-skeleton">
+            <div className="venue-booking-rules-card">
+              <span className="skeleton skeleton-text" style={{ width: 120 }} />
+              <div className="venue-booking-rules-times">
+                <span className="skeleton skeleton-text" style={{ width: 80 }} />
+                <span className="skeleton skeleton-text" style={{ width: 100 }} />
+                <span className="skeleton skeleton-text" style={{ width: 90 }} />
+              </div>
+            </div>
+          </div>
+
+          <section className="venue-section">
+            <div className="venue-section-head">
+              <span className="skeleton skeleton-title" style={{ width: 180 }} />
+              <span className="skeleton skeleton-text" style={{ width: 120 }} />
+            </div>
+            <span className="skeleton skeleton-media" style={{ height: 200 }} />
+          </section>
+        </div>
       </div>
     );
   }
@@ -424,9 +498,10 @@ export default function VenuePage() {
                   type="button"
                   className="venue-cta venue-cta-hero"
                   onClick={() => {
+                    setQuickOpen(true);
                     setBookingOpen(false);
                     setComingOpen(false);
-                    setQuickOpen(true);
+                    setEventOpen(false);
                   }}
                 >
                   <BoltIcon className="venue-cta-icon" />
@@ -474,9 +549,10 @@ export default function VenuePage() {
                   type="button"
                   className="venue-tile"
                   onClick={() => {
+                    setEventOpen(true);
                     setQuickOpen(false);
                     setBookingOpen(false);
-                    setEventOpen(true);
+                    setComingOpen(false);
                   }}
                 >
                   <span className="venue-tile-icon">
@@ -534,6 +610,10 @@ export default function VenuePage() {
               onTableClick={(table) => {
                 setSelectedTableId(table.id);
                 setSheetMessage(null);
+                setBookingOpen(false);
+                setComingOpen(false);
+                setQuickOpen(false);
+                setEventOpen(false);
               }}
               onReserve={openBooking}
               onNotifyFree={(table) => void handleNotifyFree(table)}

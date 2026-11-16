@@ -31,6 +31,7 @@ type persistedState struct {
 	StaffMembers   map[string]models.StaffMember           `json:"staff_members"`
 	ProfileChanges map[string]models.ProfileChangeRequest  `json:"profile_changes"`
 	Waitlist       map[string]models.WaitlistEntry         `json:"waitlist"`
+	DemoMenuVer    int                                     `json:"demo_menu_version"`
 }
 
 type persistedUser struct {
@@ -64,8 +65,34 @@ func NewPersistent(path string) (*MemoryStore, error) {
 	s.backfillVenueMediaLocked()
 	s.ensureDemoUsersLocked()
 	s.ensureDemoFloorExamplesLocked()
+	s.ensureDemoMenuLocked()
 	s.releaseStaleReservedTablesLocked()
 	return s, nil
+}
+
+// ensureDemoMenuLocked brings the seeded demo menu into snapshots saved with an
+// older demo menu version. It runs once per version: dishes an owner deletes
+// afterwards stay deleted, and the stop-list flag of seeded dishes is kept.
+func (s *MemoryStore) ensureDemoMenuLocked() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.demoMenuVer >= demoMenuVersion {
+		return
+	}
+	for _, fresh := range demoMenu() {
+		if _, ok := s.venues[fresh.VenueID]; !ok {
+			continue
+		}
+		if current, ok := s.menuItems[fresh.ID]; ok {
+			if current.VenueID != fresh.VenueID {
+				continue
+			}
+			fresh.Stopped = current.Stopped
+		}
+		s.menuItems[fresh.ID] = fresh
+	}
+	s.demoMenuVer = demoMenuVersion
+	s.persistBestEffortLocked()
 }
 
 // releaseStaleReservedTablesLocked frees tables still marked RESERVED for a booking
@@ -324,6 +351,7 @@ func (s *MemoryStore) applyState(state persistedState) {
 	if state.Waitlist != nil {
 		s.waitlist = state.Waitlist
 	}
+	s.demoMenuVer = state.DemoMenuVer
 }
 
 func (s *MemoryStore) stateLocked() persistedState {
@@ -348,6 +376,7 @@ func (s *MemoryStore) stateLocked() persistedState {
 		StaffMembers:   s.staffMembers,
 		ProfileChanges: s.profileChanges,
 		Waitlist:       s.waitlist,
+		DemoMenuVer:    s.demoMenuVer,
 	}
 }
 
