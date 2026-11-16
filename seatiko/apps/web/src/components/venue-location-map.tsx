@@ -48,16 +48,23 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
   useEffect(() => {
     if (!visible || !mapNodeRef.current) return;
     const center: [number, number] = [venue.lng, venue.lat];
-    const map = new maplibregl.Map({
-      container: mapNodeRef.current,
-      style: OPEN_FREE_MAP_STYLE,
-      center,
-      zoom: 16,
-      minZoom: 11,
-      maxZoom: 19,
-      cooperativeGestures: true,
-      attributionControl: false,
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: mapNodeRef.current,
+        style: OPEN_FREE_MAP_STYLE,
+        center,
+        zoom: 16,
+        minZoom: 11,
+        maxZoom: 19,
+        cooperativeGestures: true,
+        attributionControl: false,
+      });
+    } catch {
+      // No WebGL (old device, hardware acceleration off): keep the address and route links.
+      queueMicrotask(() => setMapState("error"));
+      return;
+    }
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
 

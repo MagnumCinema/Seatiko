@@ -11,6 +11,7 @@ All project documentation lives here. **Repository entry:** [`../README.md`](../
 | [`APP_LOGIC.md`](./APP_LOGIC.md) | Business logic, auth, guest profile, alcohol/18+, payments, MVP |
 | [`UX_SCREENS.md`](./UX_SCREENS.md) | Screens and navigation |
 | [`WEB_PAGES_STATUS.md`](./WEB_PAGES_STATUS.md) | Web page redesign tracker (done / in progress) |
+| [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) | Backend / API task backlog |
 | [`I18N.md`](./I18N.md) | RU / EN / RO strings |
 | [`RESTAURANT_OWNER_FLOW.md`](./RESTAURANT_OWNER_FLOW.md) | Owner onboarding & cabinet |
 | [`TWENTY_CRM_INTEGRATION.md`](./TWENTY_CRM_INTEGRATION.md) | CRM sync rules |
@@ -22,6 +23,7 @@ All project documentation lives here. **Repository entry:** [`../README.md`](../
 | Document | Contents |
 |----------|----------|
 | [`ENGINEERING.md`](./ENGINEERING.md) | Docker, API, CRM ops, tests, production |
+| [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) | What still needs building on the API |
 
 ### Assets
 
@@ -52,6 +54,7 @@ All project documentation lives here. **Repository entry:** [`../README.md`](../
 | Clickable demo | [`prototype/index.html`](./prototype/index.html) |
 | Flow diagrams | [`diagrams/seatiko.drawio`](./diagrams/seatiko.drawio) |
 | Docker / API / ops | [`ENGINEERING.md`](./ENGINEERING.md) |
+| Backend backlog | [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) |
 
 Prototype may simplify UI; **logic is always fixed in these docs first**.
 

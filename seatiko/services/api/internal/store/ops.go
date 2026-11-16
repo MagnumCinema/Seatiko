@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/qr"
-	"github.com/google/uuid"
 )
 
 type TableLayoutInput struct {
@@ -19,13 +19,19 @@ type TableLayoutInput struct {
 }
 
 type MenuItemInput struct {
-	ID              string                 `json:"id"`
-	Category        models.LocalizedString `json:"category"`
-	Name            models.LocalizedString `json:"name"`
-	Description     models.LocalizedString `json:"description"`
-	Price           int                    `json:"price"`
-	ContainsAlcohol bool                   `json:"contains_alcohol"`
-	Stopped         bool                   `json:"stopped"`
+	ID              string                  `json:"id"`
+	Category        models.LocalizedString  `json:"category"`
+	Name            models.LocalizedString  `json:"name"`
+	Description     models.LocalizedString  `json:"description"`
+	Ingredients     *models.LocalizedString `json:"ingredients"`
+	Allergens       []string                `json:"allergens"`
+	Price           int                     `json:"price"`
+	WeightG         *int                    `json:"weight_g"`
+	VolumeML        *int                    `json:"volume_ml"`
+	ImageURL        *string                 `json:"image_url"`
+	ContainsAlcohol bool                    `json:"contains_alcohol"`
+	Tags            []string                `json:"tags"`
+	Stopped         bool                    `json:"stopped"`
 }
 
 type BookingRulesInput struct {
@@ -178,9 +184,10 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 		return models.MenuItem{}, ErrBadRequest
 	}
 	id := strings.TrimSpace(input.ID)
+	existing, exists := s.menuItems[id]
 	if id == "" {
 		id = uuid.NewString()
-	} else if existing, ok := s.menuItems[id]; ok && existing.VenueID != venueID {
+	} else if exists && existing.VenueID != venueID {
 		return models.MenuItem{}, ErrForbidden
 	}
 	item := models.MenuItem{
@@ -189,9 +196,34 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 		Category:        input.Category,
 		Name:            input.Name,
 		Description:     input.Description,
+		Ingredients:     existing.Ingredients,
+		Allergens:       existing.Allergens,
 		Price:           input.Price,
+		WeightG:         existing.WeightG,
+		VolumeML:        existing.VolumeML,
+		ImageURL:        existing.ImageURL,
 		ContainsAlcohol: input.ContainsAlcohol,
+		Tags:            existing.Tags,
+		Position:        existing.Position,
 		Stopped:         input.Stopped,
+	}
+	if input.Ingredients != nil {
+		item.Ingredients = *input.Ingredients
+	}
+	if input.Allergens != nil {
+		item.Allergens = input.Allergens
+	}
+	if input.WeightG != nil {
+		item.WeightG = max(0, *input.WeightG)
+	}
+	if input.VolumeML != nil {
+		item.VolumeML = max(0, *input.VolumeML)
+	}
+	if input.ImageURL != nil {
+		item.ImageURL = strings.TrimSpace(*input.ImageURL)
+	}
+	if input.Tags != nil {
+		item.Tags = input.Tags
 	}
 	s.menuItems[id] = item
 	return item, nil
@@ -269,6 +301,7 @@ func (s *MemoryStore) ListMenuForOwner(ownerID, venueID string) ([]models.MenuIt
 			out = append(out, m)
 		}
 	}
+	sortMenu(out)
 	return out, nil
 }
 

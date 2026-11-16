@@ -83,6 +83,7 @@ type MemoryStore struct {
 	profileChanges map[string]models.ProfileChangeRequest
 	waitlist       map[string]models.WaitlistEntry
 	eventInquiries map[string]models.EventInquiry
+	demoMenuVer    int
 }
 
 func NewMemory() *MemoryStore {
@@ -105,6 +106,7 @@ func NewMemory() *MemoryStore {
 		profileChanges: make(map[string]models.ProfileChangeRequest),
 		waitlist:       make(map[string]models.WaitlistEntry),
 		eventInquiries: make(map[string]models.EventInquiry),
+		demoMenuVer:    demoMenuVersion,
 	}
 	s.seed()
 	return s
@@ -389,72 +391,7 @@ func (s *MemoryStore) seed() {
 		}
 	}
 
-	menu := []models.MenuItem{
-		{
-			ID: "m1", VenueID: "venue-1",
-			Category:    models.LocalizedString{RU: "Выпечка", EN: "Pastries", RO: "Patiserie"},
-			Name:        models.LocalizedString{RU: "Плацинда с сыром", EN: "Cheese plăcintă", RO: "Plăcintă cu brânză"},
-			Description: models.LocalizedString{RU: "Классическая молдавская плацинда", EN: "Classic Moldovan pastry", RO: "Plăcintă moldovenească clasică"},
-			Price:       45,
-		},
-		{
-			ID: "m2", VenueID: "venue-1",
-			Category:    models.LocalizedString{RU: "Супы", EN: "Soups", RO: "Supe"},
-			Name:        models.LocalizedString{RU: "Зеленый борщ", EN: "Green borscht", RO: "Borș verde"},
-			Description: models.LocalizedString{RU: "С щавелем и яйцом", EN: "With sorrel and egg", RO: "Cu măcriș și ou"},
-			Price:       65,
-		},
-		{
-			ID: "m3", VenueID: "venue-1",
-			Category:    models.LocalizedString{RU: "Напитки", EN: "Drinks", RO: "Băuturi"},
-			Name:        models.LocalizedString{RU: "Домашний компот", EN: "Homemade compote", RO: "Compot de casă"},
-			Description: models.LocalizedString{RU: "Сезонные фрукты", EN: "Seasonal fruits", RO: "Fructe de sezon"},
-			Price:       25,
-		},
-		{
-			ID: "m4", VenueID: "venue-2",
-			Category:    models.LocalizedString{RU: "Кофе", EN: "Coffee", RO: "Cafea"},
-			Name:        models.LocalizedString{RU: "Капучино", EN: "Cappuccino", RO: "Cappuccino"},
-			Description: models.LocalizedString{RU: "Двойной эспрессо с молоком", EN: "Double espresso with milk", RO: "Espresso dublu cu lapte"},
-			Price:       40,
-		},
-		{
-			ID: "m5", VenueID: "venue-2",
-			Category:    models.LocalizedString{RU: "Завтраки", EN: "Breakfast", RO: "Mic dejun"},
-			Name:        models.LocalizedString{RU: "Авокадо тост", EN: "Avocado toast", RO: "Toast cu avocado"},
-			Description: models.LocalizedString{RU: "На зерновом хлебе", EN: "On wholegrain bread", RO: "Pe pâine integrală"},
-			Price:       75,
-		},
-		{
-			ID: "m6", VenueID: "venue-2",
-			Category:    models.LocalizedString{RU: "Десерты", EN: "Desserts", RO: "Deserturi"},
-			Name:        models.LocalizedString{RU: "Чизкейк", EN: "Cheesecake", RO: "Cheesecake"},
-			Description: models.LocalizedString{RU: "Нью-Йорк стиль", EN: "New York style", RO: "Stil New York"},
-			Price:       55,
-		},
-		{
-			ID: "m7", VenueID: "venue-3",
-			Category:    models.LocalizedString{RU: "Стейки", EN: "Steaks", RO: "Steak-uri"},
-			Name:        models.LocalizedString{RU: "Рибай 300г", EN: "Ribeye 300g", RO: "Ribeye 300g"},
-			Description: models.LocalizedString{RU: "На гриле, medium rare", EN: "Grilled, medium rare", RO: "La grătar, medium rare"},
-			Price:       320,
-		},
-		{
-			ID: "m8", VenueID: "venue-3",
-			Category:    models.LocalizedString{RU: "Гарниры", EN: "Sides", RO: "Garnituri"},
-			Name:        models.LocalizedString{RU: "Картофель фри", EN: "French fries", RO: "Cartofi prăjiți"},
-			Description: models.LocalizedString{RU: "С соусом", EN: "With sauce", RO: "Cu sos"},
-			Price:       45,
-		},
-		{
-			ID: "m9", VenueID: "venue-3",
-			Category:    models.LocalizedString{RU: "Напитки", EN: "Drinks", RO: "Băuturi"},
-			Name:        models.LocalizedString{RU: "Красное вино бокал", EN: "Red wine glass", RO: "Vin roșu pahar"},
-			Description: models.LocalizedString{RU: "Местное вино", EN: "Local wine", RO: "Vin local"},
-			Price:       80, ContainsAlcohol: true,
-		},
-	}
-	for _, m := range menu {
+	for _, m := range demoMenu() {
 		s.menuItems[m.ID] = m
 	}
 
@@ -1447,7 +1384,23 @@ func (s *MemoryStore) ListMenu(venueID string) ([]models.MenuItem, error) {
 			out = append(out, m)
 		}
 	}
+	sortMenu(out)
 	return out, nil
+}
+
+// sortMenu orders dishes by their seeded position; dishes added later by the
+// owner (no position) go after the seeded ones, by id for a stable order.
+func sortMenu(items []models.MenuItem) {
+	sort.SliceStable(items, func(i, j int) bool {
+		pi, pj := items[i].Position, items[j].Position
+		if (pi == 0) != (pj == 0) {
+			return pj == 0
+		}
+		if pi != pj {
+			return pi < pj
+		}
+		return items[i].ID < items[j].ID
+	})
 }
 
 func (s *MemoryStore) CreateOrder(sessionID, userID string, items []OrderItemInput) (models.Order, error) {

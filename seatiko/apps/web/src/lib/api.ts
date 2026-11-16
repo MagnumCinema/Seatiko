@@ -261,8 +261,21 @@ export type MenuItem = {
   category: LocalizedString;
   name: LocalizedString;
   description: LocalizedString;
+  /** Full composition for the dish popup. */
+  ingredients?: LocalizedString;
+  /** Allergen codes: gluten, milk, eggs, fish, … — localised in the UI. */
+  allergens?: string[];
   price: number;
+  /** Portion in grams (food). */
+  weight_g?: number;
+  /** Portion in millilitres (drinks). */
+  volume_ml?: number;
+  /** Dish photo (absolute URL or path under the API). */
+  image_url?: string;
   contains_alcohol: boolean;
+  /** `popular` | `vegetarian` | `spicy`. */
+  tags?: string[];
+  position?: number;
   stopped?: boolean;
 };
 
