@@ -13,6 +13,7 @@ import {
   type MapBounds,
   type MapCoordinates,
   type MapPlace,
+  type MapPlacesResponse,
 } from "@/lib/api";
 import {
   filterAndRankPlaces,
@@ -65,7 +66,7 @@ const mapCopy = {
     popupFree: "свободно",
     popupBook: "Забронировать",
     legendAria: "Легенда карты",
-    legendOurs: "В Seatiko — можно забронировать",
+    legendOurs: "Заведения Seatiko",
     legendOther: "Другие заведения",
     comingSoon: "Google Maps",
     bookableBadge: "Можно забронировать"
@@ -91,7 +92,7 @@ const mapCopy = {
     popupFree: "free",
     popupBook: "Book",
     legendAria: "Map legend",
-    legendOurs: "In Seatiko — bookable",
+    legendOurs: "Seatiko venues",
     legendOther: "Other places",
     comingSoon: "Google Maps",
     bookableBadge: "Bookable"
@@ -117,7 +118,7 @@ const mapCopy = {
     popupFree: "libere",
     popupBook: "Rezervă",
     legendAria: "Legenda hărții",
-    legendOurs: "În Seatiko — se poate rezerva",
+    legendOurs: "Localuri Seatiko",
     legendOther: "Alte localuri",
     comingSoon: "Google Maps",
     bookableBadge: "Se poate rezerva"
@@ -131,13 +132,14 @@ function getVenueHours(place: MapPlace, locale: LocaleCode): string {
   return getVenueHoursById("", locale);
 }
 
-function sortPlaces(places: MapPlace[]): MapPlace[] {
+function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
   return [...places].sort((a, b) => {
     if (a.in_database !== b.in_database) return a.in_database ? -1 : 1;
+    if (searching && !a.in_database) return 0;
     const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
     if (ratingDiff !== 0) return ratingDiff;
-  const nameA = a.name.en || a.name.ru || a.name.ro || "";
-  const nameB = b.name.en || b.name.ru || b.name.ro || "";
+    const nameA = a.name.en || a.name.ru || a.name.ro || "";
+    const nameB = b.name.en || b.name.ru || b.name.ro || "";
     return nameA.localeCompare(nameB);
   });
 }
@@ -169,10 +171,31 @@ function placeCollection(
 }
 
 const areaCopy = {
-  ru: { country: "Вся Молдова", countryName: "Молдова", area: "Город или страна", search: "Поиск в этой области", food: "Рестораны", providerError: "Поиск Google Places недоступен", loadError: "Не удалось загрузить заведения", retry: "Повторить" },
-  en: { country: "All Moldova", countryName: "Moldova", area: "City or country", search: "Search this area", food: "Restaurants", providerError: "Google Places search is unavailable", loadError: "Could not load venues", retry: "Retry" },
-  ro: { country: "Toată Moldova", countryName: "Moldova", area: "Oraș sau țară", search: "Caută în această zonă", food: "Restaurante", providerError: "Căutarea Google Places nu este disponibilă", loadError: "Localurile nu au putut fi încărcate", retry: "Încearcă din nou" },
-};
+  ru: {
+    country: "Вся Молдова", countryName: "Молдова", area: "Город или страна",
+    search: "Поиск в этой области", food: "Рестораны",
+    query: "Название или адрес", find: "Найти", bookableOnly: "Только с бронированием",
+    partner: "Партнёр Seatiko", noMatches: "По этому запросу ничего не найдено.",
+    noBookable: "В этой области пока нет заведений с бронированием.",
+    providerError: "Поиск Google Places недоступен", loadError: "Не удалось загрузить заведения", retry: "Повторить",
+  },
+  en: {
+    country: "All Moldova", countryName: "Moldova", area: "City or country",
+    search: "Search this area", food: "Restaurants",
+    query: "Name or address", find: "Search", bookableOnly: "Bookable only",
+    partner: "Seatiko partner", noMatches: "No venues match your search.",
+    noBookable: "There are no bookable venues in this area yet.",
+    providerError: "Google Places search is unavailable", loadError: "Could not load venues", retry: "Retry",
+  },
+  ro: {
+    country: "Toată Moldova", countryName: "Moldova", area: "Oraș sau țară",
+    search: "Caută în această zonă", food: "Restaurante",
+    query: "Nume sau adresă", find: "Caută", bookableOnly: "Doar cu rezervare",
+    partner: "Partener Seatiko", noMatches: "Niciun local nu corespunde căutării.",
+    noBookable: "În această zonă nu sunt încă localuri cu rezervare.",
+    providerError: "Căutarea Google Places nu este disponibilă", loadError: "Localurile nu au putut fi încărcate", retry: "Încearcă din nou",
+  },
+} as const;
 
 type VenueMapProps = { compact?: boolean; preferences?: DiscoverPreferences };
 
@@ -180,6 +203,9 @@ export function VenueMap(props: VenueMapProps) {
   const { locale } = useLocale();
   const [config, setConfig] = useState<MapConfig | null | undefined>();
   const [cityId, setCityId] = useState(DEFAULT_CITY);
+  const [searchText, setSearchText] = useState("");
+  const [query, setQuery] = useState("");
+  const [bookableOnly, setBookableOnly] = useState(false);
   useEffect(() => {
     let active = true;
     fetchMapConfig()
@@ -195,11 +221,18 @@ export function VenueMap(props: VenueMapProps) {
   const bounds = cityId === "all"
     ? config?.country_bounds ?? MOLDOVA_BOUNDS
     : city?.bounds ?? BALTI_BOUNDS;
-  const externalUrl = googleMapSearch(`${labels.food} ${name}`);
+  const externalUrl = googleMapSearch(`${searchText.trim() || labels.food} ${name}`);
 
   return (
     <div>
-      <div className="venue-map-areas">
+      <form
+        className="venue-map-areas"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setQuery(searchText.trim());
+        }}
+      >
         <label>
           {labels.area}
           <select value={cityId} onChange={(event) => setCityId(event.target.value)}>
@@ -208,22 +241,61 @@ export function VenueMap(props: VenueMapProps) {
             <option value="all">{labels.country}</option>
           </select>
         </label>
+        <div className="venue-map-search">
+          <input
+            type="search"
+            aria-label={labels.query}
+            placeholder={labels.query}
+            value={searchText}
+            maxLength={100}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSearchText(value);
+              if (!value.trim()) setQuery("");
+            }}
+          />
+          <button type="submit">{labels.find}</button>
+        </div>
+        <label className="venue-map-bookable">
+          <input
+            type="checkbox"
+            checked={bookableOnly}
+            onChange={(event) => setBookableOnly(event.target.checked)}
+          />
+          {labels.bookableOnly}
+        </label>
         <a href={externalUrl} target="_blank" rel="noreferrer">{mapCopy[locale].openExternal} ↗</a>
-      </div>
+      </form>
       {config === undefined ? (
         <div className="venue-map-canvas" role="status">
           <div className="live-map-loading"><span /><p>{mapCopy[locale].loadingMap}</p></div>
         </div>
       ) : (
-        <VenueMapArea key={cityId} {...props} cityId={cityId} bounds={bounds} config={config} externalUrl={externalUrl} />
+        <VenueMapArea
+          key={cityId}
+          {...props}
+          cityId={cityId}
+          bounds={bounds}
+          config={config}
+          externalUrl={externalUrl}
+          query={query}
+          bookableOnly={bookableOnly}
+        />
       )}
     </div>
   );
 }
 
 function VenueMapArea({
-  compact = false, preferences, cityId, bounds, config, externalUrl,
-}: VenueMapProps & { cityId: string; bounds: MapBounds; config: MapConfig | null; externalUrl: string }) {
+  compact = false, preferences, cityId, bounds, config, externalUrl, query, bookableOnly,
+}: VenueMapProps & {
+  cityId: string;
+  bounds: MapBounds;
+  config: MapConfig | null;
+  externalUrl: string;
+  query: string;
+  bookableOnly: boolean;
+}) {
   const { locale } = useLocale();
   const copy = mapCopy[locale];
   const labels = areaCopy[locale];
@@ -233,23 +305,34 @@ function VenueMapArea({
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const placesRef = useRef<MapPlace[]>([]);
   const localeRef = useRef(locale);
-  const [allPlaces, setAllPlaces] = useState<MapPlace[]>([]);
   const [userGeo, setUserGeo] = useState<{ lat: number; lng: number } | null>(
     null,
   );
   const [nearbyDenied, setNearbyDenied] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [mapState, setMapState] = useState<MapState>("loading");
   const [googleFailed, setGoogleFailed] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
-  const [googleStatus, setGoogleStatus] = useState("");
   const [viewport, setViewport] = useState<MapBounds>();
   const [focus, setFocus] = useState<MapCoordinates | null>(null);
-  const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
   const googleKey = config?.google_maps_key;
   const useGoogle = Boolean(googleKey) && !googleFailed;
+  const includeGoogle = useGoogle && googleReady && !bookableOnly;
+  const validViewport = useGoogle && viewport &&
+    viewport.south < viewport.north && viewport.west < viewport.east ? viewport : undefined;
+  const request = useMemo(
+    () => ({ cityId, includeGoogle, locale, bounds: validViewport, query, bookableOnly, retry }),
+    [cityId, includeGoogle, locale, validViewport, query, bookableOnly, retry],
+  );
+  const [result, setResult] = useState<{
+    request: typeof request;
+    data: MapPlacesResponse | null;
+  }>();
+  const loading = result?.request !== request;
+  const data = loading ? undefined : result.data;
+  const loadError = data === null;
+  const googleStatus = data?.source.google_status;
 
   const googleLoaded = useCallback(() => {
     setGoogleReady(true);
@@ -268,13 +351,14 @@ function VenueMapArea({
   }, [bounds]);
 
   const ranked = useMemo(() => {
+    const allPlaces = data?.places ?? [];
     const visible = useGoogle ? allPlaces : allPlaces.filter((place) => place.in_database);
     if (!preferences) return visible.map((place) => ({ place, score: 0 }));
     return filterAndRankPlaces(visible, preferences, {
       userLat: userGeo?.lat,
       userLng: userGeo?.lng,
     });
-  }, [allPlaces, preferences, userGeo, useGoogle]);
+  }, [data, preferences, userGeo, useGoogle]);
 
   const places = useMemo(() => ranked.map((r) => r.place), [ranked]);
 
@@ -315,7 +399,7 @@ function VenueMapArea({
   function showVenuePopup(place: MapPlace, map: maplibregl.Map) {
     const labels = mapCopy[localeRef.current];
     const name = pickLocale(place.name, localeRef.current);
-    const bookable = place.in_database && Boolean(place.venue_id);
+    const venueId = place.in_database ? place.venue_id : undefined;
     const hours = getVenueHours(place, localeRef.current);
 
     const root = document.createElement("div");
@@ -357,8 +441,8 @@ function VenueMapArea({
 
     root.appendChild(schedule);
 
-    if (bookable) {
-      if (typeof place.free_tables === "number") {
+    if (venueId) {
+      if (place.bookable && typeof place.free_tables === "number") {
         const free = document.createElement("div");
         free.className = "venue-map-popup-free";
 
@@ -380,14 +464,16 @@ function VenueMapArea({
       const actions = document.createElement("div");
       actions.className = "venue-map-popup-actions";
 
-      const bookLink = document.createElement("a");
-      bookLink.href = venueBookingHref(place.venue_id as string);
-      bookLink.className = "primary";
-      bookLink.textContent = labels.popupBook;
-      actions.appendChild(bookLink);
+      if (place.bookable) {
+        const bookLink = document.createElement("a");
+        bookLink.href = venueBookingHref(venueId);
+        bookLink.className = "primary";
+        bookLink.textContent = labels.popupBook;
+        actions.appendChild(bookLink);
+      }
 
       const pageLink = document.createElement("a");
-      pageLink.href = `/venues/${encodeURIComponent(place.venue_id as string)}`;
+      pageLink.href = `/venues/${encodeURIComponent(venueId)}`;
       pageLink.className = "secondary";
       pageLink.textContent = labels.openPage;
       actions.appendChild(pageLink);
@@ -420,26 +506,17 @@ function VenueMapArea({
 
   useEffect(() => {
     const controller = new AbortController();
-    queueMicrotask(() => {
-      if (!controller.signal.aborted) {
-        setLoading(true);
-        setLoadError(false);
-      }
-    });
-    const validViewport = useGoogle && viewport &&
-      viewport.south < viewport.north && viewport.west < viewport.east ? viewport : undefined;
-    fetchMapPlaces(cityId, { includeGoogle: useGoogle && googleReady, locale, bounds: validViewport, signal: controller.signal })
+    popupRef.current?.remove();
+    fetchMapPlaces(request.cityId, { ...request, signal: controller.signal })
       .then((data) => {
         if (controller.signal.aborted) return;
-        const sorted = sortPlaces(data.places ?? []);
-        setAllPlaces(sorted);
+        const sorted = sortPlaces(data.places ?? [], Boolean(request.query));
+        setResult({ request, data: { ...data, places: sorted } });
         setSelectedId((previous) => sorted.some((place) => place.id === previous) ? previous : sorted[0]?.id ?? null);
-        setGoogleStatus(data.source.google_status);
       })
-      .catch(() => { if (!controller.signal.aborted) setLoadError(true); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .catch(() => { if (!controller.signal.aborted) setResult({ request, data: null }); });
     return () => controller.abort();
-  }, [cityId, useGoogle, googleReady, locale, viewport, retry]);
+  }, [request]);
 
   useEffect(() => {
     if (useGoogle || !mapNodeRef.current) return;
@@ -694,7 +771,12 @@ function VenueMapArea({
     popupRef.current?.remove();
   }
 
-  const selectedBookable = Boolean(selected?.in_database && selected?.venue_id);
+  const selectedVenueId = selected?.in_database ? selected.venue_id : undefined;
+  const selectedBookable = Boolean(selected?.bookable && selectedVenueId);
+  const emptyMessage = preferences && (data?.places.length || (!query && !bookableOnly))
+    ? discoverCopy.filtersEmpty
+    : query ? labels.noMatches
+      : bookableOnly ? labels.noBookable : copy.empty;
   const hasMeta =
     !!selected &&
     ((selected.cuisine && selected.cuisine.length > 0) ||
@@ -741,13 +823,13 @@ function VenueMapArea({
             </div>
             <div className="venue-map-legend" aria-label={copy.legendAria}>
               <span><i className="legend-dot legend-dot-ours" /> {copy.legendOurs}</span>
-              {useGoogle && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
+              {useGoogle && !bookableOnly && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
             </div>
           </>
         )}
       </div>
 
-      <div className="venue-map-panel">
+      <div className="venue-map-panel" aria-busy={loading}>
         {loadError && (
           <p role="status" className="venue-map-address">
             {labels.loadError}{" "}<button type="button" onClick={() => setRetry((attempt) => attempt + 1)}>{labels.retry}</button>
@@ -771,11 +853,13 @@ function VenueMapArea({
                   <em className="venue-map-badge">{discoverCopy.recommended}</em>
                 )}
                 <small className="venue-status-pill">
-                  {place.in_database ? (
+                  {place.in_database && place.bookable && place.venue_id ? (
                     <>
                       <span className={`status-dot ${place.open_now ? "open" : "closed"}`} />
                       {place.free_tables ?? 0} {copy.free}
                     </>
+                  ) : place.in_database ? (
+                    labels.partner
                   ) : typeof place.rating === "number" ? (
                     `★ ${place.rating.toFixed(1)}`
                   ) : (
@@ -795,7 +879,7 @@ function VenueMapArea({
                 <h3>{pickLocale(selected.name, locale)}</h3>
               </div>
               <div className="venue-card-badges">
-                {selected.in_database && (
+                {selectedBookable && (
                   <span className="venue-bookable-badge">{copy.bookableBadge}</span>
                 )}
                 {typeof selected.rating === "number" && (
@@ -871,16 +955,15 @@ function VenueMapArea({
                 </a>
               )}
 
-              {selectedBookable && (
+              {selectedVenueId && (
                 <div className="venue-map-actions">
+                  {selectedBookable && (
+                    <Link href={venueBookingHref(selectedVenueId)} className="map-primary-action">
+                      {copy.action} <span>→</span>
+                    </Link>
+                  )}
                   <Link
-                    href={venueBookingHref(selected.venue_id as string)}
-                    className="map-primary-action"
-                  >
-                    {copy.action} <span>→</span>
-                  </Link>
-                  <Link
-                    href={`/venues/${encodeURIComponent(selected.venue_id as string)}`}
+                    href={`/venues/${encodeURIComponent(selectedVenueId)}`}
                     className="map-secondary-action"
                   >
                     {copy.openPage}
@@ -889,13 +972,11 @@ function VenueMapArea({
               )}
             </div>
           </div>
-        ) : (
-          <p className="venue-map-address">
-            {preferences && !loading && places.length === 0
-              ? discoverCopy.filtersEmpty
-              : copy.empty}
+        ) : !loadError ? (
+          <p className="venue-map-address" role="status">
+            {loading ? copy.loadingVenues : emptyMessage}
           </p>
-        )}
+        ) : null}
 
         {nearbyDenied && (
           <p className="venue-map-address" role="status">

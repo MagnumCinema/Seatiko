@@ -478,6 +478,24 @@ func (s *MemoryStore) ListCities() []models.City {
 func (s *MemoryStore) ListVenues(cityID string) []models.Venue {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	return s.listVenuesLocked(cityID)
+}
+
+func (s *MemoryStore) ListMapVenues(cityID string) ([]models.Venue, map[string]bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	venues := s.listVenuesLocked(cityID)
+	bookable := make(map[string]bool)
+	for _, table := range s.tables {
+		if table.Seats > 0 {
+			bookable[table.VenueID] = true
+		}
+	}
+	return venues, bookable
+}
+
+func (s *MemoryStore) listVenuesLocked(cityID string) []models.Venue {
 	out := make([]models.Venue, 0)
 	for _, v := range s.venues {
 		if cityID == "" || v.CityID == cityID {

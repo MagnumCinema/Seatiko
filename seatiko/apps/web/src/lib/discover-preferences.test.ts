@@ -130,6 +130,7 @@ function place(partial: Partial<MapPlace> & Pick<MapPlace, "id">): MapPlace {
     lng: 27.92,
     address: { ru: "", en: "", ro: "" },
     in_database: true,
+    bookable: false,
     ...partial,
   };
 }

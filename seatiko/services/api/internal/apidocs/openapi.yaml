@@ -209,6 +209,21 @@ paths:
             type: boolean
             default: true
           description: Set false to load Seatiko venues only.
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          description: Search by venue name or street address in the selected area.
+          example: Independenței 45
+        - name: bookable_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Return Seatiko venues with a configured table layout. Skips Google Places.
       responses:
         '200':
           description: OK
@@ -2919,6 +2934,9 @@ components:
           type: string
         in_database:
           type: boolean
+        bookable:
+          type: boolean
+          description: The venue has at least one table configured for booking.
         venue_id:
           type: string
         free_tables:

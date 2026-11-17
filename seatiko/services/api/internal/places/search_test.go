@@ -25,6 +25,7 @@ func TestMapSearchUsesRequestedAreaAndKeepsMoldovanResults(t *testing.T) {
 		var body struct {
 			Language string `json:"languageCode"`
 			Region   string `json:"regionCode"`
+			Query    string `json:"textQuery"`
 			Location struct {
 				Rectangle struct {
 					Low struct{ Latitude float64 } `json:"low"`
@@ -34,7 +35,7 @@ func TestMapSearchUsesRequestedAreaAndKeepsMoldovanResults(t *testing.T) {
 		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
 			return nil, err
 		}
-		if body.Language != "ro" || body.Region != "MD" || body.Location.Rectangle.Low.Latitude != 46.9 {
+		if body.Language != "ro" || body.Region != "MD" || body.Query != "restaurants" || body.Location.Rectangle.Low.Latitude != 46.9 {
 			t.Errorf("incorrect search params: %+v", body)
 		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"places":[
@@ -43,8 +44,31 @@ func TestMapSearchUsesRequestedAreaAndKeepsMoldovanResults(t *testing.T) {
 			{"id":"outside","postalAddress":{"regionCode":"MD"},"location":{"latitude":47.7,"longitude":28.8}}
 		]}`))}, nil
 	})
-	places, err := client.SearchFood(t.Context(), models.MapBounds{South: 46.9, West: 28.7, North: 47.2, East: 29.1}, "ro")
+	places, err := client.SearchFood(t.Context(), models.MapBounds{South: 46.9, West: 28.7, North: 47.2, East: 29.1}, "ro", "")
 	if err != nil || len(places) != 1 || places[0].ID != "in" {
+		t.Fatalf("search returned %v, %v", places, err)
+	}
+}
+
+func TestMapTextSearchKeepsFoodPlaces(t *testing.T) {
+	client := New("test-key")
+	client.http.Transport = searchTransport(func(request *http.Request) (*http.Response, error) {
+		var body struct {
+			Query string `json:"textQuery"`
+		}
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			return nil, err
+		}
+		if body.Query != "Ștefan cel Mare 12" || !strings.Contains(request.Header.Get("X-Goog-FieldMask"), "places.types") {
+			t.Errorf("unexpected Google text search request: %+v", body)
+		}
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"places":[
+			{"id":"cafe","types":["coffee_shop"],"postalAddress":{"regionCode":"MD"},"location":{"latitude":47,"longitude":28.8}},
+			{"id":"bank","types":["bank"],"postalAddress":{"regionCode":"MD"},"location":{"latitude":47,"longitude":28.8}}
+		]}`))}, nil
+	})
+	places, err := client.SearchFood(t.Context(), models.MapBounds{South: 46.9, West: 28.7, North: 47.2, East: 29.1}, "ro", "Ștefan cel Mare 12")
+	if err != nil || len(places) != 1 || places[0].ID != "cafe" {
 		t.Fatalf("search returned %v, %v", places, err)
 	}
 }

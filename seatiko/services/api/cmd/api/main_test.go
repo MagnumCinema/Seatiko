@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -115,4 +117,56 @@ func TestPublicMapConfigReloadsBrowserKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	getConfig("browser-key-for-tests")
+}
+
+func TestMapSearchAndBookingFilter(t *testing.T) {
+	router := newRouter(&handlers.API{
+		Store: store.NewMemory(), UploadDir: t.TempDir(),
+		Maps: places.NewIntegration("", places.Credentials{PlacesKey: "would-call-google"}),
+	})
+	cases := []struct {
+		name  string
+		query string
+		ids   string
+		only  bool
+		code  int
+	}{
+		{"name in city", "?city_id=city-balti&q=LA+placinte&include_google=false", "venue-1", false, 200},
+		{"address across Moldova", "?city_id=all&q=Independentei+45&include_google=false", "venue-1", false, 200},
+		{"include all translations", "?city_id=all&q=" + url.QueryEscape("Независимости 45") + "&include_google=false", "venue-1", false, 200},
+		{"combined name and address", "?q=placinte+45&include_google=false", "venue-1", false, 200},
+		{"wrong area", "?bounds=47.78,27.84,47.82,28.02&q=placinte&include_google=false", "", false, 200},
+		{"bookable in Moldova", "?city_id=all&bookable_only=true", "venue-1,venue-2,venue-3", true, 200},
+		{"seatiko place without tables", "?q=wine+house&bookable_only=true", "", true, 200},
+		{"invalid toggle", "?bookable_only=maybe", "", false, 400},
+		{"too long", "?q=" + url.QueryEscape(strings.Repeat("ș", 101)), "", false, 400},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := httptest.NewRecorder()
+			router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/v1/map/places"+tc.query, nil))
+			if res.Code != tc.code {
+				t.Fatalf("status = %d, want %d", res.Code, tc.code)
+			}
+			if res.Code != http.StatusOK {
+				return
+			}
+			var data models.MapPlacesResponse
+			if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
+				t.Fatal(err)
+			}
+			ids := make([]string, 0, len(data.Places))
+			for _, place := range data.Places {
+				if tc.only && (!place.InDatabase || !place.Bookable) {
+					t.Fatalf("found a result with booking unavailable: %s", place.ID)
+				}
+				ids = append(ids, place.ID)
+			}
+			slices.Sort(ids)
+			if strings.Join(ids, ",") != tc.ids || data.Source.DatabaseCount != len(ids) ||
+				data.Source.GoogleStatus != "not_requested" || data.Places == nil {
+				t.Fatalf("unexpected map response: ids=%v, source=%+v", ids, data.Source)
+			}
+		})
+	}
 }

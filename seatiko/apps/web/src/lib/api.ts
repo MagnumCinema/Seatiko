@@ -96,6 +96,7 @@ export type MapPlace = {
   rating?: number;
   google_place_id?: string;
   in_database: boolean;
+  bookable: boolean;
   venue_id?: string;
   free_tables?: number;
   open_now?: boolean | null;
@@ -481,9 +482,16 @@ export async function fetchVenues(cityId = "city-balti"): Promise<Venue[]> {
 
 export async function fetchMapPlaces(
   cityId: string,
-  options: { includeGoogle: boolean; locale: LocaleCode; bounds?: MapBounds; signal?: AbortSignal },
+  options: {
+    includeGoogle: boolean;
+    locale: LocaleCode;
+    bounds?: MapBounds;
+    query?: string;
+    bookableOnly?: boolean;
+    signal?: AbortSignal;
+  },
 ): Promise<MapPlacesResponse> {
-  const { bounds, includeGoogle, locale, signal } = options;
+  const { bounds, includeGoogle, locale, query, bookableOnly, signal } = options;
   return apiFetch<MapPlacesResponse>("/api/v1/map/places", {
     auth: false,
     signal,
@@ -492,6 +500,8 @@ export async function fetchMapPlaces(
       lang: locale,
       include_google: String(includeGoogle),
       bounds: bounds && [bounds.south, bounds.west, bounds.north, bounds.east].join(","),
+      q: query?.trim(),
+      bookable_only: bookableOnly ? "true" : undefined,
     },
   });
 }

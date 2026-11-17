@@ -1716,6 +1716,10 @@ html[data-theme="light"] .venue-map-popup {
   background: var(--popup-free-bg);
 }
 
+.venue-map-popup-actions a:only-child {
+  grid-column: 1 / -1;
+}
+
 .venue-map-popup-address {
   margin-top: 8px;
   color: var(--popup-muted);
@@ -11928,12 +11932,54 @@ html[data-theme="light"] .menu-dish-popup-x {
 }
 
 .venue-map-areas select,
+.venue-map-search input,
+.venue-map-search button,
 .map-search-area {
   padding: 8px 12px;
   border: 1px solid var(--site-border);
   border-radius: 12px;
   color: var(--site-fg);
   background: var(--site-surface);
+}
+
+.venue-map-search {
+  display: flex;
+  flex: 1 1 290px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.venue-map-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.venue-map-search button {
+  border-color: transparent;
+  background: #173f31;
+  color: #fff;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.venue-map-search button:hover {
+  background: #1e5240;
+}
+
+.venue-map-bookable {
+  cursor: pointer;
+}
+
+.venue-map-bookable input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--site-accent);
+}
+
+.venue-map-areas :is(input, button, select, a):focus-visible {
+  outline: 2px solid var(--site-accent);
+  outline-offset: 2px;
 }
 
 .map-search-area {
