@@ -36,6 +36,15 @@ type OrderItemInput struct {
 	Qty        int    `json:"qty"`
 }
 
+const (
+	demoGuestID         = "user-guest-demo"
+	demoCalendarGuestID = "user-guest-calendar"
+)
+
+func IsDemoGuestID(id string) bool {
+	return id == demoGuestID || id == demoCalendarGuestID
+}
+
 type UserProfileUpdate struct {
 	FirstName       *string
 	LastName        *string
@@ -338,7 +347,7 @@ func (s *MemoryStore) seed() {
 
 	s.reservations[resDemoID] = models.Reservation{
 		ID:          resDemoID,
-		UserID:      "user-guest-calendar",
+		UserID:      demoCalendarGuestID,
 		VenueID:     "venue-2",
 		TableID:     "t7",
 		Guests:      2,
@@ -365,7 +374,7 @@ func (s *MemoryStore) seed() {
 	for _, slot := range calSlots {
 		s.reservations[slot.id] = models.Reservation{
 			ID:          slot.id,
-			UserID:      "user-guest-calendar",
+			UserID:      demoCalendarGuestID,
 			VenueID:     "venue-2",
 			TableID:     slot.tableID,
 			Guests:      slot.guests,
@@ -417,7 +426,7 @@ func (s *MemoryStore) seed() {
 	guestHash, err := bcrypt.GenerateFromPassword([]byte("guest123"), bcrypt.DefaultCost)
 	if err == nil {
 		guest := models.User{
-			ID:           "user-guest-demo",
+			ID:           demoGuestID,
 			Email:        "guest@seatiko.local",
 			PasswordHash: string(guestHash),
 			FirstName:    "Demo",
@@ -434,7 +443,7 @@ func (s *MemoryStore) seed() {
 	guestCalHash, err := bcrypt.GenerateFromPassword([]byte("guest123"), bcrypt.DefaultCost)
 	if err == nil {
 		guestCal := models.User{
-			ID:           "user-guest-calendar",
+			ID:           demoCalendarGuestID,
 			Email:        "guest.calendar@seatiko.local",
 			PasswordHash: string(guestCalHash),
 			FirstName:    "Иван",

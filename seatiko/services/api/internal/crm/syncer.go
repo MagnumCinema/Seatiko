@@ -137,7 +137,7 @@ func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 
 	personIDs := map[string]string{}
 	for _, user := range s.store.ListAllUsers() {
-		if user.Role == models.RoleAdmin {
+		if user.Role == models.RoleAdmin || store.IsDemoGuestID(user.ID) {
 			continue
 		}
 		id, err := s.syncUser(ctx, people, user)
@@ -200,6 +200,9 @@ func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 	}
 
 	for _, reservation := range s.store.ListAllReservations() {
+		if store.IsDemoGuestID(reservation.UserID) {
+			continue
+		}
 		application, err := s.store.GetApplicationByVenueID(reservation.VenueID)
 		if errors.Is(err, store.ErrNotFound) {
 			// Seed/demo venues are not restaurant applications and do not belong in CRM.
