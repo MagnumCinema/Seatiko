@@ -15,12 +15,14 @@ import (
 )
 
 type Status struct {
-	Enabled       bool       `json:"enabled"`
-	Healthy       bool       `json:"healthy"`
-	Running       bool       `json:"running"`
-	LastSuccessAt *time.Time `json:"last_success_at,omitempty"`
-	LastErrorAt   *time.Time `json:"last_error_at,omitempty"`
-	LastError     string     `json:"last_error,omitempty"`
+	Enabled           bool       `json:"enabled"`
+	Healthy           bool       `json:"healthy"`
+	Running           bool       `json:"running"`
+	LastSuccessAt     *time.Time `json:"last_success_at,omitempty"`
+	LastErrorAt       *time.Time `json:"last_error_at,omitempty"`
+	LastError         string     `json:"last_error,omitempty"`
+	WebhookConfigured bool       `json:"webhook_configured"`
+	LastWebhookAt     *time.Time `json:"last_webhook_at,omitempty"`
 }
 
 type Syncer struct {
@@ -30,6 +32,7 @@ type Syncer struct {
 	interval      time.Duration
 	trigger       chan struct{}
 	reconcileMu   sync.Mutex
+	schemaReady   bool
 	statusMu      sync.RWMutex
 	status        Status
 }
@@ -44,7 +47,7 @@ func NewSyncer(client *Client, dataStore *store.MemoryStore, webhookSecret strin
 		webhookSecret: webhookSecret,
 		interval:      interval,
 		trigger:       make(chan struct{}, 1),
-		status:        Status{Enabled: client != nil},
+		status:        Status{Enabled: client != nil, WebhookConfigured: webhookSecret != ""},
 	}
 }
 
@@ -84,24 +87,12 @@ func (s *Syncer) Run(ctx context.Context) {
 }
 
 func (s *Syncer) reconcileAndRecord(ctx context.Context) {
-	err := s.Reconcile(ctx)
-	now := time.Now().UTC()
-	s.statusMu.Lock()
-	s.status.Running = false
-	if err != nil {
-		s.status.Healthy = false
-		s.status.LastError = err.Error()
-		s.status.LastErrorAt = &now
+	if err := s.Reconcile(ctx); err != nil && ctx.Err() == nil {
 		log.Printf("Twenty CRM reconciliation failed: %v", err)
-	} else {
-		s.status.Healthy = true
-		s.status.LastError = ""
-		s.status.LastSuccessAt = &now
 	}
-	s.statusMu.Unlock()
 }
 
-func (s *Syncer) Reconcile(ctx context.Context) error {
+func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 	if s == nil || s.client == nil {
 		return errors.New("Twenty CRM integration is disabled")
 	}
@@ -110,8 +101,37 @@ func (s *Syncer) Reconcile(ctx context.Context) error {
 	s.statusMu.Lock()
 	s.status.Running = true
 	s.statusMu.Unlock()
+	defer func() {
+		now := time.Now().UTC()
+		s.statusMu.Lock()
+		defer s.statusMu.Unlock()
+		s.status.Running = false
+		s.status.Healthy = err == nil
+		if err != nil {
+			s.status.LastError = err.Error()
+			s.status.LastErrorAt = &now
+			return
+		}
+		s.status.LastError = ""
+		s.status.LastSuccessAt = &now
+	}()
 
-	if err := s.client.EnsureSeatikoSchema(ctx); err != nil {
+	if !s.schemaReady {
+		if err := s.client.EnsureSeatikoSchema(ctx); err != nil {
+			return err
+		}
+		s.schemaReady = true
+	}
+	people, err := s.client.listAll(ctx, "people")
+	if err != nil {
+		return err
+	}
+	companies, err := s.client.listAll(ctx, "companies")
+	if err != nil {
+		return err
+	}
+	reservations, err := s.client.listAll(ctx, "reservations")
+	if err != nil {
 		return err
 	}
 
@@ -120,7 +140,7 @@ func (s *Syncer) Reconcile(ctx context.Context) error {
 		if user.Role == models.RoleAdmin {
 			continue
 		}
-		id, err := s.syncUser(ctx, user)
+		id, err := s.syncUser(ctx, people, user)
 		if err != nil {
 			return fmt.Errorf("sync user %s: %w", user.ID, err)
 		}
@@ -136,19 +156,46 @@ func (s *Syncer) Reconcile(ctx context.Context) error {
 		}
 		personID := personIDs[owner.ID]
 		if personID == "" {
-			personID, err = s.syncUser(ctx, owner)
+			personID, err = s.syncUser(ctx, people, owner)
 			if err != nil {
 				return fmt.Errorf("sync owner for application %s: %w", application.ID, err)
 			}
 			personIDs[owner.ID] = personID
 		}
-		companyID, err := s.syncApplication(ctx, application, owner)
+		companyID, err := s.syncApplication(ctx, companies, application, owner)
 		if err != nil {
 			return fmt.Errorf("sync application %s: %w", application.ID, err)
 		}
 		companyIDs[application.ID] = companyID
-		if err := s.client.updateRecord(ctx, "people", personID, map[string]any{"companyId": companyID}); err != nil {
-			return fmt.Errorf("link owner %s to restaurant %s: %w", owner.ID, application.ID, err)
+	}
+
+	// Twenty's standard People relationship can select only one Company per owner.
+	// Prefer a published venue, then the earliest application, consistently.
+	type ownerCompany struct {
+		application models.VenueApplication
+		id          string
+	}
+	ownerCompanies := map[string]ownerCompany{}
+	for _, application := range applications {
+		current, exists := ownerCompanies[application.OwnerUserID]
+		published := application.Status == models.AppPublished
+		currentPublished := current.application.Status == models.AppPublished
+		earlier := application.CreatedAt.Before(current.application.CreatedAt) ||
+			(application.CreatedAt.Equal(current.application.CreatedAt) && application.ID < current.application.ID)
+		if !exists || (published && !currentPublished) || (published == currentPublished && earlier) {
+			ownerCompanies[application.OwnerUserID] = ownerCompany{application, companyIDs[application.ID]}
+		}
+	}
+	personCompanies := map[string]string{}
+	for _, person := range people {
+		personCompanies[recordID(person)] = stringField(person, "companyId")
+	}
+	for ownerID, target := range ownerCompanies {
+		personID := personIDs[ownerID]
+		if personCompanies[personID] != target.id {
+			if err := s.client.updateRecord(ctx, "people", personID, map[string]any{"companyId": target.id}); err != nil {
+				return fmt.Errorf("link owner %s to restaurant %s: %w", ownerID, target.application.ID, err)
+			}
 		}
 	}
 
@@ -167,7 +214,7 @@ func (s *Syncer) Reconcile(ctx context.Context) error {
 		}
 		guestID := personIDs[guest.ID]
 		if guestID == "" {
-			guestID, err = s.syncUser(ctx, guest)
+			guestID, err = s.syncUser(ctx, people, guest)
 			if err != nil {
 				return fmt.Errorf("sync reservation guest %s: %w", guest.ID, err)
 			}
@@ -179,13 +226,13 @@ func (s *Syncer) Reconcile(ctx context.Context) error {
 			if ownerErr != nil {
 				return ownerErr
 			}
-			companyID, err = s.syncApplication(ctx, application, owner)
+			companyID, err = s.syncApplication(ctx, companies, application, owner)
 			if err != nil {
 				return err
 			}
 			companyIDs[application.ID] = companyID
 		}
-		if err := s.syncReservation(ctx, reservation, guest, guestID, companyID); err != nil {
+		if err := s.syncReservation(ctx, reservations, reservation, guest, guestID, companyID); err != nil {
 			return fmt.Errorf("sync reservation %s: %w", reservation.ID, err)
 		}
 	}
@@ -234,20 +281,20 @@ func localizedValue(value models.LocalizedString) string {
 	return strings.TrimSpace(value.EN)
 }
 
-func (s *Syncer) syncUser(ctx context.Context, user models.User) (string, error) {
+func (s *Syncer) syncUser(ctx context.Context, records []map[string]any, user models.User) (string, error) {
 	payload := map[string]any{
 		"name": map[string]any{
 			"firstName": user.FirstName,
 			"lastName":  user.LastName,
 		},
-		"emails":                 emailValue(user.Email),
-		"phones":                 phoneValue(user.Phone),
+		"emails":           emailValue(user.Email),
+		"phones":           phoneValue(user.Phone),
 		"seatikoUserId":    user.ID,
 		"seatikoRole":      strings.ToUpper(user.Role),
 		"seatikoLocale":    user.Locale,
 		"seatikoUpdatedAt": effectiveUpdatedAt(user.UpdatedAt, user.CreatedAt).Format(time.RFC3339Nano),
 	}
-	return s.client.upsertRecord(ctx, "people", payload, func(record map[string]any) bool {
+	return s.client.upsertRecord(ctx, "people", records, payload, func(record map[string]any) bool {
 		externalID := stringField(record, "seatikoUserId")
 		if externalID != "" {
 			return externalID == user.ID
@@ -256,28 +303,29 @@ func (s *Syncer) syncUser(ctx context.Context, user models.User) (string, error)
 	})
 }
 
-func (s *Syncer) syncApplication(ctx context.Context, application models.VenueApplication, owner models.User) (string, error) {
+func (s *Syncer) syncApplication(ctx context.Context, records []map[string]any, application models.VenueApplication, owner models.User) (string, error) {
 	photoJSON, _ := json.Marshal(application.PhotoURLs)
+	city, _ := s.store.GetCity(application.CityID)
 	payload := map[string]any{
-		"name":                   localizedValue(application.Name),
-		"seatikoId":        application.ID,
-		"restaurantStatus":       string(application.Status),
-		"restaurantDescription":  localizedValue(application.Description),
-		"cuisine":                strings.Join(application.Cuisine, ", "),
-		"openingHours":           application.HoursText,
-		"averageCheckMdl":        application.AverageCheck,
-		"restaurantPhones":       phoneValue(application.Phone),
-		"restaurantEmails":       emailValue(application.Email),
-		"latitude":               application.Lat,
-		"longitude":              application.Lng,
-		"cityId":                 application.CityID,
-		"priceLevel":             application.PriceLevel,
-		"photoUrls":              string(photoJSON),
-		"rejectReason":           application.RejectReason,
-		"seatikoUpdatedAt": application.UpdatedAt.UTC().Format(time.RFC3339Nano),
+		"name":                  localizedValue(application.Name),
+		"seatikoId":             application.ID,
+		"restaurantStatus":      string(application.Status),
+		"restaurantDescription": localizedValue(application.Description),
+		"cuisine":               strings.Join(application.Cuisine, ", "),
+		"openingHours":          application.HoursText,
+		"averageCheckMdl":       application.AverageCheck,
+		"restaurantPhones":      phoneValue(application.Phone),
+		"restaurantEmails":      emailValue(application.Email),
+		"latitude":              application.Lat,
+		"longitude":             application.Lng,
+		"cityId":                application.CityID,
+		"priceLevel":            application.PriceLevel,
+		"photoUrls":             string(photoJSON),
+		"rejectReason":          application.RejectReason,
+		"seatikoUpdatedAt":      application.UpdatedAt.UTC().Format(time.RFC3339Nano),
 		"address": map[string]any{
 			"addressStreet1": localizedValue(application.Address),
-			"addressCity":    "Bălți",
+			"addressCity":    city.Name.RO,
 			"addressCountry": "MD",
 			"addressLat":     application.Lat,
 			"addressLng":     application.Lng,
@@ -295,7 +343,7 @@ func (s *Syncer) syncApplication(ctx context.Context, application models.VenueAp
 			"secondaryLinks":   []any{},
 		}
 	}
-	return s.client.upsertRecord(ctx, "companies", payload, func(record map[string]any) bool {
+	return s.client.upsertRecord(ctx, "companies", records, payload, func(record map[string]any) bool {
 		externalID := stringField(record, "seatikoId")
 		if externalID != "" {
 			return externalID == application.ID
@@ -312,7 +360,7 @@ func (s *Syncer) syncApplication(ctx context.Context, application models.VenueAp
 	})
 }
 
-func (s *Syncer) syncReservation(ctx context.Context, reservation models.Reservation, guest models.User, guestID, companyID string) error {
+func (s *Syncer) syncReservation(ctx context.Context, records []map[string]any, reservation models.Reservation, guest models.User, guestID, companyID string) error {
 	table, err := s.store.GetTable(reservation.TableID)
 	if err != nil {
 		return err
@@ -323,22 +371,22 @@ func (s *Syncer) syncReservation(ctx context.Context, reservation models.Reserva
 	}
 	updatedAt := effectiveUpdatedAt(reservation.UpdatedAt, reservation.CreatedAt)
 	payload := map[string]any{
-		"name":                       fmt.Sprintf("%s · table %d", reservation.ID[:min(8, len(reservation.ID))], table.Number),
+		"name":                 fmt.Sprintf("%s · table %d", reservation.ID[:min(8, len(reservation.ID))], table.Number),
 		"seatikoReservationId": reservation.ID,
 		"seatikoUserId":        reservation.UserID,
 		"seatikoVenueId":       reservation.VenueID,
 		"seatikoTableId":       reservation.TableID,
 		"seatikoUpdatedAt":     updatedAt.Format(time.RFC3339Nano),
-		"reservedFor":                reservation.ReservedFor.UTC().Format(time.RFC3339Nano),
-		"guests":                     reservation.Guests,
-		"tableNumber":                table.Number,
-		"guestEmail":                 emailValue(guest.Email),
-		"bookingStatus":              string(reservation.Status),
-		"source":                     source,
-		"restaurantId":               companyID,
-		"guestId":                    guestID,
+		"reservedFor":          reservation.ReservedFor.UTC().Format(time.RFC3339Nano),
+		"guests":               reservation.Guests,
+		"tableNumber":          table.Number,
+		"guestEmail":           emailValue(guest.Email),
+		"bookingStatus":        string(reservation.Status),
+		"source":               source,
+		"restaurantId":         companyID,
+		"guestId":              guestID,
 	}
-	_, err = s.client.upsertRecord(ctx, "reservations", payload, func(record map[string]any) bool {
+	_, err = s.client.upsertRecord(ctx, "reservations", records, payload, func(record map[string]any) bool {
 		return stringField(record, "seatikoReservationId") == reservation.ID
 	})
 	return err

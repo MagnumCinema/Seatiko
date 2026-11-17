@@ -11910,3 +11910,48 @@ html[data-theme="light"] .menu-dish-popup-x {
     background: linear-gradient(180deg, transparent, var(--fa-surface) 28%);
   }
 }
+
+.venue-map-areas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.venue-map-areas label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.venue-map-areas select,
+.map-search-area {
+  padding: 8px 12px;
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  color: var(--site-fg);
+  background: var(--site-surface);
+}
+
+.map-search-area {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  z-index: 4;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 65%;
+  box-shadow: 0 3px 10px #0002;
+  cursor: pointer;
+}
+
+.live-map-canvas.is-google .venue-map-legend {
+  bottom: 44px;
+}
+
+@media (max-width: 600px) {
+  .map-search-area { top: 66px; }
+}

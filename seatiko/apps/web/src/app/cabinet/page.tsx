@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
+import { GoogleLocationPicker } from "@/components/google-location-picker";
+import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
 import { CabinetOpsPanel } from "@/components/cabinet-ops";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
@@ -13,6 +15,7 @@ import {
   createApplication,
   emptyLocalized,
   fetchMe,
+  fetchMapConfig,
   getToken,
   listApplicationActivity,
   listMyApplications,
@@ -25,6 +28,8 @@ import {
   uploadApplicationPhoto,
   type ApplicationActivity,
   type ApplicationUpdate,
+  type MapConfig,
+  type MapCoordinates,
   type RestaurantReservation,
   type User,
   type VenueApplication,
@@ -35,13 +40,14 @@ type Section = "overview" | "profile" | "reservations" | "activity" | "ops";
 type ReservationFilter = "upcoming" | "history" | "all";
 
 const DRAFT_STORAGE_PREFIX = "seatiko:restaurant-draft:";
-const BALTI_CENTER: [number, number] = [27.9289, 47.7622];
+const BALTI_CENTER: MapCoordinates = { lat: 47.7622, lng: 27.9289 };
 const FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 
 type Draft = {
   name: string;
   description: string;
   address: string;
+  city_id: string;
   cuisine: string;
   phone: string;
   hours_text: string;
@@ -104,6 +110,7 @@ function toDraft(app: VenueApplication): Draft {
     name: pickLocale(app.name, "ru") || "",
     description: pickLocale(app.description, "ru") || "",
     address: pickLocale(app.address, "ru") || "",
+    city_id: app.city_id,
     cuisine: (app.cuisine || []).join(", "),
     phone: app.phone || "",
     hours_text: app.hours_text || "",
@@ -121,6 +128,7 @@ function toPayload(draft: Draft): ApplicationUpdate {
     name: emptyLocalized(draft.name.trim()),
     description: emptyLocalized(draft.description.trim()),
     address: emptyLocalized(draft.address.trim()),
+    city_id: draft.city_id,
     cuisine: draft.cuisine
       .split(",")
       .map((item) => item.trim())
@@ -136,7 +144,7 @@ function toPayload(draft: Draft): ApplicationUpdate {
   };
 }
 
-function storedDraft(applicationId: string): Draft | null {
+function storedDraft(applicationId: string, cityId: string): Draft | null {
   try {
     const raw = localStorage.getItem(`${DRAFT_STORAGE_PREFIX}${applicationId}`);
     if (!raw) return null;
@@ -145,6 +153,7 @@ function storedDraft(applicationId: string): Draft | null {
       name: value.name ?? "",
       description: value.description ?? "",
       address: value.address ?? "",
+      city_id: value.city_id ?? cityId,
       cuisine: value.cuisine ?? "",
       phone: value.phone ?? "",
       hours_text: value.hours_text ?? "",
@@ -181,19 +190,61 @@ function clearStoredDraftWhenPersisted(
 }
 
 function ApplicationLocationPicker({
-  lat,
-  lng,
-  disabled,
-  onChange,
-  selectedHint,
-  editHint,
+  config, center, query, lat, lng, disabled, onChange, selectedHint, editHint,
 }: {
+  config: MapConfig | null;
+  center: MapCoordinates;
+  query: string;
   lat: string;
   lng: string;
   disabled: boolean;
   onChange: (lat: string, lng: string) => void;
   selectedHint: string;
   editHint: string;
+}) {
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const fallback = useCallback(() => setGoogleFailed(true), []);
+  const point = useMemo(() => {
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    return latitude >= 45.45 && latitude <= 48.55 && longitude >= 26.60 && longitude <= 30.20
+      ? { lat: latitude, lng: longitude }
+      : null;
+  }, [lat, lng]);
+
+  return (
+    <div className="owner-location-picker owner-field-wide">
+      {config?.google_maps_key && !googleFailed ? (
+        <GoogleLocationPicker
+          apiKey={config.google_maps_key} mapId={config.google_maps_id} center={center}
+          point={point} disabled={disabled} onError={fallback}
+          onChange={(next) => onChange(next.lat.toFixed(6), next.lng.toFixed(6))}
+        />
+      ) : (
+        <OpenLocationPicker lat={lat} lng={lng} disabled={disabled} onChange={onChange} center={center} />
+      )}
+      <p>
+        {disabled ? selectedHint : editHint}{" "}
+        <a href={point ? googleMapCoordinates(point) : googleMapSearch(query)} target="_blank" rel="noreferrer">
+          Google Maps ↗
+        </a>
+      </p>
+    </div>
+  );
+}
+
+function OpenLocationPicker({
+  lat,
+  lng,
+  disabled,
+  onChange,
+  center,
+}: {
+  lat: string;
+  lng: string;
+  disabled: boolean;
+  onChange: (lat: string, lng: string) => void;
+  center: MapCoordinates;
 }) {
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -209,19 +260,21 @@ function ApplicationLocationPicker({
     const parsedLat = Number(lat);
     const parsedLng = Number(lng);
     const hasPoint = Boolean(parsedLat && parsedLng);
-    const center: [number, number] = hasPoint
-      ? [parsedLng, parsedLat]
-      : BALTI_CENTER;
-    const map = new maplibregl.Map({
-      container: mapNodeRef.current,
-      style: FREE_MAP_STYLE,
-      center,
-      zoom: hasPoint ? 16 : 13.8,
-      minZoom: 11,
-      maxZoom: 19,
-      attributionControl: false,
-      cooperativeGestures: true,
-    });
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container: mapNodeRef.current,
+        style: FREE_MAP_STYLE,
+        center: hasPoint ? [parsedLng, parsedLat] : [center.lng, center.lat],
+        zoom: hasPoint ? 16 : 13.8,
+        minZoom: 8,
+        maxZoom: 19,
+        attributionControl: false,
+        cooperativeGestures: true,
+      });
+    } catch {
+      return;
+    }
     mapRef.current = map;
     map.addControl(
       new maplibregl.NavigationControl({ showCompass: false }),
@@ -269,7 +322,7 @@ function ApplicationLocationPicker({
     };
     // Recreate only when the profile becomes editable/read-only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disabled]);
+  }, [disabled, center]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -288,15 +341,7 @@ function ApplicationLocationPicker({
     }
   }, [disabled, lat, lng]);
 
-  return (
-    <div className="owner-location-picker owner-field-wide">
-      <div ref={mapNodeRef} className="owner-location-map" />
-      <p>
-        <span>⌖</span>
-        {disabled ? selectedHint : editHint}
-      </p>
-    </div>
-  );
+  return <div ref={mapNodeRef} className="owner-location-map" />;
 }
 
 function editable(status: string) {
@@ -370,6 +415,13 @@ export default function CabinetPage() {
   const { locale } = useLocale();
   const cabinetCopy = getSiteCopy(locale).cabinet;
   const [user, setUser] = useState<User | null>(null);
+  const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
+  useEffect(() => {
+    let active = true;
+    fetchMapConfig().then((config) => { if (active) setMapConfig(config); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  const locations = mapConfig?.cities.filter((city) => city.country === "MD") ?? [];
   const [apps, setApps] = useState<VenueApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -435,7 +487,7 @@ export default function CabinetPage() {
       if (draftApplicationRef.current !== nextId) {
         draftApplicationRef.current = nextId;
         setDraft(
-          selected ? storedDraft(selected.id) ?? toDraft(selected) : null,
+          selected ? storedDraft(selected.id, selected.city_id) ?? toDraft(selected) : null,
         );
       }
       if (selected) void refreshActivity(selected.id);
@@ -949,6 +1001,19 @@ export default function CabinetPage() {
                     </div>
                     <div className="owner-form-fields">
                       <div className="field owner-field-wide">
+                        <label htmlFor="venue-city">{locale === "ru" ? "Город" : locale === "ro" ? "Oraș" : "City"}</label>
+                        <select id="venue-city" disabled={!canEdit} value={draft.city_id}
+                          onChange={(event) => {
+                            const cityId = event.target.value;
+                            setDraft((current) => current ? { ...current, city_id: cityId, lat: "", lng: "" } : current);
+                          }}>
+                          {!locations.some((city) => city.id === draft.city_id) && (
+                            <option value={draft.city_id}>{draft.city_id === "city-balti" ? "Bălți" : draft.city_id}</option>
+                          )}
+                          {locations.map((city) => <option key={city.id} value={city.id}>{pickLocale(city.name, locale)}</option>)}
+                        </select>
+                      </div>
+                      <div className="field owner-field-wide">
                         <label htmlFor="venue-address">{cabinetCopy.address}</label>
                         <input id="venue-address" disabled={!canEdit} placeholder={cabinetCopy.addressPlaceholder} value={draft.address} onChange={(event) => updateDraft("address", event.target.value)} />
                       </div>
@@ -961,6 +1026,10 @@ export default function CabinetPage() {
                         <input id="venue-lng" type="number" step="0.000001" disabled={!canEdit} placeholder="27.9288" value={draft.lng} onChange={(event) => updateDraft("lng", event.target.value)} />
                       </div>
                       <ApplicationLocationPicker
+                        key={`${selected.id}:${draft.city_id}`}
+                        config={mapConfig}
+                        center={locations.find((city) => city.id === draft.city_id)?.center ?? BALTI_CENTER}
+                        query={`${draft.name} ${draft.address} Moldova`}
                         lat={draft.lat}
                         lng={draft.lng}
                         disabled={!canEdit}

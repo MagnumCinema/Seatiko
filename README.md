@@ -68,7 +68,7 @@ docker-compose.yml
 ## Быстрый запуск
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build --wait
 docker compose ps
 curl http://localhost/healthz
 ```
@@ -80,8 +80,10 @@ curl http://localhost/healthz
 | http://localhost/admin | модерация |
 | http://localhost/discover | подбор предпочтений (web wizard → карта) |
 | http://crm.localhost/ | Twenty CRM |
+| http://localhost/api/docs | Swagger UI |
+| http://localhost/api/openapi.yaml | OpenAPI |
 
-Подробности: [`docs/ENGINEERING.md`](docs/ENGINEERING.md).
+Подробности запуска и интеграций смотрите в [ENGINEERING.md](docs/ENGINEERING.md), [MAP_ARCHITECTURE.md](docs/MAP_ARCHITECTURE.md) и [TWENTY_CRM_INTEGRATION.md](docs/TWENTY_CRM_INTEGRATION.md).
 
 Android:
 

@@ -78,23 +78,15 @@ Twenty manual edit → signed webhook → validation → persistent state
 
 ## Локальная конфигурация
 
-Backend получает:
+1. Запустите Docker Compose. Откройте Twenty и создайте workspace Seatiko. [Twenty CRM](http://crm.localhost/)
+2. В настройках разработчика создайте ключ с доступом к модели данных и чтением и записью People, Companies и Reservations. Запишите его как `TWENTY_API_KEY` в `.env.integration.local`. Создайте отдельный случайный `TWENTY_WEBHOOK_SECRET` в том же файле.
+3. Выполните `docker compose up -d --force-recreate api`. API создаёт недостающие поля и объект Reservations, сохраняя существующие записи. При асинхронном применении изменений в Twenty следующая сверка продолжает настройку.
+4. Создайте webhook в Twenty. Укажите URL `http://api.seatiko.local:8080/api/v1/integrations/twenty/webhook`, тот же секрет и события `person.updated`, `company.updated` и `reservation.updated`. При выборе роли укажите роль с доступом к этим объектам.
+5. В админке Seatiko откройте вкладку CRM. На ней видны результат последней синхронизации и время последнего подписанного события.
 
-```env
-TWENTY_BASE_URL=http://twenty-server:3000
-TWENTY_API_KEY=...
-TWENTY_WEBHOOK_SECRET=...
-TWENTY_SYNC_INTERVAL_SECONDS=15
-DATA_FILE=/app/data/seatiko-state.json
-```
+Compose задаёт внутренний адрес CRM `http://twenty-server:3000`. Для локального webhook Compose отключает outbound safe mode Twenty. При развёртывании за пределами локальной сети включите safe mode и используйте публичный HTTPS URL webhook.
 
-Webhook Twenty:
-
-```text
-http://host.docker.internal/api/v1/integrations/twenty/webhook
-```
-
-Self-hosted локальная CRM работает с `OUTBOUND_HTTP_SAFE_MODE_ENABLED=false`, потому что Twenty иначе блокирует private Docker IP. Это исключение только для разработки. Production должен использовать публичный HTTPS webhook и включённый safe mode.
+[Документация Twenty по webhook](https://docs.twenty.com/developers/extend/webhooks)
 
 ## Проверка
 

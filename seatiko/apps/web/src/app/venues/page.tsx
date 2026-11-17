@@ -209,7 +209,7 @@ function VenuesCatalogContent() {
   // Fetch venues
   useEffect(() => {
     let alive = true;
-    fetchVenues("city-balti")
+    fetchVenues("all")
       .then((data) => {
         if (!alive) return;
         setVenues(data);

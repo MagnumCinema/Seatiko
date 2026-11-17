@@ -286,8 +286,12 @@ func (s *MemoryStore) ensureDemoFloorExamplesLocked() {
 }
 
 func (s *MemoryStore) applyState(state persistedState) {
-	if state.Cities != nil {
-		s.cities = state.Cities
+	for id, city := range state.Cities {
+		if city.Bounds == (models.MapBounds{}) {
+			city.Center = s.cities[id].Center
+			city.Bounds = s.cities[id].Bounds
+		}
+		s.cities[id] = city
 	}
 	if state.Venues != nil {
 		s.venues = state.Venues

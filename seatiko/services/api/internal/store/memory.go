@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/qr"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -113,24 +113,10 @@ func NewMemory() *MemoryStore {
 }
 
 func (s *MemoryStore) seed() {
-	balti := models.City{
-		ID:        "city-balti",
-		Slug:      "balti",
-		Name:      models.LocalizedString{RU: "Бельцы", EN: "Bălți", RO: "Bălți"},
-		Available: true,
-		Country:   "MD",
+	for _, city := range moldovaCities() {
+		s.cities[city.ID] = city
 	}
-	s.cities[balti.ID] = balti
-	s.cities["city-chisinau"] = models.City{
-		ID: "city-chisinau", Slug: "chisinau",
-		Name:      models.LocalizedString{RU: "Кишинёв", EN: "Chișinău", RO: "Chișinău"},
-		Available: false, Country: "MD",
-	}
-	s.cities["city-cahul"] = models.City{
-		ID: "city-cahul", Slug: "cahul",
-		Name:      models.LocalizedString{RU: "Кагул", EN: "Cahul", RO: "Cahul"},
-		Available: false, Country: "MD",
-	}
+	balti := s.cities[DefaultCityID]
 
 	venues := []models.Venue{
 		{
@@ -485,6 +471,7 @@ func (s *MemoryStore) ListCities() []models.City {
 	for _, c := range s.cities {
 		out = append(out, c)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
 }
 
@@ -1973,6 +1960,11 @@ func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpd
 			return models.VenueApplication{}, ErrBadRequest
 		}
 	}
+	if patch.CityID != nil && *patch.CityID != app.CityID {
+		if city, exists := s.cities[*patch.CityID]; !exists || city.Country != "MD" {
+			return models.VenueApplication{}, ErrBadRequest
+		}
+	}
 	if patch.Lat != nil && (*patch.Lat < -90 || *patch.Lat > 90) {
 		return models.VenueApplication{}, ErrBadRequest
 	}
@@ -2157,7 +2149,7 @@ func applicationComplete(app models.VenueApplication) bool {
 	descriptionPresent := strings.TrimSpace(app.Description.EN) != "" || strings.TrimSpace(app.Description.RU) != "" || strings.TrimSpace(app.Description.RO) != ""
 	addressPresent := strings.TrimSpace(app.Address.EN) != "" || strings.TrimSpace(app.Address.RU) != "" || strings.TrimSpace(app.Address.RO) != ""
 	_, emailErr := mail.ParseAddress(strings.TrimSpace(app.Email))
-	coordinatesValid := app.Lat >= -90 && app.Lat <= 90 && app.Lng >= -180 && app.Lng <= 180 && app.Lat != 0 && app.Lng != 0
+	coordinatesValid := MoldovaBounds.Contains(app.Lat, app.Lng)
 	return namePresent && descriptionPresent && addressPresent && len(app.Cuisine) > 0 &&
 		strings.TrimSpace(app.Phone) != "" && emailErr == nil && strings.TrimSpace(app.HoursText) != "" &&
 		coordinatesValid && len(app.PhotoURLs) > 0

@@ -1,0 +1,3832 @@
+openapi: 3.0.3
+info:
+  title: Seatiko API
+  version: 1.0.0
+  description: Map, restaurant administration, guest reservations, staff operations and Twenty CRM integration.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: Health check
+      tags:
+        - Service
+      description: Process health. CRM diagnostics are available on the integration status endpoint.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  crm:
+                    $ref: '#/components/schemas/CRMStatus'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/integrations/twenty/status:
+    get:
+      operationId: CRMStatus
+      summary: CRM Status
+      tags:
+        - CRM
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CRMStatus'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/integrations/twenty/webhook:
+    post:
+      operationId: TwentyWebhook
+      summary: Twenty Webhook
+      tags:
+        - CRM
+      description: Processes signed updates from Twenty CRM. Authenticate with both signature headers.
+      parameters:
+        - name: X-Twenty-Webhook-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Twenty-Webhook-Timestamp
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventName:
+                  type: string
+                record:
+                  type: object
+                  additionalProperties: true
+                event:
+                  type: string
+                data:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted:
+                    type: boolean
+                  applied:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/cities:
+    get:
+      operationId: ListCities
+      summary: List Cities
+      tags:
+        - Map and venues
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/City'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues:
+    get:
+      operationId: ListVenues
+      summary: List Venues
+      tags:
+        - Map and venues
+      description: Lists the published Seatiko catalog in the selected city. Use all for Moldova.
+      parameters:
+        - name: city_id
+          in: query
+          required: false
+          schema:
+            type: string
+            default: city-balti
+          description: A city ID returned by GET /api/v1/cities, or all for Moldova.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  venues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/map/config:
+    get:
+      operationId: GetMapConfig
+      summary: Get Map Config
+      tags:
+        - Map and venues
+      description: Public map configuration and supported cities. The key, if set, is restricted to the Maps JavaScript
+        API and allowed website referrers.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/City'
+                  country_bounds:
+                    $ref: '#/components/schemas/MapBounds'
+                  google_maps_key:
+                    type: string
+                  google_maps_id:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/map/places:
+    get:
+      operationId: ListMapPlaces
+      summary: List Map Places
+      tags:
+        - Map and venues
+      description: Searches the selected city or Moldova. A viewport is intersected with the selected area. Google
+        returns up to 20 ranked results per search. Seatiko venues remain available when Google is disabled or unavailable.
+      parameters:
+        - name: city_id
+          in: query
+          required: false
+          schema:
+            type: string
+            default: city-balti
+          description: A city ID returned by GET /api/v1/cities, or all for Moldova.
+        - name: bounds
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional viewport in south,west,north,east order. Example 46.92,28.72,47.12,29.02.
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ru
+              - en
+              - ro
+            default: ru
+        - name: include_google
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+          description: Set false to load Seatiko venues only.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapPlacesResponse'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/places/photo:
+    get:
+      operationId: PlacePhoto
+      summary: Place Photo
+      tags:
+        - Map and venues
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Google Places photo resource name.
+      responses:
+        '302':
+          description: Found
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues/{id}:
+    get:
+      operationId: GetVenue
+      summary: Get Venue
+      tags:
+        - Map and venues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  venue:
+                    $ref: '#/components/schemas/Venue'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues/{id}/places:
+    get:
+      operationId: GetVenuePlaces
+      summary: Get Venue Places
+      tags:
+        - Map and venues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source:
+                    type: string
+                    enum:
+                      - local
+                      - google
+                  google_place_id:
+                    type: string
+                  rating:
+                    type: number
+                  review_count:
+                    type: integer
+                  photo_urls:
+                    type: array
+                    items:
+                      type: string
+                    nullable: true
+                  reviews:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueReview'
+                    nullable: true
+                  live_google:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues/{id}/tables:
+    get:
+      operationId: ListTables
+      summary: List Tables
+      tags:
+        - Map and venues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tables:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Table'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues/{id}/schedule:
+    get:
+      operationId: ListVenueSchedule
+      summary: List Venue Schedule
+      tags:
+        - Map and venues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueScheduleSlot'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues/{id}/menu:
+    get:
+      operationId: ListMenu
+      summary: List Menu
+      tags:
+        - Map and venues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  menu:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuItem'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/venues/{id}/waitlist/summary:
+    get:
+      operationId: GetWaitlistSummary
+      summary: Get Waitlist Summary
+      tags:
+        - Map and venues
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    $ref: '#/components/schemas/WaitlistSummary'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/collections:
+    get:
+      operationId: ListCollections
+      summary: List Collections
+      tags:
+        - Map and venues
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  collections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HolidayCollection'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/discover/ai:
+    post:
+      operationId: AIDiscover
+      summary: AI Discover
+      tags:
+        - Map and venues
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/aiDiscoverReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  venues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/auth/register:
+    post:
+      operationId: Register
+      summary: Register
+      tags:
+        - Accounts
+      description: Registers a guest or restaurant owner and returns a Bearer token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/registerReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/auth/login:
+    post:
+      operationId: Login
+      summary: Login
+      tags:
+        - Accounts
+      description: Returns a Bearer token. Use Authorize to set the token for authenticated requests.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/loginReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me:
+    get:
+      operationId: Me
+      summary: Me
+      tags:
+        - Accounts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/APIError'
+    patch:
+      operationId: UpdateMe
+      summary: Update Me
+      tags:
+        - Accounts
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateMeReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/email:
+    patch:
+      operationId: UpdateEmail
+      summary: Update Email
+      tags:
+        - Accounts
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateEmailReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/password:
+    patch:
+      operationId: UpdatePassword
+      summary: Update Password
+      tags:
+        - Accounts
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updatePasswordReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/invites/{id}/accept:
+    post:
+      operationId: AcceptStaffInvite
+      summary: Accept Staff Invite
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/reservations:
+    post:
+      operationId: CreateReservation
+      summary: Create Reservation
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createReservationReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservation:
+                    $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+    get:
+      operationId: ListReservations
+      summary: List Reservations
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/reservations/{id}:
+    patch:
+      operationId: UpdateReservation
+      summary: Update Reservation
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateReservationReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservation:
+                    $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteReservation
+      summary: Delete Reservation
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/reservations/{id}/confirm-arrival:
+    post:
+      operationId: ConfirmArrival
+      summary: Confirm Arrival
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_arrival:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservation:
+                    $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/reservations/{id}/cancel:
+    post:
+      operationId: CancelReservation
+      summary: Cancel Reservation
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservation:
+                    $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/reservations/history:
+    delete:
+      operationId: ClearHistoryReservations
+      summary: Clear History Reservations
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cleared:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/event-inquiries:
+    post:
+      operationId: CreateEventInquiry
+      summary: Create Event Inquiry
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createEventInquiryReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inquiry:
+                    $ref: '#/components/schemas/EventInquiry'
+        default:
+          $ref: '#/components/responses/APIError'
+    get:
+      operationId: ListEventInquiries
+      summary: List Event Inquiries
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inquiries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EventInquiry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/tables/{id}/watch:
+    post:
+      operationId: WatchTable
+      summary: Watch Table
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/watchTableReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  watch:
+                    $ref: '#/components/schemas/TableWatch'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/waitlist:
+    post:
+      operationId: JoinWaitlist
+      summary: Join Waitlist
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaitlistInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entry:
+                    $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+    get:
+      operationId: ListMyWaitlist
+      summary: List My Waitlist
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  waitlist:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/waitlist/{id}:
+    delete:
+      operationId: LeaveWaitlist
+      summary: Leave Waitlist
+      tags:
+        - Reservations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entry:
+                    $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/sessions/qr:
+    post:
+      operationId: ScanQR
+      summary: Scan QR
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/scanQRReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Session'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/sessions/{id}:
+    get:
+      operationId: GetSession
+      summary: Get Session
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Session'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/sessions/{id}/close:
+    post:
+      operationId: CloseSession
+      summary: Close Session
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    $ref: '#/components/schemas/Session'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/sessions/{id}/orders:
+    post:
+      operationId: CreateOrder
+      summary: Create Order
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createOrderReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/sessions/{id}/waiter-calls:
+    post:
+      operationId: CreateWaiterCall
+      summary: Create Waiter Call
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/waiterCallReq'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  waiter_call:
+                    $ref: '#/components/schemas/WaiterCall'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/orders:
+    get:
+      operationId: ListOrders
+      summary: List Orders
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/orders/{id}:
+    get:
+      operationId: GetOrder
+      summary: Get Order
+      tags:
+        - Dining
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/payments:
+    post:
+      operationId: PayOrder
+      summary: Pay Order
+      tags:
+        - Dining
+      description: Updates the demo payment state for an existing order.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/payOrderReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+                  status:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waiter-calls:
+    get:
+      operationId: StaffListWaiterCalls
+      summary: Staff List Waiter Calls
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venue_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  waiter_calls:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WaiterCall'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waiter-calls/{id}/accept:
+    post:
+      operationId: StaffAcceptWaiterCall
+      summary: Staff Accept Waiter Call
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  waiter_call:
+                    $ref: '#/components/schemas/WaiterCall'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waiter-calls/{id}/complete:
+    post:
+      operationId: StaffCompleteWaiterCall
+      summary: Staff Complete Waiter Call
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  waiter_call:
+                    $ref: '#/components/schemas/WaiterCall'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/orders:
+    get:
+      operationId: StaffListOrders
+      summary: Staff List Orders
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venue_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/orders/{id}:
+    patch:
+      operationId: StaffUpdateOrderStatus
+      summary: Staff Update Order Status
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: venue_id
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                venue_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/reservations:
+    get:
+      operationId: StaffListReservations
+      summary: Staff List Reservations
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venue_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waitlist:
+    get:
+      operationId: StaffListWaitlist
+      summary: Staff List Waitlist
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venue_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  waitlist:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+    post:
+      operationId: StaffAddWaitlist
+      summary: Staff Add Waitlist
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaitlistInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entry:
+                    $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waitlist/{id}/notify:
+    post:
+      operationId: StaffNotifyWaitlist
+      summary: Staff Notify Waitlist
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                table_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entry:
+                    $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waitlist/{id}/seat:
+    post:
+      operationId: StaffSeatWaitlist
+      summary: Staff Seat Waitlist
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                table_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entry:
+                    $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/waitlist/{id}/close:
+    post:
+      operationId: StaffCloseWaitlist
+      summary: Staff Close Waitlist
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entry:
+                    $ref: '#/components/schemas/WaitlistEntry'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/applications:
+    post:
+      operationId: CreateRestaurantApplication
+      summary: Create Restaurant Application
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+    get:
+      operationId: ListMyApplications
+      summary: List My Applications
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/reservations:
+    get:
+      operationId: ListRestaurantReservations
+      summary: List Restaurant Reservations
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestaurantReservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/applications/{id}:
+    get:
+      operationId: GetMyApplication
+      summary: Get My Application
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+    patch:
+      operationId: UpdateRestaurantApplication
+      summary: Update Restaurant Application
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateApplicationReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/applications/{id}/activity:
+    get:
+      operationId: ListApplicationActivity
+      summary: List Application Activity
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  activity:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApplicationActivity'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/applications/{id}/photos:
+    post:
+      operationId: UploadApplicationPhoto
+      summary: Upload Application Photo
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+                  url:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: RemoveApplicationPhoto
+      summary: Remove Application Photo
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/removePhotoReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/applications/{id}/submit:
+    post:
+      operationId: SubmitRestaurantApplication
+      summary: Submit Restaurant Application
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/applications/{id}/change-requests:
+    post:
+      operationId: SubmitProfileChangeRequest
+      summary: Submit Profile Change Request
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationPatch'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  change_request:
+                    $ref: '#/components/schemas/ProfileChangeRequest'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/change-requests:
+    get:
+      operationId: ListMyProfileChangeRequests
+      summary: List My Profile Change Requests
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  change_requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileChangeRequest'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/tables:
+    put:
+      operationId: ReplaceVenueTables
+      summary: Replace Venue Tables
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tables
+              properties:
+                tables:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/TableLayoutInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tables:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Table'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/menu:
+    get:
+      operationId: ListVenueMenuOwner
+      summary: List Venue Menu Owner
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  menu:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuItem'
+        default:
+          $ref: '#/components/responses/APIError'
+    post:
+      operationId: CreateVenueMenuItem
+      summary: Create Venue Menu Item
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItemInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: '#/components/schemas/MenuItem'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/menu/{itemId}:
+    patch:
+      operationId: UpdateVenueMenuItem
+      summary: Update Venue Menu Item
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuItemInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: '#/components/schemas/MenuItem'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteVenueMenuItem
+      summary: Delete Venue Menu Item
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/menu/{itemId}/stop:
+    post:
+      operationId: SetVenueMenuStopped
+      summary: Set Venue Menu Stopped
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stopped:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: '#/components/schemas/MenuItem'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/qr/regenerate:
+    post:
+      operationId: RegenerateVenueQR
+      summary: Regenerate Venue QR
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tables:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Table'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/qr:
+    get:
+      operationId: ListVenueQR
+      summary: List Venue QR
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tables:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Table'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/booking-rules:
+    patch:
+      operationId: UpdateVenueBookingRules
+      summary: Update Venue Booking Rules
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRulesInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  venue:
+                    $ref: '#/components/schemas/Venue'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/analytics:
+    get:
+      operationId: GetVenueAnalytics
+      summary: Get Venue Analytics
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analytics:
+                    $ref: '#/components/schemas/VenueAnalytics'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/staff/invite:
+    post:
+      operationId: InviteVenueStaff
+      summary: Invite Venue Staff
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/staff:
+    get:
+      operationId: ListVenueStaff
+      summary: List Venue Staff
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/overview:
+    get:
+      operationId: AdminOverview
+      summary: Admin Overview
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  overview:
+                    $ref: '#/components/schemas/AdminOverview'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/people:
+    get:
+      operationId: AdminListPeople
+      summary: Admin List People
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  people:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminPerson'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/companies:
+    get:
+      operationId: AdminListCompanies
+      summary: Admin List Companies
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  companies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminCompany'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/reservations:
+    get:
+      operationId: AdminListReservations
+      summary: Admin List Reservations
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reservations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminReservationRow'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/orders:
+    get:
+      operationId: AdminListOrders
+      summary: Admin List Orders
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminOrderRow'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/crm/status:
+    get:
+      operationId: AdminCRMStatus
+      summary: Admin CRM Status
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CRMStatus'
+                  - type: object
+                    properties:
+                      crm_url:
+                        type: string
+                        format: uri
+                      webhook_configured:
+                        type: boolean
+                      last_webhook_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      objects:
+                        type: array
+                        items:
+                          type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/applications:
+    get:
+      operationId: AdminListApplications
+      summary: Admin List Applications
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  applications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/applications/{id}/review:
+    post:
+      operationId: AdminReviewApplication
+      summary: Admin Review Application
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/adminReviewReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/applications/{id}/publish:
+    post:
+      operationId: AdminPublishApplication
+      summary: Admin Publish Application
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application:
+                    $ref: '#/components/schemas/VenueApplication'
+                  venue_id:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/change-requests:
+    get:
+      operationId: AdminListProfileChangeRequests
+      summary: Admin List Profile Change Requests
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  change_requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileChangeRequest'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/change-requests/{id}/review:
+    post:
+      operationId: AdminReviewProfileChange
+      summary: Admin Review Profile Change
+      tags:
+        - Administration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  change_request:
+                    $ref: '#/components/schemas/ProfileChangeRequest'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/admin/integrations/twenty/reconcile:
+    post:
+      operationId: ReconcileCRM
+      summary: Reconcile CRM
+      tags:
+        - Administration
+      description: Reconciles eligible Seatiko users, applications and reservations with Twenty.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+        default:
+          $ref: '#/components/responses/APIError'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    APIError:
+      description: Request failed. The response includes a machine-readable error code.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    AdminCompany:
+      type: object
+      properties:
+        application_id:
+          type: string
+        venue_id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        status:
+          type: string
+        owner_email:
+          type: string
+          format: email
+        owner_name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        city_id:
+          type: string
+        average_check:
+          type: integer
+        cuisine:
+          type: array
+          items:
+            type: string
+        updated_at:
+          type: string
+          format: date-time
+        crm_object:
+          type: string
+    AdminOrderRow:
+      type: object
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        user_id:
+          type: string
+        guest_name:
+          type: string
+        guest_email:
+          type: string
+          format: email
+        venue_id:
+          type: string
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        status:
+          type: string
+        total:
+          type: integer
+        paid:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AdminOverview:
+      type: object
+      properties:
+        users_total:
+          type: integer
+        guests_total:
+          type: integer
+        owners_total:
+          type: integer
+        staff_total:
+          type: integer
+        venues_published:
+          type: integer
+        applications_pending:
+          type: integer
+        reservations_active:
+          type: integer
+        reservations_total:
+          type: integer
+        orders_total:
+          type: integer
+        orders_paid:
+          type: integer
+        revenue_paid_mdl:
+          type: integer
+        waiter_calls_pending:
+          type: integer
+        change_requests_open:
+          type: integer
+        reservations_by_status:
+          type: string
+        orders_by_status:
+          type: string
+    AdminPerson:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        display_name:
+          type: string
+        role:
+          type: string
+        locale:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        crm_object:
+          type: string
+    AdminReservationRow:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        table_id:
+          type: string
+        table_number:
+          type: integer
+        guest_id:
+          type: string
+        guest_name:
+          type: string
+        guest_email:
+          type: string
+          format: email
+        guests:
+          type: integer
+        reserved_for:
+          type: string
+          format: date-time
+        status:
+          type: string
+        source:
+          type: string
+        arrival_confirmed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        crm_object:
+          type: string
+    ApplicationActivity:
+      type: object
+      properties:
+        id:
+          type: string
+        application_id:
+          type: string
+        actor_user_id:
+          type: string
+        actor_role:
+          type: string
+        action:
+          type: string
+        changed_fields:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ApplicationPatch:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          $ref: '#/components/schemas/LocalizedString'
+        address:
+          $ref: '#/components/schemas/LocalizedString'
+        cuisine:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        website:
+          type: string
+        city_id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        price_level:
+          type: integer
+        average_check:
+          type: integer
+        hours_text:
+          type: string
+    BookingRulesInput:
+      type: object
+      properties:
+        booking_interval_min:
+          type: integer
+        hold_minutes:
+          type: integer
+        allow_preorder:
+          type: boolean
+        session_start_before_min:
+          type: integer
+        release_before_min:
+          type: integer
+        max_late_arrival_min:
+          type: integer
+        visit_duration_min:
+          type: integer
+        max_visit_duration_min:
+          type: integer
+    CRMStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        healthy:
+          type: boolean
+        running:
+          type: boolean
+        last_success_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+    City:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        available:
+          type: boolean
+        country:
+          type: string
+        center:
+          $ref: '#/components/schemas/Coordinates'
+        bounds:
+          $ref: '#/components/schemas/MapBounds'
+    Coordinates:
+      type: object
+      properties:
+        lat:
+          type: number
+        lng:
+          type: number
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+    EventInquiry:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        venue_id:
+          type: string
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        event_type:
+          type: string
+        guest_count:
+          type: integer
+        preferred_date:
+          type: string
+          format: date-time
+        contact_method:
+          type: string
+        contact_phone:
+          type: string
+        contact_name:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+        admin_phone:
+          type: string
+        admin_telegram:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    HolidayCollection:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        title:
+          $ref: '#/components/schemas/LocalizedString'
+        venue_ids:
+          type: array
+          items:
+            type: string
+    LocalizedString:
+      type: object
+      properties:
+        ru:
+          type: string
+        en:
+          type: string
+        ro:
+          type: string
+    MapBounds:
+      type: object
+      properties:
+        south:
+          type: number
+        west:
+          type: number
+        north:
+          type: number
+        east:
+          type: number
+    MapPlace:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        lat:
+          type: number
+        lng:
+          type: number
+        address:
+          $ref: '#/components/schemas/LocalizedString'
+        rating:
+          type: number
+        google_place_id:
+          type: string
+        in_database:
+          type: boolean
+        venue_id:
+          type: string
+        free_tables:
+          type: integer
+        open_now:
+          type: boolean
+        cuisine:
+          type: array
+          items:
+            type: string
+        price_level:
+          type: integer
+        average_check:
+          type: integer
+        website:
+          type: string
+    MapPlacesResponse:
+      type: object
+      properties:
+        city_id:
+          type: string
+        country:
+          type: string
+        center:
+          $ref: '#/components/schemas/Coordinates'
+        bounds:
+          $ref: '#/components/schemas/MapBounds'
+        places:
+          type: array
+          items:
+            $ref: '#/components/schemas/MapPlace'
+        google_enabled:
+          type: boolean
+        google_status:
+          type: string
+        google_count:
+          type: integer
+        database_count:
+          type: integer
+        source:
+          type: object
+          properties:
+            google_enabled:
+              type: boolean
+            google_status:
+              type: string
+              enum:
+                - ready
+                - disabled
+                - unavailable
+                - not_requested
+            google_count:
+              type: integer
+            database_count:
+              type: integer
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        category:
+          $ref: '#/components/schemas/LocalizedString'
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          $ref: '#/components/schemas/LocalizedString'
+        ingredients:
+          $ref: '#/components/schemas/LocalizedString'
+        allergens:
+          type: array
+          items:
+            type: string
+        price:
+          type: integer
+        weight_g:
+          type: integer
+        volume_ml:
+          type: integer
+        image_url:
+          type: string
+        contains_alcohol:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        position:
+          type: integer
+        stopped:
+          type: boolean
+    MenuItemInput:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          $ref: '#/components/schemas/LocalizedString'
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          $ref: '#/components/schemas/LocalizedString'
+        ingredients:
+          $ref: '#/components/schemas/LocalizedString'
+        allergens:
+          type: array
+          items:
+            type: string
+        price:
+          type: integer
+        weight_g:
+          type: integer
+        volume_ml:
+          type: integer
+        image_url:
+          type: string
+        contains_alcohol:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        stopped:
+          type: boolean
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        user_id:
+          type: string
+        venue_id:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        status:
+          type: string
+        total:
+          type: integer
+        check_number:
+          type: string
+        payment_method:
+          type: string
+        paid_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+    OrderItem:
+      type: object
+      properties:
+        menu_item_id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        qty:
+          type: integer
+        price:
+          type: integer
+    OrderItemInput:
+      type: object
+      properties:
+        menu_item_id:
+          type: string
+        qty:
+          type: integer
+    ProfileChangeRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        application_id:
+          type: string
+        owner_user_id:
+          type: string
+        status:
+          type: string
+        patch:
+          $ref: '#/components/schemas/ApplicationPatch'
+        created_at:
+          type: string
+          format: date-time
+        note:
+          type: string
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        venue_id:
+          type: string
+        table_id:
+          type: string
+        table_ids:
+          type: array
+          items:
+            type: string
+        guests:
+          type: integer
+        reserved_for:
+          type: string
+          format: date-time
+        duration_min:
+          type: integer
+        status:
+          type: string
+        source:
+          type: string
+        notes:
+          type: string
+        arrival_confirmed_at:
+          type: string
+          format: date-time
+        expected_arrival:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        table_number:
+          type: integer
+        table_numbers:
+          type: array
+          items:
+            type: integer
+    RestaurantReservation:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        table_id:
+          type: string
+        table_number:
+          type: integer
+        guest_name:
+          type: string
+        guest_email:
+          type: string
+          format: email
+        guests:
+          type: integer
+        reserved_for:
+          type: string
+          format: date-time
+        status:
+          type: string
+        arrival_confirmed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        venue_id:
+          type: string
+        table_id:
+          type: string
+        reservation_id:
+          type: string
+        status:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+    StaffMember:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        user_id:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Table:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        number:
+          type: integer
+        seats:
+          type: integer
+        status:
+          type: string
+        occupied_since:
+          type: string
+          format: date-time
+        reserved_for:
+          type: string
+          format: date-time
+        reservation_id:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+        zone:
+          type: string
+        qr_token:
+          type: string
+    TableLayoutInput:
+      type: object
+      properties:
+        number:
+          type: integer
+        seats:
+          type: integer
+        x:
+          type: number
+        y:
+          type: number
+        zone:
+          type: string
+    TableWatch:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        venue_id:
+          type: string
+        table_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        display_name:
+          type: string
+        locale:
+          type: string
+        role:
+          type: string
+        diet_preferences:
+          type: array
+          items:
+            type: string
+        favorite_venues:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Venue:
+      type: object
+      properties:
+        id:
+          type: string
+        city_id:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          $ref: '#/components/schemas/LocalizedString'
+        cuisine:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+        review_count:
+          type: integer
+        price_level:
+          type: integer
+        address:
+          $ref: '#/components/schemas/LocalizedString'
+        lat:
+          type: number
+        lng:
+          type: number
+        average_check:
+          type: integer
+        open_now:
+          type: boolean
+        free_tables:
+          type: integer
+        image_url:
+          type: string
+        photo_urls:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        website:
+          type: string
+        google_place_id:
+          type: string
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueReview'
+        alcohol_license_valid:
+          type: boolean
+        session_start_before_min:
+          type: integer
+        release_before_min:
+          type: integer
+        booking_interval_min:
+          type: integer
+        hold_minutes:
+          type: integer
+        max_late_arrival_min:
+          type: integer
+        visit_duration_min:
+          type: integer
+        max_visit_duration_min:
+          type: integer
+        allow_preorder:
+          type: boolean
+    VenueAnalytics:
+      type: object
+      properties:
+        venue_id:
+          type: string
+        reservations_by_status:
+          type: string
+        free_tables:
+          type: integer
+        waiter_calls_pending:
+          type: integer
+        orders_by_status:
+          type: string
+        total_tables:
+          type: integer
+    VenueApplication:
+      type: object
+      properties:
+        id:
+          type: string
+        owner_user_id:
+          type: string
+        status:
+          type: string
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          $ref: '#/components/schemas/LocalizedString'
+        address:
+          $ref: '#/components/schemas/LocalizedString'
+        cuisine:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        website:
+          type: string
+        city_id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        price_level:
+          type: integer
+        average_check:
+          type: integer
+        photo_urls:
+          type: array
+          items:
+            type: string
+        hours_text:
+          type: string
+        reject_reason:
+          type: string
+        venue_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        submitted_at:
+          type: string
+          format: date-time
+    VenueReview:
+      type: object
+      properties:
+        author:
+          type: string
+        rating:
+          type: number
+        text:
+          type: string
+        relative_time:
+          type: string
+        source:
+          type: string
+        profile_url:
+          type: string
+    VenueScheduleSlot:
+      type: object
+      properties:
+        id:
+          type: string
+        table_id:
+          type: string
+        table_number:
+          type: integer
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+    WaiterCall:
+      type: object
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        venue_id:
+          type: string
+        table_id:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    WaitlistEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        user_id:
+          type: string
+        guest_name:
+          type: string
+        phone:
+          type: string
+        guests:
+          type: integer
+        zone:
+          type: string
+        note:
+          type: string
+        status:
+          type: string
+        source:
+          type: string
+        table_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        notified_at:
+          type: string
+          format: date-time
+        seated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+        position:
+          type: integer
+        quoted_wait_min:
+          type: integer
+        table_number:
+          type: integer
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+    WaitlistInput:
+      type: object
+      properties:
+        venue_id:
+          type: string
+        guest_name:
+          type: string
+        phone:
+          type: string
+        guests:
+          type: integer
+        zone:
+          type: string
+        note:
+          type: string
+        source:
+          type: string
+    WaitlistSummary:
+      type: object
+      properties:
+        venue_id:
+          type: string
+        waiting:
+          type: integer
+        quoted_wait_min:
+          type: integer
+        free_tables:
+          type: integer
+    adminReviewReq:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+        reject_reason:
+          type: string
+    aiDiscoverReq:
+      type: object
+      properties:
+        query:
+          type: string
+    createEventInquiryReq:
+      type: object
+      required:
+        - venue_id
+        - event_type
+        - guest_count
+        - preferred_date
+        - contact_method
+        - contact_phone
+        - contact_name
+      properties:
+        venue_id:
+          type: string
+        event_type:
+          type: string
+        guest_count:
+          type: integer
+          minimum: 1
+        preferred_date:
+          type: string
+          format: date-time
+        contact_method:
+          type: string
+        contact_phone:
+          type: string
+        contact_name:
+          type: string
+        notes:
+          type: string
+    createOrderReq:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemInput'
+    createReservationReq:
+      type: object
+      required:
+        - venue_id
+        - guests
+        - reserved_for
+      properties:
+        venue_id:
+          type: string
+        table_id:
+          type: string
+        table_ids:
+          type: array
+          items:
+            type: string
+        guests:
+          type: integer
+          minimum: 1
+        reserved_for:
+          type: string
+          format: date-time
+        duration_min:
+          type: integer
+        notes:
+          type: string
+        source:
+          type: string
+    loginReq:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    payOrderReq:
+      type: object
+      properties:
+        order_id:
+          type: string
+        method:
+          type: string
+    registerReq:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+          format: password
+        first_name:
+          type: string
+        last_name:
+          type: string
+        locale:
+          type: string
+        role:
+          type: string
+          enum:
+            - guest
+            - restaurant
+          default: guest
+    removePhotoReq:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+    scanQRReq:
+      type: object
+      required:
+        - venue_id
+        - table_id
+      properties:
+        venue_id:
+          type: string
+        table_id:
+          type: string
+        token:
+          type: string
+    updateApplicationReq:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/LocalizedString'
+        description:
+          $ref: '#/components/schemas/LocalizedString'
+        address:
+          $ref: '#/components/schemas/LocalizedString'
+        cuisine:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        website:
+          type: string
+        city_id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        price_level:
+          type: integer
+        average_check:
+          type: integer
+        hours_text:
+          type: string
+    updateEmailReq:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+    updateMeReq:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        display_name:
+          type: string
+        phone:
+          type: string
+        locale:
+          type: string
+        diet_preferences:
+          type: array
+          items:
+            type: string
+        favorite_venues:
+          type: array
+          items:
+            type: string
+    updatePasswordReq:
+      type: object
+      required:
+        - old_password
+        - new_password
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 6
+    updateReservationReq:
+      type: object
+      properties:
+        table_id:
+          type: string
+        table_ids:
+          type: array
+          items:
+            type: string
+        guests:
+          type: integer
+        reserved_for:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    waiterCallReq:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+    watchTableReq:
+      type: object
+      required:
+        - venue_id
+      properties:
+        venue_id:
+          type: string

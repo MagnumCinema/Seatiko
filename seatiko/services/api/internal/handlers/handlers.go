@@ -9,21 +9,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/seatiko/api/internal/auth"
 	"github.com/seatiko/api/internal/crm"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
 	"github.com/seatiko/api/internal/store"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 type API struct {
-	Store     *store.MemoryStore
-	CRM       *crm.Syncer
-	Places    *places.Client
-	JWTSecret string
-	UploadDir string
+	Store        *store.MemoryStore
+	CRM          *crm.Syncer
+	CRMPublicURL string
+	Maps         *places.Integration
+	JWTSecret    string
+	UploadDir    string
 }
 
 func (a *API) triggerCRM() {
@@ -41,7 +42,8 @@ func (a *API) userID(c *gin.Context) string {
 func (a *API) Health(c *gin.Context) {
 	response := gin.H{"status": "ok", "service": "seatiko-api"}
 	if a.CRM != nil {
-		response["crm"] = a.CRM.Status()
+		status := a.CRM.Status()
+		response["crm"] = gin.H{"enabled": status.Enabled, "healthy": status.Healthy}
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -51,7 +53,12 @@ func (a *API) CRMStatus(c *gin.Context) {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"enabled": false, "healthy": false})
 		return
 	}
-	c.JSON(http.StatusOK, a.CRM.Status())
+	status := a.CRM.Status()
+	c.JSON(http.StatusOK, gin.H{
+		"enabled": status.Enabled, "healthy": status.Healthy, "running": status.Running,
+		"last_success_at": status.LastSuccessAt, "webhook_configured": status.WebhookConfigured,
+		"last_webhook_at": status.LastWebhookAt,
+	})
 }
 
 func (a *API) TwentyWebhook(c *gin.Context) {
@@ -95,46 +102,12 @@ func (a *API) ListCities(c *gin.Context) {
 func (a *API) ListVenues(c *gin.Context) {
 	cityID := c.Query("city_id")
 	if cityID == "" {
-		cityID = "city-balti"
+		cityID = store.DefaultCityID
+	}
+	if cityID == "all" {
+		cityID = ""
 	}
 	c.JSON(http.StatusOK, gin.H{"venues": a.Store.ListVenues(cityID)})
-}
-
-func (a *API) ListMapPlaces(c *gin.Context) {
-	cityID := c.Query("city_id")
-	if cityID == "" {
-		cityID = "city-balti"
-	}
-	const (
-		baltiLat = 47.7622
-		baltiLng = 27.9289
-		radiusM  = 4000.0
-	)
-
-	venues := a.Store.ListVenues(cityID)
-	var googlePlaces []places.GoogleFoodPlace
-	googleEnabled := a.Places != nil && a.Places.Enabled()
-	if googleEnabled {
-		found, err := a.Places.SearchNearbyFood(c.Request.Context(), baltiLat, baltiLng, radiusM)
-		if err != nil {
-			log.Printf("map places google: %v", err)
-			googleEnabled = false
-		} else {
-			googlePlaces = found
-		}
-	}
-
-	merged := places.MergeMapPlaces(venues, googlePlaces)
-	resp := models.MapPlacesResponse{
-		CityID: cityID,
-		Places: merged,
-	}
-	resp.Center.Lat = baltiLat
-	resp.Center.Lng = baltiLng
-	resp.Source.GoogleEnabled = googleEnabled
-	resp.Source.GoogleCount = len(googlePlaces)
-	resp.Source.DatabaseCount = len(venues)
-	c.JSON(http.StatusOK, resp)
 }
 
 func (a *API) GetVenue(c *gin.Context) {
@@ -163,8 +136,9 @@ func (a *API) GetVenuePlaces(c *gin.Context) {
 	reviewCount := v.ReviewCount
 	placeID := v.GooglePlaceID
 
-	if a.Places != nil && a.Places.Enabled() {
-		enriched, enrichErr := a.Places.Enrich(
+	placesClient := a.Maps.Current().Places
+	if placesClient.Enabled() {
+		enriched, enrichErr := placesClient.Enrich(
 			c.Request.Context(),
 			v.Name.RU,
 			v.Address.RU,
@@ -187,7 +161,6 @@ func (a *API) GetVenuePlaces(c *gin.Context) {
 			if len(enriched.Reviews) > 0 {
 				reviews = enriched.Reviews
 			}
-			_ = a.Store.ApplyVenuePlaces(v.ID, placeID, rating, reviewCount, photos, reviews)
 		} else {
 			log.Printf("places enrich %s: %v", v.ID, enrichErr)
 		}
@@ -200,7 +173,7 @@ func (a *API) GetVenuePlaces(c *gin.Context) {
 		"review_count":    reviewCount,
 		"photo_urls":      photos,
 		"reviews":         reviews,
-		"live_google":     a.Places != nil && a.Places.Enabled(),
+		"live_google":     placesClient.Enabled(),
 	})
 }
 
@@ -210,11 +183,12 @@ func (a *API) PlacePhoto(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_photo_name"})
 		return
 	}
-	if a.Places == nil || !a.Places.Enabled() {
+	placesClient := a.Maps.Current().Places
+	if !placesClient.Enabled() {
 		c.JSON(http.StatusNotFound, gin.H{"error": "photo_unavailable"})
 		return
 	}
-	uri, err := a.Places.PhotoURI(c.Request.Context(), name)
+	uri, err := placesClient.PhotoURI(c.Request.Context(), name)
 	if err != nil {
 		log.Printf("places photo %s: %v", name, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "photo_unavailable"})
@@ -229,7 +203,11 @@ func (a *API) ListTables(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "venue_not_found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"tables": a.Store.ListTables(c.Param("id"))})
+	tables := a.Store.ListTables(c.Param("id"))
+	for i := range tables {
+		tables[i].QRToken = ""
+	}
+	c.JSON(http.StatusOK, gin.H{"tables": tables})
 }
 
 func (a *API) ListVenueSchedule(c *gin.Context) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { googleMapCoordinates } from "@/lib/google-map";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StatusBadge } from "@/components/status-badge";
@@ -107,6 +108,14 @@ export default function AdminPage() {
     setUser(me);
   }, [router]);
 
+  function crmStatusLabel(status: AdminCRMStatus | null) {
+    if (!status) return "Проверяем соединение";
+    if (!status.enabled) return "Не подключена";
+    if (status.running) return "Синхронизируется";
+    if (status.healthy) return "Подключена";
+    return status.last_error ? "Ошибка синхронизации" : "Ожидает первой синхронизации";
+  }
+
   const loadSection = useCallback(async () => {
     setError(null);
     try {
@@ -140,6 +149,15 @@ export default function AdminPage() {
       setError(e instanceof ApiError ? e.code : "Ошибка загрузки");
     }
   }, [section, filter]);
+
+  useEffect(() => {
+    if (!user || (section !== "overview" && section !== "crm")) return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      adminCRMStatus().then((status) => { if (active) setCrm(status); }).catch(() => {});
+    }, 15000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [user, section]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -194,6 +212,16 @@ export default function AdminPage() {
         .includes(q),
     );
   }, [orders, query]);
+
+  function reconcile() {
+    return run(async () => {
+      try {
+        await adminReconcileCRM();
+      } finally {
+        setCrm(await adminCRMStatus());
+      }
+    }, "Синхронизация завершена");
+  }
 
   async function run(action: () => Promise<void>, success: string) {
     setBusy(true);
@@ -274,9 +302,10 @@ export default function AdminPage() {
           </div>
 
           <div className="admin-rail-foot">
-            <a href="http://crm.localhost/" target="_blank" rel="noreferrer">
+            <a href={crm?.crm_url || "/crm"} target="_blank" rel="noreferrer">
               Открыть Twenty CRM ↗
             </a>
+            <a href="/api/docs" target="_blank" rel="noreferrer">Swagger API ↗</a>
             <span className="admin-user">{user.email}</span>
             <button
               type="button"
@@ -377,32 +406,27 @@ export default function AdminPage() {
                     <p className="muted">
                       Статус:{" "}
                       <b className={crm?.healthy ? "good" : "bad"}>
-                        {crm?.enabled ? (crm.healthy ? "healthy" : "ошибка sync") : "выключен"}
+                        {crmStatusLabel(crm)}
                       </b>
                     </p>
                     {crm?.last_success_at && (
                       <p className="muted">
-                        Последний sync: {new Date(crm.last_success_at).toLocaleString("ru-RU")}
+                        Последняя синхронизация: {new Date(crm.last_success_at).toLocaleString("ru-RU")}
                       </p>
                     )}
                     {crm?.last_error && <p className="bad-text">{crm.last_error}</p>}
                   </div>
                   <div className="admin-crm-actions">
-                    <a className="admin-btn" href="http://crm.localhost/" target="_blank" rel="noreferrer">
+                    <a className="admin-btn" href={crm?.crm_url || "/crm"} target="_blank" rel="noreferrer">
                       Открыть CRM
                     </a>
                     <button
                       type="button"
                       className="admin-btn secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        run(async () => {
-                          await adminReconcileCRM();
-                          setCrm(await adminCRMStatus());
-                        }, "Reconcile запущен")
-                      }
+                      disabled={busy || !crm?.enabled || crm.running}
+                      onClick={() => void reconcile()}
                     >
-                      Reconcile
+                      Синхронизировать
                     </button>
                   </div>
                 </div>
@@ -440,6 +464,11 @@ export default function AdminPage() {
                           <td>
                             <strong>{pickLocale(a.name, "ru") || "—"}</strong>
                             <div className="muted">{pickLocale(a.address, "ru")}</div>
+                            {a.lat && a.lng ? (
+                              <a href={googleMapCoordinates({ lat: a.lat, lng: a.lng })} target="_blank" rel="noreferrer">
+                                Проверить точку в Google Maps ↗
+                              </a>
+                            ) : null}
                             {a.reject_reason && <div className="bad-text">{a.reject_reason}</div>}
                           </td>
                           <td>
@@ -508,7 +537,7 @@ export default function AdminPage() {
                                   onClick={() =>
                                     run(
                                       () => adminPublishApplication(a.id).then(() => undefined),
-                                      "Опубликовано + CRM",
+                                      "Ресторан опубликован",
                                     )
                                   }
                                 >
@@ -809,12 +838,14 @@ export default function AdminPage() {
                   <h2>Соединение</h2>
                   <dl className="admin-kv">
                     <div>
-                      <dt>Включено</dt>
-                      <dd>{crm?.enabled ? "да" : "нет"}</dd>
+                      <dt>Синхронизация</dt>
+                      <dd className={crm?.healthy ? "good" : "muted"}>{crmStatusLabel(crm)}</dd>
                     </div>
                     <div>
-                      <dt>Healthy</dt>
-                      <dd className={crm?.healthy ? "good" : "bad"}>{String(crm?.healthy)}</dd>
+                      <dt>Подписанные события Twenty</dt>
+                      <dd>{crm?.last_webhook_at
+                        ? new Date(crm.last_webhook_at).toLocaleString("ru-RU")
+                        : crm?.webhook_configured ? "Ожидаем первое событие" : "Webhook не настроен"}</dd>
                     </div>
                     {crm?.last_success_at && (
                       <div>
@@ -827,7 +858,7 @@ export default function AdminPage() {
                   <div className="admin-crm-actions">
                     <a
                       className="admin-btn"
-                      href={crm?.crm_url || "http://crm.localhost/"}
+                      href={crm?.crm_url || "/crm"}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -836,15 +867,10 @@ export default function AdminPage() {
                     <button
                       type="button"
                       className="admin-btn secondary"
-                      disabled={busy}
-                      onClick={() =>
-                        run(async () => {
-                          await adminReconcileCRM();
-                          setCrm(await adminCRMStatus());
-                        }, "CRM reconcile выполнен")
-                      }
+                      disabled={busy || !crm?.enabled || crm.running}
+                      onClick={() => void reconcile()}
                     >
-                      Запустить reconcile
+                      Синхронизировать
                     </button>
                   </div>
                 </article>
