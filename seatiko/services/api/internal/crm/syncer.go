@@ -26,15 +26,16 @@ type Status struct {
 }
 
 type Syncer struct {
-	client        *Client
-	store         *store.MemoryStore
-	webhookSecret string
-	interval      time.Duration
-	trigger       chan struct{}
-	reconcileMu   sync.Mutex
-	schemaReady   bool
-	statusMu      sync.RWMutex
-	status        Status
+	client         *Client
+	store          *store.MemoryStore
+	webhookSecret  string
+	interval       time.Duration
+	trigger        chan struct{}
+	reconcileMu    sync.Mutex
+	schemaReady    bool
+	workspaceReady bool
+	statusMu       sync.RWMutex
+	status         Status
 }
 
 func NewSyncer(client *Client, dataStore *store.MemoryStore, webhookSecret string, interval time.Duration) *Syncer {
@@ -239,6 +240,18 @@ func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 			return fmt.Errorf("sync reservation %s: %w", reservation.ID, err)
 		}
 	}
+	if err := s.syncOnboardingTasks(ctx, applications, companyIDs, time.Now().UTC()); err != nil {
+		return err
+	}
+	if !s.workspaceReady {
+		if err := s.client.EnsureSeatikoPipeline(ctx); err != nil {
+			return fmt.Errorf("configure Seatiko pipeline: %w", err)
+		}
+		if err := s.client.EnsureSeatikoDashboard(ctx); err != nil {
+			return fmt.Errorf("configure Seatiko dashboard: %w", err)
+		}
+		s.workspaceReady = true
+	}
 	return nil
 }
 
@@ -309,6 +322,10 @@ func (s *Syncer) syncUser(ctx context.Context, records []map[string]any, user mo
 func (s *Syncer) syncApplication(ctx context.Context, records []map[string]any, application models.VenueApplication, owner models.User) (string, error) {
 	photoJSON, _ := json.Marshal(application.PhotoURLs)
 	city, _ := s.store.GetCity(application.CityID)
+	cityName := city.Name.RO
+	if cityName == "" {
+		cityName = application.CityID
+	}
 	payload := map[string]any{
 		"name":                  localizedValue(application.Name),
 		"seatikoId":             application.ID,
@@ -322,6 +339,8 @@ func (s *Syncer) syncApplication(ctx context.Context, records []map[string]any, 
 		"latitude":              application.Lat,
 		"longitude":             application.Lng,
 		"cityId":                application.CityID,
+		"cityName":              cityName,
+		"submittedAt":           application.SubmittedAt,
 		"priceLevel":            application.PriceLevel,
 		"photoUrls":             string(photoJSON),
 		"rejectReason":          application.RejectReason,
@@ -346,7 +365,7 @@ func (s *Syncer) syncApplication(ctx context.Context, records []map[string]any, 
 			"secondaryLinks":   []any{},
 		}
 	}
-	return s.client.upsertRecord(ctx, "companies", records, payload, func(record map[string]any) bool {
+	id, err := s.client.upsertRecord(ctx, "companies", records, payload, func(record map[string]any) bool {
 		externalID := stringField(record, "seatikoId")
 		if externalID != "" {
 			return externalID == application.ID
@@ -361,6 +380,37 @@ func (s *Syncer) syncApplication(ctx context.Context, records []map[string]any, 
 		// with a conflicting email must never be silently merged.
 		return nameMatches && (recordEmail == "" || candidateEmail == "" || strings.EqualFold(recordEmail, candidateEmail))
 	})
+	if err != nil {
+		return "", err
+	}
+	// A CRM kanban drag cannot advance moderation or publication. Repair the
+	// projected stage even when the Seatiko modification timestamp is unchanged.
+	for _, record := range records {
+		if recordID(record) == id {
+			patch := map[string]any{}
+			if stringField(record, "restaurantStatus") != string(application.Status) {
+				patch["restaurantStatus"] = string(application.Status)
+			}
+			if stringField(record, "cityName") != cityName {
+				patch["cityName"] = cityName
+			}
+			if application.SubmittedAt != nil {
+				existing, parseErr := time.Parse(time.RFC3339Nano, stringField(record, "submittedAt"))
+				if parseErr != nil || !existing.Equal(application.SubmittedAt.Truncate(time.Millisecond)) {
+					patch["submittedAt"] = application.SubmittedAt.UTC().Format(time.RFC3339Nano)
+				}
+			} else if record["submittedAt"] != nil {
+				patch["submittedAt"] = nil
+			}
+			if len(patch) > 0 {
+				if err := s.client.updateRecord(ctx, "companies", id, patch); err != nil {
+					return "", err
+				}
+			}
+			break
+		}
+	}
+	return id, nil
 }
 
 func (s *Syncer) syncReservation(ctx context.Context, records []map[string]any, reservation models.Reservation, guest models.User, guestID, companyID string) error {
