@@ -94,3 +94,41 @@ export function buildBookingSlots({
   }
   return slots;
 }
+
+/** Day-part buckets for grouping booking time chips in the form. */
+export type DayPartId = "morning" | "lunch" | "evening" | "late";
+
+export type DayPartGroup<T extends { start: Date }> = {
+  id: DayPartId;
+  slots: T[];
+};
+
+const DAY_PARTS: { id: DayPartId; fromMin: number; toMin: number }[] = [
+  { id: "morning", fromMin: 0, toMin: 12 * 60 },
+  { id: "lunch", fromMin: 12 * 60, toMin: 17 * 60 },
+  { id: "evening", fromMin: 17 * 60, toMin: 21 * 60 },
+  { id: "late", fromMin: 21 * 60, toMin: 24 * 60 },
+];
+
+/** Which day-part a local clock time falls into (half-open intervals). */
+export function dayPartForTime(d: Date): DayPartId {
+  const min = d.getHours() * 60 + d.getMinutes();
+  for (const part of DAY_PARTS) {
+    if (min >= part.fromMin && min < part.toMin) return part.id;
+  }
+  return "late";
+}
+
+/** Group slots into morning / lunch / evening / late; omit empty parts. */
+export function groupSlotsByDayPart<T extends { start: Date }>(slots: T[]): DayPartGroup<T>[] {
+  const buckets: Record<DayPartId, T[]> = {
+    morning: [],
+    lunch: [],
+    evening: [],
+    late: [],
+  };
+  for (const slot of slots) {
+    buckets[dayPartForTime(slot.start)].push(slot);
+  }
+  return DAY_PARTS.map(({ id }) => ({ id, slots: buckets[id] })).filter((g) => g.slots.length > 0);
+}
