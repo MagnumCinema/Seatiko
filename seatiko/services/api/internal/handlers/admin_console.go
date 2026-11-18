@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,19 +28,19 @@ func (a *API) AdminListOrders(c *gin.Context) {
 }
 
 func (a *API) AdminCRMStatus(c *gin.Context) {
+	crmURL := "/crm"
+	if parsed, err := url.Parse(a.CRMPublicURL); err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https") {
+		crmURL = parsed.String()
+	}
 	if a.CRM == nil {
-		c.JSON(http.StatusOK, gin.H{"enabled": false, "healthy": false, "crm_url": "http://crm.localhost/"})
+		c.JSON(http.StatusOK, gin.H{"enabled": false, "healthy": false, "crm_url": crmURL})
 		return
 	}
 	status := a.CRM.Status()
 	c.JSON(http.StatusOK, gin.H{
-		"enabled":         status.Enabled,
-		"healthy":         status.Healthy,
-		"running":         status.Running,
-		"last_success_at": status.LastSuccessAt,
-		"last_error_at":   status.LastErrorAt,
-		"last_error":      status.LastError,
-		"crm_url":         "http://crm.localhost/",
-		"objects":         []string{"People", "Companies", "Reservations"},
+		"enabled": status.Enabled, "healthy": status.Healthy, "running": status.Running,
+		"last_success_at": status.LastSuccessAt, "last_error_at": status.LastErrorAt, "last_error": status.LastError,
+		"webhook_configured": status.WebhookConfigured, "last_webhook_at": status.LastWebhookAt,
+		"crm_url": crmURL, "objects": []string{"People", "Companies", "Reservations"},
 	})
 }

@@ -269,7 +269,7 @@ erDiagram
 ### Требования
 
 - Docker Desktop с Docker Compose v2;
-- свободный порт `80`;
+- свободный порт `80` или значение `HTTP_PORT` в `.env`;
 - Flutter SDK и Android Studio — только для Android-разработки;
 - Node.js 22 и Go 1.25 — только при запуске компонентов без Docker.
 
@@ -292,46 +292,26 @@ openssl rand -base64 32
 
 Не меняйте действующий `ENCRYPTION_KEY` Twenty без резервной копии: он используется для расшифровки данных CRM.
 
-### 2. Внешние volumes Twenty
+### 2. Запуск всего проекта
 
-Они объявлены как `external`, поэтому при первом запуске создайте их один раз:
-
-```bash
-docker volume create twenty_db-data
-docker volume create twenty_server-local-data
-```
-
-### 3. Запуск всего проекта
+Из корня репозитория:
 
 ```bash
-cd /Users/iulian/Documents/work/project1
-docker compose up -d --build
+docker compose up -d --build --wait
 docker compose ps
 ```
 
-Первый запуск Twenty может занять несколько минут. Дождитесь состояния `healthy`.
+Compose создаёт volumes на новой установке и использует прежние имена `twenty_db-data` и `twenty_server-local-data`. Порт Nginx по умолчанию доступен на `127.0.0.1`. При смене `HTTP_PORT` укажите тот же порт в `SERVER_URL`, например `http://crm.localhost:8080`.
 
-### 4. Проверка
+### 3. Проверка
 
 ```bash
-curl -s http://localhost/healthz | jq
-curl -s http://localhost/api/v1/cities | jq
+curl -fsS http://localhost/healthz
+curl -fsS http://localhost/api/v1/map/config
+curl -fsS http://crm.localhost/healthz
 ```
 
-Ожидаемый health response:
-
-```json
-{
-  "status": "ok",
-  "service": "seatiko-api",
-  "crm": {
-    "enabled": true,
-    "healthy": true,
-    "running": false,
-    "last_success_at": "2026-08-20T15:33:55Z"
-  }
-}
-```
+[Swagger UI](http://localhost/api/docs) позволяет вызывать API с JWT, полученным через `POST /api/v1/auth/login`. Спецификация доступна по адресу [OpenAPI](http://localhost/api/openapi.yaml). Для диагностики синхронизации откройте вкладку CRM в админке Seatiko.
 
 ## Адреса сервисов
 
@@ -386,52 +366,9 @@ Twenty → Seatiko:
 - разрешены профиль, контакты, координаты, цены и рабочий статус брони;
 - запрещены пароль, роль, владелец, модерация и публикация.
 
-### Webhook
+### Первый запуск Twenty CRM
 
-В `Settings → MCP & APIs → Webhooks`:
-
-```text
-URL: http://host.docker.internal/api/v1/integrations/twenty/webhook
-Events: All Objects / All
-Secret: значение TWENTY_WEBHOOK_SECRET
-```
-
-![Webhook Twenty](../seatiko/docs/images/12-crm-webhook.png)
-
-Для локального Docker Twenty использует:
-
-```env
-TWENTY_OUTBOUND_HTTP_SAFE_MODE_ENABLED=false
-```
-
-В production safe mode должен быть включён, а webhook должен иметь публичный HTTPS URL.
-
-### Подготовка схемы нового workspace
-
-Текущий workspace уже настроен. Для нового workspace:
-
-1. создать custom object `Reservations`;
-2. добавить ресторанные поля Company и поля бронирования;
-3. создать API key в `Settings → MCP & APIs → API`;
-4. записать ключ и webhook secret в `.env.keys`;
-5. запустить bootstrap стабильных ID:
-
-```bash
-cd seatiko/services/api
-set -a
-source ../../../.env.keys
-set +a
-TWENTY_BASE_URL=http://crm.localhost go run ./cmd/crm-bootstrap
-```
-
-6. пересоздать API-контейнер:
-
-```bash
-cd ../../..
-docker compose up -d --force-recreate api
-```
-
-Подробные правила: [TWENTY_CRM_INTEGRATION.md](./TWENTY_CRM_INTEGRATION.md).
+Порядок настройки workspace, ключа и подписанного webhook описан в [TWENTY_CRM_INTEGRATION.md](./TWENTY_CRM_INTEGRATION.md).
 
 ## API
 
@@ -820,7 +757,7 @@ docker compose logs --tail=100 twenty-server twenty-worker
 
 ### Webhook не доходит локально
 
-- URL должен быть `http://host.docker.internal/api/v1/integrations/twenty/webhook`;
+- URL должен быть `http://api.seatiko.local:8080/api/v1/integrations/twenty/webhook`;
 - у `twenty-worker` должен быть `OUTBOUND_HTTP_SAFE_MODE_ENABLED=false`;
 - worker должен быть запущен;
 - в production не отключайте safe mode — используйте публичный HTTPS URL.

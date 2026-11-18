@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/seatiko/api/internal/apidocs"
 	"github.com/seatiko/api/internal/auth"
 	"github.com/seatiko/api/internal/config"
 	"github.com/seatiko/api/internal/crm"
@@ -13,7 +15,6 @@ import (
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
 	"github.com/seatiko/api/internal/store"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -40,27 +41,34 @@ func main() {
 		log.Printf("Twenty CRM synchronization disabled: TWENTY_API_KEY is empty")
 	}
 	api := &handlers.API{
-		Store:     mem,
-		CRM:       crmSyncer,
-		Places:    places.New(cfg.GooglePlacesAPIKey),
+		Store:        mem,
+		CRM:          crmSyncer,
+		CRMPublicURL: cfg.TwentyPublicURL,
+		Maps: places.NewIntegration(cfg.GoogleConfigFile, places.Credentials{
+			PlacesKey: cfg.GooglePlacesAPIKey, BrowserKey: cfg.GoogleMapsBrowserKey, MapID: cfg.GoogleMapsMapID,
+		}),
 		JWTSecret: cfg.JWTSecret,
 		UploadDir: cfg.UploadDir,
 	}
-	if cfg.GooglePlacesAPIKey != "" {
-		log.Printf("Google Places enrichment enabled")
-	} else {
-		log.Printf("Google Places enrichment disabled: GOOGLE_PLACES_API_KEY is empty (using local photos/reviews)")
-	}
 
+	r := newRouter(api)
+	log.Printf("Seatiko API listening on %s", cfg.Addr)
+	if err := r.Run(cfg.Addr); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func newRouter(api *handlers.API) *gin.Engine {
 	r := gin.Default()
+	apidocs.Register(r)
 	r.Use(corsMiddleware())
 	r.MaxMultipartMemory = 8 << 20 // 8 MiB
 
 	r.GET("/healthz", api.Health)
-	r.Static("/uploads", cfg.UploadDir)
+	r.Static("/uploads", api.UploadDir)
 
 	getRole := func(userID string) (string, error) {
-		u, err := mem.GetUser(userID)
+		u, err := api.Store.GetUser(userID)
 		if err != nil {
 			return "", err
 		}
@@ -73,7 +81,8 @@ func main() {
 		v1.POST("/integrations/twenty/webhook", api.TwentyWebhook)
 		v1.GET("/cities", api.ListCities)
 		v1.GET("/venues", api.ListVenues)
-		v1.GET("/map/places", api.ListMapPlaces)
+		v1.GET("/map/config", api.GetMapConfig)
+		v1.GET("/map/places", auth.RateLimitMiddleware(30, time.Minute), api.ListMapPlaces)
 		v1.GET("/places/photo", api.PlacePhoto)
 		v1.GET("/venues/:id", api.GetVenue)
 		v1.GET("/venues/:id/places", api.GetVenuePlaces)
@@ -89,7 +98,7 @@ func main() {
 		v1.POST("/auth/login", authLimit, api.Login)
 
 		authed := v1.Group("/")
-		authed.Use(auth.Middleware(cfg.JWTSecret))
+		authed.Use(auth.Middleware(api.JWTSecret))
 		{
 			authed.GET("/me", api.Me)
 			authed.PATCH("/me", api.UpdateMe)
@@ -188,10 +197,7 @@ func main() {
 		}
 	}
 
-	log.Printf("Seatiko API listening on %s", cfg.Addr)
-	if err := r.Run(cfg.Addr); err != nil {
-		log.Fatal(err)
-	}
+	return r
 }
 
 func corsMiddleware() gin.HandlerFunc {

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -23,35 +25,60 @@ type metadataObject struct {
 }
 
 type requiredField struct {
-	Name  string
-	Label string
-	Type  string
+	Name    string
+	Label   string
+	Type    string
+	Options []string
+	Target  string
 }
 
-var requiredSchema = map[string][]requiredField{
-	"person": {
-		{Name: "seatikoUserId", Label: "Seatiko User ID", Type: "TEXT"},
-		{Name: "seatikoRole", Label: "Seatiko Role", Type: "TEXT"},
-		{Name: "seatikoLocale", Label: "Seatiko Locale", Type: "TEXT"},
-		{Name: "seatikoUpdatedAt", Label: "Seatiko Updated At", Type: "DATE_TIME"},
-	},
-	"company": {
-		{Name: "seatikoId", Label: "Seatiko ID", Type: "TEXT"},
-		{Name: "restaurantDescription", Label: "Restaurant Description", Type: "TEXT"},
-		{Name: "cityId", Label: "Seatiko City ID", Type: "TEXT"},
-		{Name: "priceLevel", Label: "Price Level", Type: "NUMBER"},
-		{Name: "photoUrls", Label: "Photo URLs", Type: "TEXT"},
-		{Name: "venueId", Label: "Seatiko Venue ID", Type: "TEXT"},
-		{Name: "rejectReason", Label: "Reject Reason", Type: "TEXT"},
-		{Name: "seatikoUpdatedAt", Label: "Seatiko Updated At", Type: "DATE_TIME"},
-	},
-	"reservation": {
-		{Name: "seatikoReservationId", Label: "Seatiko Reservation ID", Type: "TEXT"},
-		{Name: "seatikoUserId", Label: "Seatiko User ID", Type: "TEXT"},
-		{Name: "seatikoVenueId", Label: "Seatiko Venue ID", Type: "TEXT"},
-		{Name: "seatikoTableId", Label: "Seatiko Table ID", Type: "TEXT"},
-		{Name: "seatikoUpdatedAt", Label: "Seatiko Updated At", Type: "DATE_TIME"},
-	},
+func field(name, label, kind string) requiredField {
+	return requiredField{Name: name, Label: label, Type: kind}
+}
+
+var requiredSchema = []struct {
+	object string
+	fields []requiredField
+}{
+	{"person", []requiredField{
+		field("seatikoUserId", "Seatiko User ID", "TEXT"),
+		field("seatikoRole", "Seatiko Role", "TEXT"),
+		field("seatikoLocale", "Seatiko Locale", "TEXT"),
+		field("seatikoUpdatedAt", "Seatiko Updated At", "DATE_TIME"),
+	}},
+	{"company", []requiredField{
+		field("seatikoId", "Seatiko ID", "TEXT"),
+		field("restaurantDescription", "Restaurant Description", "TEXT"),
+		field("cityId", "Seatiko City ID", "TEXT"),
+		field("priceLevel", "Price Level", "NUMBER"),
+		field("photoUrls", "Photo URLs", "TEXT"),
+		field("venueId", "Seatiko Venue ID", "TEXT"),
+		field("rejectReason", "Reject Reason", "TEXT"),
+		field("seatikoUpdatedAt", "Seatiko Updated At", "DATE_TIME"),
+		field("cuisine", "Cuisine", "TEXT"),
+		field("openingHours", "Opening Hours", "TEXT"),
+		field("averageCheckMdl", "Average Check MDL", "NUMBER"),
+		field("restaurantPhones", "Restaurant Phones", "PHONES"),
+		field("restaurantEmails", "Restaurant Emails", "EMAILS"),
+		field("latitude", "Latitude", "NUMBER"),
+		field("longitude", "Longitude", "NUMBER"),
+		{Name: "restaurantStatus", Label: "Restaurant Status", Type: "SELECT", Options: []string{"DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "PUBLISHED"}},
+	}},
+	{"reservation", []requiredField{
+		field("seatikoReservationId", "Seatiko Reservation ID", "TEXT"),
+		field("seatikoUserId", "Seatiko User ID", "TEXT"),
+		field("seatikoVenueId", "Seatiko Venue ID", "TEXT"),
+		field("seatikoTableId", "Seatiko Table ID", "TEXT"),
+		field("seatikoUpdatedAt", "Seatiko Updated At", "DATE_TIME"),
+		field("reservedFor", "Reserved For", "DATE_TIME"),
+		field("guests", "Guests", "NUMBER"),
+		field("tableNumber", "Table Number", "NUMBER"),
+		field("guestEmail", "Guest Email", "EMAILS"),
+		{Name: "bookingStatus", Label: "Booking Status", Type: "SELECT", Options: []string{"CONFIRMED", "CHECKED_IN", "CANCELLED", "NO_SHOW"}},
+		{Name: "source", Label: "Booking Source", Type: "SELECT", Options: []string{"WEB", "ANDROID", "IOS", "PHONE", "WALK_IN"}},
+		{Name: "restaurant", Label: "Restaurant", Type: "RELATION", Target: "company"},
+		{Name: "guest", Label: "Guest", Type: "RELATION", Target: "person"},
+	}},
 }
 
 func decodeMetadataObjects(data json.RawMessage) ([]metadataObject, error) {
@@ -73,15 +100,30 @@ func decodeMetadataObjects(data json.RawMessage) ([]metadataObject, error) {
 }
 
 func (c *Client) metadataObjects(ctx context.Context) ([]metadataObject, error) {
-	var envelope listEnvelope
-	if err := c.request(ctx, http.MethodGet, "/rest/metadata/objects?limit=200", nil, &envelope); err != nil {
-		return nil, err
+	var objects []metadataObject
+	cursor := ""
+	for {
+		query := url.Values{"limit": {"60"}}
+		if cursor != "" {
+			query.Set("starting_after", cursor)
+		}
+		var envelope listEnvelope
+		if err := c.request(ctx, http.MethodGet, "/rest/metadata/objects?"+query.Encode(), nil, &envelope); err != nil {
+			return nil, err
+		}
+		page, err := decodeMetadataObjects(envelope.Data)
+		if err != nil {
+			return nil, fmt.Errorf("decode Twenty metadata objects: %w", err)
+		}
+		objects = append(objects, page...)
+		if !envelope.PageInfo.HasNextPage {
+			return objects, nil
+		}
+		if envelope.PageInfo.EndCursor == "" || envelope.PageInfo.EndCursor == cursor {
+			return nil, fmt.Errorf("Twenty metadata pagination returned an invalid cursor")
+		}
+		cursor = envelope.PageInfo.EndCursor
 	}
-	objects, err := decodeMetadataObjects(envelope.Data)
-	if err != nil {
-		return nil, fmt.Errorf("decode Twenty metadata objects: %w", err)
-	}
-	return objects, nil
 }
 
 func fieldByName(object metadataObject, name string) (metadataField, bool) {
@@ -93,6 +135,24 @@ func fieldByName(object metadataObject, name string) (metadataField, bool) {
 	return metadataField{}, false
 }
 
+func mergeOptions(existing []map[string]any, required []string) []map[string]any {
+	options := append([]map[string]any(nil), existing...)
+	values := make(map[string]bool, len(existing))
+	for _, option := range existing {
+		value, _ := option["value"].(string)
+		values[value] = true
+	}
+	for _, value := range required {
+		if !values[value] {
+			options = append(options, map[string]any{
+				"id": uuid.NewString(), "color": "blue", "label": strings.ReplaceAll(value, "_", " "),
+				"value": value, "position": len(options),
+			})
+		}
+	}
+	return options
+}
+
 func (c *Client) EnsureSeatikoSchema(ctx context.Context) error {
 	objects, err := c.metadataObjects(ctx)
 	if err != nil {
@@ -102,48 +162,66 @@ func (c *Client) EnsureSeatikoSchema(ctx context.Context) error {
 	for _, object := range objects {
 		byName[object.NameSingular] = object
 	}
-	for objectName, fields := range requiredSchema {
-		object, ok := byName[objectName]
+	if _, exists := byName["reservation"]; !exists {
+		payload := map[string]any{
+			"nameSingular": "reservation", "namePlural": "reservations",
+			"labelSingular": "Reservation", "labelPlural": "Reservations",
+			"description": "Reservations synchronized from Seatiko", "icon": "IconCalendarEvent",
+		}
+		if err := c.request(ctx, http.MethodPost, "/rest/metadata/objects", payload, nil); err != nil {
+			return fmt.Errorf("create Twenty Reservation object: %w", err)
+		}
+		objects, err = c.metadataObjects(ctx)
+		if err != nil {
+			return err
+		}
+		for _, object := range objects {
+			byName[object.NameSingular] = object
+		}
+	}
+	for _, spec := range requiredSchema {
+		object, ok := byName[spec.object]
 		if !ok {
-			return fmt.Errorf("Twenty schema is missing required object %q", objectName)
+			return fmt.Errorf("Twenty schema is missing required object %q", spec.object)
 		}
-		for _, field := range fields {
-			if _, exists := fieldByName(object, field.Name); exists {
-				continue
-			}
-			payload := map[string]any{
-				"objectMetadataId":      object.ID,
-				"type":                  field.Type,
-				"name":                  field.Name,
-				"label":                 field.Label,
-				"isLabelSyncedWithName": false,
-			}
-			if err := c.request(ctx, http.MethodPost, "/rest/metadata/fields", payload, nil); err != nil {
-				return fmt.Errorf("create Twenty field %s.%s: %w", objectName, field.Name, err)
+		for _, field := range spec.fields {
+			if err := c.ensureField(ctx, object, field, byName[field.Target]); err != nil {
+				return fmt.Errorf("Twenty field %s.%s: %w", spec.object, field.Name, err)
 			}
 		}
-	}
-
-	company := byName["company"]
-	statusField, ok := fieldByName(company, "restaurantStatus")
-	if !ok {
-		return fmt.Errorf("Twenty company.restaurantStatus field is missing")
-	}
-	for _, option := range statusField.Options {
-		if option["value"] == "REJECTED" {
-			return nil
-		}
-	}
-	options := append([]map[string]any(nil), statusField.Options...)
-	options = append(options, map[string]any{
-		"id":       uuid.NewString(),
-		"color":    "orange",
-		"label":    "REJECTED",
-		"value":    "REJECTED",
-		"position": len(options),
-	})
-	if err := c.request(ctx, http.MethodPatch, "/rest/metadata/fields/"+statusField.ID, map[string]any{"options": options}, nil); err != nil {
-		return fmt.Errorf("add REJECTED restaurant status: %w", err)
 	}
 	return nil
+}
+
+func (c *Client) ensureField(ctx context.Context, object metadataObject, field requiredField, target metadataObject) error {
+	existing, exists := fieldByName(object, field.Name)
+	options := mergeOptions(existing.Options, field.Options)
+	if exists {
+		if existing.Type != field.Type {
+			return fmt.Errorf("expected %s, found %s", field.Type, existing.Type)
+		}
+		if len(options) > len(existing.Options) {
+			return c.request(ctx, http.MethodPatch, "/rest/metadata/fields/"+url.PathEscape(existing.ID), map[string]any{"options": options}, nil)
+		}
+		return nil
+	}
+
+	payload := map[string]any{
+		"objectMetadataId": object.ID, "type": field.Type, "name": field.Name,
+		"label": field.Label, "isLabelSyncedWithName": false, "isNullable": true,
+	}
+	if len(options) > 0 {
+		payload["options"] = options
+	}
+	if field.Target != "" {
+		if target.ID == "" {
+			return fmt.Errorf("relation target %q is missing", field.Target)
+		}
+		payload["icon"] = "IconCalendarEvent"
+		payload["relationCreationPayload"] = map[string]any{
+			"type": "MANY_TO_ONE", "targetObjectMetadataId": target.ID,
+			"targetFieldLabel": "Reservations", "targetFieldIcon": "IconCalendarEvent",
+		}
+	}
+	return c.request(ctx, http.MethodPost, "/rest/metadata/fields", payload, nil)
 }

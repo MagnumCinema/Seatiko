@@ -121,6 +121,11 @@ func (s *MemoryStore) UpdateApplicationFromCRM(id string, patch ApplicationUpdat
 			return models.VenueApplication{}, ErrBadRequest
 		}
 	}
+	if patch.CityID != nil && *patch.CityID != application.CityID {
+		if city, exists := s.cities[*patch.CityID]; !exists || city.Country != "MD" {
+			return models.VenueApplication{}, ErrBadRequest
+		}
+	}
 	if patch.Lat != nil && (*patch.Lat < -90 || *patch.Lat > 90) {
 		return models.VenueApplication{}, ErrBadRequest
 	}

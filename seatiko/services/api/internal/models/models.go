@@ -14,6 +14,8 @@ type City struct {
 	Name      LocalizedString `json:"name"`
 	Available bool            `json:"available"`
 	Country   string          `json:"country"`
+	Center    Coordinates     `json:"center"`
+	Bounds    MapBounds       `json:"bounds"`
 }
 
 type Venue struct {
@@ -342,23 +344,23 @@ const (
 )
 
 type MenuItem struct {
-	ID              string          `json:"id"`
-	VenueID         string          `json:"venue_id"`
-	Category        LocalizedString `json:"category"`
-	Name            LocalizedString `json:"name"`
-	Description     LocalizedString `json:"description"`
+	ID          string          `json:"id"`
+	VenueID     string          `json:"venue_id"`
+	Category    LocalizedString `json:"category"`
+	Name        LocalizedString `json:"name"`
+	Description LocalizedString `json:"description"`
 	// Ingredients is the full composition shown in the dish popup.
-	Ingredients     LocalizedString `json:"ingredients,omitempty"`
+	Ingredients LocalizedString `json:"ingredients,omitempty"`
 	// Allergens are stable codes (gluten, milk, eggs, …) localised on the client.
-	Allergens       []string        `json:"allergens,omitempty"`
-	Price           int             `json:"price"`
-	WeightG         int             `json:"weight_g,omitempty"`
-	VolumeML        int             `json:"volume_ml,omitempty"`
-	ImageURL        string          `json:"image_url,omitempty"`
-	ContainsAlcohol bool            `json:"contains_alcohol"`
-	Tags            []string        `json:"tags,omitempty"`
-	Position        int             `json:"position,omitempty"`
-	Stopped         bool            `json:"stopped"`
+	Allergens       []string `json:"allergens,omitempty"`
+	Price           int      `json:"price"`
+	WeightG         int      `json:"weight_g,omitempty"`
+	VolumeML        int      `json:"volume_ml,omitempty"`
+	ImageURL        string   `json:"image_url,omitempty"`
+	ContainsAlcohol bool     `json:"contains_alcohol"`
+	Tags            []string `json:"tags,omitempty"`
+	Position        int      `json:"position,omitempty"`
+	Stopped         bool     `json:"stopped"`
 }
 
 type OrderItem struct {

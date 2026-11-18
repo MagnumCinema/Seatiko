@@ -47,6 +47,8 @@ func verifyWebhookSignature(secret, timestamp, signature string, payload []byte)
 		if delta := time.Since(parsed); delta > 5*time.Minute || delta < -5*time.Minute {
 			return errors.New("Twenty webhook timestamp is outside the allowed window")
 		}
+	} else {
+		return errors.New("invalid Twenty webhook timestamp")
 	}
 
 	mac := hmac.New(sha256.New, []byte(secret))
@@ -94,7 +96,7 @@ func actorSource(data map[string]any) string {
 	return ""
 }
 
-func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp string) (bool, error) {
+func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp string) (applied bool, err error) {
 	if s == nil {
 		return false, errors.New("Twenty CRM integration is disabled")
 	}
@@ -105,6 +107,14 @@ func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp str
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return false, fmt.Errorf("decode Twenty webhook: %w", err)
 	}
+	defer func() {
+		if err == nil {
+			now := time.Now().UTC()
+			s.statusMu.Lock()
+			s.status.LastWebhookAt = &now
+			s.statusMu.Unlock()
+		}
+	}()
 	data := event.Data
 	if len(data) == 0 {
 		data = event.Record

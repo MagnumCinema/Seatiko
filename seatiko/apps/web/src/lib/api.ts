@@ -24,6 +24,17 @@ export type City = {
   name: LocalizedString;
   available: boolean;
   country: string;
+  center?: MapCoordinates;
+  bounds?: MapBounds;
+};
+
+export type MapCoordinates = { lat: number; lng: number };
+export type MapBounds = { south: number; west: number; north: number; east: number };
+export type MapConfig = {
+  cities: City[];
+  country_bounds: MapBounds;
+  google_maps_key: string;
+  google_maps_id: string;
 };
 
 export type Venue = {
@@ -85,6 +96,7 @@ export type MapPlace = {
   rating?: number;
   google_place_id?: string;
   in_database: boolean;
+  bookable: boolean;
   venue_id?: string;
   free_tables?: number;
   open_now?: boolean | null;
@@ -96,10 +108,13 @@ export type MapPlace = {
 
 export type MapPlacesResponse = {
   city_id: string;
-  center: { lat: number; lng: number };
+  country: string;
+  center: MapCoordinates;
+  bounds: MapBounds;
   places: MapPlace[];
   source: {
     google_enabled: boolean;
+    google_status: "ready" | "disabled" | "unavailable" | "not_requested";
     google_count: number;
     database_count: number;
   };
@@ -405,6 +420,7 @@ type RequestOpts = {
   body?: unknown;
   auth?: boolean;
   query?: Record<string, string | number | undefined | null>;
+  signal?: AbortSignal;
 };
 
 async function apiFetch<T>(path: string, opts: RequestOpts = {}): Promise<T> {
@@ -431,6 +447,7 @@ async function apiFetch<T>(path: string, opts: RequestOpts = {}): Promise<T> {
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     cache: "no-store",
+    signal: opts.signal,
   });
 
   if (!res.ok) {
@@ -464,12 +481,33 @@ export async function fetchVenues(cityId = "city-balti"): Promise<Venue[]> {
 }
 
 export async function fetchMapPlaces(
-  cityId = "city-balti",
+  cityId: string,
+  options: {
+    includeGoogle: boolean;
+    locale: LocaleCode;
+    bounds?: MapBounds;
+    query?: string;
+    bookableOnly?: boolean;
+    signal?: AbortSignal;
+  },
 ): Promise<MapPlacesResponse> {
+  const { bounds, includeGoogle, locale, query, bookableOnly, signal } = options;
   return apiFetch<MapPlacesResponse>("/api/v1/map/places", {
     auth: false,
-    query: { city_id: cityId },
+    signal,
+    query: {
+      city_id: cityId,
+      lang: locale,
+      include_google: String(includeGoogle),
+      bounds: bounds && [bounds.south, bounds.west, bounds.north, bounds.east].join(","),
+      q: query?.trim(),
+      bookable_only: bookableOnly ? "true" : undefined,
+    },
   });
+}
+
+export function fetchMapConfig(): Promise<MapConfig> {
+  return apiFetch<MapConfig>("/api/v1/map/config", { auth: false });
 }
 
 export async function fetchVenue(id: string): Promise<Venue> {
@@ -1318,6 +1356,8 @@ export type AdminCRMStatus = {
   last_error_at?: string;
   last_error?: string;
   crm_url: string;
+  webhook_configured?: boolean;
+  last_webhook_at?: string;
   objects?: string[];
 };
 

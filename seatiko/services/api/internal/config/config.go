@@ -9,16 +9,20 @@ import (
 )
 
 type Config struct {
-	Addr                string
-	JWTSecret           string
-	Env                 string
-	UploadDir           string
-	DataFile            string
-	TwentyBaseURL       string
-	TwentyAPIKey        string
-	TwentyWebhookSecret string
-	TwentySyncInterval  time.Duration
-	GooglePlacesAPIKey  string
+	Addr                 string
+	JWTSecret            string
+	Env                  string
+	UploadDir            string
+	DataFile             string
+	TwentyBaseURL        string
+	TwentyPublicURL      string
+	TwentyAPIKey         string
+	TwentyWebhookSecret  string
+	TwentySyncInterval   time.Duration
+	GoogleConfigFile     string
+	GooglePlacesAPIKey   string
+	GoogleMapsBrowserKey string
+	GoogleMapsMapID      string
 }
 
 func Load() Config {
@@ -59,15 +63,19 @@ func Load() Config {
 	}
 
 	return Config{
-		Addr:                addr,
-		JWTSecret:           secret,
-		Env:                 env,
-		UploadDir:           uploadDir,
-		DataFile:            dataFile,
-		TwentyBaseURL:       twentyBaseURL,
-		TwentyAPIKey:        os.Getenv("TWENTY_API_KEY"),
-		TwentyWebhookSecret: os.Getenv("TWENTY_WEBHOOK_SECRET"),
-		TwentySyncInterval:  time.Duration(syncSeconds) * time.Second,
-		GooglePlacesAPIKey:  os.Getenv("GOOGLE_PLACES_API_KEY"),
+		Addr:                 addr,
+		JWTSecret:            secret,
+		Env:                  env,
+		UploadDir:            uploadDir,
+		DataFile:             dataFile,
+		TwentyBaseURL:        twentyBaseURL,
+		TwentyPublicURL:      os.Getenv("TWENTY_PUBLIC_URL"),
+		TwentyAPIKey:         os.Getenv("TWENTY_API_KEY"),
+		TwentyWebhookSecret:  os.Getenv("TWENTY_WEBHOOK_SECRET"),
+		TwentySyncInterval:   time.Duration(syncSeconds) * time.Second,
+		GoogleConfigFile:     os.Getenv("GOOGLE_CONFIG_FILE"),
+		GooglePlacesAPIKey:   os.Getenv("GOOGLE_PLACES_API_KEY"),
+		GoogleMapsBrowserKey: os.Getenv("GOOGLE_MAPS_BROWSER_KEY"),
+		GoogleMapsMapID:      os.Getenv("GOOGLE_MAPS_MAP_ID"),
 	}
 }

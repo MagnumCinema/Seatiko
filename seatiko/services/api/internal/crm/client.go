@@ -170,13 +170,10 @@ func (c *Client) updateRecord(ctx context.Context, pluralName, id string, payloa
 func (c *Client) upsertRecord(
 	ctx context.Context,
 	pluralName string,
+	records []map[string]any,
 	payload map[string]any,
 	match func(map[string]any) bool,
 ) (string, error) {
-	records, err := c.listAll(ctx, pluralName)
-	if err != nil {
-		return "", err
-	}
 	matches := make([]map[string]any, 0, 1)
 	for _, record := range records {
 		if match(record) {
@@ -190,6 +187,11 @@ func (c *Client) upsertRecord(
 		id := recordID(matches[0])
 		if id == "" {
 			return "", fmt.Errorf("Twenty %s match has no id", pluralName)
+		}
+		existing, existingErr := time.Parse(time.RFC3339Nano, stringField(matches[0], "seatikoUpdatedAt"))
+		projected, projectedErr := time.Parse(time.RFC3339Nano, stringField(payload, "seatikoUpdatedAt"))
+		if existingErr == nil && projectedErr == nil && existing.Equal(projected.Truncate(time.Millisecond)) {
+			return id, nil
 		}
 		if err := c.updateRecord(ctx, pluralName, id, payload); err != nil {
 			return "", err

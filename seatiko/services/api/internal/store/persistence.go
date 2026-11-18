@@ -286,8 +286,12 @@ func (s *MemoryStore) ensureDemoFloorExamplesLocked() {
 }
 
 func (s *MemoryStore) applyState(state persistedState) {
-	if state.Cities != nil {
-		s.cities = state.Cities
+	for id, city := range state.Cities {
+		if city.Bounds == (models.MapBounds{}) {
+			city.Center = s.cities[id].Center
+			city.Bounds = s.cities[id].Bounds
+		}
+		s.cities[id] = city
 	}
 	if state.Venues != nil {
 		s.venues = state.Venues
@@ -308,9 +312,9 @@ func (s *MemoryStore) applyState(state persistedState) {
 		s.reservations = state.Reservations
 		// Migrate legacy seed reservations away from user-guest-demo so guest profile is clean
 		for id, r := range s.reservations {
-			if r.UserID == "user-guest-demo" {
+			if r.UserID == demoGuestID {
 				if strings.HasPrefix(id, "res-demo-") {
-					r.UserID = "user-guest-calendar"
+					r.UserID = demoCalendarGuestID
 					s.reservations[id] = r
 				} else if id == "04ffb1bd-1e30-4f92-bee3-89eece63d28e" {
 					delete(s.reservations, id)

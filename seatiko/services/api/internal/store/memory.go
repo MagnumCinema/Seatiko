@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/qr"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,6 +34,15 @@ var (
 type OrderItemInput struct {
 	MenuItemID string `json:"menu_item_id"`
 	Qty        int    `json:"qty"`
+}
+
+const (
+	demoGuestID         = "user-guest-demo"
+	demoCalendarGuestID = "user-guest-calendar"
+)
+
+func IsDemoGuestID(id string) bool {
+	return id == demoGuestID || id == demoCalendarGuestID
 }
 
 type UserProfileUpdate struct {
@@ -113,24 +122,10 @@ func NewMemory() *MemoryStore {
 }
 
 func (s *MemoryStore) seed() {
-	balti := models.City{
-		ID:        "city-balti",
-		Slug:      "balti",
-		Name:      models.LocalizedString{RU: "Бельцы", EN: "Bălți", RO: "Bălți"},
-		Available: true,
-		Country:   "MD",
+	for _, city := range moldovaCities() {
+		s.cities[city.ID] = city
 	}
-	s.cities[balti.ID] = balti
-	s.cities["city-chisinau"] = models.City{
-		ID: "city-chisinau", Slug: "chisinau",
-		Name:      models.LocalizedString{RU: "Кишинёв", EN: "Chișinău", RO: "Chișinău"},
-		Available: false, Country: "MD",
-	}
-	s.cities["city-cahul"] = models.City{
-		ID: "city-cahul", Slug: "cahul",
-		Name:      models.LocalizedString{RU: "Кагул", EN: "Cahul", RO: "Cahul"},
-		Available: false, Country: "MD",
-	}
+	balti := s.cities[DefaultCityID]
 
 	venues := []models.Venue{
 		{
@@ -352,7 +347,7 @@ func (s *MemoryStore) seed() {
 
 	s.reservations[resDemoID] = models.Reservation{
 		ID:          resDemoID,
-		UserID:      "user-guest-calendar",
+		UserID:      demoCalendarGuestID,
 		VenueID:     "venue-2",
 		TableID:     "t7",
 		Guests:      2,
@@ -379,7 +374,7 @@ func (s *MemoryStore) seed() {
 	for _, slot := range calSlots {
 		s.reservations[slot.id] = models.Reservation{
 			ID:          slot.id,
-			UserID:      "user-guest-calendar",
+			UserID:      demoCalendarGuestID,
 			VenueID:     "venue-2",
 			TableID:     slot.tableID,
 			Guests:      slot.guests,
@@ -431,7 +426,7 @@ func (s *MemoryStore) seed() {
 	guestHash, err := bcrypt.GenerateFromPassword([]byte("guest123"), bcrypt.DefaultCost)
 	if err == nil {
 		guest := models.User{
-			ID:           "user-guest-demo",
+			ID:           demoGuestID,
 			Email:        "guest@seatiko.local",
 			PasswordHash: string(guestHash),
 			FirstName:    "Demo",
@@ -448,7 +443,7 @@ func (s *MemoryStore) seed() {
 	guestCalHash, err := bcrypt.GenerateFromPassword([]byte("guest123"), bcrypt.DefaultCost)
 	if err == nil {
 		guestCal := models.User{
-			ID:           "user-guest-calendar",
+			ID:           demoCalendarGuestID,
 			Email:        "guest.calendar@seatiko.local",
 			PasswordHash: string(guestCalHash),
 			FirstName:    "Иван",
@@ -485,12 +480,31 @@ func (s *MemoryStore) ListCities() []models.City {
 	for _, c := range s.cities {
 		out = append(out, c)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
 }
 
 func (s *MemoryStore) ListVenues(cityID string) []models.Venue {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	return s.listVenuesLocked(cityID)
+}
+
+func (s *MemoryStore) ListMapVenues(cityID string) ([]models.Venue, map[string]bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	venues := s.listVenuesLocked(cityID)
+	bookable := make(map[string]bool)
+	for _, table := range s.tables {
+		if table.Seats > 0 {
+			bookable[table.VenueID] = true
+		}
+	}
+	return venues, bookable
+}
+
+func (s *MemoryStore) listVenuesLocked(cityID string) []models.Venue {
 	out := make([]models.Venue, 0)
 	for _, v := range s.venues {
 		if cityID == "" || v.CityID == cityID {
@@ -1973,6 +1987,11 @@ func (s *MemoryStore) UpdateApplication(ownerID, id string, patch ApplicationUpd
 			return models.VenueApplication{}, ErrBadRequest
 		}
 	}
+	if patch.CityID != nil && *patch.CityID != app.CityID {
+		if city, exists := s.cities[*patch.CityID]; !exists || city.Country != "MD" {
+			return models.VenueApplication{}, ErrBadRequest
+		}
+	}
 	if patch.Lat != nil && (*patch.Lat < -90 || *patch.Lat > 90) {
 		return models.VenueApplication{}, ErrBadRequest
 	}
@@ -2157,7 +2176,7 @@ func applicationComplete(app models.VenueApplication) bool {
 	descriptionPresent := strings.TrimSpace(app.Description.EN) != "" || strings.TrimSpace(app.Description.RU) != "" || strings.TrimSpace(app.Description.RO) != ""
 	addressPresent := strings.TrimSpace(app.Address.EN) != "" || strings.TrimSpace(app.Address.RU) != "" || strings.TrimSpace(app.Address.RO) != ""
 	_, emailErr := mail.ParseAddress(strings.TrimSpace(app.Email))
-	coordinatesValid := app.Lat >= -90 && app.Lat <= 90 && app.Lng >= -180 && app.Lng <= 180 && app.Lat != 0 && app.Lng != 0
+	coordinatesValid := MoldovaBounds.Contains(app.Lat, app.Lng)
 	return namePresent && descriptionPresent && addressPresent && len(app.Cuisine) > 0 &&
 		strings.TrimSpace(app.Phone) != "" && emailErr == nil && strings.TrimSpace(app.HoursText) != "" &&
 		coordinatesValid && len(app.PhotoURLs) > 0

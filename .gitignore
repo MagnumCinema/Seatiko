@@ -27,3 +27,5 @@ dist/
 
 # Local brainstorm / visual companion sessions
 .superpowers/
+.env.integration.local
+.seatiko-local/
