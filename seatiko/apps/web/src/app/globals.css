@@ -3461,14 +3461,12 @@ html[data-theme="light"] .venue-page .waitlist-form select {
 }
 .booking-slot-time-groups {
   display: grid;
-  gap: 14px;
-  max-height: 280px;
-  overflow-y: auto;
-  padding-right: 2px;
+  gap: 12px;
+  min-width: 0;
 }
 .booking-slot-period {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 .booking-slot-period-label {
@@ -3480,14 +3478,25 @@ html[data-theme="light"] .venue-page .waitlist-form select {
   color: var(--fa-muted);
 }
 .booking-slot-times {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  display: flex;
   gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+  mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 28px), transparent 100%);
+}
+.booking-slot-times::-webkit-scrollbar {
+  display: none;
 }
 .booking-slot-days button,
 .booking-slot-times button {
-  min-height: 44px;
-  padding: 0 14px;
+  flex: 0 0 auto;
+  min-height: 40px;
+  min-width: 68px;
+  padding: 0 12px;
   border: 1px solid var(--fa-border);
   border-radius: 12px;
   background: var(--fa-surface-2);
@@ -3497,7 +3506,20 @@ html[data-theme="light"] .venue-page .waitlist-form select {
   font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
+  scroll-snap-align: start;
   transition: border-color 140ms ease, background 140ms ease;
+}
+@media (max-width: 520px) {
+  .booking-slot-times button {
+    min-height: 38px;
+    min-width: 60px;
+    padding: 0 10px;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+  .booking-slot-time-groups {
+    gap: 10px;
+  }
 }
 .booking-slot-days button:hover:not(:disabled),
 .booking-slot-times button:hover:not(:disabled) {
