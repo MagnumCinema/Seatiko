@@ -3486,7 +3486,6 @@ html[data-theme="light"] .venue-page .waitlist-form select {
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
-  mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 28px), transparent 100%);
 }
 .booking-slot-times::-webkit-scrollbar {
   display: none;
