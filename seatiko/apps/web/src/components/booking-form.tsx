@@ -18,8 +18,10 @@ import {
   DEFAULT_SLOT_STEP_MIN,
   addLocalDays,
   buildAnyTableSlots,
+  groupSlotsByDayPart,
   parseOpeningHours,
   startOfLocalDay,
+  type DayPartId,
 } from "@/lib/booking-slots";
 import { getVenueHours } from "@/lib/venue-hours";
 import { durationOptions, resolveBookingRules } from "@/lib/venue-rules";
@@ -30,6 +32,12 @@ import { BookingConfirmation, type BookedReservation } from "@/components/bookin
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
 const BOOKING_DAYS_AHEAD = 7;
+const DAY_PART_LABEL: Record<DayPartId, MessageKey> = {
+  morning: "res.period_morning",
+  lunch: "res.period_lunch",
+  evening: "res.period_evening",
+  late: "res.period_late",
+};
 const ACTIVE_STATUSES = new Set(["PENDING", "CONFIRMED", "CHECKED_IN"]);
 
 /** Day index (0 = today) of `target`, or null when outside the booking window. */
@@ -405,22 +413,29 @@ export function BookingForm({
         <fieldset className="booking-slots">
           <legend>{t("res.time")}</legend>
           {activeDay.hasFree ? (
-            <div className="booking-slot-times">
-              {activeDay.slots.map((slot) => {
-                const iso = slot.start.toISOString();
-                return (
-                  <button
-                    key={iso}
-                    type="button"
-                    className={iso === selectedIso ? "on" : ""}
-                    aria-pressed={iso === selectedIso}
-                    disabled={!slot.available}
-                    onClick={() => setSlotIso(iso)}
-                  >
-                    {formatClock(slot.start)}
-                  </button>
-                );
-              })}
+            <div className="booking-slot-time-groups">
+              {groupSlotsByDayPart(activeDay.slots).map((group) => (
+                <div key={group.id} className="booking-slot-period">
+                  <p className="booking-slot-period-label">{t(DAY_PART_LABEL[group.id])}</p>
+                  <div className="booking-slot-times" role="group" aria-label={t(DAY_PART_LABEL[group.id])}>
+                    {group.slots.map((slot) => {
+                      const iso = slot.start.toISOString();
+                      return (
+                        <button
+                          key={iso}
+                          type="button"
+                          className={iso === selectedIso ? "on" : ""}
+                          aria-pressed={iso === selectedIso}
+                          disabled={!slot.available}
+                          onClick={() => setSlotIso(iso)}
+                        >
+                          {formatClock(slot.start)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="web-book-muted">

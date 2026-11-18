@@ -7,9 +7,7 @@ import {
   fetchTables,
   fetchVenueSchedule,
   fetchVenues,
-  mediaUrl,
   pickLocale,
-  priceLevelLabel,
   type Table,
   type Venue,
   type VenueScheduleSlot,
@@ -17,13 +15,17 @@ import {
 import { addLocalDays, parseOpeningHours, startOfLocalDay } from "@/lib/booking-slots";
 import { venueBookingHref } from "@/lib/booking-link";
 import { matchesVenueQuery } from "@/lib/venue-filters";
+import { emptyKind, partitionQuickBookResults } from "@/lib/quick-book-partition";
 import { getVenueHours } from "@/lib/venue-hours";
 import { resolveBookingRules } from "@/lib/venue-rules";
 import { availabilityRank, venueAvailability, type VenueAvailability } from "@/lib/venue-availability";
 import { getSiteCopy } from "@/lib/site-copy";
 import { BookingPopup } from "@/components/booking-popup";
+import { QuickBookEmpty } from "@/components/quick-book-empty";
+import { QuickBookFilters } from "@/components/quick-book-filters";
+import { QuickBookFind } from "@/components/quick-book-find";
+import { QuickBookResultCard } from "@/components/quick-book-result-card";
 import { useLocale } from "@/components/locale-provider";
-import { SearchIcon, SparklesIcon } from "@/components/venue-icons";
 
 const DAYS_AHEAD = 7;
 const MAX_GUESTS = 20;
@@ -148,11 +150,26 @@ export function QuickBookSearch() {
   }, [venues, data, searchDay, now, query.guests, query.duration, target]);
 
   const searching = query.text.trim().length > 0;
-  const matched = searching ? results.filter((r) => matchesVenueQuery(r.venue, query.text)) : results;
-  const available = matched.filter((r) => r.availability.slots.length > 0);
-  const unavailable = matched.filter((r) => r.availability.fits && r.availability.slots.length === 0);
-  const tooSmall = matched.filter((r) => !r.availability.fits);
-  const cards = searching ? matched : available;
+  const textMatchIds = searching
+    ? new Set(
+        results.filter((r) => matchesVenueQuery(r.venue, query.text)).map((r) => r.venue.id),
+      )
+    : undefined;
+  const { matched, available, unavailable, tooSmall, cards } = partitionQuickBookResults({
+    results,
+    searching,
+    queryText: query.text,
+    textMatchIds,
+  });
+  const kind = emptyKind({
+    loading,
+    failed,
+    searching,
+    matchedCount: matched.length,
+    availableCount: available.length,
+    tooSmallCount: tooSmall.length,
+    resultsCount: results.length,
+  });
 
   const clock = (d: Date) => d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   const dayLabel = (offset: number) => {
@@ -180,114 +197,21 @@ export function QuickBookSearch() {
         <p className="qb-lead">{t("qb.lead")}</p>
       </header>
 
-      <div className="catalog-search-row qb-find">
-        <div className="catalog-search-wrap">
-          <SearchIcon />
-          <input
-            type="search"
-            className="catalog-search-input"
-            placeholder={t("qb.find_placeholder")}
-            value={query.text}
-            maxLength={80}
-            onChange={(e) => update({ text: e.target.value })}
-            aria-label={t("qb.find_label")}
-          />
-          {query.text ? (
-            <button
-              type="button"
-              className="catalog-search-clear"
-              onClick={() => update({ text: "" })}
-              aria-label={t("qb.find_clear")}
-            >
-              ✕
-            </button>
-          ) : null}
-        </div>
-        <Link href="/discover" className="catalog-discover-btn">
-          <SparklesIcon />
-          <span>{t("qb.discover")}</span>
-        </Link>
-      </div>
+      <QuickBookFind value={query.text} onChange={(text) => update({ text })} />
 
-      <section className="qb-search" aria-label={t("qb.search_label")}>
-        <div className="qb-field">
-          <span className="booking-field-label" id="qb-guests-label">
-            {t("res.guests")}
-          </span>
-          <div className="booking-stepper" role="group" aria-labelledby="qb-guests-label">
-            <button
-              type="button"
-              aria-label={t("res.guests_less")}
-              disabled={query.guests <= 1}
-              onClick={() => update({ guests: query.guests - 1 })}
-            >
-              −
-            </button>
-            <output aria-live="polite">{query.guests}</output>
-            <button
-              type="button"
-              aria-label={t("res.guests_more")}
-              disabled={query.guests >= MAX_GUESTS}
-              onClick={() => update({ guests: query.guests + 1 })}
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div className="qb-field qb-field-days">
-          <span className="booking-field-label">{t("res.day")}</span>
-          <div className="booking-slot-days">
-            {Array.from({ length: DAYS_AHEAD }, (_, offset) => (
-              <button
-                key={offset}
-                type="button"
-                className={offset === query.day ? "on" : ""}
-                aria-pressed={offset === query.day}
-                onClick={() => update({ day: offset })}
-              >
-                {dayLabel(offset)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <label className="qb-field">
-          <span className="booking-field-label">{t("res.time")}</span>
-          <select
-            className="qb-select"
-            value={query.time}
-            onChange={(e) => update({ time: e.target.value })}
-          >
-            <option value="asap">{t("qb.time_asap")}</option>
-            {TIME_OPTIONS.map((time) => {
-              const [h, m] = time.split(":").map(Number);
-              return (
-                <option key={time} value={time}>
-                  {clock(new Date(2000, 0, 1, h, m))}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-
-        <div className="qb-field">
-          <span className="booking-field-label">{t("res.duration")}</span>
-          <div className="booking-slot-days">
-            {DURATIONS.map((min) => (
-              <button
-                key={min}
-                type="button"
-                className={min === query.duration ? "on" : ""}
-                aria-pressed={min === query.duration}
-                onClick={() => update({ duration: min })}
-              >
-                {durationLabel(min)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <QuickBookFilters
+        guests={query.guests}
+        day={query.day}
+        time={query.time}
+        duration={query.duration}
+        daysAhead={DAYS_AHEAD}
+        durations={DURATIONS}
+        timeOptions={TIME_OPTIONS}
+        dayLabel={dayLabel}
+        durationLabel={durationLabel}
+        clock={clock}
+        onChange={(patch) => update(patch)}
+      />
 
       <div className="qb-results-head">
         <div>
@@ -309,8 +233,6 @@ export function QuickBookSearch() {
         </Link>
       </div>
 
-      {failed ? <p className="web-book-error">{t("common.error")}</p> : null}
-
       {loading ? (
         <div className="qb-grid" aria-hidden="true">
           {Array.from({ length: 4 }, (_, i) => (
@@ -319,138 +241,42 @@ export function QuickBookSearch() {
         </div>
       ) : (
         <>
-          {searching && matched.length === 0 ? (
-            <div className="qb-empty">
-              <p>{t("qb.nothing_body")}</p>
-              <div>
-                <button type="button" className="venue-cta venue-cta-outline" onClick={() => update({ text: "" })}>
-                  {t("qb.find_clear")}
-                </button>
-                <Link href="/discover" className="venue-cta venue-cta-outline">
-                  {t("qb.discover")}
-                </Link>
-              </div>
-            </div>
-          ) : searching ? null : available.length === 0 && !failed && tooSmall.length === results.length && results.length ? (
-            <div className="qb-empty">
-              <p>{t("qb.none_group", { guests: query.guests })}</p>
-            </div>
-          ) : available.length === 0 && !failed ? (
-            <div className="qb-empty">
-              <p>{t("qb.none_body")}</p>
-              <div>
-                {query.time !== "asap" ? (
-                  <button type="button" className="venue-cta venue-cta-outline" onClick={() => update({ time: "asap" })}>
-                    {t("qb.try_asap")}
-                  </button>
-                ) : null}
-                {query.day < DAYS_AHEAD - 1 ? (
-                  <button
-                    type="button"
-                    className="venue-cta venue-cta-outline"
-                    onClick={() => update({ day: query.day + 1 })}
-                  >
-                    {t("qb.try_next_day")}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
+          <QuickBookEmpty
+            kind={kind}
+            failed={failed}
+            guests={query.guests}
+            timeIsAsap={query.time === "asap"}
+            canNextDay={query.day < DAYS_AHEAD - 1}
+            onRetry={() => {
+              setLoading(true);
+              setFailed(false);
+              setReloadKey((k) => k + 1);
+            }}
+            onClearSearch={() => update({ text: "" })}
+            onTryAsap={() => update({ time: "asap" })}
+            onTryNextDay={() => update({ day: query.day + 1 })}
+          />
 
           <div className="qb-grid">
-            {cards.map(({ venue, availability, laterToday }) => {
-              const shown = availability.slots.length ? availability : laterToday;
-              const slots = shown?.slots ?? [];
-              const name = pickLocale(venue.name, locale);
-              const photo = venue.photo_urls?.[0] || venue.image_url;
-              const cuisine = venue.cuisine
-                .slice(0, 2)
-                .map((c) => cuisineLabels[c] ?? c)
-                .join(" · ");
-              return (
-                <article
-                  key={venue.id}
-                  className={`qb-card${availability.exact ? " exact" : ""}${slots.length ? "" : " muted"}`}
-                >
-                  <Link href={`/venues/${venue.id}`} className="qb-card-photo" tabIndex={-1} aria-hidden="true">
-                    {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={mediaUrl(photo)} alt="" loading="lazy" />
-                    ) : null}
-                  </Link>
-                  <div className="qb-card-body">
-                    <div className="qb-card-title">
-                      <h3>
-                        <Link href={`/venues/${venue.id}`}>{name}</Link>
-                      </h3>
-                      <span className="qb-card-rating">★ {venue.rating.toFixed(1)}</span>
-                    </div>
-                    <p className="qb-card-meta">
-                      {[cuisine, priceLevelLabel(venue.price_level), pickLocale(venue.address, locale)]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <p
-                      className={`qb-card-status${availability.exact ? " exact" : ""}${slots.length ? "" : " none"}`}
-                    >
-                      {!availability.fits
-                        ? t("qb.card_small", { guests: query.guests })
-                        : availability.exact
-                          ? t("qb.exact", { time: clock(availability.exact.start) })
-                          : availability.slots.length
-                            ? target
-                              ? t("qb.nearest")
-                              : t("qb.earliest")
-                            : slots.length
-                              ? t("qb.later_today", { time: target ? clock(target) : "" })
-                              : t("qb.day_full", { day: dayLabel(query.day).toLowerCase() })}
-                    </p>
-                    <div className="qb-slots" role="group" aria-label={t("qb.slots_label", { venue: name })}>
-                      {slots.map((slot) => {
-                        const isExact = availability.exact?.start.getTime() === slot.start.getTime();
-                        return (
-                          <button
-                            key={slot.start.toISOString()}
-                            type="button"
-                            className={isExact ? "on" : ""}
-                            onClick={() =>
-                              setPopup({
-                                venue,
-                                time: slot.start.toISOString(),
-                                durationMin: shown?.durationMin ?? query.duration,
-                                nonce: Date.now(),
-                              })
-                            }
-                          >
-                            {clock(slot.start)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {!availability.fits ? (
-                      <Link className="qb-card-action" href={venueBookingHref(venue.id, { intent: "event" })}>
-                        {t("qb.other_event")} →
-                      </Link>
-                    ) : !slots.length ? (
-                      <button
-                        type="button"
-                        className="qb-card-action"
-                        onClick={() =>
-                          setPopup({ venue, time: null, durationMin: availability.durationMin, nonce: Date.now() })
-                        }
-                      >
-                        {t("qb.pick_other_day")} →
-                      </button>
-                    ) : null}
-                    {slots.length && shown && shown.durationMin !== query.duration ? (
-                      <p className="qb-card-note">
-                        {t("qb.duration_capped", { duration: durationLabel(shown.durationMin) })}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
+            {cards.map((row) => (
+              <QuickBookResultCard
+                key={row.venue.id}
+                venue={row.venue}
+                availability={row.availability}
+                laterToday={row.laterToday}
+                guests={query.guests}
+                durationMin={query.duration}
+                dayLabel={dayLabel(query.day)}
+                target={target}
+                cuisineLabels={cuisineLabels}
+                onPickSlot={(time, durationMin) =>
+                  setPopup({ venue: row.venue, time, durationMin, nonce: Date.now() })
+                }
+                onPickOtherDay={(durationMin) =>
+                  setPopup({ venue: row.venue, time: null, durationMin, nonce: Date.now() })
+                }
+              />
+            ))}
           </div>
 
           {!searching && (unavailable.length || tooSmall.length) ? (

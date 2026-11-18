@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildAnyTableSlots, buildBookingSlots, parseOpeningHours } from "./booking-slots";
+import {
+  buildAnyTableSlots,
+  buildBookingSlots,
+  dayPartForTime,
+  groupSlotsByDayPart,
+  parseOpeningHours,
+} from "./booking-slots";
 
 const at = (h: number, m = 0) => new Date(2026, 10, 6, h, m);
 const label = (d: Date) =>
@@ -79,5 +85,38 @@ describe("buildAnyTableSlots", () => {
       "10:00", "10:30", "11:00",
     ]);
     expect(buildAnyTableSlots({ day: at(0), now: at(6), hours, candidates: [] }).some((s) => s.available)).toBe(false);
+  });
+});
+
+describe("dayPartForTime", () => {
+  it("splits the day into morning, lunch, evening, late", () => {
+    expect(dayPartForTime(at(11, 59))).toBe("morning");
+    expect(dayPartForTime(at(12, 0))).toBe("lunch");
+    expect(dayPartForTime(at(16, 59))).toBe("lunch");
+    expect(dayPartForTime(at(17, 0))).toBe("evening");
+    expect(dayPartForTime(at(20, 59))).toBe("evening");
+    expect(dayPartForTime(at(21, 0))).toBe("late");
+  });
+});
+
+describe("groupSlotsByDayPart", () => {
+  it("groups slots and skips empty parts", () => {
+    const slots = [
+      { start: at(11, 0), available: true },
+      { start: at(12, 30), available: true },
+      { start: at(19, 0), available: false },
+      { start: at(22, 0), available: true },
+    ];
+    expect(groupSlotsByDayPart(slots).map((g) => [g.id, g.slots.map((s) => label(s.start))])).toEqual([
+      ["morning", ["11:00"]],
+      ["lunch", ["12:30"]],
+      ["evening", ["19:00"]],
+      ["late", ["22:00"]],
+    ]);
+  });
+
+  it("omits parts with no slots", () => {
+    const slots = [{ start: at(18, 0), available: true }];
+    expect(groupSlotsByDayPart(slots).map((g) => g.id)).toEqual(["evening"]);
   });
 });
