@@ -3170,19 +3170,21 @@ html[data-theme="light"] .venue-map-popup {
 .business-final-cta .btn-light {
   color: #081d16;
   background: linear-gradient(
-    115deg,
-    #b8741a 0%,
-    #d48d28 22%,
-    #f3c46b 48%,
-    #ffd580 52%,
-    #f3c46b 56%,
-    #d48d28 78%,
-    #b8741a 100%
+    110deg,
+    #dfa43e 0%,
+    #ecc468 15%,
+    #fce39e 25%,
+    #ecc468 35%,
+    #dfa43e 50%,
+    #ecc468 65%,
+    #fce39e 75%,
+    #ecc468 85%,
+    #dfa43e 100%
   );
-  background-size: 240% 100%;
+  background-size: 200% 100%;
   background-position: 0% 50%;
-  border: 1px solid rgba(255, 225, 150, 0.55);
-  box-shadow: 0 10px 28px rgba(184, 116, 26, 0.32), 0 2px 6px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 230, 160, 0.65);
+  box-shadow: 0 10px 28px rgba(223, 164, 62, 0.32), 0 2px 6px rgba(0, 0, 0, 0.18);
   font-weight: 700;
   letter-spacing: -0.01em;
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -3205,18 +3207,18 @@ html[data-theme="light"] .venue-map-popup {
 .business-final-cta .btn-light:hover {
   transform: translateY(-2.5px);
   animation: goldGradientFlow 2.8s ease-in-out infinite;
-  box-shadow: 0 16px 36px rgba(212, 141, 40, 0.45), 0 3px 10px rgba(0, 0, 0, 0.28);
-  border-color: rgba(255, 240, 190, 0.85);
+  box-shadow: 0 16px 36px rgba(223, 164, 62, 0.46), 0 3px 10px rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 245, 205, 0.9);
 }
 
 .business-final-cta .btn-light:focus-visible {
-  outline: 2px solid #ffd580;
+  outline: 2px solid #fce39e;
   outline-offset: 3px;
 }
 
 .business-final-cta .btn-light:active {
   transform: translateY(-0.5px);
-  box-shadow: 0 6px 18px rgba(184, 116, 26, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 18px rgba(223, 164, 62, 0.35), 0 2px 4px rgba(0, 0, 0, 0.18);
 }
 
 .business-final-cta .btn-light span {
