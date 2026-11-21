@@ -3168,16 +3168,78 @@ html[data-theme="light"] .venue-map-popup {
   line-height: 1.65;
 }
 .business-final-cta .btn-light {
-  color: #0c271e;
-  background: linear-gradient(135deg, #f5ead8, #e9b96e);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  color: #081d16;
+  background: linear-gradient(
+    115deg,
+    #b8741a 0%,
+    #d48d28 22%,
+    #f3c46b 48%,
+    #ffd580 52%,
+    #f3c46b 56%,
+    #d48d28 78%,
+    #b8741a 100%
+  );
+  background-size: 240% 100%;
+  background-position: 0% 50%;
+  border: 1px solid rgba(255, 225, 150, 0.55);
+  box-shadow: 0 10px 28px rgba(184, 116, 26, 0.32), 0 2px 6px rgba(0, 0, 0, 0.24);
   font-weight: 700;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  letter-spacing: -0.01em;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 220ms ease;
 }
+
+@keyframes goldGradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .business-final-cta .btn-light:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2.5px);
+  animation: goldGradientFlow 2.8s ease-in-out infinite;
+  box-shadow: 0 16px 36px rgba(212, 141, 40, 0.45), 0 3px 10px rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 240, 190, 0.85);
+}
+
+.business-final-cta .btn-light:focus-visible {
+  outline: 2px solid #ffd580;
+  outline-offset: 3px;
+}
+
+.business-final-cta .btn-light:active {
+  transform: translateY(-0.5px);
+  box-shadow: 0 6px 18px rgba(184, 116, 26, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.business-final-cta .btn-light span {
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 200ms ease;
+}
+
+.business-final-cta .btn-light:hover span {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .business-final-cta .btn-light {
+    animation: none !important;
+    transition: none !important;
+  }
+  .business-final-cta .btn-light span {
+    transition: none !important;
+  }
+  .business-final-cta .btn-light:hover span {
+    transform: none !important;
+  }
 }
 
 @media (max-width: 980px) {
