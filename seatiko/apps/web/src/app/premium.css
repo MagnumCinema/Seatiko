@@ -3144,12 +3144,14 @@ html[data-theme="light"] .venue-map-popup {
   text-align: center;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 28px 80px rgba(8, 25, 19, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 28px 80px rgba(4, 15, 11, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   background:
-    radial-gradient(circle at 92% 16%, rgba(233, 185, 110, 0.22), transparent 42%),
-    radial-gradient(circle at 8% 88%, rgba(42, 112, 82, 0.35), transparent 48%),
-    linear-gradient(135deg, #0e2a20, #173f31 55%, #1f503e);
+    radial-gradient(circle at 92% 14%, rgba(233, 185, 110, 0.12), transparent 38%),
+    radial-gradient(circle at 8% 90%, rgba(20, 68, 50, 0.24), transparent 44%),
+    linear-gradient(120deg, #081a14 0%, #0d261e 52%, #0a2119 100%);
 }
 .business-final-cta .eyebrow { color: #e9b96e; }
 .business-final-cta h2 {
