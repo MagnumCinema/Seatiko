@@ -466,6 +466,7 @@ function VenuesCatalogContent() {
                   {/* Photo Container */}
                   <div className="catalog-card-media">
                     {photoUrl && !brokenPhotos.has(photoUrl) ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- remote venue photos from API / Places proxy
                       <img
                         src={photoUrl}
                         alt={venueName}

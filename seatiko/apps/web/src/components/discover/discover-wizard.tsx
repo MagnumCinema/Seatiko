@@ -62,20 +62,21 @@ export function DiscoverWizard() {
     [searchParams],
   );
   const [prefs, setPrefs] = useState<DiscoverPreferences>(initial);
+  const [prevCurrency, setPrevCurrency] = useState(currency);
+  if (prevCurrency !== currency) {
+    setPrevCurrency(currency);
+    setPrefs((prev) =>
+      prev.budgetCurrency === currency
+        ? prev
+        : { ...prev, budgetCurrency: currency },
+    );
+  }
   const [stepIndex, setStepIndex] = useState(0);
   const [mapVisible, setMapVisible] = useState(hasAnyPreference(initial));
   const skipUrlSync = useRef(true);
   const pendingMapScroll = useRef(false);
 
   const filtered = hasAnyPreference(prefs);
-
-  useEffect(() => {
-    setPrefs((prev) =>
-      prev.budgetCurrency === currency
-        ? prev
-        : { ...prev, budgetCurrency: currency },
-    );
-  }, [currency]);
 
   useEffect(() => {
     if (skipUrlSync.current) {
