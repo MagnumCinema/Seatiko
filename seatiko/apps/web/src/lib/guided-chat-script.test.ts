@@ -9,10 +9,10 @@ import { emptyPreferences } from "./discover-preferences";
 describe("guided-chat-script", () => {
   it("has five steps matching preference dimensions", () => {
     expect(CHAT_STEPS.map((s) => s.dimension)).toEqual([
-      "cuisine",
-      "restaurantType",
-      "budget",
       "occasion",
+      "restaurantType",
+      "cuisine",
+      "budget",
       "practical",
     ]);
   });
@@ -33,7 +33,7 @@ describe("guided-chat-script", () => {
     expect(keepItalian.cuisine).toEqual(["italian", "asian"]);
 
     const withBudget = applyChatAnswer(withAsian, "budget", ["200_400"]);
-    expect(withBudget.budget).toEqual({ min: 200, max: 400 });
+    expect(withBudget.budget).toEqual({ min: 50, max: 400 });
     const cleared = applyChatAnswer(withBudget, "budget", ["any"]);
     expect(cleared.budget).toBeNull();
     const custom = applyChatAnswer(emptyPreferences(), "budget", ["150-450"]);

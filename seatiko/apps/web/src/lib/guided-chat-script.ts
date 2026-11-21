@@ -1,3 +1,8 @@
+/**
+ * @deprecated Scripted chip questionnaire for /discover chat.
+ * UI now uses an honest AI stub (`guided-chat.tsx`). Kept for unit tests
+ * and a possible future NL→prefs fallback without LLM.
+ */
 import {
   BUDGET_PRESET_IDS,
   budgetPresetRange,
@@ -24,10 +29,10 @@ export type ChatStep = {
 };
 
 export const CHAT_STEPS: ChatStep[] = [
-  { dimension: "cuisine", questionKey: "cuisine" },
-  { dimension: "restaurantType", questionKey: "restaurantType" },
-  { dimension: "budget", questionKey: "budget" },
   { dimension: "occasion", questionKey: "occasion" },
+  { dimension: "restaurantType", questionKey: "restaurantType" },
+  { dimension: "cuisine", questionKey: "cuisine" },
+  { dimension: "budget", questionKey: "budget" },
   { dimension: "practical", questionKey: "practical" },
 ];
 

@@ -1,37 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   BUDGET_MDL_MAX,
   BUDGET_MDL_MIN,
   BUDGET_MDL_STEP,
   BUDGET_PRESET_IDS,
-  CUISINE_MORE,
-  CUISINE_PRIMARY,
-  OCCASION_MORE,
-  OCCASION_PRIMARY,
-  PRACTICAL_MORE,
-  PRACTICAL_PRIMARY,
-  RESTAURANT_TYPE_MORE,
-  RESTAURANT_TYPE_PRIMARY,
+  CUISINE_IDS,
+  OCCASION_IDS,
+  PRACTICAL_IDS,
+  RESTAURANT_TYPE_IDS,
+  budgetMaxOnly,
   budgetPresetRange,
+  formatBudgetAmount,
   matchBudgetPreset,
-  normalizeBudgetRange,
   toggleId,
+  type BudgetPresetId,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
-import { chipIcon } from "@/lib/discover-chip-icons";
 import { fillTemplate } from "@/lib/soft-advance";
 import { getSiteCopy } from "@/lib/site-copy";
+import { useCurrency } from "@/components/currency-provider";
 import { useLocale } from "@/components/locale-provider";
 
 const STEPS = [
-  "cuisine",
-  "restaurantType",
-  "budget",
   "occasion",
+  "restaurantType",
+  "cuisine",
+  "budget",
   "practical",
 ] as const;
+
+const CHIP_COLLAPSE_ROWS = 2;
 
 type StepKey = (typeof STEPS)[number];
 
@@ -40,6 +40,7 @@ type Chip = { id: string; label: string; selected: boolean };
 type Props = {
   stepIndex: number;
   prefs: DiscoverPreferences;
+  mapVisible?: boolean;
   onPrefsChange: (prefs: DiscoverPreferences) => void;
   onStepChange: (index: number) => void;
   onGoToMap?: () => void;
@@ -63,6 +64,21 @@ function selectedCountForStep(
   }
 }
 
+function chipIdsForStep(step: StepKey): readonly string[] {
+  switch (step) {
+    case "cuisine":
+      return CUISINE_IDS;
+    case "restaurantType":
+      return RESTAURANT_TYPE_IDS;
+    case "occasion":
+      return OCCASION_IDS;
+    case "practical":
+      return PRACTICAL_IDS;
+    case "budget":
+      return [];
+  }
+}
+
 function chipLabel(
   copy: ReturnType<typeof getSiteCopy>["discover"],
   id: string,
@@ -70,38 +86,94 @@ function chipLabel(
   return copy.chips[id as keyof typeof copy.chips] ?? id;
 }
 
+/** Height that keeps only the first `maxRows` chip rows visible, or null if everything fits. */
+export function collapseHeightForChipRows(
+  container: HTMLElement,
+  maxRows: number,
+): number | null {
+  const chips = Array.from(
+    container.querySelectorAll<HTMLElement>(":scope > .discover-chip"),
+  );
+  if (chips.length === 0 || maxRows < 1) return null;
+
+  // Use viewport rects so height is relative to the chips container, not offsetParent.
+  const containerTop = container.getBoundingClientRect().top;
+  const rows = chips.map((chip) => {
+    const rect = chip.getBoundingClientRect();
+    return {
+      top: rect.top - containerTop,
+      bottom: rect.bottom - containerTop,
+    };
+  });
+
+  const rowTops: number[] = [];
+  for (const row of rows) {
+    if (!rowTops.some((t) => Math.abs(t - row.top) <= 1)) rowTops.push(row.top);
+  }
+  rowTops.sort((a, b) => a - b);
+  if (rowTops.length <= maxRows) return null;
+
+  const lastVisibleTop = rowTops[maxRows - 1]!;
+  let bottom = 0;
+  for (const row of rows) {
+    if (row.top <= lastVisibleTop + 1) {
+      bottom = Math.max(bottom, row.bottom);
+    }
+  }
+  return Math.ceil(bottom);
+}
+
 export function PreferenceStepper({
   stepIndex,
   prefs,
+  mapVisible = false,
   onPrefsChange,
   onStepChange,
   onGoToMap,
 }: Props) {
   const { locale } = useLocale();
+  const { currency } = useCurrency();
   const copy = getSiteCopy(locale).discover;
   const step = STEPS[Math.min(stepIndex, STEPS.length - 1)] as StepKey;
   const [showMore, setShowMore] = useState(false);
+  const [collapseHeight, setCollapseHeight] = useState<number | null>(null);
+  const [budgetThumbTip, setBudgetThumbTip] = useState(false);
   const [prevStepIndex, setPrevStepIndex] = useState(stepIndex);
+  const chipsRef = useRef<HTMLDivElement | null>(null);
 
   if (prevStepIndex !== stepIndex) {
     setPrevStepIndex(stepIndex);
     setShowMore(false);
+    setCollapseHeight(null);
   }
 
-  function primaryAndMore(): { primary: string[]; more: string[] } {
-    switch (step) {
-      case "cuisine":
-        return { primary: CUISINE_PRIMARY, more: CUISINE_MORE };
-      case "restaurantType":
-        return { primary: RESTAURANT_TYPE_PRIMARY, more: RESTAURANT_TYPE_MORE };
-      case "occasion":
-        return { primary: OCCASION_PRIMARY, more: OCCASION_MORE };
-      case "practical":
-        return { primary: PRACTICAL_PRIMARY, more: PRACTICAL_MORE };
-      case "budget":
-        return { primary: [], more: [] };
+  useLayoutEffect(() => {
+    const el = chipsRef.current;
+    if (!el || step === "budget") {
+      setCollapseHeight(null);
+      return;
     }
-  }
+
+    let measuring = false;
+    const measure = () => {
+      if (measuring) return;
+      measuring = true;
+      const prevMax = el.style.maxHeight;
+      const prevOverflow = el.style.overflow;
+      el.style.maxHeight = "none";
+      el.style.overflow = "visible";
+      const next = collapseHeightForChipRows(el, CHIP_COLLAPSE_ROWS);
+      el.style.maxHeight = prevMax;
+      el.style.overflow = prevOverflow;
+      setCollapseHeight((prev) => (prev === next ? prev : next));
+      measuring = false;
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [step, locale, showMore]);
 
   function isSelected(id: string): boolean {
     switch (step) {
@@ -120,10 +192,11 @@ export function PreferenceStepper({
     }
   }
 
-  const { primary, more } = primaryAndMore();
+  const chipIds = chipIdsForStep(step);
   const expanded = showMore;
+  const needsShowMore = collapseHeight != null;
 
-  function chipsFor(ids: string[]): Chip[] {
+  function chipsFor(ids: readonly string[]): Chip[] {
     return ids.map((id) => ({
       id,
       label: chipLabel(copy, id),
@@ -132,7 +205,6 @@ export function PreferenceStepper({
   }
 
   function toggle(id: string) {
-    if (more.includes(id)) setShowMore(true);
     let nextPrefs: DiscoverPreferences;
     switch (step) {
       case "cuisine":
@@ -177,6 +249,14 @@ export function PreferenceStepper({
     total: STEPS.length,
   })} · ${fillTemplate(copy.selectedCount, { n: selectedCount })}`;
 
+  const budgetMaxVal = prefs.budget?.max ?? BUDGET_MDL_MAX;
+  const budgetCurrencyLabel = copy.budgetCurrencies[currency];
+  const budgetSpan = BUDGET_MDL_MAX - BUDGET_MDL_MIN || 1;
+  const budgetTipLeft =
+    ((budgetMaxVal - BUDGET_MDL_MIN) / budgetSpan) * 100;
+
+  const chipsCollapsed = needsShowMore && !expanded;
+
   return (
     <div className="discover-stepper">
       <ol className="discover-stepper-rail" aria-label="Steps">
@@ -215,14 +295,16 @@ export function PreferenceStepper({
         <div className="discover-stepper-panel">
           {step === "budget" ? (
             <div className="discover-budget">
-              <p className="discover-budget-value" aria-live="polite">
-                {prefs.budget
-                  ? fillTemplate(copy.budgetReadout, {
-                      min: String(prefs.budget.min),
-                      max: String(prefs.budget.max),
-                    })
-                  : copy.budgetAny}
-              </p>
+              <div className="discover-budget-head">
+                <p className="discover-budget-value" aria-live="polite">
+                  {prefs.budget
+                    ? fillTemplate(copy.budgetMaxReadout, {
+                        max: formatBudgetAmount(prefs.budget.max, currency),
+                        currency: budgetCurrencyLabel,
+                      })
+                    : copy.budgetAny}
+                </p>
+              </div>
               <div
                 className={[
                   "discover-budget-range-wrap",
@@ -232,7 +314,8 @@ export function PreferenceStepper({
                   .join(" ")}
               >
                 <span className="discover-budget-bound" aria-hidden>
-                  {BUDGET_MDL_MIN}
+                  {formatBudgetAmount(BUDGET_MDL_MIN, currency)}{" "}
+                  {budgetCurrencyLabel}
                 </span>
                 <div
                   className="discover-budget-range"
@@ -242,59 +325,43 @@ export function PreferenceStepper({
                   <span className="discover-budget-track" aria-hidden />
                   <input
                     type="range"
-                    className="discover-budget-thumb discover-budget-thumb-min"
-                    min={BUDGET_MDL_MIN}
-                    max={BUDGET_MDL_MAX}
-                    step={BUDGET_MDL_STEP}
-                    value={prefs.budget?.min ?? BUDGET_MDL_MIN}
-                    disabled={prefs.budget == null}
-                    aria-label="Minimum (MDL)"
-                    aria-valuetext={
-                      prefs.budget == null
-                        ? copy.budgetAny
-                        : `${prefs.budget.min} MDL`
-                    }
-                    onChange={(e) => {
-                      const min = Number(e.target.value);
-                      const max = prefs.budget?.max ?? BUDGET_MDL_MAX;
-                      onPrefsChange({
-                        ...prefs,
-                        budget: normalizeBudgetRange({
-                          min,
-                          max: Math.max(min, max),
-                        }),
-                      });
-                    }}
-                  />
-                  <input
-                    type="range"
                     className="discover-budget-thumb discover-budget-thumb-max"
                     min={BUDGET_MDL_MIN}
                     max={BUDGET_MDL_MAX}
                     step={BUDGET_MDL_STEP}
-                    value={prefs.budget?.max ?? BUDGET_MDL_MAX}
-                    disabled={prefs.budget == null}
-                    aria-label="Maximum (MDL)"
+                    value={budgetMaxVal}
+                    aria-label={`Maximum (${budgetCurrencyLabel})`}
                     aria-valuetext={
                       prefs.budget == null
                         ? copy.budgetAny
-                        : `${prefs.budget.max} MDL`
+                        : `${formatBudgetAmount(budgetMaxVal, currency)} ${budgetCurrencyLabel}`
                     }
+                    onPointerEnter={() => setBudgetThumbTip(true)}
+                    onPointerLeave={() => setBudgetThumbTip(false)}
+                    onFocus={() => setBudgetThumbTip(true)}
+                    onBlur={() => setBudgetThumbTip(false)}
                     onChange={(e) => {
-                      const max = Number(e.target.value);
-                      const min = prefs.budget?.min ?? BUDGET_MDL_MIN;
+                      setBudgetThumbTip(true);
                       onPrefsChange({
                         ...prefs,
-                        budget: normalizeBudgetRange({
-                          min: Math.min(min, max),
-                          max,
-                        }),
+                        budget: budgetMaxOnly(Number(e.target.value)),
                       });
                     }}
                   />
+                  {budgetThumbTip ? (
+                    <span
+                      className="discover-budget-tooltip"
+                      style={{ left: `${budgetTipLeft}%` }}
+                      aria-hidden
+                    >
+                      {formatBudgetAmount(budgetMaxVal, currency)}{" "}
+                      {budgetCurrencyLabel}
+                    </span>
+                  ) : null}
                 </div>
                 <span className="discover-budget-bound" aria-hidden>
-                  {BUDGET_MDL_MAX}
+                  {formatBudgetAmount(BUDGET_MDL_MAX, currency)}{" "}
+                  {budgetCurrencyLabel}
                 </span>
               </div>
               <div
@@ -304,6 +371,13 @@ export function PreferenceStepper({
               >
                 {BUDGET_PRESET_IDS.map((id) => {
                   const on = matchBudgetPreset(prefs.budget) === id;
+                  const range = budgetPresetRange(id as BudgetPresetId);
+                  const label = range
+                    ? fillTemplate(copy.budgetPresetUnder, {
+                        max: formatBudgetAmount(range.max, currency),
+                        currency: budgetCurrencyLabel,
+                      })
+                    : copy.budgetPresets[id];
                   return (
                     <button
                       key={id}
@@ -317,12 +391,7 @@ export function PreferenceStepper({
                         })
                       }
                     >
-                      <span className="discover-chip-icon" aria-hidden>
-                        {chipIcon(id)}
-                      </span>
-                      <span className="discover-chip-label">
-                        {copy.budgetPresets[id]}
-                      </span>
+                      <span className="discover-chip-label">{label}</span>
                     </button>
                   );
                 })}
@@ -332,17 +401,28 @@ export function PreferenceStepper({
                   aria-pressed={prefs.budget == null}
                   onClick={() => onPrefsChange({ ...prefs, budget: null })}
                 >
-                  <span className="discover-chip-icon" aria-hidden>
-                    {chipIcon("any")}
-                  </span>
                   <span className="discover-chip-label">{copy.budgetAny}</span>
                 </button>
               </div>
             </div>
           ) : (
             <>
-              <div className="discover-chips" role="group">
-                {chipsFor(primary).map((chip) => (
+              <div
+                ref={chipsRef}
+                className={[
+                  "discover-chips",
+                  chipsCollapsed ? "is-collapsed" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                role="group"
+                style={
+                  chipsCollapsed
+                    ? { maxHeight: collapseHeight!, overflow: "hidden" }
+                    : undefined
+                }
+              >
+                {chipsFor(chipIds).map((chip) => (
                   <button
                     key={chip.id}
                     type="button"
@@ -350,50 +430,21 @@ export function PreferenceStepper({
                     aria-pressed={chip.selected}
                     onClick={() => toggle(chip.id)}
                   >
-                    <span className="discover-chip-icon" aria-hidden>
-                      {chipIcon(chip.id)}
-                    </span>
                     <span className="discover-chip-label">{chip.label}</span>
-                    {chip.selected ? (
-                      <span className="discover-stepper-check" aria-hidden>
-                        ✓
-                      </span>
-                    ) : null}
                   </button>
                 ))}
               </div>
-              {expanded ? (
-                <div className="discover-chips discover-chips-more" role="group">
-                  {chipsFor(more).map((chip) => (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      className={`discover-chip ${chip.selected ? "on" : ""}`}
-                      aria-pressed={chip.selected}
-                      onClick={() => toggle(chip.id)}
-                    >
-                      <span className="discover-chip-icon" aria-hidden>
-                        {chipIcon(chip.id)}
-                      </span>
-                      <span className="discover-chip-label">{chip.label}</span>
-                      {chip.selected ? (
-                        <span className="discover-stepper-check" aria-hidden>
-                          ✓
-                        </span>
-                      ) : null}
-                    </button>
-                  ))}
+              {needsShowMore ? (
+                <div className="discover-show-more-row">
+                  <button
+                    type="button"
+                    className="discover-show-more"
+                    onClick={() => setShowMore((v) => !v)}
+                    aria-expanded={expanded}
+                  >
+                    {expanded ? copy.showLess : copy.showMore}
+                  </button>
                 </div>
-              ) : null}
-              {more.length > 0 ? (
-                <button
-                  type="button"
-                  className="discover-show-more"
-                  onClick={() => setShowMore((v) => !v)}
-                  aria-expanded={expanded}
-                >
-                  {expanded ? copy.showLess : copy.showMore}
-                </button>
               ) : null}
             </>
           )}
@@ -420,23 +471,34 @@ export function PreferenceStepper({
         <p className="discover-stepper-status" aria-live="polite">
           {status}
         </p>
-        {stepIndex < STEPS.length - 1 ? (
-          <button
-            type="button"
-            className="btn btn-outline discover-stepper-continue"
-            onClick={() => onStepChange(stepIndex + 1)}
-          >
-            {copy.continue}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn btn-gold discover-stepper-continue"
-            onClick={() => onGoToMap?.()}
-          >
-            {copy.seePlaces}
-          </button>
-        )}
+        <div className="discover-stepper-nav-actions">
+          {mapVisible && stepIndex < STEPS.length - 1 ? (
+            <button
+              type="button"
+              className="btn btn-outline discover-stepper-map"
+              onClick={() => onGoToMap?.()}
+            >
+              {copy.goToMap}
+            </button>
+          ) : null}
+          {stepIndex < STEPS.length - 1 ? (
+            <button
+              type="button"
+              className="btn btn-outline discover-stepper-continue"
+              onClick={() => onStepChange(stepIndex + 1)}
+            >
+              {copy.continue}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-gold discover-stepper-continue"
+              onClick={() => onGoToMap?.()}
+            >
+              {copy.seePlaces}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

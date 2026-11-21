@@ -23,7 +23,7 @@ html[data-theme="dark"] {
 
 html[data-theme="light"] {
   color-scheme: light;
-  --site-bg: #f4f0e8;
+  --site-bg: #f6f2ea;
   --site-fg: #1a2420;
   --site-muted: #5c6b63;
   --site-surface: #fffaf2;
@@ -35,7 +35,7 @@ html[data-theme="light"] {
   --input-bg: #ffffff;
   --input-fg: #1a2420;
   --input-border: rgba(26, 36, 32, 0.16);
-  --fa-bg: #f4f0e8;
+  --fa-bg: #f6f2ea;
   --fa-surface: #fffaf2;
   --fa-surface-2: #ffffff;
   --fa-border: rgba(26, 36, 32, 0.12);
@@ -301,12 +301,89 @@ html[data-theme="light"] .site-nav-primary:hover {
   letter-spacing: -0.01em;
 }
 
+.site-prefs,
 .site-lang {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 6px;
   padding-left: 8px;
   border-left: 1px solid var(--site-border);
+}
+
+.site-pref-dropdown {
+  position: relative;
+}
+
+.site-pref-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--site-fg) 12%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--site-fg) 4%, transparent);
+  color: var(--site-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.site-pref-trigger:hover,
+.site-pref-dropdown.open .site-pref-trigger {
+  color: var(--site-fg);
+  border-color: color-mix(in srgb, var(--site-fg) 22%, transparent);
+  background: color-mix(in srgb, var(--site-fg) 8%, transparent);
+}
+
+.site-pref-caret {
+  font-size: 0.62rem;
+  opacity: 0.75;
+}
+
+.site-pref-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 100%;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--site-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--site-bg) 92%, var(--auth-card-bg));
+  box-shadow: 0 12px 28px color-mix(in srgb, #000 18%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.site-pref-menu button {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--site-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-pref-menu button:hover {
+  color: var(--site-fg);
+  background: color-mix(in srgb, var(--site-fg) 8%, transparent);
+}
+
+.site-pref-menu button.on {
+  color: var(--site-accent);
+  background: color-mix(in srgb, var(--site-accent) 14%, transparent);
 }
 
 .site-lang button {
@@ -452,8 +529,27 @@ html[data-theme="light"] .site-nav-primary:hover {
   box-shadow: 0 2px 8px rgba(233, 185, 110, 0.16);
 }
 
+.landing .site-header.transparent .site-prefs,
 .landing .site-header.transparent .site-lang {
   border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+.landing .site-header.transparent .site-pref-trigger {
+  color: rgba(243, 238, 226, 0.78);
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.landing .site-header.transparent .site-pref-trigger:hover,
+.landing .site-header.transparent .site-pref-dropdown.open .site-pref-trigger {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.landing .site-header.transparent .site-pref-menu {
+  background: rgba(18, 28, 22, 0.96);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .landing .site-header.transparent .site-lang button {
@@ -1188,8 +1284,8 @@ html[data-theme="light"] .site-nav-primary:hover {
 
 .venue-map-list {
   display: grid;
-  gap: 6px;
-  max-height: 220px;
+  gap: 4px;
+  max-height: 260px;
   overflow-y: auto;
   padding-right: 4px;
   padding-bottom: 14px;
@@ -1209,6 +1305,29 @@ html[data-theme="light"] .site-nav-primary:hover {
   border-radius: 99px;
 }
 
+.venue-map-list-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  color: var(--site-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--site-surface) 94%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--site-border) 80%, transparent);
+}
+
+.venue-map-list-heading.is-more {
+  margin-top: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed color-mix(in srgb, var(--site-border) 90%, transparent);
+  color: color-mix(in srgb, var(--site-muted) 88%, var(--site-fg));
+}
+
 .venue-map-item {
   width: 100%;
   display: grid;
@@ -1223,6 +1342,10 @@ html[data-theme="light"] .site-nav-primary:hover {
   text-align: left;
   cursor: pointer;
   transition: all 160ms ease;
+}
+
+.venue-map-item.is-recommended {
+  background: color-mix(in srgb, var(--site-accent) 6%, transparent);
 }
 
 .venue-map-item:hover {
@@ -2712,7 +2835,9 @@ html[data-theme="light"] .venue-map-popup {
 
 @media (max-width: 820px) {
   .site-header-inner { padding: 14px 18px; }
-  .site-lang, .site-nav-secondary { display: none; }
+  .site-nav-secondary { display: none; }
+  .site-prefs { gap: 4px; padding-left: 6px; }
+  .site-pref-trigger { min-height: 26px; padding: 3px 7px; }
   .site-nav { gap: 8px; }
   .site-nav .site-nav-primary { display: inline-flex !important; padding: 6px 12px; font-size: 0.78rem; }
   .landing-hero { height: auto; min-height: 0; padding: 120px 20px 66px; grid-template-columns: 1fr; }
@@ -2781,7 +2906,7 @@ html[data-theme="light"] .venue-map-popup {
 .business-premium {
   min-height: 100vh;
   color: #17362c;
-  background: #f4f0e8;
+  background: var(--site-bg);
 }
 
 .business-premium .site-header { position: absolute; inset: 0 0 auto; }
@@ -3044,8 +3169,12 @@ html[data-theme="light"] .venue-map-popup {
   color: var(--site-accent) !important;
   border-color: color-mix(in srgb, var(--site-accent) 38%, transparent);
 }
+.owner-register-page .site-prefs,
 .owner-register-page .site-lang,
+.panel-page:has(.owner-dashboard) > .site-header .site-prefs,
 .panel-page:has(.owner-dashboard) > .site-header .site-lang { border-left-color: var(--site-border); }
+.owner-register-page .site-pref-trigger,
+.panel-page:has(.owner-dashboard) > .site-header .site-pref-trigger,
 .owner-register-page .site-lang button,
 .panel-page:has(.owner-dashboard) > .site-header .site-lang button { color: var(--site-muted); }
 .owner-register-page .site-lang button.on,
@@ -3627,13 +3756,13 @@ html[data-theme="light"] .venue-map-popup {
   min-height: 100vh;
   color: var(--fa-text);
   background:
-    radial-gradient(ellipse 70% 50% at 78% 8%, color-mix(in srgb, var(--fa-gold) 14%, transparent), transparent 52%),
-    radial-gradient(ellipse 55% 45% at 8% 88%, color-mix(in srgb, var(--fa-green) 16%, transparent), transparent 48%),
+    radial-gradient(ellipse 70% 50% at 78% 8%, color-mix(in srgb, var(--fa-gold) 16%, transparent), transparent 52%),
+    radial-gradient(ellipse 55% 45% at 8% 88%, color-mix(in srgb, var(--fa-green) 14%, transparent), transparent 48%),
     linear-gradient(
       165deg,
-      color-mix(in srgb, var(--fa-surface) 70%, var(--fa-bg)) 0%,
-      var(--fa-bg) 48%,
-      color-mix(in srgb, var(--fa-bg) 92%, var(--fa-surface-2)) 100%
+      color-mix(in srgb, var(--fa-surface) 82%, var(--fa-bg)) 0%,
+      color-mix(in srgb, var(--fa-bg) 86%, var(--fa-surface)) 48%,
+      color-mix(in srgb, var(--fa-bg) 88%, var(--fa-surface-2)) 100%
     );
 }
 
@@ -3654,31 +3783,61 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .discover-map-section {
-  margin-top: 3.5rem;
-  padding-top: 2rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--fa-border);
 }
 
 .discover-map-section .section-heading {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  gap: 0.75rem 1.5rem;
 }
 
 .discover-map-section .section-heading h2 {
+  margin: 0;
   color: var(--fa-text);
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-family: var(--font-display), Fraunces, serif;
+  font-size: clamp(1.45rem, 2.8vw, 1.95rem);
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 .discover-map-section .section-heading p {
+  margin: 0;
   color: var(--fa-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  max-width: 42ch;
+}
+
+#discover-map-view .venue-map-areas {
+  margin-bottom: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--fa-border);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--fa-surface) 92%, var(--fa-green-soft)),
+      color-mix(in srgb, var(--fa-surface-2) 88%, var(--fa-surface))
+    );
+}
+
+#discover-map-view .venue-map-shell {
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--fa-text) 8%, transparent);
 }
 
 .discover-hero {
-  margin-bottom: 2rem;
+  margin-bottom: 1.75rem;
   max-width: 42rem;
 }
 
 .discover-hero h1 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.65rem;
   color: var(--fa-text);
   font-family: var(--font-display), Fraunces, serif;
   font-size: clamp(2.1rem, 4.5vw, 3.2rem);
@@ -3700,14 +3859,14 @@ html[data-theme="light"] .venue-map-popup {
   grid-template-columns: minmax(0, 1.85fr) minmax(260px, 0.85fr);
   gap: 1.75rem;
   align-items: stretch;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.15rem;
 }
 
 .discover-stepper {
   display: grid;
   gap: 1.25rem;
   padding: 1.75rem 1.7rem 1.55rem;
-  border: 1px solid var(--fa-border);
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 14%, var(--fa-border));
   border-radius: 22px;
   background:
     linear-gradient(
@@ -3715,7 +3874,9 @@ html[data-theme="light"] .venue-map-popup {
       color-mix(in srgb, var(--fa-surface-2) 88%, var(--fa-surface)),
       var(--fa-surface)
     );
-  box-shadow: 0 18px 40px color-mix(in srgb, var(--fa-text) 12%, transparent);
+  box-shadow:
+    0 18px 40px color-mix(in srgb, var(--fa-text) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
 }
 
 .discover-stepper-rail {
@@ -3818,37 +3979,60 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .discover-chips {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.discover-chips-more {
-  margin-top: 0.65rem;
+.discover-show-more-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.35rem;
 }
 
 .discover-show-more {
-  margin-top: 0.85rem;
+  display: inline;
+  margin: 0;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: none;
-  color: var(--fa-gold);
+  color: var(--fa-muted);
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 650;
-  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s;
 }
 
 .discover-show-more:hover {
+  color: var(--fa-gold);
+  background: none;
+}
+
+.discover-show-more[aria-expanded="true"] {
   color: var(--fa-text);
+  background: none;
 }
 
 .discover-budget {
   display: grid;
   gap: 0.75rem;
   padding: 0.15rem 0 0.1rem;
+}
+
+.discover-budget-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
 }
 
 .discover-budget-value {
@@ -3859,8 +4043,56 @@ html[data-theme="light"] .venue-map-popup {
   letter-spacing: -0.01em;
 }
 
+.discover-budget-currencies {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.2rem;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fa-surface) 88%, transparent);
+}
+
+.discover-budget-currency {
+  min-height: 1.9rem;
+  padding: 0.25rem 0.6rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fa-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.discover-budget-currency:hover {
+  color: var(--fa-text);
+}
+
+.discover-budget-currency.on {
+  background: var(--fa-gold);
+  color: #1a1510;
+}
+
 .discover-budget-presets {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
   margin-top: 0.15rem;
+}
+
+.discover-budget-presets .discover-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.45rem 0.4rem;
+  font-size: 0.76rem;
+}
+
+.discover-budget-presets .discover-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .discover-budget-range-wrap {
@@ -3885,6 +4117,26 @@ html[data-theme="light"] .venue-map-popup {
 .discover-budget-range {
   position: relative;
   height: 28px;
+  margin-top: 0.85rem;
+}
+
+.discover-budget-tooltip {
+  position: absolute;
+  top: -1.55rem;
+  z-index: 4;
+  transform: translateX(-50%);
+  padding: 0.18rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 35%, var(--fa-border));
+  border-radius: 8px;
+  background: var(--fa-surface);
+  color: var(--fa-text);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--fa-text) 12%, transparent);
 }
 
 .discover-budget-track {
@@ -3975,37 +4227,40 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .discover-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  min-height: 4.25rem;
-  padding: 0.7rem 0.85rem;
+  min-height: 2.55rem;
+  padding: 0.55rem 0.95rem;
   border: 1px solid var(--fa-border);
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--fa-text);
-  background: color-mix(in srgb, var(--fa-surface) 80%, transparent);
+  background: color-mix(in srgb, var(--fa-surface) 88%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
-  text-align: left;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s, box-shadow 0.15s;
 }
 
 .discover-chip-icon {
-  font-size: 1.15rem;
-  line-height: 1;
+  display: none;
 }
 
 .discover-chip-label {
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .discover-chip:hover {
   border-color: color-mix(in srgb, var(--fa-gold) 55%, transparent);
-  background: color-mix(in oklab, var(--fa-gold) 10%, transparent);
+  background: color-mix(in oklab, var(--fa-gold) 12%, var(--fa-surface));
 }
 
 .discover-chip:active {
@@ -4016,12 +4271,11 @@ html[data-theme="light"] .venue-map-popup {
   background: var(--fa-gold);
   border-color: var(--fa-gold);
   color: #1a1510;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--fa-gold) 28%, transparent);
 }
 
-@media (max-width: 640px) {
-  .discover-chips {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.discover-chip.on .discover-chip-label {
+  font-weight: 700;
 }
 
 .discover-stepper-nav {
@@ -4032,6 +4286,13 @@ html[data-theme="light"] .venue-map-popup {
   margin-top: 0.25rem;
   padding-top: 1rem;
   border-top: 1px solid var(--fa-border);
+}
+
+.discover-stepper-nav-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
 }
 
 .discover-stepper-nav.is-first {
@@ -4079,79 +4340,223 @@ html[data-theme="light"] .venue-map-popup {
     grid-area: back;
   }
 
-  .discover-stepper-continue {
+  .discover-stepper-nav-actions {
     grid-area: continue;
   }
 }
 
 .discover-chat {
+  position: relative;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+  overflow: hidden;
+}
+
+.discover-chat-idle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.discover-chat-blurb {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.05rem 1.1rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 14%, var(--fa-border));
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--fa-surface-2) 55%, transparent),
+      color-mix(in srgb, var(--fa-surface) 70%, transparent)
+    );
+}
+
+.discover-chat-blurb-title {
+  margin: 0 -1.1rem;
+  padding: 0 1.1rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--fa-border) 88%, transparent);
+  color: var(--fa-text);
+  font-family: var(--font-display), Fraunces, serif;
+  font-size: 1.05rem;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.discover-chat-blurb-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  flex: 1 1 auto;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-height: 0;
+}
+
+.discover-chat-blurb-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.05rem;
+  align-items: center;
+  padding: 0.9rem 0;
+}
+
+.discover-chat-blurb-list li + li {
+  border-top: 1px solid color-mix(in srgb, var(--fa-border) 88%, transparent);
+}
+
+.discover-chat-blurb-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 11px;
+  color: #1a1510;
+  background: color-mix(in srgb, var(--fa-gold) 78%, var(--fa-surface));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
+}
+
+.discover-chat-blurb-copy {
+  min-width: 0;
+}
+
+.discover-chat-blurb-copy strong {
+  display: block;
+  color: var(--fa-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.discover-chat-blurb-copy span {
+  display: block;
+  margin-top: 0.28rem;
+  color: var(--fa-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .discover-chat-launcher {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
+  flex: none;
   width: 100%;
+  min-height: 4.25rem;
   padding: 0.9rem 1rem;
-  border: 1px solid var(--fa-border);
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 18%, var(--fa-border));
   border-radius: 16px;
-  background: var(--fa-surface);
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--fa-surface-2) 70%, var(--fa-surface)),
+      var(--fa-surface)
+    );
   color: var(--fa-text);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--fa-text) 8%, transparent);
-  transition: border-color 0.15s, transform 0.12s;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--fa-text) 8%, transparent);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .discover-chat-launcher:hover {
   border-color: color-mix(in srgb, var(--fa-gold) 45%, transparent);
-  transform: translateY(-1px);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--fa-text) 12%, transparent);
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--fa-surface-2) 78%, var(--fa-surface)),
+      color-mix(in srgb, var(--fa-gold) 8%, var(--fa-surface))
+    );
 }
 
 .discover-chat-launcher strong {
   display: block;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .discover-chat-launcher small {
   display: block;
   margin-top: 0.15rem;
   color: var(--fa-muted);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
+  line-height: 1.3;
 }
 
 .discover-chat-launcher-dot {
   flex: none;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--fa-green);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--fa-green) 18%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--fa-green) 18%, transparent);
 }
 
 .discover-chat.open {
-  height: 100%;
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--fa-surface-2) 92%, var(--fa-surface)),
-      var(--fa-surface)
-    );
-  box-shadow: 0 16px 36px color-mix(in srgb, var(--fa-text) 10%, transparent);
+  background: none;
+  box-shadow: none;
+}
+
+@keyframes discover-chat-expand-down {
+  from {
+    clip-path: inset(0 0 calc(100% - 4.35rem) 0 round 16px);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--fa-text) 8%, transparent);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0 round 18px);
+    box-shadow: none;
+  }
+}
+
+@keyframes discover-chat-collapse-up {
+  from {
+    clip-path: inset(0 0 0 0 round 18px);
+    box-shadow: none;
+  }
+
+  to {
+    clip-path: inset(0 0 calc(100% - 4.35rem) 0 round 16px);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--fa-text) 8%, transparent);
+  }
 }
 
 .discover-chat-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: grid;
-  grid-template-rows: auto minmax(220px, 1fr) auto;
-  height: min(100%, 520px);
-  min-height: 420px;
-  border: 1px solid var(--fa-border);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 18%, var(--fa-border));
   border-radius: 18px;
   overflow: hidden;
-  background: var(--fa-surface);
-  box-shadow: 0 18px 40px color-mix(in srgb, var(--fa-text) 12%, transparent);
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--fa-surface-2) 70%, var(--fa-surface)),
+      var(--fa-surface)
+    );
+  animation: discover-chat-expand-down 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top center;
+}
+
+.discover-chat-shell.closing {
+  animation: discover-chat-collapse-up 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
 }
 
 .discover-chat-head {
@@ -4161,7 +4566,7 @@ html[data-theme="light"] .venue-map-popup {
   gap: 0.75rem;
   padding: 0.85rem 0.95rem;
   border-bottom: 1px solid var(--fa-border);
-  background: color-mix(in srgb, var(--fa-surface-2) 70%, var(--fa-surface));
+  background: none;
 }
 
 .discover-chat-head-copy {
@@ -4223,15 +4628,12 @@ html[data-theme="light"] .venue-map-popup {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.95rem;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--fa-bg) 55%, transparent),
-      transparent 28%
-    ),
-    color-mix(in srgb, var(--fa-bg) 35%, var(--fa-surface));
+  background: none;
 }
 
 .discover-chat-row {
@@ -4268,9 +4670,11 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .discover-chat-composer {
+  display: grid;
+  gap: 0.65rem;
   padding: 0.85rem 0.95rem 1rem;
   border-top: 1px solid var(--fa-border);
-  background: var(--fa-surface);
+  background: none;
 }
 
 .discover-chat-composer-label,
@@ -4279,6 +4683,89 @@ html[data-theme="light"] .venue-map-popup {
   color: var(--fa-muted);
   font-size: 0.72rem;
   font-weight: 650;
+}
+
+.discover-chat-hints {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.discover-chat-hints-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fa-muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.discover-chat-hints-toggle:hover {
+  color: var(--fa-text);
+}
+
+.discover-chat-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.discover-chat-examples .discover-chip {
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.76rem;
+}
+
+.discover-chat-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+}
+
+.discover-chat-input {
+  min-width: 0;
+  width: 100%;
+  min-height: 2.45rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: var(--fa-bg);
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.discover-chat-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--fa-gold) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.discover-chat-send {
+  min-height: 2.45rem;
+  padding-inline: 0.9rem;
+  white-space: nowrap;
+}
+
+.discover-chat-to-filters {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fa-gold);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.discover-chat-to-filters:hover {
+  color: var(--fa-text);
 }
 
 .discover-chat-replies {
@@ -4338,44 +4825,138 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .discover-filters-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  display: grid;
+  gap: 0.85rem;
   margin-bottom: 0.75rem;
-  padding: 0.85rem 1rem;
+  padding: 1rem 1.1rem 1.05rem;
   border: 1px solid var(--fa-border);
-  border-radius: 14px;
+  border-radius: 18px;
   color: var(--fa-text);
   background:
     linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--fa-surface) 96%, var(--fa-green-soft)),
-      color-mix(in srgb, var(--fa-surface-2) 92%, var(--fa-surface))
+      155deg,
+      color-mix(in srgb, var(--fa-surface) 94%, var(--fa-green-soft)),
+      color-mix(in srgb, var(--fa-surface-2) 90%, var(--fa-surface))
     );
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--fa-text) 7%, transparent);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--fa-text) 8%, transparent);
+}
+
+.discover-filters-bar.under-stepper {
+  margin: 0 0 1.75rem;
+}
+
+.discover-filters-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
 .discover-filters-bar strong {
-  font-size: 0.88rem;
+  display: block;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+}
+
+.discover-filters-note {
+  margin: 0.25rem 0 0;
+  color: var(--fa-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  max-width: 42ch;
+}
+
+.discover-filters-groups {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.discover-filters-group {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 7.5rem) minmax(0, 1fr);
+  gap: 0.55rem 0.85rem;
+  align-items: start;
+}
+
+.discover-filters-group-label {
+  padding-top: 0.35rem;
+  color: var(--fa-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.discover-filters-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discover-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.45rem 0.3rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 28%, var(--fa-border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--fa-surface) 82%, var(--fa-gold));
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.discover-filter-chip-x {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--fa-text) 8%, transparent);
+  font-size: 0.95rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.discover-filter-chip:hover {
+  border-color: var(--fa-gold);
+  background: color-mix(in srgb, var(--fa-gold) 18%, var(--fa-surface));
+}
+
+.discover-filter-chip:hover .discover-filter-chip-x {
+  opacity: 1;
+  background: color-mix(in srgb, var(--fa-text) 12%, transparent);
+}
+
+.discover-filter-chip.soft {
+  cursor: default;
+  border-style: dashed;
+  border-color: var(--fa-border);
+  background: color-mix(in srgb, var(--fa-surface) 70%, transparent);
+  color: var(--fa-muted);
+  font-weight: 550;
 }
 
 .discover-filters-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .discover-filters-actions .btn {
   padding: 0.55rem 0.95rem;
   font-size: 0.8rem;
-}
-
-.landing-map-section:has(.discover-filters-bar) .venue-map-list button:nth-child(-n + 3) .venue-map-badge:first-of-type {
-  color: #1a2e24;
-  background: #c4a574;
 }
 
 .venue-map-panel:not(:has(.venue-map-list button)) .venue-map-address {
@@ -4396,6 +4977,22 @@ html[data-theme="light"] .venue-map-popup {
     grid-template-columns: 1fr;
   }
 
+  .discover-chat {
+    height: auto;
+    min-height: 0;
+  }
+
+  .discover-chat.open {
+    min-height: min(70vh, 520px);
+  }
+
+  .discover-chat-shell {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    min-height: 0;
+  }
+
   .discover-summary {
     flex-direction: column;
     align-items: stretch;
@@ -4409,9 +5006,14 @@ html[data-theme="light"] .venue-map-popup {
     flex: 1;
   }
 
-  .discover-filters-bar {
+  .discover-filters-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .discover-filters-group {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
   }
 
   .discover-filters-actions {
@@ -11950,33 +12552,81 @@ html[data-theme="light"] .menu-dish-popup-x {
 .venue-map-areas {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: flex-end;
+  gap: 10px 12px;
   margin-bottom: 16px;
 }
 
-.venue-map-areas label {
+.venue-map-area-field {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
-.venue-map-areas select,
+.venue-map-area-label {
+  color: var(--site-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.venue-map-select-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  min-width: min(100%, 11.5rem);
+}
+
+.venue-map-select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--site-muted);
+  border-bottom: 1.5px solid var(--site-muted);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
+
+.venue-map-select,
 .venue-map-search input,
 .venue-map-search button,
 .map-search-area {
+  min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--site-border);
   border-radius: 12px;
   color: var(--site-fg);
-  background: var(--site-surface);
+  background: color-mix(in srgb, var(--site-bg) 55%, var(--site-surface));
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color-scheme: inherit;
+}
+
+.venue-map-select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  padding-right: 2rem;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.venue-map-select:hover {
+  border-color: color-mix(in srgb, var(--site-fg) 22%, var(--site-border));
 }
 
 .venue-map-search {
   display: flex;
-  flex: 1 1 290px;
+  flex: 1 1 260px;
   gap: 8px;
   min-width: 0;
 }
@@ -11984,29 +12634,76 @@ html[data-theme="light"] .menu-dish-popup-x {
 .venue-map-search input {
   flex: 1;
   min-width: 0;
-  min-height: 40px;
+  font-weight: 500;
 }
 
 .venue-map-search button {
+  flex: none;
   border-color: transparent;
-  background: #173f31;
+  background: var(--site-accent);
   color: #fff;
   font-weight: 650;
   cursor: pointer;
+  padding-inline: 14px;
+  transition: background 0.15s, filter 0.15s;
 }
 
 .venue-map-search button:hover {
-  background: #1e5240;
+  filter: brightness(1.08);
 }
 
 .venue-map-bookable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--site-bg) 55%, var(--site-surface));
+  color: var(--site-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
+  user-select: none;
+}
+
+.venue-map-bookable:hover {
+  color: var(--site-fg);
+  border-color: color-mix(in srgb, var(--site-fg) 22%, var(--site-border));
+}
+
+.venue-map-bookable:has(input:checked) {
+  color: var(--site-fg);
+  border-color: color-mix(in srgb, var(--site-accent) 40%, var(--site-border));
+  background: color-mix(in srgb, var(--site-accent) 12%, var(--site-surface));
 }
 
 .venue-map-bookable input {
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
+  margin: 0;
   accent-color: var(--site-accent);
+}
+
+.venue-map-external {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border-radius: 12px;
+  color: var(--site-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.venue-map-external:hover {
+  color: var(--site-fg);
+  background: color-mix(in srgb, var(--site-fg) 6%, transparent);
 }
 
 .venue-map-areas :is(input, button, select, a):focus-visible {
@@ -12030,6 +12727,32 @@ html[data-theme="light"] .menu-dish-popup-x {
   bottom: 44px;
 }
 
+@media (max-width: 820px) {
+  .venue-map-area-field,
+  .venue-map-search {
+    flex: 1 1 100%;
+  }
+
+  .venue-map-select-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .venue-map-bookable,
+  .venue-map-external {
+    flex: 0 1 auto;
+  }
+}
+
 @media (max-width: 600px) {
   .map-search-area { top: 66px; }
+
+  #discover-map-view .venue-map-areas {
+    padding: 0.75rem 0.85rem;
+    border-radius: 16px 16px 0 0;
+  }
+
+  #discover-map-view .venue-map-shell {
+    border-radius: 0 0 16px 16px;
+  }
 }

@@ -34,13 +34,17 @@ describe("discover page theme CSS", () => {
     expect(hero).not.toMatch(/#f7f3ea/);
   });
 
-  it("keeps stepper and open chat on theme surfaces", () => {
+  it("keeps stepper on theme surfaces and chat shell rounded", () => {
     const stepper = ruleBlock(".discover-stepper");
     expect(stepper).toMatch(/var\(--fa-surface/);
     expect(stepper).not.toMatch(/rgba\(28,\s*42,\s*32/);
 
     const chatOpen = ruleBlock(".discover-chat.open");
-    expect(chatOpen).toMatch(/var\(--fa-/);
+    expect(chatOpen).toMatch(/background:\s*none/);
     expect(chatOpen).not.toMatch(/rgba\(26,\s*38,\s*30/);
+
+    const chatShell = ruleBlock(".discover-chat-shell");
+    expect(chatShell).toMatch(/border-radius:\s*18px/);
+    expect(chatShell).toMatch(/var\(--fa-/);
   });
 });
