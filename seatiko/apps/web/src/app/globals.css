@@ -399,8 +399,7 @@ a {
 
 /* —— Auth / business pages —— */
 
-.auth-page,
-.business-page {
+.auth-page {
   min-height: 100vh;
   background:
     radial-gradient(ellipse at 80% 0%, #2d5a3d33, transparent 45%),

@@ -166,7 +166,7 @@ export default function BusinessPage() {
   const mock = DASHBOARD_MOCK[locale] ?? DASHBOARD_MOCK.ru;
 
   return (
-    <div className="business-page business-premium">
+    <div className="landing business-premium">
       <SiteHeader variant="transparent" />
       <main>
         <section className="business-hero">

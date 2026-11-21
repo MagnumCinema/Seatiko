@@ -2917,6 +2917,7 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .business-hero {
+  max-width: none;
   min-height: 760px;
   padding: 150px max(28px, calc((100vw - 1240px) / 2)) 92px;
   display: grid;
@@ -2925,10 +2926,39 @@ html[data-theme="light"] .venue-map-popup {
   align-items: center;
   overflow: hidden;
   color: #fff;
+  position: relative;
+  isolation: isolate;
+  background: #0f2b22;
+}
+
+.business-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
   background:
-    radial-gradient(circle at 82% 24%, rgba(235,190,117,.16), transparent 28%),
-    radial-gradient(circle at 18% 85%, rgba(33, 104, 73, 0.25), transparent 35%),
-    linear-gradient(125deg, #0a2019, #133c2e 55%, #184c3b);
+    radial-gradient(circle at 16% 24%, rgba(216, 139, 82, 0.18), transparent 28%),
+    radial-gradient(circle at 82% 35%, rgba(233, 185, 110, 0.12), transparent 32%),
+    linear-gradient(120deg, #0b211a 0%, #13382c 52%, #0e2b22 100%);
+}
+
+.business-hero::after {
+  content: "";
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  left: -220px;
+  bottom: -220px;
+  border: 1px solid rgba(233, 185, 110, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 80px rgba(233, 185, 110, 0.025), 0 0 0 160px rgba(233, 185, 110, 0.018);
+  pointer-events: none;
+}
+
+.business-hero-copy {
+  max-width: 620px;
+  position: relative;
+  z-index: 3;
 }
 
 .business-hero-copy h1 {
@@ -2970,6 +3000,8 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .dashboard-preview {
+  position: relative;
+  z-index: 3;
   overflow: hidden;
   min-height: 500px;
   border: 1px solid rgba(255,255,255,.2);
