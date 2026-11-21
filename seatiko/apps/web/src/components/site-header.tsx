@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCurrency } from "@/components/currency-provider";
 import { useLocale, type Locale } from "@/components/locale-provider";
 import { useTheme } from "@/components/theme-provider";
 import { ApiError, fetchMe, getToken } from "@/lib/api";
@@ -12,7 +13,93 @@ import {
   headerAuthLink,
   headerUserName,
 } from "@/lib/header-auth";
+import type { BudgetCurrencyId } from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
+
+const LOCALES: Locale[] = ["ru", "en", "ro"];
+const LOCALE_LABEL: Record<Locale, string> = {
+  ru: "RU",
+  en: "EN",
+  ro: "RO",
+};
+
+type PrefMenu = "language" | "currency" | null;
+
+function PrefDropdown({
+  label,
+  value,
+  options,
+  onChange,
+  open,
+  onOpenChange,
+}: {
+  label: string;
+  value: string;
+  options: { id: string; label: string }[];
+  onChange: (id: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const current = options.find((option) => option.id === value)?.label ?? value;
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        onOpenChange(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onOpenChange(false);
+    };
+    window.addEventListener("mousedown", onPointer);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onPointer);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, onOpenChange]);
+
+  return (
+    <div className={`site-pref-dropdown${open ? " open" : ""}`} ref={rootRef}>
+      <button
+        type="button"
+        className="site-pref-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => onOpenChange(!open)}
+      >
+        <span>{current}</span>
+        <span className="site-pref-caret" aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open ? (
+        <ul className="site-pref-menu" role="listbox" aria-label={label}>
+          {options.map((option) => {
+            const selected = option.id === value;
+            return (
+              <li key={option.id} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  className={selected ? "on" : ""}
+                  onClick={() => {
+                    onChange(option.id);
+                    onOpenChange(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 type Props = {
   variant?: "transparent" | "solid";
@@ -92,11 +179,13 @@ function MoonIcon() {
 
 export function SiteHeader({ variant = "solid" }: Props) {
   const { locale, setLocale } = useLocale();
+  const { currency, setCurrency, currencies } = useCurrency();
   const { theme, toggleTheme } = useTheme();
   const copy = getSiteCopy(locale).header;
   const pathname = usePathname();
   const router = useRouter();
   const [headerUser, setHeaderUser] = useState<HeaderUser>(cachedHeaderUser);
+  const [openPref, setOpenPref] = useState<PrefMenu>(null);
 
   useEffect(() => {
     let alive = true;
@@ -202,17 +291,26 @@ export function SiteHeader({ variant = "solid" }: Props) {
           <Link href="/business" className="site-nav-secondary">
             {copy.business}
           </Link>
-          <div className="site-lang" role="group" aria-label={copy.language}>
-            {(["ru", "en", "ro"] as Locale[]).map((l) => (
-              <button
-                key={l}
-                type="button"
-                className={locale === l ? "on" : ""}
-                onClick={() => setLocale(l)}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
+          <div className="site-prefs" role="group">
+            <PrefDropdown
+              label={copy.language}
+              value={locale}
+              options={LOCALES.map((id) => ({
+                id,
+                label: LOCALE_LABEL[id],
+              }))}
+              open={openPref === "language"}
+              onOpenChange={(open) => setOpenPref(open ? "language" : null)}
+              onChange={(id) => setLocale(id as Locale)}
+            />
+            <PrefDropdown
+              label={copy.currency}
+              value={currency}
+              options={currencies.map((id) => ({ id, label: id }))}
+              open={openPref === "currency"}
+              onOpenChange={(open) => setOpenPref(open ? "currency" : null)}
+              onChange={(id) => setCurrency(id as BudgetCurrencyId)}
+            />
           </div>
           <button
             type="button"

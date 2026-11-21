@@ -57,11 +57,11 @@ describe("MDL budget helpers", () => {
     expect(priceLevelsForMdlRange({ min: 700, max: 1000 })).toEqual([3]);
   });
 
-  it("budget presets snap known ids and match ranges", () => {
+  it("budget presets are max-only with default floor", () => {
     expect(budgetPresetRange("under200")).toEqual({ min: 50, max: 200 });
-    expect(budgetPresetRange("200_400")).toEqual({ min: 200, max: 400 });
+    expect(budgetPresetRange("200_400")).toEqual({ min: 50, max: 400 });
     expect(budgetPresetRange("any")).toBeNull();
-    expect(matchBudgetPreset({ min: 200, max: 400 })).toBe("200_400");
+    expect(matchBudgetPreset({ min: 50, max: 400 })).toBe("200_400");
     expect(matchBudgetPreset({ min: 150, max: 400 })).toBeNull();
   });
 });
@@ -96,12 +96,25 @@ describe("encodePreferences / decodePreferences", () => {
       cuisine: ["italian", "asian"],
       restaurantType: ["cafe"],
       budget: { min: 200, max: 400 },
+      budgetCurrency: "MDL",
       occasion: ["date_night"],
       practical: ["open_now", "partners"],
     };
     const qs = encodePreferences(prefs);
     expect(qs).toContain("budget=200-400");
+    expect(qs).not.toContain("currency=");
     expect(decodePreferences(qs)).toEqual(prefs);
+  });
+
+  it("round-trips non-MDL display currency", () => {
+    const prefs: DiscoverPreferences = {
+      ...emptyPreferences(),
+      budget: { min: 200, max: 400 },
+      budgetCurrency: "EUR",
+    };
+    const qs = encodePreferences(prefs);
+    expect(qs).toContain("currency=EUR");
+    expect(decodePreferences(qs).budgetCurrency).toBe("EUR");
   });
 
   it("returns empty prefs for blank / garbage input", () => {

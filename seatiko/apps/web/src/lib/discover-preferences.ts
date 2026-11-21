@@ -49,6 +49,8 @@ export type BudgetLevel = 1 | 2 | 3;
 
 export type BudgetMdlRange = { min: number; max: number };
 
+export type BudgetCurrencyId = "MDL" | "EUR" | "USD" | "RON";
+
 export type BudgetPresetId =
   | "under200"
   | "200_400"
@@ -59,6 +61,41 @@ export type BudgetPresetId =
 export const BUDGET_MDL_MIN = 50;
 export const BUDGET_MDL_MAX = 1000;
 export const BUDGET_MDL_STEP = 50;
+
+export const BUDGET_CURRENCY_IDS: BudgetCurrencyId[] = [
+  "MDL",
+  "EUR",
+  "USD",
+  "RON",
+];
+
+/** Approximate units of MDL per 1 unit of currency (display conversion only). */
+export const MDL_PER_CURRENCY: Record<BudgetCurrencyId, number> = {
+  MDL: 1,
+  EUR: 20,
+  USD: 18,
+  RON: 4,
+};
+
+export function isBudgetCurrencyId(id: string): id is BudgetCurrencyId {
+  return (BUDGET_CURRENCY_IDS as readonly string[]).includes(id);
+}
+
+export function mdlToDisplay(
+  mdl: number,
+  currency: BudgetCurrencyId,
+): number {
+  const rate = MDL_PER_CURRENCY[currency];
+  if (rate === 1) return mdl;
+  return Math.max(1, Math.round(mdl / rate));
+}
+
+export function formatBudgetAmount(
+  mdl: number,
+  currency: BudgetCurrencyId,
+): string {
+  return String(mdlToDisplay(mdl, currency));
+}
 
 export const BUDGET_PRESET_IDS: Exclude<BudgetPresetId, "any">[] = [
   "under200",
@@ -81,6 +118,8 @@ export type DiscoverPreferences = {
   cuisine: CuisineId[];
   restaurantType: RestaurantTypeId[];
   budget: BudgetMdlRange | null;
+  /** Display currency for budget UI; filtering still uses MDL range. */
+  budgetCurrency: BudgetCurrencyId;
   occasion: OccasionId[];
   practical: PracticalId[];
 };
@@ -160,6 +199,7 @@ export function emptyPreferences(): DiscoverPreferences {
     cuisine: [],
     restaurantType: [],
     budget: null,
+    budgetCurrency: "MDL",
     occasion: [],
     practical: [],
   };
@@ -207,11 +247,15 @@ export function priceLevelsForMdlRange(
   return levels;
 }
 
+/** Max-only budget: floor is always BUDGET_MDL_MIN. */
 export function budgetPresetRange(
   id: BudgetPresetId,
 ): BudgetMdlRange | null {
   if (id === "any") return null;
-  return { ...BUDGET_PRESET_RANGES[id] };
+  return {
+    min: BUDGET_MDL_MIN,
+    max: BUDGET_PRESET_RANGES[id].max,
+  };
 }
 
 export function matchBudgetPreset(
@@ -219,11 +263,15 @@ export function matchBudgetPreset(
 ): BudgetPresetId | null {
   if (!range) return "any";
   const n = normalizeBudgetRange(range);
+  if (n.min !== BUDGET_MDL_MIN) return null;
   for (const id of BUDGET_PRESET_IDS) {
-    const p = BUDGET_PRESET_RANGES[id];
-    if (p.min === n.min && p.max === n.max) return id;
+    if (BUDGET_PRESET_RANGES[id].max === n.max) return id;
   }
   return null;
+}
+
+export function budgetMaxOnly(max: number): BudgetMdlRange {
+  return normalizeBudgetRange({ min: BUDGET_MDL_MIN, max });
 }
 
 function parseBudgetParam(raw: string | null): BudgetMdlRange | null {
@@ -250,6 +298,9 @@ export function encodePreferences(prefs: DiscoverPreferences): string {
   if (prefs.budget) {
     params.set("budget", `${prefs.budget.min}-${prefs.budget.max}`);
   }
+  if (prefs.budgetCurrency && prefs.budgetCurrency !== "MDL") {
+    params.set("currency", prefs.budgetCurrency);
+  }
   if (prefs.occasion.length) params.set("occasion", prefs.occasion.join(","));
   if (prefs.practical.length) {
     params.set("practical", prefs.practical.join(","));
@@ -261,6 +312,10 @@ export function decodePreferences(search: string): DiscoverPreferences {
   const qs = search.startsWith("?") ? search.slice(1) : search;
   const params = new URLSearchParams(qs);
   const budget = parseBudgetParam(params.get("budget"));
+  const currencyRaw = (params.get("currency") ?? "MDL").toUpperCase();
+  const budgetCurrency = isBudgetCurrencyId(currencyRaw)
+    ? currencyRaw
+    : "MDL";
 
   return {
     cuisine: parseList(params.get("cuisine")).filter((id): id is CuisineId =>
@@ -270,6 +325,7 @@ export function decodePreferences(search: string): DiscoverPreferences {
       (id): id is RestaurantTypeId => TYPE_SET.has(id),
     ),
     budget,
+    budgetCurrency,
     occasion: parseList(params.get("occasion")).filter(
       (id): id is OccasionId => OCCASION_SET.has(id),
     ),

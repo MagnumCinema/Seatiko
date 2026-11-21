@@ -17,10 +17,12 @@ import {
 } from "@/lib/api";
 import {
   filterAndRankPlaces,
+  formatBudgetAmount,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
 import { getVenueHours as getVenueHoursById } from "@/lib/venue-hours";
+import { useCurrency } from "@/components/currency-provider";
 import { useLocale } from "@/components/locale-provider";
 import { venueBookingHref } from "@/lib/booking-link";
 import { googleMapSearch } from "@/lib/google-map";
@@ -69,7 +71,8 @@ const mapCopy = {
     legendOurs: "Заведения Seatiko",
     legendOther: "Другие заведения",
     comingSoon: "Google Maps",
-    bookableBadge: "Можно забронировать"
+    bookableBadge: "Можно забронировать",
+    listPartners: "Партнёры",
   },
   en: {
     unavailable: "Map temporarily unavailable",
@@ -95,7 +98,8 @@ const mapCopy = {
     legendOurs: "Seatiko venues",
     legendOther: "Other places",
     comingSoon: "Google Maps",
-    bookableBadge: "Bookable"
+    bookableBadge: "Bookable",
+    listPartners: "Partners",
   },
   ro: {
     unavailable: "Harta este temporar indisponibilă",
@@ -121,9 +125,12 @@ const mapCopy = {
     legendOurs: "Localuri Seatiko",
     legendOther: "Alte localuri",
     comingSoon: "Google Maps",
-    bookableBadge: "Se poate rezerva"
+    bookableBadge: "Se poate rezerva",
+    listPartners: "Parteneri",
   },
 } as const;
+
+const RECOMMENDED_LIST_COUNT = 3;
 
 function getVenueHours(place: MapPlace, locale: LocaleCode): string {
   if (place.venue_id) {
@@ -233,13 +240,25 @@ export function VenueMap(props: VenueMapProps) {
           setQuery(searchText.trim());
         }}
       >
-        <label>
-          {labels.area}
-          <select value={cityId} onChange={(event) => setCityId(event.target.value)}>
-            {!cities.some((item) => item.id === DEFAULT_CITY) && <option value={DEFAULT_CITY}>Bălți</option>}
-            {cities.map((item) => <option key={item.id} value={item.id}>{pickLocale(item.name, locale)}</option>)}
-            <option value="all">{labels.country}</option>
-          </select>
+        <label className="venue-map-area-field">
+          <span className="venue-map-area-label">{labels.area}</span>
+          <span className="venue-map-select-wrap">
+            <select
+              className="venue-map-select"
+              value={cityId}
+              onChange={(event) => setCityId(event.target.value)}
+            >
+              {!cities.some((item) => item.id === DEFAULT_CITY) && (
+                <option value={DEFAULT_CITY}>Bălți</option>
+              )}
+              {cities.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {pickLocale(item.name, locale)}
+                </option>
+              ))}
+              <option value="all">{labels.country}</option>
+            </select>
+          </span>
         </label>
         <div className="venue-map-search">
           <input
@@ -262,9 +281,16 @@ export function VenueMap(props: VenueMapProps) {
             checked={bookableOnly}
             onChange={(event) => setBookableOnly(event.target.checked)}
           />
-          {labels.bookableOnly}
+          <span>{labels.bookableOnly}</span>
         </label>
-        <a href={externalUrl} target="_blank" rel="noreferrer">{mapCopy[locale].openExternal} ↗</a>
+        <a
+          className="venue-map-external"
+          href={externalUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {mapCopy[locale].openExternal} ↗
+        </a>
       </form>
       {config === undefined ? (
         <div className="venue-map-canvas" role="status">
@@ -297,9 +323,12 @@ function VenueMapArea({
   bookableOnly: boolean;
 }) {
   const { locale } = useLocale();
+  const { currency } = useCurrency();
   const copy = mapCopy[locale];
   const labels = areaCopy[locale];
-  const discoverCopy = getSiteCopy(locale).discover;
+  const siteCopy = getSiteCopy(locale);
+  const discoverCopy = siteCopy.discover;
+  const currencyLabel = siteCopy.discover.budgetCurrencies[currency];
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
@@ -783,6 +812,57 @@ function VenueMapArea({
       typeof selected.price_level === "number" ||
       typeof selected.average_check === "number");
 
+  const visiblePlaces = compact ? places.slice(0, 4) : places;
+  const recommendCount = preferences
+    ? Math.min(RECOMMENDED_LIST_COUNT, visiblePlaces.length)
+    : 0;
+  const recommendedPlaces = visiblePlaces.slice(0, recommendCount);
+  const otherPlaces = visiblePlaces.slice(recommendCount);
+  const showPartnerHeading =
+    recommendedPlaces.length > 0 && otherPlaces.length > 0;
+
+  function renderListItem(
+    place: MapPlace,
+    index: number,
+    recommendedRow: boolean,
+  ) {
+    const isSelected = place.id === selected?.id;
+    return (
+      <button
+        type="button"
+        key={place.id}
+        aria-pressed={isSelected}
+        className={[
+          "venue-map-item",
+          isSelected ? "active" : "",
+          recommendedRow ? "is-recommended" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        onClick={() => selectPlace(place)}
+      >
+        <b className={`venue-num ${isSelected ? "active" : ""}`}>{index + 1}</b>
+        <span className="venue-name">{pickLocale(place.name, locale)}</span>
+        <small className="venue-status-pill">
+          {place.in_database && place.bookable && place.venue_id ? (
+            <>
+              <span
+                className={`status-dot ${place.open_now ? "open" : "closed"}`}
+              />
+              {place.free_tables ?? 0} {copy.free}
+            </>
+          ) : place.in_database ? (
+            labels.partner
+          ) : typeof place.rating === "number" ? (
+            `★ ${place.rating.toFixed(1)}`
+          ) : (
+            copy.comingSoon
+          )}
+        </small>
+      </button>
+    );
+  }
+
   return (
     <div className={`venue-map-shell ${compact ? "compact" : ""}`}>
       <div
@@ -837,38 +917,31 @@ function VenueMapArea({
         )}
         {useGoogle && (googleStatus === "unavailable" || googleStatus === "disabled") && <p role="status" className="venue-map-address">{labels.providerError}</p>}
         <div className="venue-map-list" aria-label={copy.cityVenues}>
-          {(compact ? places.slice(0, 4) : places).map((place, index) => {
-            const isSelected = place.id === selected?.id;
-            return (
-              <button
-                type="button"
-                key={place.id}
-                aria-pressed={isSelected}
-                className={`venue-map-item ${isSelected ? "active" : ""}`}
-                onClick={() => selectPlace(place)}
-              >
-                <b className={`venue-num ${isSelected ? "active" : ""}`}>{index + 1}</b>
-                <span className="venue-name">{pickLocale(place.name, locale)}</span>
-                {preferences && index < 3 && (
-                  <em className="venue-map-badge">{discoverCopy.recommended}</em>
-                )}
-                <small className="venue-status-pill">
-                  {place.in_database && place.bookable && place.venue_id ? (
-                    <>
-                      <span className={`status-dot ${place.open_now ? "open" : "closed"}`} />
-                      {place.free_tables ?? 0} {copy.free}
-                    </>
-                  ) : place.in_database ? (
-                    labels.partner
-                  ) : typeof place.rating === "number" ? (
-                    `★ ${place.rating.toFixed(1)}`
-                  ) : (
-                    copy.comingSoon
-                  )}
-                </small>
-              </button>
-            );
-          })}
+          {recommendedPlaces.length > 0 ? (
+            <>
+              <div className="venue-map-list-heading" role="presentation">
+                {discoverCopy.recommended}
+              </div>
+              {recommendedPlaces.map((place, index) =>
+                renderListItem(place, index, true),
+              )}
+            </>
+          ) : null}
+          {otherPlaces.length > 0 ? (
+            <>
+              {showPartnerHeading ? (
+                <div
+                  className="venue-map-list-heading is-more"
+                  role="presentation"
+                >
+                  {copy.listPartners}
+                </div>
+              ) : null}
+              {otherPlaces.map((place, index) =>
+                renderListItem(place, recommendCount + index, false),
+              )}
+            </>
+          ) : null}
         </div>
 
         {selected ? (
@@ -905,7 +978,10 @@ function VenueMapArea({
                   <span>{priceLevelLabel(selected.price_level)}</span>
                 )}
                 {typeof selected.average_check === "number" && (
-                  <span>~{selected.average_check} MDL</span>
+                  <span>
+                    ~{formatBudgetAmount(selected.average_check, currency)}{" "}
+                    {currencyLabel}
+                  </span>
                 )}
               </div>
             )}

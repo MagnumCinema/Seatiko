@@ -3,6 +3,7 @@ import { Inter, Manrope, Fraunces } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import "./premium.css";
+import { CurrencyProvider } from "@/components/currency-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -38,7 +39,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col antialiased site-body">
         <LocaleProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <CurrencyProvider>
+            <ThemeProvider>{children}</ThemeProvider>
+          </CurrencyProvider>
         </LocaleProvider>
       </body>
     </html>
