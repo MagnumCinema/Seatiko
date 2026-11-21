@@ -201,7 +201,7 @@ const copy = {
     },
     business: {
       eyebrow: "Seatiko для бизнеса", title: "Ваш зал работает.", accent: "Даже когда вы не в зале.", body: "Единый кабинет для публикации ресторана, броней, загрузки зала и цифрового сервиса. Больше видимости для гостей — больше контроля для команды.", connect: "Подключить ресторан", cabinet: "Войти в кабинет",
-      proofs: ["Без установки оборудования", "Запуск за 1 рабочий день", "Поддержка RU · RO · EN"],
+      proofs: ["Без установки оборудования", "Поддержка RU · RO · EN"],
       benefitsEyebrow: "Всё необходимое для роста", benefitsTitle: "Технологии остаются в фоне.\nГостеприимство — на первом месте.",
       benefits: [["Ваш ресторан на карте", "После модерации профиль появляется у гостей с адресом, кухней, рейтингом и свободными столами."], ["Контроль загрузки", "Понятный план зала и статусы столов помогают команде быстрее принимать решения."], ["Цифровой сервис", "QR-меню, заказ и вызов официанта сокращают ожидание, не заменяя человеческий контакт."], ["Возвращаемость гостей", "История визитов и персональные сценарии помогают строить долгие отношения."]],
       mapEyebrow: "Видимость с первого дня", mapTitle: "Зарегистрировались —\nпоявились на карте", mapBody: "Вы заполняете профиль и отправляете его на модерацию. После публикации точка ресторана автоматически становится доступна гостям на сайте и в мобильном приложении.",
@@ -469,7 +469,7 @@ const copy = {
     },
     business: {
       eyebrow: "Seatiko for business", title: "Your floor keeps working.", accent: "Even when you are away.", body: "One workspace for publishing, bookings, floor load and digital service. More visibility for guests and more control for your team.", connect: "Connect restaurant", cabinet: "Open workspace",
-      proofs: ["No equipment installation", "Launch in one business day", "RU · RO · EN support"],
+      proofs: ["No equipment installation", "RU · RO · EN support"],
       benefitsEyebrow: "Everything you need to grow", benefitsTitle: "Technology stays in the background.\nHospitality comes first.",
       benefits: [["Your restaurant on the map", "After moderation, guests see your address, cuisine, rating and free tables."], ["Occupancy control", "A clear floor plan and table statuses help the team make faster decisions."], ["Digital service", "QR menus, ordering and waiter calls reduce waiting without replacing human contact."], ["Guest retention", "Visit history and personalised scenarios help build long-term relationships."]],
       mapEyebrow: "Visible from day one", mapTitle: "Register —\nappear on the map", mapBody: "Complete the profile and submit it for moderation. Once published, your restaurant becomes available on the website and in the mobile app.",
@@ -737,7 +737,7 @@ const copy = {
     },
     business: {
       eyebrow: "Seatiko pentru afaceri", title: "Sala ta continuă să lucreze.", accent: "Chiar și când nu ești acolo.", body: "Un singur cabinet pentru publicare, rezervări, încărcarea sălii și serviciu digital. Mai multă vizibilitate pentru oaspeți și control pentru echipă.", connect: "Conectează restaurant", cabinet: "Intră în cabinet",
-      proofs: ["Fără instalare de echipament", "Lansare într-o zi lucrătoare", "Suport RU · RO · EN"],
+      proofs: ["Fără instalare de echipament", "Suport RU · RO · EN"],
       benefitsEyebrow: "Tot ce trebuie pentru creștere", benefitsTitle: "Tehnologia rămâne în fundal.\nOspitalitatea este pe primul loc.",
       benefits: [["Restaurantul tău pe hartă", "După moderare, profilul apare cu adresă, bucătărie, rating și mese libere."], ["Controlul ocupării", "Planul clar al sălii și statutul meselor ajută echipa să decidă rapid."], ["Serviciu digital", "Meniul QR, comenzile și chemarea chelnerului reduc așteptarea fără a înlocui contactul uman."], ["Revenirea oaspeților", "Istoricul vizitelor și scenariile personale construiesc relații pe termen lung."]],
       mapEyebrow: "Vizibilitate din prima zi", mapTitle: "Te înregistrezi —\napari pe hartă", mapBody: "Completezi profilul și îl trimiți la moderare. După publicare, restaurantul este disponibil pe site și în aplicația mobilă.",

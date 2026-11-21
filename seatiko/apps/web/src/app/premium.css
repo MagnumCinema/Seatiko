@@ -2921,8 +2921,8 @@ html[data-theme="light"] .venue-map-popup {
   min-height: 760px;
   padding: 150px max(28px, calc((100vw - 1240px) / 2)) 92px;
   display: grid;
-  grid-template-columns: 1.05fr .95fr;
-  gap: 52px;
+  grid-template-columns: .84fr 1.16fr;
+  gap: 64px;
   align-items: center;
   overflow: hidden;
   color: #fff;
@@ -2956,7 +2956,7 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .business-hero-copy {
-  max-width: 660px;
+  max-width: 530px;
   position: relative;
   z-index: 3;
 }
