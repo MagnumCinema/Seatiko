@@ -202,8 +202,9 @@ function LoginForm() {
   const copy = getSiteCopy(locale).login;
 
   const [isRegisteringGuest, setIsRegisteringGuest] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const isRestaurantRole = searchParams.get("role") === "restaurant";
+  const [email, setEmail] = useState(() => (isRestaurantRole ? "owner@seatiko.local" : ""));
+  const [password, setPassword] = useState(() => (isRestaurantRole ? "owner123" : ""));
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -229,13 +230,6 @@ function LoginForm() {
       alive = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (searchParams.get("role") === "restaurant") {
-      setEmail("owner@seatiko.local");
-      setPassword("owner123");
-    }
-  }, [searchParams]);
 
   const handleQuickDemo = (type: "guest" | "restaurant") => {
     setError(null);
