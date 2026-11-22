@@ -386,6 +386,50 @@ func (s *MemoryStore) seed() {
 		}
 	}
 
+	// Seed demo guest reservations and inquiries for demoGuestID ("user-guest-demo")
+	activeDemoResID := "res-guest-demo-active"
+	historyDemoResID := "res-guest-demo-history"
+	s.reservations[activeDemoResID] = models.Reservation{
+		ID:          activeDemoResID,
+		UserID:      demoGuestID,
+		VenueID:     "venue-1",
+		TableID:     "t3",
+		Guests:      4,
+		ReservedFor: time.Date(now.Year(), now.Month(), now.Day(), 19, 30, 0, 0, now.Location()).UTC(),
+		Status:      models.ReservationConfirmed,
+		Source:      models.ReservationSourceWeb,
+		Notes:       "Столик у панорамного окна, празднуем годовщину",
+		CreatedAt:   now.Add(-2 * time.Hour).UTC(),
+		UpdatedAt:   now.UTC(),
+	}
+	s.reservations[historyDemoResID] = models.Reservation{
+		ID:          historyDemoResID,
+		UserID:      demoGuestID,
+		VenueID:     "venue-2",
+		TableID:     "t2",
+		Guests:      2,
+		ReservedFor: now.Add(-72 * time.Hour).UTC(),
+		Status:      models.ReservationCheckedIn,
+		Source:      models.ReservationSourceWeb,
+		Notes:       "Ужин для двоих",
+		CreatedAt:   now.Add(-74 * time.Hour).UTC(),
+		UpdatedAt:   now.Add(-70 * time.Hour).UTC(),
+	}
+
+	demoInqID := "inq-guest-demo"
+	s.eventInquiries[demoInqID] = models.EventInquiry{
+		ID:        demoInqID,
+		UserID:    demoGuestID,
+		VenueID:   "venue-1",
+		Guests:    14,
+		Date:      now.Add(5 * 24 * time.Hour).Format("2006-01-02"),
+		TimeSlot:  "18:00",
+		EventType: "Празднование дня рождения",
+		Notes:     "Отдельная зона на террасе, банкетное меню и индивидуальная подача",
+		Status:    "PENDING",
+		CreatedAt: now.Add(-6 * time.Hour).UTC(),
+	}
+
 	for _, m := range demoMenu() {
 		s.menuItems[m.ID] = m
 	}
@@ -426,16 +470,19 @@ func (s *MemoryStore) seed() {
 	guestHash, err := bcrypt.GenerateFromPassword([]byte("guest123"), bcrypt.DefaultCost)
 	if err == nil {
 		guest := models.User{
-			ID:           demoGuestID,
-			Email:        "guest@seatiko.local",
-			PasswordHash: string(guestHash),
-			FirstName:    "Demo",
-			LastName:     "Guest",
-			DisplayName:  "Demo Guest",
-			Locale:       "ru",
-			Role:         models.RoleGuest,
-			CreatedAt:    time.Now().UTC(),
-			UpdatedAt:    time.Now().UTC(),
+			ID:              demoGuestID,
+			Email:           "guest@seatiko.local",
+			PasswordHash:    string(guestHash),
+			FirstName:       "Александр",
+			LastName:        "Смирнов",
+			DisplayName:     "Alex Smirnov",
+			Phone:           "+373 68 123 456",
+			Locale:          "ru",
+			Role:            models.RoleGuest,
+			DietPreferences: []string{"Вегетарианство", "Без лактозы"},
+			FavoriteVenues:  []string{"venue-1", "venue-2", "venue-3"},
+			CreatedAt:       time.Now().UTC(),
+			UpdatedAt:       time.Now().UTC(),
 		}
 		s.users[guest.ID] = guest
 	}
