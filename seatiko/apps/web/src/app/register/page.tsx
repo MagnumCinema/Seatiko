@@ -2,11 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { useLocale } from "@/components/locale-provider";
-import { ApiError, register } from "@/lib/api";
+import {
+  ApiError,
+  fetchMe,
+  getToken,
+  logout,
+  register,
+  type User,
+} from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 
 function EyeIcon() {
@@ -107,6 +114,69 @@ function AlertIcon() {
   );
 }
 
+function ArrowRightIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <polyline points="12 5 19 12 12 19" />
+    </svg>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+      <path d="M9 22v-4h6v4" />
+      <path d="M8 6h.01" />
+      <path d="M16 6h.01" />
+      <path d="M8 10h.01" />
+      <path d="M16 10h.01" />
+      <path d="M8 14h.01" />
+      <path d="M16 14h.01" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const { locale } = useLocale();
@@ -121,13 +191,35 @@ export default function RegisterPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Active Session Detection
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!getToken()) return;
+    let alive = true;
+    fetchMe()
+      .then((u) => {
+        if (alive) setCurrentUser(u);
+      })
+      .catch(() => {
+        if (alive) setCurrentUser(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    const cleanEmail = form.email.trim();
     try {
       await register({
-        ...form,
+        email: cleanEmail,
+        password: form.password,
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
         locale,
         role: "restaurant",
       });
@@ -146,6 +238,11 @@ export default function RegisterPage() {
   }
 
   const isPasswordValid = form.password.length >= 6;
+  const isPasswordStrong =
+    form.password.length >= 8 && /\d/.test(form.password);
+  const isOwnerSession =
+    currentUser &&
+    (currentUser.role === "restaurant" || currentUser.role === "admin");
 
   return (
     <div className="auth-page owner-register-page">
@@ -178,139 +275,214 @@ export default function RegisterPage() {
               <span>{copy.history}</span>
             </div>
           </div>
+
+          <div className="owner-register-more">
+            <span>{copy.learnMorePrompt}</span>
+            <Link href="/business" className="owner-more-link">
+              <span>{copy.learnMoreLink}</span>
+            </Link>
+          </div>
         </section>
 
         <section className="auth-card owner-register-card">
-          <span className="owner-kicker">
-            <span className="owner-kicker-dot" aria-hidden="true" />
-            {copy.account}
-          </span>
-          <h2>{copy.connect}</h2>
-          <p>{copy.intro}</p>
-
-          <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
-            <div className="owner-form-row">
-              <div className="field">
-                <label htmlFor="first_name">{copy.first}</label>
-                <input
-                  id="first_name"
-                  required
-                  autoComplete="given-name"
-                  value={form.first_name}
-                  onChange={(e) =>
-                    setForm((current) => ({
-                      ...current,
-                      first_name: e.target.value,
-                    }))
-                  }
-                />
+          {isOwnerSession ? (
+            <div className="owner-session-active">
+              <div className="owner-session-badge">
+                <BuildingIcon />
+                <span>
+                  {currentUser.role === "admin"
+                    ? copy.roleAdmin
+                    : copy.roleRestaurant}
+                </span>
               </div>
-              <div className="field">
-                <label htmlFor="last_name">{copy.last}</label>
-                <input
-                  id="last_name"
-                  required
-                  autoComplete="family-name"
-                  value={form.last_name}
-                  onChange={(e) =>
-                    setForm((current) => ({
-                      ...current,
-                      last_name: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="field">
-              <label htmlFor="email">{copy.email}</label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="owner@restaurant.md"
-                value={form.email}
-                onChange={(e) =>
-                  setForm((current) => ({ ...current, email: e.target.value }))
-                }
-              />
-            </div>
-            <div className="field password-field-wrap">
-              <label htmlFor="password">{copy.password}</label>
-              <div className="password-input-row">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  placeholder={copy.passwordHint}
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm((current) => ({
-                      ...current,
-                      password: e.target.value,
-                    }))
-                  }
-                />
+              <h2>{copy.alreadyLoggedInOwner}</h2>
+              <p className="owner-session-user">
+                {copy.signedInAs}{" "}
+                <strong>
+                  {currentUser.display_name ||
+                    (currentUser.first_name
+                      ? `${currentUser.first_name} ${currentUser.last_name || ""}`.trim()
+                      : currentUser.email)}
+                </strong>
+              </p>
+              <div className="owner-session-actions">
                 <button
                   type="button"
-                  className="btn-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  title={showPassword ? "Скрыть" : "Показать"}
-                  tabIndex={-1}
+                  className="btn btn-gold btn-block"
+                  onClick={() => router.replace("/cabinet")}
                 >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  <span>{copy.continueToCabinet}</span>
+                  <ArrowRightIcon />
+                </button>
+                <button
+                  type="button"
+                  className="btn-switch-account"
+                  onClick={() => {
+                    logout();
+                    setCurrentUser(null);
+                  }}
+                >
+                  {copy.switchAccount}
                 </button>
               </div>
-              {form.password.length > 0 && (
-                <div
-                  className={`password-strength-hint ${isPasswordValid ? "valid" : "invalid"}`}
-                >
-                  <span className="password-strength-dot" aria-hidden="true" />
-                  <span>
-                    {isPasswordValid
-                      ? `✓ ${copy.passwordHint}`
-                      : `${copy.passwordHint} (${form.password.length}/6)`}
-                  </span>
+            </div>
+          ) : (
+            <>
+              <span className="owner-kicker">
+                <span className="owner-kicker-dot" aria-hidden="true" />
+                {copy.account}
+              </span>
+              <h2>{copy.connect}</h2>
+              <p>{copy.intro}</p>
+
+              {/* Notice if signed in as guest */}
+              {currentUser && currentUser.role === "guest" && (
+                <div className="owner-guest-notice" role="status">
+                  <div className="owner-guest-notice-text">
+                    <UserIcon />
+                    <span>
+                      {copy.alreadyLoggedInGuest.replace(
+                        "{email}",
+                        currentUser.email,
+                      )}
+                      . {copy.guestWarning}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-switch-mini"
+                    onClick={() => {
+                      logout();
+                      setCurrentUser(null);
+                    }}
+                  >
+                    {copy.switchAccount}
+                  </button>
                 </div>
               )}
-            </div>
-            <p className="owner-form-legal">{copy.legal}</p>
-            {error && (
-              <div className="auth-error" role="alert">
-                <AlertIcon />
-                <span>{error}</span>
-              </div>
-            )}
-            <button
-              type="submit"
-              className="btn btn-gold btn-block"
-              disabled={busy}
-            >
-              <span>{busy ? copy.creating : copy.continue}</span>
-              {!busy && (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+
+              <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
+                <div className="owner-form-row">
+                  <div className="field">
+                    <label htmlFor="first_name">{copy.first}</label>
+                    <input
+                      id="first_name"
+                      required
+                      autoComplete="given-name"
+                      value={form.first_name}
+                      onChange={(e) => {
+                        setError(null);
+                        setForm((current) => ({
+                          ...current,
+                          first_name: e.target.value,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="last_name">{copy.last}</label>
+                    <input
+                      id="last_name"
+                      required
+                      autoComplete="family-name"
+                      value={form.last_name}
+                      onChange={(e) => {
+                        setError(null);
+                        setForm((current) => ({
+                          ...current,
+                          last_name: e.target.value,
+                        }));
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="email">{copy.email}</label>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="owner@restaurant.md"
+                    value={form.email}
+                    onChange={(e) => {
+                      setError(null);
+                      setForm((current) => ({
+                        ...current,
+                        email: e.target.value,
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="field password-field-wrap">
+                  <label htmlFor="password">{copy.password}</label>
+                  <div className="password-input-row">
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      placeholder={copy.passwordHint}
+                      value={form.password}
+                      onChange={(e) => {
+                        setError(null);
+                        setForm((current) => ({
+                          ...current,
+                          password: e.target.value,
+                        }));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      title={showPassword ? "Скрыть" : "Показать"}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </button>
+                  </div>
+                  {form.password.length > 0 && (
+                    <div
+                      className={`password-strength-hint ${isPasswordValid ? "valid" : "invalid"}`}
+                    >
+                      <span
+                        className="password-strength-dot"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        {isPasswordValid
+                          ? `✓ ${isPasswordStrong ? copy.passwordGood : copy.passwordHint}`
+                          : `${copy.passwordWeak} (${form.password.length}/6)`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <p className="owner-form-legal">{copy.legal}</p>
+                {error && (
+                  <div className="auth-error" role="alert">
+                    <AlertIcon />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  className="btn btn-gold btn-block"
+                  disabled={busy}
                 >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              )}
-            </button>
-          </form>
-          <p className="auth-links">
-            {copy.exists} <Link href="/login?role=restaurant">{copy.login}</Link>
-          </p>
+                  <span>{busy ? copy.creating : copy.continue}</span>
+                  {!busy && <ArrowRightIcon />}
+                </button>
+              </form>
+              <p className="auth-links">
+                {copy.exists} <Link href="/login">{copy.login}</Link>
+              </p>
+            </>
+          )}
         </section>
       </main>
       <SiteFooter />
