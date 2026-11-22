@@ -207,6 +207,13 @@ func (s *MemoryStore) ensureDemoUsersLocked() {
 		changed = true
 		log.Printf("seeded missing demo user %s (%s)", user.Email, user.Role)
 	}
+	for id, app := range demo.applications {
+		if _, exists := s.applications[id]; !exists {
+			s.applications[id] = app
+			changed = true
+			log.Printf("seeded missing demo application %s for owner %s", app.ID, app.OwnerUserID)
+		}
+	}
 	if changed {
 		s.persistBestEffortLocked()
 	}

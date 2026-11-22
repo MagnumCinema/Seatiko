@@ -57,6 +57,24 @@ function UserIcon() {
   );
 }
 
+function ShieldIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+
 function EyeIcon() {
   return (
     <svg
@@ -231,12 +249,15 @@ function LoginForm() {
     };
   }, []);
 
-  const handleQuickDemo = (type: "guest" | "restaurant") => {
+  const handleQuickDemo = (type: "guest" | "restaurant" | "admin") => {
     setError(null);
     setShowForgot(false);
     setSocialNotice(null);
     setIsRegisteringGuest(false);
-    if (type === "restaurant") {
+    if (type === "admin") {
+      setEmail("admin@seatiko.local");
+      setPassword("admin123");
+    } else if (type === "restaurant") {
       setEmail("owner@seatiko.local");
       setPassword("owner123");
     } else {
@@ -580,7 +601,7 @@ function LoginForm() {
           {!busy && <ArrowRightIcon />}
         </button>
 
-        {/* 1-Click Fast Demo Credentials (Guest & Restaurant) */}
+        {/* 1-Click Fast Demo Credentials (Guest, Restaurant & Admin) */}
         {!isRegisteringGuest && (
           <div className="login-demo-row">
             <button
@@ -601,6 +622,15 @@ function LoginForm() {
               <BuildingIcon />
               <span>{copy.demoVenueChip}</span>
             </button>
+            <button
+              type="button"
+              className="btn-demo-chip"
+              onClick={() => handleQuickDemo("admin")}
+              title="Заполнить демо-данные администратора"
+            >
+              <ShieldIcon />
+              <span>{copy.demoAdminChip || "Демо админа"}</span>
+            </button>
           </div>
         )}
       </form>
@@ -613,6 +643,9 @@ function LoginForm() {
           </span>
           <span>
             {copy.demoVenueChip}: <code>owner@seatiko.local</code> (owner123)
+          </span>
+          <span>
+            {copy.demoAdminChip || "Демо админа"}: <code>admin@seatiko.local</code> (admin123)
           </span>
         </div>
       )}

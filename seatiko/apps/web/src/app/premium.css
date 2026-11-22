@@ -9401,7 +9401,7 @@ html[data-theme="light"] .btn-view-toggle.active {
 /* Demo Fast-Fill Grid Row */
 .login-demo-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 10px;
 }
