@@ -1183,6 +1183,19 @@ export function GuestProfile({
         </div>
       )}
 
+      {user.role === "staff" && (
+        <div className="guest-owner-role-banner guest-role-banner-staff" role="note">
+          <div className="guest-role-banner-info">
+            <span className="guest-role-banner-tag">🛎️ {copy.roleStaff}</span>
+            <h4>{copy.staffNotice}</h4>
+            <p>{copy.staffHint}</p>
+          </div>
+          <Link href="/staff" className="btn btn-gold btn-sm guest-role-banner-btn">
+            {copy.goToStaff} →
+          </Link>
+        </div>
+      )}
+
       {user.role === "admin" && (
         <div className="guest-owner-role-banner guest-role-banner-admin" role="note">
           <div className="guest-role-banner-info">

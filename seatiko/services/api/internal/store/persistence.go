@@ -181,32 +181,60 @@ func (s *MemoryStore) dropLegacyPlacesPhotosLocked() bool {
 	return changed
 }
 
-// ensureDemoUsersLocked adds development demo accounts missing from older persisted state.
+// ensureDemoUsersLocked adds and verifies development demo accounts and applications.
 func (s *MemoryStore) ensureDemoUsersLocked() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	demo := NewMemory()
 	changed := false
-	for id, user := range demo.users {
-		if _, exists := s.users[id]; exists {
-			continue
-		}
-		// Also skip if same email already registered under another id.
-		emailTaken := false
-		for _, existing := range s.users {
-			if strings.EqualFold(existing.Email, user.Email) {
-				emailTaken = true
-				break
+	for id, demoUser := range demo.users {
+		existing, exists := s.users[id]
+		if !exists {
+			found := false
+			for eid, u := range s.users {
+				if strings.EqualFold(u.Email, demoUser.Email) {
+					u.PasswordHash = demoUser.PasswordHash
+					u.Role = demoUser.Role
+					s.users[eid] = u
+					changed = true
+					found = true
+					log.Printf("repaired demo user credentials for %s (%s)", u.Email, u.Role)
+					break
+				}
+			}
+			if !found {
+				s.users[id] = demoUser
+				changed = true
+				log.Printf("seeded missing demo user %s (%s)", demoUser.Email, demoUser.Role)
+			}
+		} else {
+			if existing.PasswordHash != demoUser.PasswordHash || existing.Role != demoUser.Role {
+				existing.PasswordHash = demoUser.PasswordHash
+				existing.Role = demoUser.Role
+				s.users[id] = existing
+				changed = true
+				log.Printf("synchronized demo user credentials for %s (%s)", existing.Email, existing.Role)
 			}
 		}
-		if emailTaken {
-			continue
-		}
-		s.users[id] = user
-		changed = true
-		log.Printf("seeded missing demo user %s (%s)", user.Email, user.Role)
 	}
+
+	for appID, app := range demo.applications {
+		if _, exists := s.applications[appID]; !exists {
+			s.applications[appID] = app
+			changed = true
+			log.Printf("seeded missing demo application %s for venue %v", appID, app.VenueID)
+		}
+	}
+
+	for staffID, member := range demo.staffMembers {
+		if _, exists := s.staffMembers[staffID]; !exists {
+			s.staffMembers[staffID] = member
+			changed = true
+			log.Printf("seeded missing demo staff member %s for venue %s", staffID, member.VenueID)
+		}
+	}
+
 	if changed {
 		s.persistBestEffortLocked()
 	}
