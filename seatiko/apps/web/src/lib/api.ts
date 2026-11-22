@@ -653,6 +653,7 @@ export async function updatePassword(input: {
 export function redirectPathForRole(role?: string | null): string {
   if (role === "admin") return "/admin";
   if (role === "restaurant") return "/cabinet";
+  if (role === "staff") return "/staff";
   if (role === "guest") return "/account";
   return "/";
 }
