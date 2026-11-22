@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { GuestProfile } from "@/components/guest-profile";
 import { useLocale } from "@/components/locale-provider";
+import { getSiteCopy } from "@/lib/site-copy";
 import {
   fetchMe,
   getToken,
@@ -16,7 +17,8 @@ import {
 
 export default function AccountPage() {
   const router = useRouter();
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const copy = getSiteCopy(locale).account;
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -54,9 +56,9 @@ export default function AccountPage() {
         password: "guest123",
       });
       setUser(res.user);
-      setToast("Вы успешно авторизованы как Demo Guest");
+      setToast(copy.demoToast);
     } catch {
-      router.push("/login?role=guest&next=/account");
+      router.push("/login?next=/account");
     }
   };
 
@@ -67,7 +69,7 @@ export default function AccountPage() {
         <main className="account-main">
           <div className="account-loading-box">
             <div className="account-spinner" />
-            <p className="account-loading">{t("common.loading")}</p>
+            <p className="account-loading">{copy.loading || t("common.loading")}</p>
           </div>
         </main>
         <SiteFooter />
@@ -94,7 +96,7 @@ export default function AccountPage() {
         )}
         <GuestProfile
           user={user}
-          onRequestSignIn={() => router.push("/login?role=guest&next=/account")}
+          onRequestSignIn={() => router.push("/login?next=/account")}
           onQuickDemoSignIn={handleQuickDemo}
           onUserUpdated={setUser}
           onLogout={() => {
