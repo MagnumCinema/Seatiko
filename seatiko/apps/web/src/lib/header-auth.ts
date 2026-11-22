@@ -1,6 +1,6 @@
 export type HeaderAuthLink = {
-  href: "/login" | "/account";
-  kind: "login" | "account";
+  href: "/login" | "/account" | "/cabinet" | "/staff" | "/admin";
+  kind: "login" | "account" | "cabinet" | "staff" | "admin";
 };
 
 /** Same-tab signal when `setToken` changes auth state. */
@@ -20,9 +20,19 @@ export function headerUserName(user: {
   return user.email?.split("@")[0]?.trim() ?? "";
 }
 
-/** Sign-in when logged out; profile when logged in (replaces the sign-in slot). */
-export function headerAuthLink(isAuthenticated: boolean): HeaderAuthLink {
-  return isAuthenticated
-    ? { href: "/account", kind: "account" }
-    : { href: "/login", kind: "login" };
+/** Sign-in when logged out; role-aware landing when logged in (replaces the sign-in slot). */
+export function headerAuthLink(
+  isAuthenticated: boolean,
+  role?: string | null,
+): HeaderAuthLink {
+  if (!isAuthenticated) {
+    return { href: "/login", kind: "login" };
+  }
+  if (role === "restaurant") {
+    return { href: "/cabinet", kind: "cabinet" };
+  }
+  if (role === "staff") {
+    return { href: "/staff", kind: "staff" };
+  }
+  return { href: "/account", kind: "account" };
 }

@@ -230,14 +230,21 @@ function LoginForm() {
     };
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get("role") === "restaurant") {
+      setEmail("owner@seatiko.local");
+      setPassword("owner123");
+    }
+  }, [searchParams]);
+
   const handleQuickDemo = (type: "guest" | "restaurant") => {
     setError(null);
     setShowForgot(false);
     setSocialNotice(null);
     setIsRegisteringGuest(false);
     if (type === "restaurant") {
-      setEmail("admin@seatiko.local");
-      setPassword("admin123");
+      setEmail("owner@seatiko.local");
+      setPassword("owner123");
     } else {
       setEmail("guest@seatiko.local");
       setPassword("guest123");
@@ -611,7 +618,7 @@ function LoginForm() {
             {copy.demoGuestChip}: <code>guest@seatiko.local</code> (guest123)
           </span>
           <span>
-            {copy.demoVenueChip}: <code>admin@seatiko.local</code> (admin123)
+            {copy.demoVenueChip}: <code>owner@seatiko.local</code> (owner123)
           </span>
         </div>
       )}

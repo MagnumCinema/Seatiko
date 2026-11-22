@@ -137,7 +137,7 @@ func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 
 	personIDs := map[string]string{}
 	for _, user := range s.store.ListAllUsers() {
-		if user.Role == models.RoleAdmin || store.IsDemoGuestID(user.ID) {
+		if user.Role == models.RoleAdmin || store.IsDemoUserID(user.ID) {
 			continue
 		}
 		id, err := s.syncUser(ctx, people, user)
@@ -150,6 +150,9 @@ func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 	companyIDs := map[string]string{}
 	applications := s.store.ListAllApplications("")
 	for _, application := range applications {
+		if store.IsDemoApplicationID(application.ID) {
+			continue
+		}
 		owner, err := s.store.GetUser(application.OwnerUserID)
 		if err != nil {
 			return fmt.Errorf("load owner for application %s: %w", application.ID, err)
@@ -177,6 +180,9 @@ func (s *Syncer) Reconcile(ctx context.Context) (err error) {
 	}
 	ownerCompanies := map[string]ownerCompany{}
 	for _, application := range applications {
+		if store.IsDemoApplicationID(application.ID) {
+			continue
+		}
 		current, exists := ownerCompanies[application.OwnerUserID]
 		published := application.Status == models.AppPublished
 		currentPublished := current.application.Status == models.AppPublished

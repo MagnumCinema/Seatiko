@@ -106,15 +106,18 @@ type Props = {
 };
 
 /** "account" = signed in, name not loaded yet (or API unreachable). */
-type HeaderUser = { kind: "guest" } | { kind: "account" } | { kind: "user"; name: string };
+type HeaderUser =
+  | { kind: "guest" }
+  | { kind: "account" }
+  | { kind: "user"; name: string; role?: string };
 
 /** Survives page navigations (each page mounts its own header), so the name doesn't flash. */
-let cachedUser: { token: string; name: string } | null = null;
+let cachedUser: { token: string; name: string; role?: string } | null = null;
 
 /** Only trusts the in-memory cache, so the first (SSR-hydrated) render is always "guest". */
 function cachedHeaderUser(): HeaderUser {
   if (!cachedUser || getToken() !== cachedUser.token) return { kind: "guest" };
-  return { kind: "user", name: cachedUser.name };
+  return { kind: "user", name: cachedUser.name, role: cachedUser.role };
 }
 
 function scrollToId(id: string) {
@@ -197,15 +200,15 @@ export function SiteHeader({ variant = "solid" }: Props) {
         return;
       }
       if (!refresh && cachedUser?.token === token) {
-        setHeaderUser({ kind: "user", name: cachedUser.name });
+        setHeaderUser({ kind: "user", name: cachedUser.name, role: cachedUser.role });
         return;
       }
       fetchMe()
         .then((user) => {
           if (!alive || getToken() !== token) return;
           const name = headerUserName(user);
-          cachedUser = name ? { token, name } : null;
-          setHeaderUser(name ? { kind: "user", name } : { kind: "account" });
+          cachedUser = name ? { token, name, role: user.role } : null;
+          setHeaderUser(name ? { kind: "user", name, role: user.role } : { kind: "account" });
         })
         .catch((error) => {
           if (!alive) return;
@@ -234,7 +237,8 @@ export function SiteHeader({ variant = "solid" }: Props) {
   }, [pathname]);
 
   const authed = headerUser.kind !== "guest";
-  const authLink = headerAuthLink(authed);
+  const userRole = headerUser.kind === "user" ? headerUser.role : undefined;
+  const authLink = headerAuthLink(authed, userRole);
   const authLabel =
     headerUser.kind === "user"
       ? headerUser.name
@@ -288,9 +292,19 @@ export function SiteHeader({ variant = "solid" }: Props) {
           >
             {copy.how}
           </Link>
-          <Link href="/business" className="site-nav-secondary">
-            {copy.business}
-          </Link>
+          {userRole === "restaurant" ? (
+            <Link href="/cabinet" className="site-nav-secondary">
+              {locale === "en"
+                ? "Venue Cabinet"
+                : locale === "ro"
+                ? "Cabinet Restaurant"
+                : "Кабинет ресторана"}
+            </Link>
+          ) : (
+            <Link href="/business" className="site-nav-secondary">
+              {copy.business}
+            </Link>
+          )}
           <div className="site-prefs" role="group">
             <PrefDropdown
               label={copy.language}
