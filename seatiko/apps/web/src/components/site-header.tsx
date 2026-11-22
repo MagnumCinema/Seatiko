@@ -300,6 +300,14 @@ export function SiteHeader({ variant = "solid" }: Props) {
                 ? "Cabinet Restaurant"
                 : "Кабинет ресторана"}
             </Link>
+          ) : userRole === "staff" ? (
+            <Link href="/staff" className="site-nav-secondary">
+              {locale === "en"
+                ? "Staff Panel"
+                : locale === "ro"
+                ? "Panou Personal"
+                : "Панель персонала"}
+            </Link>
           ) : (
             <Link href="/business" className="site-nav-secondary">
               {copy.business}

@@ -38,6 +38,90 @@ function BuildingIcon() {
   );
 }
 
+function BellIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      className="spin"
+      aria-hidden="true"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
+}
+
+const PRESET_ACCOUNTS = {
+  guest: {
+    email: "guest@seatiko.local",
+    password: "guest123",
+    role: "guest",
+    target: "/account",
+  },
+  restaurant: {
+    email: "owner@seatiko.local",
+    password: "owner123",
+    role: "restaurant",
+    target: "/cabinet",
+  },
+  staff: {
+    email: "staff@seatiko.local",
+    password: "staff123",
+    role: "staff",
+    target: "/staff",
+  },
+  admin: {
+    email: "admin@seatiko.local",
+    password: "admin123",
+    role: "admin",
+    target: "/admin",
+  },
+} as const;
+
+type PresetKey = keyof typeof PRESET_ACCOUNTS;
+
 function UserIcon() {
   return (
     <svg
@@ -195,6 +279,63 @@ function TelegramIcon() {
   );
 }
 
+function DemoPresetsRow({
+  copy,
+  busy,
+  busyPreset,
+  onSelect,
+}: {
+  copy: ReturnType<typeof getSiteCopy>["login"];
+  busy: boolean;
+  busyPreset: PresetKey | null;
+  onSelect: (key: PresetKey) => void;
+}) {
+  return (
+    <div className="login-demo-row">
+      <button
+        type="button"
+        className={`btn-demo-chip ${busyPreset === "guest" ? "loading" : ""}`}
+        disabled={busy || busyPreset !== null}
+        onClick={() => onSelect("guest")}
+        title="Войти как гость: guest@seatiko.local"
+      >
+        {busyPreset === "guest" ? <SpinnerIcon /> : <UserIcon />}
+        <span>{copy.demoGuestChip}</span>
+      </button>
+      <button
+        type="button"
+        className={`btn-demo-chip ${busyPreset === "restaurant" ? "loading" : ""}`}
+        disabled={busy || busyPreset !== null}
+        onClick={() => onSelect("restaurant")}
+        title="Войти как владелец: owner@seatiko.local"
+      >
+        {busyPreset === "restaurant" ? <SpinnerIcon /> : <BuildingIcon />}
+        <span>{copy.demoVenueChip}</span>
+      </button>
+      <button
+        type="button"
+        className={`btn-demo-chip ${busyPreset === "staff" ? "loading" : ""}`}
+        disabled={busy || busyPreset !== null}
+        onClick={() => onSelect("staff")}
+        title="Войти как персонал: staff@seatiko.local"
+      >
+        {busyPreset === "staff" ? <SpinnerIcon /> : <BellIcon />}
+        <span>{copy.demoStaffChip}</span>
+      </button>
+      <button
+        type="button"
+        className={`btn-demo-chip ${busyPreset === "admin" ? "loading" : ""}`}
+        disabled={busy || busyPreset !== null}
+        onClick={() => onSelect("admin")}
+        title="Войти как админ: admin@seatiko.local"
+      >
+        {busyPreset === "admin" ? <SpinnerIcon /> : <ShieldIcon />}
+        <span>{copy.demoAdminChip}</span>
+      </button>
+    </div>
+  );
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -202,13 +343,25 @@ function LoginForm() {
   const copy = getSiteCopy(locale).login;
 
   const [isRegisteringGuest, setIsRegisteringGuest] = useState(false);
-  const isRestaurantRole = searchParams.get("role") === "restaurant";
-  const [email, setEmail] = useState(() => (isRestaurantRole ? "owner@seatiko.local" : ""));
-  const [password, setPassword] = useState(() => (isRestaurantRole ? "owner123" : ""));
+  const roleParam = searchParams.get("role");
+  const initialPreset =
+    roleParam === "restaurant"
+      ? PRESET_ACCOUNTS.restaurant
+      : roleParam === "admin"
+      ? PRESET_ACCOUNTS.admin
+      : roleParam === "staff"
+      ? PRESET_ACCOUNTS.staff
+      : roleParam === "guest"
+      ? PRESET_ACCOUNTS.guest
+      : null;
+
+  const [email, setEmail] = useState(() => initialPreset?.email ?? "");
+  const [password, setPassword] = useState(() => initialPreset?.password ?? "");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [busyPreset, setBusyPreset] = useState<PresetKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [socialNotice, setSocialNotice] = useState<string | null>(null);
   const [showForgot, setShowForgot] = useState(false);
@@ -231,17 +384,38 @@ function LoginForm() {
     };
   }, []);
 
-  const handleQuickDemo = (type: "guest" | "restaurant") => {
+  const handleQuickDemo = async (type: PresetKey) => {
     setError(null);
     setShowForgot(false);
     setSocialNotice(null);
     setIsRegisteringGuest(false);
-    if (type === "restaurant") {
-      setEmail("owner@seatiko.local");
-      setPassword("owner123");
-    } else {
-      setEmail("guest@seatiko.local");
-      setPassword("guest123");
+
+    const preset = PRESET_ACCOUNTS[type];
+    setEmail(preset.email);
+    setPassword(preset.password);
+    setBusyPreset(type);
+
+    try {
+      logout();
+      const res = await login({ email: preset.email, password: preset.password });
+      const next = searchParams.get("next");
+      const fallback = redirectPathForRole(res.user.role);
+      const target =
+        next && next.startsWith("/") && !next.startsWith("//")
+          ? next
+          : fallback;
+      router.replace(target);
+    } catch (err) {
+      setBusyPreset(null);
+      setError(
+        err instanceof ApiError
+          ? err.code === "invalid_credentials"
+            ? copy.invalid
+            : err.code === "email_taken"
+            ? copy.failed
+            : err.code
+          : copy.failed,
+      );
     }
   };
 
@@ -359,6 +533,16 @@ function LoginForm() {
             >
               {copy.signOutOrSwitch}
             </button>
+          </div>
+
+          <div className="login-quick-switch-section">
+            <span className="login-quick-switch-title">{copy.quickSwitchTitle}</span>
+            <DemoPresetsRow
+              copy={copy}
+              busy={busy}
+              busyPreset={busyPreset}
+              onSelect={(k) => void handleQuickDemo(k)}
+            />
           </div>
         </div>
       </div>
@@ -580,28 +764,14 @@ function LoginForm() {
           {!busy && <ArrowRightIcon />}
         </button>
 
-        {/* 1-Click Fast Demo Credentials (Guest & Restaurant) */}
+        {/* 1-Click Fast Demo Credentials (4 Roles) */}
         {!isRegisteringGuest && (
-          <div className="login-demo-row">
-            <button
-              type="button"
-              className="btn-demo-chip"
-              onClick={() => handleQuickDemo("guest")}
-              title="Заполнить демо-данные гостя"
-            >
-              <UserIcon />
-              <span>{copy.demoGuestChip}</span>
-            </button>
-            <button
-              type="button"
-              className="btn-demo-chip"
-              onClick={() => handleQuickDemo("restaurant")}
-              title="Заполнить демо-данные заведения"
-            >
-              <BuildingIcon />
-              <span>{copy.demoVenueChip}</span>
-            </button>
-          </div>
+          <DemoPresetsRow
+            copy={copy}
+            busy={busy}
+            busyPreset={busyPreset}
+            onSelect={(k) => void handleQuickDemo(k)}
+          />
         )}
       </form>
 
@@ -613,6 +783,12 @@ function LoginForm() {
           </span>
           <span>
             {copy.demoVenueChip}: <code>owner@seatiko.local</code> (owner123)
+          </span>
+          <span>
+            {copy.demoStaffChip}: <code>staff@seatiko.local</code> (staff123)
+          </span>
+          <span>
+            {copy.demoAdminChip}: <code>admin@seatiko.local</code> (admin123)
           </span>
         </div>
       )}

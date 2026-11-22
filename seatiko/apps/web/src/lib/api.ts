@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 export const TOKEN_KEY = "fa_token";
 
 export type LocaleCode = "ru" | "en" | "ro";
-export type UserRole = "guest" | "restaurant" | "admin";
+export type UserRole = "guest" | "restaurant" | "staff" | "admin";
 
 export type ApplicationStatus =
   | "DRAFT"

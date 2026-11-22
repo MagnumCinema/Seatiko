@@ -41,6 +41,8 @@ const (
 	demoCalendarGuestID = "user-guest-calendar"
 	demoOwnerID         = "user-demo-owner"
 	demoOwnerAppID      = "app-demo-owner"
+	demoStaffID         = "user-demo-staff"
+	demoStaffMemberID   = "staff-demo-1"
 )
 
 func IsDemoGuestID(id string) bool {
@@ -48,7 +50,7 @@ func IsDemoGuestID(id string) bool {
 }
 
 func IsDemoUserID(id string) bool {
-	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID
+	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID || id == demoStaffID
 }
 
 func IsDemoApplicationID(id string) bool {
@@ -562,6 +564,34 @@ func (s *MemoryStore) seed() {
 			Status:       models.AppPublished,
 			CreatedAt:    time.Now().UTC(),
 			UpdatedAt:    time.Now().UTC(),
+		}
+	}
+
+	staffHash, err := bcrypt.GenerateFromPassword([]byte("staff123"), bcrypt.DefaultCost)
+	if err == nil {
+		staff := models.User{
+			ID:           demoStaffID,
+			Email:        "staff@seatiko.local",
+			PasswordHash: string(staffHash),
+			FirstName:    "Анна",
+			LastName:     "Официант",
+			DisplayName:  "Анна (Персонал)",
+			Phone:        "+373 68 555 444",
+			Locale:       "ru",
+			Role:         models.RoleStaff,
+			CreatedAt:    time.Now().UTC(),
+			UpdatedAt:    time.Now().UTC(),
+		}
+		s.users[staff.ID] = staff
+
+		s.staffMembers[demoStaffMemberID] = models.StaffMember{
+			ID:        demoStaffMemberID,
+			VenueID:   "venue-1",
+			UserID:    staff.ID,
+			Email:     staff.Email,
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			CreatedAt: time.Now().UTC(),
 		}
 	}
 }
