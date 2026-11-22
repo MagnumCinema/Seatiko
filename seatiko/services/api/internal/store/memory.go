@@ -39,10 +39,20 @@ type OrderItemInput struct {
 const (
 	demoGuestID         = "user-guest-demo"
 	demoCalendarGuestID = "user-guest-calendar"
+	demoOwnerID         = "user-demo-owner"
+	demoOwnerAppID      = "app-demo-owner"
 )
 
 func IsDemoGuestID(id string) bool {
 	return id == demoGuestID || id == demoCalendarGuestID
+}
+
+func IsDemoUserID(id string) bool {
+	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID
+}
+
+func IsDemoApplicationID(id string) bool {
+	return id == demoOwnerAppID
 }
 
 type UserProfileUpdate struct {
@@ -508,6 +518,51 @@ func (s *MemoryStore) seed() {
 			UpdatedAt:    time.Now().UTC(),
 		}
 		s.users[guestCal.ID] = guestCal
+	}
+
+	ownerHash, err := bcrypt.GenerateFromPassword([]byte("owner123"), bcrypt.DefaultCost)
+	if err == nil {
+		demoOwnerID := "user-demo-owner"
+		owner := models.User{
+			ID:           demoOwnerID,
+			Email:        "owner@seatiko.local",
+			PasswordHash: string(ownerHash),
+			FirstName:    "Дмитрий",
+			LastName:     "Владелец",
+			DisplayName:  "Дмитрий (Владелец)",
+			Phone:        "+373 69 987 654",
+			Locale:       "ru",
+			Role:         models.RoleRestaurant,
+			CreatedAt:    time.Now().UTC(),
+			UpdatedAt:    time.Now().UTC(),
+		}
+		s.users[owner.ID] = owner
+
+		venueID := "venue-1"
+		v1 := s.venues[venueID]
+		appID := "app-demo-owner"
+		s.applications[appID] = models.VenueApplication{
+			ID:           appID,
+			OwnerUserID:  owner.ID,
+			VenueID:      &venueID,
+			CityID:       v1.CityID,
+			Name:         v1.Name,
+			Description:  v1.Description,
+			Address:      v1.Address,
+			Cuisine:      v1.Cuisine,
+			Phone:        v1.Phone,
+			HoursText:    "Пн-Вс 10:00 - 23:00",
+			Email:        owner.Email,
+			Website:      v1.Website,
+			Lat:          v1.Lat,
+			Lng:          v1.Lng,
+			PriceLevel:   v1.PriceLevel,
+			AverageCheck: v1.AverageCheck,
+			PhotoURLs:    v1.PhotoURLs,
+			Status:       models.AppPublished,
+			CreatedAt:    time.Now().UTC(),
+			UpdatedAt:    time.Now().UTC(),
+		}
 	}
 }
 

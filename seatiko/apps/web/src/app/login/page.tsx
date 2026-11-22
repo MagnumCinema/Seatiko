@@ -202,8 +202,9 @@ function LoginForm() {
   const copy = getSiteCopy(locale).login;
 
   const [isRegisteringGuest, setIsRegisteringGuest] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const isRestaurantRole = searchParams.get("role") === "restaurant";
+  const [email, setEmail] = useState(() => (isRestaurantRole ? "owner@seatiko.local" : ""));
+  const [password, setPassword] = useState(() => (isRestaurantRole ? "owner123" : ""));
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -236,8 +237,8 @@ function LoginForm() {
     setSocialNotice(null);
     setIsRegisteringGuest(false);
     if (type === "restaurant") {
-      setEmail("admin@seatiko.local");
-      setPassword("admin123");
+      setEmail("owner@seatiko.local");
+      setPassword("owner123");
     } else {
       setEmail("guest@seatiko.local");
       setPassword("guest123");
@@ -611,7 +612,7 @@ function LoginForm() {
             {copy.demoGuestChip}: <code>guest@seatiko.local</code> (guest123)
           </span>
           <span>
-            {copy.demoVenueChip}: <code>admin@seatiko.local</code> (admin123)
+            {copy.demoVenueChip}: <code>owner@seatiko.local</code> (owner123)
           </span>
         </div>
       )}

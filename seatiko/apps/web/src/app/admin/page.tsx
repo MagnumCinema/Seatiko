@@ -47,17 +47,17 @@ type Section =
   | "crm";
 
 const NAV_WORKSPACE: { id: Section; label: string; hint: string }[] = [
-  { id: "overview", label: "Обзор", hint: "Сводка платформы и CRM" },
-  { id: "moderation", label: "Модерация", hint: "Заявки ресторанов" },
-  { id: "orders", label: "Оплаты", hint: "Заказы и выручка" },
-  { id: "changes", label: "Изменения", hint: "Правки после публикации" },
-  { id: "crm", label: "CRM sync", hint: "Связь с Twenty" },
+  { id: "overview", label: "Обзор", hint: "Сводка показателей платформы" },
+  { id: "moderation", label: "Модерация", hint: "Заявки на публикацию ресторанов" },
+  { id: "orders", label: "Оплаты", hint: "Заказы и платежи платформы" },
+  { id: "changes", label: "Изменения", hint: "Правки данных после публикации" },
+  { id: "crm", label: "CRM интеграция", hint: "Синхронизация с Twenty CRM" },
 ];
 
 const NAV_OBJECTS: { id: Section; label: string; hint: string }[] = [
-  { id: "people", label: "People", hint: "Гости, владельцы, staff" },
-  { id: "companies", label: "Companies", hint: "Рестораны в CRM" },
-  { id: "reservations", label: "Reservations", hint: "Бронирования" },
+  { id: "companies", label: "Рестораны", hint: "Заведения на платформе" },
+  { id: "people", label: "Пользователи", hint: "Гости, владельцы, персонал" },
+  { id: "reservations", label: "Бронирования", hint: "Все бронирования заведений" },
 ];
 
 const ALL_NAV = [...NAV_WORKSPACE, ...NAV_OBJECTS];
@@ -97,15 +97,19 @@ export default function AdminPage() {
 
   const boot = useCallback(async () => {
     if (!getToken()) {
-      router.replace("/login");
+      router.replace("/login?next=/admin");
       return;
     }
-    const me = await fetchMe();
-    if (me.role !== "admin") {
-      router.replace("/");
-      return;
+    try {
+      const me = await fetchMe();
+      if (me.role !== "admin") {
+        router.replace("/");
+        return;
+      }
+      setUser(me);
+    } catch {
+      router.replace("/login?next=/admin");
     }
-    setUser(me);
   }, [router]);
 
   function crmStatusLabel(status: AdminCRMStatus | null) {
@@ -286,7 +290,7 @@ export default function AdminPage() {
           </div>
 
           <div className="admin-nav-group">
-            <p className="admin-nav-label">CRM объекты</p>
+            <p className="admin-nav-label">Данные платформы</p>
             <nav>
               {NAV_OBJECTS.map((item) => (
                 <button
@@ -303,7 +307,7 @@ export default function AdminPage() {
 
           <div className="admin-rail-foot">
             <a href={crm?.crm_url || "/crm"} target="_blank" rel="noreferrer">
-              Открыть Twenty CRM ↗
+              Внешняя Twenty CRM ↗
             </a>
             <a href="/api/docs" target="_blank" rel="noreferrer">Swagger API ↗</a>
             <span className="admin-user">{user.email}</span>
@@ -323,7 +327,7 @@ export default function AdminPage() {
         <div className="admin-content">
           <header className="admin-page-header">
             <div>
-              <p className="admin-page-kicker">Консоль оператора</p>
+              <p className="admin-page-kicker">Панель администратора Seatiko</p>
               <h1>{current?.label}</h1>
               <p className="admin-page-desc">{current?.hint}</p>
             </div>
@@ -402,7 +406,7 @@ export default function AdminPage() {
                 </div>
                 <div className="admin-crm-card">
                   <div>
-                    <h2>Twenty CRM</h2>
+                    <h2>Интеграция с Twenty CRM</h2>
                     <p className="muted">
                       Статус:{" "}
                       <b className={crm?.healthy ? "good" : "bad"}>
@@ -584,7 +588,7 @@ export default function AdminPage() {
             {section === "companies" && (
               <div className="admin-table-wrap">
                 <p className="admin-sync-note">
-                  Зеркало CRM · <b>Companies</b>
+                  Рестораны платформы · <b>Заведения</b>
                 </p>
                 <table className="admin-table">
                   <thead>
@@ -626,7 +630,7 @@ export default function AdminPage() {
             {section === "people" && (
               <div className="admin-table-wrap">
                 <p className="admin-sync-note">
-                  Зеркало CRM · <b>People</b>
+                  Пользователи платформы · <b>Учётные записи</b>
                 </p>
                 <table className="admin-table">
                   <thead>
@@ -663,7 +667,7 @@ export default function AdminPage() {
             {section === "reservations" && (
               <div className="admin-table-wrap">
                 <p className="admin-sync-note">
-                  Зеркало CRM · <b>Reservations</b>
+                  Бронирования платформы · <b>Все заведения</b>
                 </p>
                 <table className="admin-table">
                   <thead>
