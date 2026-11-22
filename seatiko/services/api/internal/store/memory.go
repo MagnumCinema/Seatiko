@@ -418,16 +418,22 @@ func (s *MemoryStore) seed() {
 
 	demoInqID := "inq-guest-demo"
 	s.eventInquiries[demoInqID] = models.EventInquiry{
-		ID:        demoInqID,
-		UserID:    demoGuestID,
-		VenueID:   "venue-1",
-		Guests:    14,
-		Date:      now.Add(5 * 24 * time.Hour).Format("2006-01-02"),
-		TimeSlot:  "18:00",
-		EventType: "Празднование дня рождения",
-		Notes:     "Отдельная зона на террасе, банкетное меню и индивидуальная подача",
-		Status:    "PENDING",
-		CreatedAt: now.Add(-6 * time.Hour).UTC(),
+		ID:            demoInqID,
+		UserID:        demoGuestID,
+		VenueID:       "venue-1",
+		VenueName:     models.LocalizedString{RU: "Beermaster Pub", EN: "Beermaster Pub", RO: "Beermaster Pub"},
+		EventType:     "birthday",
+		GuestCount:    14,
+		PreferredDate: now.Add(5 * 24 * time.Hour).UTC(),
+		ContactMethod: "chat",
+		ContactPhone:  "+373 68 123 456",
+		ContactName:   "Александр Смирнов",
+		Notes:         "Отдельная зона на террасе, банкетное меню и индивидуальная подача",
+		Status:        "PENDING",
+		AdminPhone:    "+373 (231) 2-44-11",
+		AdminTelegram: "@seatiko_admin",
+		CreatedAt:     now.Add(-6 * time.Hour).UTC(),
+		UpdatedAt:     now.Add(-6 * time.Hour).UTC(),
 	}
 
 	for _, m := range demoMenu() {
