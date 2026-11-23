@@ -28,6 +28,7 @@ import {
   uploadApplicationPhoto,
   type ApplicationActivity,
   type ApplicationUpdate,
+  type LocaleCode,
   type MapConfig,
   type MapCoordinates,
   type RestaurantReservation,
@@ -36,7 +37,7 @@ import {
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 
-type Section = "overview" | "profile" | "reservations" | "activity" | "ops";
+type Section = "overview" | "profile" | "ops" | "reservations" | "activity";
 type ReservationFilter = "upcoming" | "history" | "all";
 
 const DRAFT_STORAGE_PREFIX = "seatiko:restaurant-draft:";
@@ -59,57 +60,83 @@ type Draft = {
   average_check: string;
 };
 
-const navigation: { id: Section; label: string; icon: string }[] = [
-  { id: "overview", label: "Обзор", icon: "⌂" },
-  { id: "profile", label: "Профиль заведения", icon: "◇" },
-  { id: "ops", label: "Зал / меню / QR", icon: "▣" },
-  { id: "reservations", label: "Бронирования", icon: "▦" },
-  { id: "activity", label: "История действий", icon: "↺" },
-];
+/* Modern SVG Icons for crisp, accessible UI */
+function OverviewIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="7" height="9" x="3" y="3" rx="1.5" />
+      <rect width="7" height="5" x="14" y="3" rx="1.5" />
+      <rect width="7" height="9" x="14" y="12" rx="1.5" />
+      <rect width="7" height="5" x="3" y="16" rx="1.5" />
+    </svg>
+  );
+}
 
-const activityLabels: Record<string, string> = {
-  APPLICATION_CREATED: "Создан черновик ресторана",
-  PROFILE_UPDATED: "Обновлены данные ресторана",
-  PHOTO_ADDED: "Добавлена фотография",
-  PHOTO_REMOVED: "Удалена фотография",
-  APPLICATION_SUBMITTED: "Заявка отправлена на модерацию",
-  REVIEW_STARTED: "Модератор начал проверку",
-  APPLICATION_APPROVED: "Заявка одобрена",
-  APPLICATION_REJECTED: "Заявка возвращена на доработку",
-  APPLICATION_PUBLISHED: "Ресторан опубликован на карте",
-};
+function ProfileIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
 
-const fieldLabels: Record<string, string> = {
-  name: "название",
-  description: "описание",
-  address: "адрес",
-  cuisine: "кухня",
-  phone: "телефон",
-  email: "email",
-  website: "сайт ресторана",
-  city: "город",
-  latitude: "широта",
-  longitude: "долгота",
-  price_level: "ценовой уровень",
-  average_check: "средний чек",
-  hours: "часы работы",
-  photos: "фотографии",
-};
+function OpsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="8" height="8" x="3" y="3" rx="2" />
+      <path d="M7 11v4a2 2 0 0 0 2 2h4" />
+      <rect width="8" height="8" x="13" y="13" rx="2" />
+    </svg>
+  );
+}
 
-const reservationLabels: Record<string, string> = {
-  CONFIRMED: "Подтверждена",
-  CHECKED_IN: "Гость пришёл",
-  CANCELLED: "Отменена",
-  NO_SHOW: "Неявка",
-};
+function ReservationsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="18" height="18" x="3" y="4" rx="2" />
+      <line x1="16" x2="16" y1="2" y2="6" />
+      <line x1="8" x2="8" y1="2" y2="6" />
+      <line x1="3" x2="21" y1="10" y2="10" />
+      <path d="m9 16 2 2 4-4" />
+    </svg>
+  );
+}
+
+function ActivityIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M12 7v5l4 2" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
 
 const cabinetReferenceTime = Date.now();
 
-function toDraft(app: VenueApplication): Draft {
+function toDraft(app: VenueApplication, locale: LocaleCode): Draft {
   return {
-    name: pickLocale(app.name, "ru") || "",
-    description: pickLocale(app.description, "ru") || "",
-    address: pickLocale(app.address, "ru") || "",
+    name: pickLocale(app.name, locale) || pickLocale(app.name, "ru") || "",
+    description: pickLocale(app.description, locale) || pickLocale(app.description, "ru") || "",
+    address: pickLocale(app.address, locale) || pickLocale(app.address, "ru") || "",
     city_id: app.city_id,
     cuisine: (app.cuisine || []).join(", "),
     phone: app.phone || "",
@@ -320,7 +347,6 @@ function OpenLocationPicker({
       mapRef.current = null;
       map.remove();
     };
-    // Recreate only when the profile becomes editable/read-only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disabled, center]);
 
@@ -348,56 +374,58 @@ function editable(status: string) {
   return status === "DRAFT" || status === "REJECTED";
 }
 
-function setupChecks(app: VenueApplication, draft?: Draft | null) {
+function getSetupChecks(
+  app: VenueApplication,
+  draft: Draft | null,
+  copy: ReturnType<typeof getSiteCopy>["cabinet"],
+  locale: LocaleCode,
+) {
   return [
     {
-      label: "Название и описание",
+      label: copy.checkNameDesc,
       done: Boolean(
-        (draft?.name ?? pickLocale(app.name, "ru")) &&
-          (draft?.description ?? pickLocale(app.description, "ru")),
+        (draft?.name ?? pickLocale(app.name, locale)) &&
+          (draft?.description ?? pickLocale(app.description, locale)),
       ),
     },
-    { label: "Адрес", done: Boolean(draft?.address ?? pickLocale(app.address, "ru")) },
+    { label: copy.checkAddress, done: Boolean(draft?.address ?? pickLocale(app.address, locale)) },
     {
-      label: "Точка на карте",
+      label: copy.checkMapPoint,
       done: Boolean(
         draft ? Number(draft.lat) && Number(draft.lng) : app.lat && app.lng,
       ),
     },
     {
-      label: "Кухня",
+      label: copy.checkCuisine,
       done: Boolean(draft ? draft.cuisine.trim() : app.cuisine?.length),
     },
     {
-      label: "Контакты",
+      label: copy.checkContacts,
       done: Boolean(draft ? draft.phone.trim() && draft.email.trim() : app.phone && app.email),
     },
-    { label: "Часы работы", done: Boolean(draft?.hours_text ?? app.hours_text) },
-    { label: "Фотографии", done: Boolean(app.photo_urls?.length) },
+    { label: copy.checkHours, done: Boolean(draft?.hours_text ?? app.hours_text) },
+    { label: copy.checkPhotos, done: Boolean(app.photo_urls?.length) },
   ];
 }
 
-function statusHint(status: string) {
-  if (status === "PUBLISHED") return "Заведение видно гостям и принимает брони.";
-  if (status === "APPROVED") return "Проверка завершена. Платформа готовит публикацию.";
-  if (status === "UNDER_REVIEW") return "Модератор проверяет данные. Обычно это занимает 1–3 дня.";
-  if (status === "SUBMITTED") return "Заявка получена и ожидает начала проверки.";
-  if (status === "REJECTED") return "Исправьте замечание и отправьте заявку повторно.";
-  return "Заполните обязательные данные и отправьте профиль на модерацию.";
+function getStatusHint(status: string, copy: ReturnType<typeof getSiteCopy>["cabinet"]) {
+  if (status === "PUBLISHED") return copy.statusHintPublished;
+  if (status === "APPROVED") return copy.statusHintApproved;
+  if (status === "UNDER_REVIEW") return copy.statusHintUnderReview;
+  if (status === "SUBMITTED") return copy.statusHintSubmitted;
+  if (status === "REJECTED") return copy.statusHintRejected;
+  return copy.statusHintDraft;
 }
 
-function editLockHint(status: string) {
-  if (status === "PUBLISHED") {
-    return "Профиль опубликован. Изменение данных работающего ресторана будет оформляться отдельной заявкой.";
-  }
-  if (status === "APPROVED") {
-    return "Профиль одобрен и ожидает публикации платформой.";
-  }
-  return "Редактирование временно закрыто, пока заявка проходит проверку.";
+function getEditLockHint(status: string, copy: ReturnType<typeof getSiteCopy>["cabinet"]) {
+  if (status === "PUBLISHED") return copy.lockHintPublished;
+  if (status === "APPROVED") return copy.lockHintApproved;
+  return copy.lockHintReview;
 }
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
+function formatDateTime(value: string, locale: string) {
+  const loc = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
+  return new Intl.DateTimeFormat(loc, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -416,11 +444,13 @@ export default function CabinetPage() {
   const cabinetCopy = getSiteCopy(locale).cabinet;
   const [user, setUser] = useState<User | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
+
   useEffect(() => {
     let active = true;
     fetchMapConfig().then((config) => { if (active) setMapConfig(config); }).catch(() => {});
     return () => { active = false; };
   }, []);
+
   const locations = mapConfig?.cities.filter((city) => city.country === "MD") ?? [];
   const [apps, setApps] = useState<VenueApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -437,6 +467,62 @@ export default function CabinetPage() {
   const draftApplicationRef = useRef<string | null>(null);
 
   const selected = apps.find((app) => app.id === selectedId) ?? null;
+
+  const navigation: { id: Section; label: string; icon: React.ReactNode }[] = useMemo(
+    () => [
+      { id: "overview", label: cabinetCopy.overview, icon: <OverviewIcon /> },
+      { id: "profile", label: cabinetCopy.profile, icon: <ProfileIcon /> },
+      { id: "ops", label: cabinetCopy.ops, icon: <OpsIcon /> },
+      { id: "reservations", label: cabinetCopy.reservations, icon: <ReservationsIcon /> },
+      { id: "activity", label: cabinetCopy.activity, icon: <ActivityIcon /> },
+    ],
+    [cabinetCopy],
+  );
+
+  const activityLabels: Record<string, string> = useMemo(
+    () => ({
+      APPLICATION_CREATED: cabinetCopy.actCreated,
+      PROFILE_UPDATED: cabinetCopy.actUpdated,
+      PHOTO_ADDED: cabinetCopy.actPhotoAdded,
+      PHOTO_REMOVED: cabinetCopy.actPhotoRemoved,
+      APPLICATION_SUBMITTED: cabinetCopy.actSubmitted,
+      REVIEW_STARTED: cabinetCopy.actReviewStarted,
+      APPLICATION_APPROVED: cabinetCopy.actApproved,
+      APPLICATION_REJECTED: cabinetCopy.actRejected,
+      APPLICATION_PUBLISHED: cabinetCopy.actPublished,
+    }),
+    [cabinetCopy],
+  );
+
+  const fieldLabels: Record<string, string> = useMemo(
+    () => ({
+      name: cabinetCopy.name.replace(" *", ""),
+      description: cabinetCopy.description.replace(" *", ""),
+      address: cabinetCopy.address.replace(" *", ""),
+      cuisine: cabinetCopy.cuisine.replace(" *", ""),
+      phone: cabinetCopy.phone.replace(" *", ""),
+      email: cabinetCopy.email.replace(" *", ""),
+      website: cabinetCopy.website,
+      city: locale === "ro" ? "oraș" : locale === "en" ? "city" : "город",
+      latitude: cabinetCopy.latitude.replace(" *", ""),
+      longitude: cabinetCopy.longitude.replace(" *", ""),
+      price_level: cabinetCopy.price,
+      average_check: cabinetCopy.average,
+      hours: cabinetCopy.hours.replace(" *", ""),
+      photos: cabinetCopy.photos,
+    }),
+    [cabinetCopy, locale],
+  );
+
+  const reservationLabels: Record<string, string> = useMemo(
+    () => ({
+      CONFIRMED: cabinetCopy.resConfirmed,
+      CHECKED_IN: cabinetCopy.resCheckedIn,
+      CANCELLED: cabinetCopy.resCancelled,
+      NO_SHOW: cabinetCopy.resNoShow,
+    }),
+    [cabinetCopy],
+  );
 
   const load = useCallback(async () => {
     if (!getToken()) {
@@ -487,14 +573,14 @@ export default function CabinetPage() {
       if (draftApplicationRef.current !== nextId) {
         draftApplicationRef.current = nextId;
         setDraft(
-          selected ? storedDraft(selected.id, selected.city_id) ?? toDraft(selected) : null,
+          selected ? storedDraft(selected.id, selected.city_id) ?? toDraft(selected, locale) : null,
         );
       }
       if (selected) void refreshActivity(selected.id);
       else setActivity([]);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [selected, refreshActivity]);
+  }, [selected, locale, refreshActivity]);
 
   useEffect(() => {
     if (!selectedId || !draft || draftApplicationRef.current !== selectedId) {
@@ -531,19 +617,25 @@ export default function CabinetPage() {
   function showApiError(value: unknown, fallback: string) {
     if (value instanceof ApiError && value.code === "incomplete") {
       const missing = selected
-        ? setupChecks(selected, draft)
+        ? getSetupChecks(selected, draft, cabinetCopy, locale)
             .filter((check) => !check.done)
             .map((check) => check.label.toLowerCase())
         : [];
       setError(
         missing.length
-          ? `Осталось заполнить: ${missing.join(", ")}.`
-          : "Проверьте обязательные данные перед отправкой.",
+          ? `${locale === "ru" ? "Осталось заполнить: " : locale === "ro" ? "Rămâne de completat: " : "Missing fields: "}${missing.join(", ")}.`
+          : locale === "ru" ? "Проверьте обязательные данные перед отправкой." : locale === "ro" ? "Verificați datele obligatorii înainte de trimitere." : "Please check required fields before submitting.",
       );
       return;
     }
     if (value instanceof ApiError && value.code === "invalid_fields") {
-      setError("Проверьте email, сайт, координаты, ценовой уровень и средний чек.");
+      setError(
+        locale === "ru"
+          ? "Проверьте email, сайт, координаты, ценовой уровень и средний чек."
+          : locale === "ro"
+          ? "Verificați emailul, site-ul, coordonatele, nivelul de preț și bonul mediu."
+          : "Please check email, website, coordinates, price tier, and average spend.",
+      );
       return;
     }
     setError(value instanceof ApiError ? value.code : fallback);
@@ -557,9 +649,18 @@ export default function CabinetPage() {
       setApps((current) => [app, ...current]);
       setSelectedId(app.id);
       setSection("profile");
-      setMsg("Черновик создан. Начните с основных данных.");
+      setMsg(
+        locale === "ru"
+          ? "Черновик создан. Заполните основные данные ресторана."
+          : locale === "ro"
+          ? "Ciorna a fost creată. Completați datele de bază."
+          : "Draft created. Start with basic restaurant details.",
+      );
     } catch (value) {
-      showApiError(value, "Не удалось создать ресторан");
+      showApiError(
+        value,
+        locale === "ru" ? "Не удалось создать ресторан" : locale === "ro" ? "Eroare la crearea localului" : "Failed to create restaurant",
+      );
     } finally {
       setBusy(false);
     }
@@ -573,10 +674,15 @@ export default function CabinetPage() {
       const updated = await updateApplication(selected.id, toPayload(draft));
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
       clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setMsg("Изменения сохранены");
+      setMsg(
+        locale === "ru" ? "Изменения сохранены" : locale === "ro" ? "Modificările au fost salvate" : "Changes saved successfully",
+      );
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(value, "Ошибка сохранения");
+      showApiError(
+        value,
+        locale === "ru" ? "Ошибка сохранения" : locale === "ro" ? "Eroare la salvare" : "Error saving draft",
+      );
     } finally {
       setBusy(false);
     }
@@ -593,10 +699,19 @@ export default function CabinetPage() {
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
       clearStoredDraftWhenPersisted(selected.id, draft, updated);
       setSection("overview");
-      setMsg("Заявка отправлена на модерацию");
+      setMsg(
+        locale === "ru"
+          ? "Заявка отправлена на модерацию"
+          : locale === "ro"
+          ? "Cererea a fost trimisă spre moderare"
+          : "Application submitted for moderation",
+      );
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(value, "Ошибка отправки");
+      showApiError(
+        value,
+        locale === "ru" ? "Ошибка отправки" : locale === "ro" ? "Eroare la trimitere" : "Submission failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -616,10 +731,15 @@ export default function CabinetPage() {
       const updated = await uploadApplicationPhoto(selected.id, file);
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
       if (draft) clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setMsg("Фотография добавлена");
+      setMsg(
+        locale === "ru" ? "Фотография добавлена" : locale === "ro" ? "Fotografia a fost adăugată" : "Photo uploaded successfully",
+      );
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(value, "Ошибка загрузки фото");
+      showApiError(
+        value,
+        locale === "ru" ? "Ошибка загрузки фото" : locale === "ro" ? "Eroare la încărcarea foto" : "Photo upload failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -632,10 +752,15 @@ export default function CabinetPage() {
     try {
       const updated = await removeApplicationPhoto(selected.id, url);
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      setMsg("Фотография удалена");
+      setMsg(
+        locale === "ru" ? "Фотография удалена" : locale === "ro" ? "Fotografia a fost ștearsă" : "Photo deleted",
+      );
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(value, "Ошибка удаления");
+      showApiError(
+        value,
+        locale === "ru" ? "Ошибка удаления" : locale === "ro" ? "Eroare la ștergerea foto" : "Failed to remove photo",
+      );
     } finally {
       setBusy(false);
     }
@@ -647,14 +772,14 @@ export default function CabinetPage() {
 
   if (!user) {
     return (
-      <div className="panel-page owner-loading">
+      <div className="panel-page owner-loading" role="status" aria-live="polite">
         <span />
-        <p>Открываем кабинет…</p>
+        <p>{locale === "ru" ? "Открываем кабинет…" : locale === "ro" ? "Se deschide cabinetul…" : "Loading workspace…"}</p>
       </div>
     );
   }
 
-  const checks = selected ? setupChecks(selected, draft) : [];
+  const checks = selected ? getSetupChecks(selected, draft, cabinetCopy, locale) : [];
   const completedChecks = checks.filter((check) => check.done).length;
   const missingChecks = checks.filter((check) => !check.done);
   const completion = checks.length ? Math.round((completedChecks / checks.length) * 100) : 0;
@@ -672,7 +797,7 @@ export default function CabinetPage() {
       email={user.email}
     >
       <div className="owner-dashboard">
-        <aside className="owner-sidebar">
+        <aside className="owner-sidebar" aria-label={cabinetCopy.title}>
           <div className="owner-person">
             <span className="owner-avatar">{initials(user)}</span>
             <div>
@@ -682,24 +807,29 @@ export default function CabinetPage() {
           </div>
 
           <div className="owner-venue-switcher">
-            <span>{cabinetCopy.venues}</span>
-            {apps.map((app) => (
-              <button
-                key={app.id}
-                type="button"
-                className={app.id === selectedId ? "active" : ""}
-                onClick={() => {
-                  setSelectedId(app.id);
-                  setSection("overview");
-                  setMsg(null);
-                  setError(null);
-                }}
-              >
-                <i>{(pickLocale(app.name, "ru") || "Р").slice(0, 1).toUpperCase()}</i>
-                <span>{pickLocale(app.name, "ru") || "Новый ресторан"}</span>
-                <b aria-hidden>›</b>
-              </button>
-            ))}
+            <span id="venue-switcher-label">{cabinetCopy.venues}</span>
+            <div role="group" aria-labelledby="venue-switcher-label">
+              {apps.map((app) => (
+                <button
+                  key={app.id}
+                  type="button"
+                  className={app.id === selectedId ? "active" : ""}
+                  onClick={() => {
+                    setSelectedId(app.id);
+                    setSection("overview");
+                    setMsg(null);
+                    setError(null);
+                  }}
+                  aria-pressed={app.id === selectedId}
+                >
+                  <i>{(pickLocale(app.name, locale) || pickLocale(app.name, "ru") || "R").slice(0, 1).toUpperCase()}</i>
+                  <span>{pickLocale(app.name, locale) || pickLocale(app.name, "ru") || (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан")}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               className="owner-add-venue"
@@ -712,15 +842,25 @@ export default function CabinetPage() {
           </div>
 
           {selected && (
-            <nav className="owner-nav" aria-label="Разделы кабинета">
+            <nav
+              className="owner-nav"
+              role="tablist"
+              aria-label={cabinetCopy.title}
+              tabIndex={0}
+            >
               {navigation.map((item) => (
                 <button
                   key={item.id}
+                  id={`tab-${item.id}`}
+                  role="tab"
+                  aria-selected={section === item.id}
+                  aria-controls={`tabpanel-${item.id}`}
+                  tabIndex={section === item.id ? 0 : -1}
                   type="button"
                   className={section === item.id ? "active" : ""}
                   onClick={() => setSection(item.id)}
                 >
-                  <i aria-hidden>{item.icon}</i>
+                  <span className="owner-nav-icon">{item.icon}</span>
                   <span>{item.label}</span>
                   {item.id === "reservations" && futureBookings.length > 0 && (
                     <b>{futureBookings.length}</b>
@@ -731,20 +871,26 @@ export default function CabinetPage() {
           )}
 
           <div className="owner-support">
-            <span>Нужна помощь?</span>
-            <p>Команда подключения поможет подготовить профиль.</p>
-            <a href="mailto:partners@seatiko.md">Связаться с поддержкой</a>
+            <span>{cabinetCopy.needHelp}</span>
+            <p>{cabinetCopy.supportHelpText}</p>
+            <a href="mailto:partners@seatiko.md">{cabinetCopy.contactSupport}</a>
           </div>
         </aside>
 
-        <main className="owner-content">
+        <main
+          className="owner-content"
+          id={`tabpanel-${section}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${section}`}
+          tabIndex={0}
+        >
           {(msg || error) && (
-            <div className={`owner-notice ${error ? "error" : "success"}`}>
-              <span>{error ? "!" : "✓"}</span>
+            <div className={`owner-notice ${error ? "error" : "success"}`} role="alert" aria-live="polite">
+              <span>{error ? "!" : <CheckIcon />}</span>
               <p>{error || msg}</p>
               <button
                 type="button"
-                aria-label="Закрыть"
+                aria-label={locale === "ro" ? "Închide" : locale === "en" ? "Close" : "Закрыть"}
                 onClick={() => {
                   setError(null);
                   setMsg(null);
@@ -757,25 +903,22 @@ export default function CabinetPage() {
 
           {!selected ? (
             <section className="owner-empty-state">
-              <span className="owner-empty-mark">FA</span>
-              <span className="owner-kicker">Первый шаг</span>
-              <h2>Добавьте свой ресторан</h2>
-              <p>
-                Создайте профиль заведения, укажите точку на карте и отправьте
-                данные на проверку. Черновик можно сохранять сколько угодно раз.
-              </p>
+              <span className="owner-empty-mark">S</span>
+              <span className="owner-kicker">{locale === "ro" ? "Primul pas" : locale === "en" ? "First step" : "Первый шаг"}</span>
+              <h2>{cabinetCopy.emptyVenuesTitle}</h2>
+              <p>{cabinetCopy.emptyVenuesBody}</p>
               <button
                 type="button"
                 className="panel-btn"
                 disabled={busy}
                 onClick={() => void onCreate()}
               >
-                + Создать профиль ресторана
+                {cabinetCopy.emptyVenuesBtn}
               </button>
               <div className="owner-empty-assurances">
-                <span>Без оплаты на этапе заявки</span>
-                <span>Проверка 1–3 рабочих дня</span>
-                <span>Поддержка при заполнении</span>
+                <span>{locale === "ro" ? "Fără plăți în faza de cerere" : locale === "en" ? "No fees during application" : "Без оплаты на этапе заявки"}</span>
+                <span>{locale === "ro" ? "Verificare în 1–3 zile lucrătoare" : locale === "en" ? "Verification in 1–3 business days" : "Проверка 1–3 рабочих дня"}</span>
+                <span>{locale === "ro" ? "Suport dedicat la completare" : locale === "en" ? "Dedicated onboarding guidance" : "Поддержка при заполнении"}</span>
               </div>
             </section>
           ) : (
@@ -783,18 +926,18 @@ export default function CabinetPage() {
               <header className="owner-section-head">
                 <div>
                   <span className="owner-kicker">
-                    {section === "overview" && "Центр управления"}
+                    {section === "overview" && (locale === "ro" ? "Panou de control" : locale === "en" ? "Control Center" : "Центр управления")}
                     {section === "profile" && cabinetCopy.dataForGuests}
-                    {section === "ops" && "Зал, меню и QR"}
-                    {section === "reservations" && "Операционная работа"}
-                    {section === "activity" && "Прозрачность аккаунта"}
+                    {section === "ops" && cabinetCopy.ops}
+                    {section === "reservations" && (locale === "ro" ? "Activitate operațională" : locale === "en" ? "Operations" : "Операционная работа")}
+                    {section === "activity" && (locale === "ro" ? "Jurnal de transparență" : locale === "en" ? "Audit & Transparency" : "Прозрачность аккаунта")}
                   </span>
                   <h2>
-                    {section === "overview" && (pickLocale(selected.name, "ru") || "Новый ресторан")}
+                    {section === "overview" && (pickLocale(selected.name, locale) || pickLocale(selected.name, "ru") || (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан"))}
                     {section === "profile" && cabinetCopy.profile}
-                    {section === "ops" && "Операции"}
-                    {section === "reservations" && "Бронирования"}
-                    {section === "activity" && "История действий"}
+                    {section === "ops" && cabinetCopy.opsTitle}
+                    {section === "reservations" && cabinetCopy.reservations}
+                    {section === "activity" && cabinetCopy.activity}
                   </h2>
                 </div>
                 <div className="owner-section-status">
@@ -808,9 +951,11 @@ export default function CabinetPage() {
                   <section className="owner-overview-hero">
                     <div>
                       <span className="owner-kicker">
-                        {selected.status === "PUBLISHED" ? "Ресторан работает" : "Подготовка к запуску"}
+                        {selected.status === "PUBLISHED"
+                          ? (locale === "ro" ? "Restaurantul este activ" : locale === "en" ? "Restaurant is live" : "Ресторан работает")
+                          : (locale === "ro" ? "Pregătire pentru lansare" : locale === "en" ? "Pre-launch preparation" : "Подготовка к запуску")}
                       </span>
-                      <h3>{statusHint(selected.status)}</h3>
+                      <h3>{getStatusHint(selected.status, cabinetCopy)}</h3>
                       <div className="owner-hero-actions">
                         {canEdit && (
                           <button
@@ -818,12 +963,12 @@ export default function CabinetPage() {
                             className="panel-btn"
                             onClick={() => setSection("profile")}
                           >
-                            Продолжить заполнение
+                            {cabinetCopy.continueEditing}
                           </button>
                         )}
                         {selected.status === "PUBLISHED" && (
                           <Link className="panel-btn" href="/#map">
-                            Посмотреть на карте
+                            {cabinetCopy.viewOnMap}
                           </Link>
                         )}
                         <button
@@ -831,48 +976,53 @@ export default function CabinetPage() {
                           className="panel-btn ghost"
                           onClick={() => setSection("activity")}
                         >
-                          Проверить историю
+                          {cabinetCopy.checkHistory}
                         </button>
                       </div>
                     </div>
                     <div
                       className="owner-progress-ring"
                       style={{
-                        background: `conic-gradient(#d77b48 ${completion * 3.6}deg, rgba(255,255,255,.16) 0deg)`,
+                        background: `conic-gradient(var(--site-accent, #d77b48) ${completion * 3.6}deg, rgba(255,255,255,.16) 0deg)`,
                       }}
                     >
                       <span>
                         <strong>{completion}%</strong>
-                        <small>готово</small>
+                        <small>{locale === "ro" ? "gata" : locale === "en" ? "ready" : "готово"}</small>
                       </span>
                     </div>
                   </section>
 
-                  <section className="owner-metrics">
+                  <section className="owner-metrics" aria-label="KPI">
                     <article>
-                      <span>Будущие брони</span>
+                      <span>{cabinetCopy.futureBookings}</span>
                       <strong>{futureBookings.length}</strong>
-                      <small>по выбранному ресторану</small>
+                      <small>{locale === "ro" ? "pentru localul curent" : locale === "en" ? "for this venue" : "по выбранному ресторану"}</small>
                     </article>
                     <article>
-                      <span>Всего бронирований</span>
+                      <span>{cabinetCopy.totalBookings}</span>
                       <strong>{selectedReservations.length}</strong>
-                      <small>включая историю</small>
+                      <small>{locale === "ro" ? "inclusiv istoricul" : locale === "en" ? "including history" : "включая историю"}</small>
                     </article>
                     <article>
-                      <span>Фотографии</span>
+                      <span>{cabinetCopy.photosCount}</span>
                       <strong>{selected.photo_urls?.length || 0}<i>/8</i></strong>
-                      <small>в профиле заведения</small>
+                      <small>{locale === "ro" ? "în profilul localului" : locale === "en" ? "in venue gallery" : "в профиле заведения"}</small>
                     </article>
                     <article>
-                      <span>Последнее изменение</span>
+                      <span>{cabinetCopy.lastUpdate}</span>
                       <strong className="owner-metric-date">
-                        {new Date(selected.updated_at).toLocaleDateString("ru-RU", {
+                        {new Date(selected.updated_at).toLocaleDateString(locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU", {
                           day: "numeric",
                           month: "short",
                         })}
                       </strong>
-                      <small>{new Date(selected.updated_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</small>
+                      <small>
+                        {new Date(selected.updated_at).toLocaleTimeString(locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </small>
                     </article>
                   </section>
 
@@ -880,19 +1030,23 @@ export default function CabinetPage() {
                     <section className="owner-card owner-checklist-card">
                       <div className="owner-card-head">
                         <div>
-                          <span className="owner-kicker">Готовность профиля</span>
-                          <h3>{completedChecks} из {checks.length} пунктов</h3>
+                          <span className="owner-kicker">{cabinetCopy.profileReadiness}</span>
+                          <h3>{cabinetCopy.completedOf.replace("{done}", String(completedChecks)).replace("{total}", String(checks.length))}</h3>
                         </div>
                         <strong>{completion}%</strong>
                       </div>
-                      <div className="owner-progress-bar"><i style={{ width: `${completion}%` }} /></div>
+                      <div className="owner-progress-bar">
+                        <i style={{ width: `${completion}%` }} />
+                      </div>
                       <ul>
                         {checks.map((check) => (
                           <li key={check.label} className={check.done ? "done" : ""}>
-                            <span>{check.done ? "✓" : ""}</span>
+                            <span>{check.done ? <CheckIcon /> : null}</span>
                             <p>{check.label}</p>
                             {!check.done && canEdit && (
-                              <button type="button" onClick={() => setSection("profile")}>Заполнить</button>
+                              <button type="button" onClick={() => setSection("profile")}>
+                                {cabinetCopy.fillAction}
+                              </button>
                             )}
                           </li>
                         ))}
@@ -902,17 +1056,17 @@ export default function CabinetPage() {
                     <section className="owner-card owner-launch-card">
                       <div className="owner-card-head">
                         <div>
-                          <span className="owner-kicker">Путь подключения</span>
-                          <h3>От профиля до карты</h3>
+                          <span className="owner-kicker">{cabinetCopy.launchPipeline}</span>
+                          <h3>{locale === "ro" ? "De la profil la hartă" : locale === "en" ? "From profile to live map" : "От профиля до карты"}</h3>
                         </div>
                       </div>
                       <div className="owner-launch-steps">
                         {[
-                          ["DRAFT", "Профиль", "Данные и фотографии"],
-                          ["SUBMITTED", "Заявка", "Передана платформе"],
-                          ["UNDER_REVIEW", "Проверка", "1–3 рабочих дня"],
-                          ["APPROVED", "Одобрение", "Подготовка публикации"],
-                          ["PUBLISHED", "На карте", "Доступно гостям"],
+                          ["DRAFT", cabinetCopy.pipelineProfile, cabinetCopy.pipelineProfileHint],
+                          ["SUBMITTED", cabinetCopy.pipelineSubmitted, cabinetCopy.pipelineSubmittedHint],
+                          ["UNDER_REVIEW", cabinetCopy.pipelineReview, cabinetCopy.pipelineReviewHint],
+                          ["APPROVED", cabinetCopy.pipelineApproved, cabinetCopy.pipelineApprovedHint],
+                          ["PUBLISHED", cabinetCopy.pipelinePublished, cabinetCopy.pipelinePublishedHint],
                         ].map(([status, label, detail], index, stages) => {
                           const stageOrder = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "PUBLISHED"];
                           const normalized = selected.status === "REJECTED" ? "DRAFT" : selected.status;
@@ -920,8 +1074,11 @@ export default function CabinetPage() {
                           const active = index <= currentIndex;
                           return (
                             <div key={status} className={active ? "active" : ""}>
-                              <span>{active ? "✓" : index + 1}</span>
-                              <p><strong>{label}</strong><small>{detail}</small></p>
+                              <span>{active ? <CheckIcon /> : index + 1}</span>
+                              <p>
+                                <strong>{label}</strong>
+                                <small>{detail}</small>
+                              </p>
                               {index < stages.length - 1 && <i />}
                             </div>
                           );
@@ -929,7 +1086,7 @@ export default function CabinetPage() {
                       </div>
                       {selected.reject_reason && (
                         <div className="owner-review-note">
-                          <strong>Комментарий модератора</strong>
+                          <strong>{cabinetCopy.moderatorNote}</strong>
                           <p>{selected.reject_reason}</p>
                         </div>
                       )}
@@ -939,20 +1096,33 @@ export default function CabinetPage() {
                   <section className="owner-card owner-recent-card">
                     <div className="owner-card-head">
                       <div>
-                        <span className="owner-kicker">Ближайшие гости</span>
-                        <h3>Следующие бронирования</h3>
+                        <span className="owner-kicker">{cabinetCopy.recentGuests}</span>
+                        <h3>{locale === "ro" ? "Următoarele rezervări" : locale === "en" ? "Upcoming reservations" : "Следующие бронирования"}</h3>
                       </div>
-                      <button type="button" onClick={() => setSection("reservations")}>Все брони →</button>
+                      <button type="button" onClick={() => setSection("reservations")}>
+                        {cabinetCopy.viewAllBookings}
+                      </button>
                     </div>
                     {futureBookings.length === 0 ? (
                       <div className="owner-inline-empty">
-                        <span>▦</span>
-                        <p>{selected.venue_id ? "Новых броней пока нет." : "Бронирования появятся после публикации ресторана."}</p>
+                        <span aria-hidden="true">
+                          <ReservationsIcon />
+                        </span>
+                        <p>{selected.venue_id ? cabinetCopy.noBookingsYet : cabinetCopy.bookingsAppearAfterPublish}</p>
                       </div>
                     ) : (
                       <div className="owner-booking-list compact">
                         {futureBookings.slice(0, 3).map((reservation) => (
-                          <ReservationRow key={reservation.id} reservation={reservation} />
+                          <ReservationRow
+                            key={reservation.id}
+                            reservation={reservation}
+                            locale={locale}
+                            reservationLabels={reservationLabels}
+                            tableLabel={cabinetCopy.table}
+                            guestLabel={cabinetCopy.guest}
+                            guestSingle={cabinetCopy.guestSingle}
+                            guestPlural={cabinetCopy.guestPlural}
+                          />
                         ))}
                       </div>
                     )}
@@ -963,184 +1133,315 @@ export default function CabinetPage() {
               {section === "profile" && draft && (
                 <section className="owner-profile">
                   {!canEdit && (
-                    <div className="owner-lock-note">
-                      <span>⌁</span>
-                      <p>{editLockHint(selected.status)}</p>
+                    <div className="owner-lock-note" role="note">
+                      <span><LockIcon /></span>
+                      <p>{getEditLockHint(selected.status, cabinetCopy)}</p>
                     </div>
                   )}
-                  <div className="owner-form-section">
-                    <div className="owner-form-title">
-                      <span>01</span>
-                      <div><h3>{cabinetCopy.basic}</h3><p>{cabinetCopy.basicHint}</p></div>
-                    </div>
-                    <div className="owner-form-fields">
-                      <div className="field owner-field-wide">
-                        <label htmlFor="venue-name">{cabinetCopy.name}</label>
-                        <input id="venue-name" disabled={!canEdit} value={draft.name} onChange={(event) => updateDraft("name", event.target.value)} />
-                      </div>
-                      <div className="field owner-field-wide">
-                        <label htmlFor="venue-description">{cabinetCopy.description}</label>
-                        <textarea id="venue-description" disabled={!canEdit} maxLength={400} placeholder={cabinetCopy.descriptionPlaceholder} value={draft.description} onChange={(event) => updateDraft("description", event.target.value)} />
-                        <small>{draft.description.length}/400</small>
-                      </div>
-                      <div className="field">
-                        <label htmlFor="venue-cuisine">{cabinetCopy.cuisine}</label>
-                        <input id="venue-cuisine" disabled={!canEdit} placeholder={cabinetCopy.cuisinePlaceholder} value={draft.cuisine} onChange={(event) => updateDraft("cuisine", event.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label htmlFor="venue-hours">{cabinetCopy.hours}</label>
-                        <input id="venue-hours" disabled={!canEdit} placeholder={cabinetCopy.hoursPlaceholder} value={draft.hours_text} onChange={(event) => updateDraft("hours_text", event.target.value)} />
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="owner-form-section">
-                    <div className="owner-form-title">
-                      <span>02</span>
-                      <div><h3>{cabinetCopy.location}</h3><p>{cabinetCopy.locationHint}</p></div>
+                  <form onSubmit={(e) => { e.preventDefault(); if (canEdit) void onSave(); }}>
+                    <div className="owner-form-section">
+                      <div className="owner-form-title">
+                        <span>01</span>
+                        <div>
+                          <h3>{cabinetCopy.basic}</h3>
+                          <p>{cabinetCopy.basicHint}</p>
+                        </div>
+                      </div>
+                      <div className="owner-form-fields">
+                        <div className="field owner-field-wide">
+                          <label htmlFor="venue-name">{cabinetCopy.name}</label>
+                          <input
+                            id="venue-name"
+                            disabled={!canEdit}
+                            value={draft.name}
+                            onChange={(event) => updateDraft("name", event.target.value)}
+                            required
+                            enterKeyHint="next"
+                          />
+                        </div>
+                        <div className="field owner-field-wide">
+                          <label htmlFor="venue-description">{cabinetCopy.description}</label>
+                          <textarea
+                            id="venue-description"
+                            disabled={!canEdit}
+                            maxLength={400}
+                            placeholder={cabinetCopy.descriptionPlaceholder}
+                            value={draft.description}
+                            onChange={(event) => updateDraft("description", event.target.value)}
+                            required
+                            rows={3}
+                          />
+                          <small aria-live="polite">{draft.description.length}/400</small>
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-cuisine">{cabinetCopy.cuisine}</label>
+                          <input
+                            id="venue-cuisine"
+                            disabled={!canEdit}
+                            placeholder={cabinetCopy.cuisinePlaceholder}
+                            value={draft.cuisine}
+                            onChange={(event) => updateDraft("cuisine", event.target.value)}
+                            enterKeyHint="next"
+                          />
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-hours">{cabinetCopy.hours}</label>
+                          <input
+                            id="venue-hours"
+                            disabled={!canEdit}
+                            placeholder={cabinetCopy.hoursPlaceholder}
+                            value={draft.hours_text}
+                            onChange={(event) => updateDraft("hours_text", event.target.value)}
+                            enterKeyHint="next"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="owner-form-fields">
-                      <div className="field owner-field-wide">
-                        <label htmlFor="venue-city">{locale === "ru" ? "Город" : locale === "ro" ? "Oraș" : "City"}</label>
-                        <select id="venue-city" disabled={!canEdit} value={draft.city_id}
-                          onChange={(event) => {
-                            const cityId = event.target.value;
-                            setDraft((current) => current ? { ...current, city_id: cityId, lat: "", lng: "" } : current);
-                          }}>
-                          {!locations.some((city) => city.id === draft.city_id) && (
-                            <option value={draft.city_id}>{draft.city_id === "city-balti" ? "Bălți" : draft.city_id}</option>
-                          )}
-                          {locations.map((city) => <option key={city.id} value={city.id}>{pickLocale(city.name, locale)}</option>)}
-                        </select>
-                      </div>
-                      <div className="field owner-field-wide">
-                        <label htmlFor="venue-address">{cabinetCopy.address}</label>
-                        <input id="venue-address" disabled={!canEdit} placeholder={cabinetCopy.addressPlaceholder} value={draft.address} onChange={(event) => updateDraft("address", event.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label htmlFor="venue-lat">{cabinetCopy.latitude}</label>
-                        <input id="venue-lat" type="number" step="0.000001" disabled={!canEdit} placeholder="47.7617" value={draft.lat} onChange={(event) => updateDraft("lat", event.target.value)} />
-                      </div>
-                      <div className="field">
-                        <label htmlFor="venue-lng">{cabinetCopy.longitude}</label>
-                        <input id="venue-lng" type="number" step="0.000001" disabled={!canEdit} placeholder="27.9288" value={draft.lng} onChange={(event) => updateDraft("lng", event.target.value)} />
-                      </div>
-                      <ApplicationLocationPicker
-                        key={`${selected.id}:${draft.city_id}`}
-                        config={mapConfig}
-                        center={locations.find((city) => city.id === draft.city_id)?.center ?? BALTI_CENTER}
-                        query={`${draft.name} ${draft.address} Moldova`}
-                        lat={draft.lat}
-                        lng={draft.lng}
-                        disabled={!canEdit}
-                        selectedHint={cabinetCopy.mapPoint}
-                        editHint={cabinetCopy.mapHint}
-                        onChange={(nextLat, nextLng) => {
-                          setDraft((current) =>
-                            current
-                              ? { ...current, lat: nextLat, lng: nextLng }
-                              : current,
-                          );
-                        }}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="owner-form-section">
-                    <div className="owner-form-title">
-                      <span>03</span>
-                      <div><h3>{cabinetCopy.contacts}</h3><p>{cabinetCopy.contactsHint}</p></div>
-                    </div>
-                    <div className="owner-form-fields">
-                      <div className="field">
-                        <label htmlFor="venue-phone">{cabinetCopy.phone}</label>
-                        <input id="venue-phone" type="tel" disabled={!canEdit} placeholder="+373 600 00 000" value={draft.phone} onChange={(event) => updateDraft("phone", event.target.value)} />
+                    <div className="owner-form-section">
+                      <div className="owner-form-title">
+                        <span>02</span>
+                        <div>
+                          <h3>{cabinetCopy.location}</h3>
+                          <p>{cabinetCopy.locationHint}</p>
+                        </div>
                       </div>
-                      <div className="field">
-                        <label htmlFor="venue-email">{cabinetCopy.email}</label>
-                        <input id="venue-email" type="email" disabled={!canEdit} value={draft.email} onChange={(event) => updateDraft("email", event.target.value)} />
-                      </div>
-                      <div className="field owner-field-wide">
-                        <label htmlFor="venue-website">{cabinetCopy.website} <span className="field-optional">{cabinetCopy.optional}</span></label>
-                        <input
-                          id="venue-website"
-                          type="url"
-                          inputMode="url"
-                          autoComplete="url"
-                          disabled={!canEdit}
-                          placeholder="https://restaurant.md"
-                          value={draft.website}
-                          onChange={(event) => updateDraft("website", event.target.value)}
-                        />
-                        <small>{cabinetCopy.websiteHint}</small>
-                      </div>
-                      <div className="field">
-                        <label htmlFor="venue-price">{cabinetCopy.price}</label>
-                        <select id="venue-price" disabled={!canEdit} value={draft.price_level} onChange={(event) => updateDraft("price_level", event.target.value)}>
-                          <option value="1">{cabinetCopy.price1}</option>
-                          <option value="2">{cabinetCopy.price2}</option>
-                          <option value="3">{cabinetCopy.price3}</option>
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label htmlFor="venue-check">{cabinetCopy.average}</label>
-                        <input id="venue-check" type="number" min="0" disabled={!canEdit} placeholder="350" value={draft.average_check} onChange={(event) => updateDraft("average_check", event.target.value)} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="owner-form-section">
-                    <div className="owner-form-title">
-                      <span>04</span>
-                      <div><h3>{cabinetCopy.photos}</h3><p>{cabinetCopy.photosHint}</p></div>
-                    </div>
-                    <div className="owner-photo-area">
-                      <div className="photo-grid owner-photo-grid">
-                        {(selected.photo_urls || []).map((url, index) => (
-                          <div key={url} className="photo-thumb owner-photo-thumb">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={mediaUrl(url)} alt={`Фото ресторана ${index + 1}`} />
-                            {index === 0 && <span>{cabinetCopy.cover}</span>}
-                            {canEdit && (
-                              <button type="button" aria-label="Удалить фото" onClick={() => void onRemovePhoto(url)}>×</button>
-                            )}
-                          </div>
-                        ))}
-                        {canEdit && (selected.photo_urls?.length || 0) < 8 && (
-                          <label className="owner-photo-upload">
-                            <input
-                              type="file"
-                              accept="image/jpeg,image/png,image/webp"
-                              onChange={(event) => {
-                                void onPhoto(event.target.files?.[0] ?? null);
-                                event.target.value = "";
-                              }}
-                            />
-                            <span>＋</span>
-                            <strong>{cabinetCopy.addPhoto}</strong>
-                            <small>JPG, PNG или WebP · до 5 МБ</small>
+                      <div className="owner-form-fields">
+                        <div className="field owner-field-wide">
+                          <label htmlFor="venue-city">
+                            {locale === "ru" ? "Город" : locale === "ro" ? "Oraș" : "City"}
                           </label>
-                        )}
+                          <select
+                            id="venue-city"
+                            disabled={!canEdit}
+                            value={draft.city_id}
+                            onChange={(event) => {
+                              const cityId = event.target.value;
+                              setDraft((current) => current ? { ...current, city_id: cityId, lat: "", lng: "" } : current);
+                            }}
+                          >
+                            {!locations.some((city) => city.id === draft.city_id) && (
+                              <option value={draft.city_id}>{draft.city_id === "city-balti" ? "Bălți" : draft.city_id}</option>
+                            )}
+                            {locations.map((city) => (
+                              <option key={city.id} value={city.id}>{pickLocale(city.name, locale)}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="field owner-field-wide">
+                          <label htmlFor="venue-address">{cabinetCopy.address}</label>
+                          <input
+                            id="venue-address"
+                            disabled={!canEdit}
+                            placeholder={cabinetCopy.addressPlaceholder}
+                            value={draft.address}
+                            onChange={(event) => updateDraft("address", event.target.value)}
+                            enterKeyHint="next"
+                          />
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-lat">{cabinetCopy.latitude}</label>
+                          <input
+                            id="venue-lat"
+                            type="number"
+                            step="0.000001"
+                            inputMode="decimal"
+                            disabled={!canEdit}
+                            placeholder="47.7617"
+                            value={draft.lat}
+                            onChange={(event) => updateDraft("lat", event.target.value)}
+                          />
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-lng">{cabinetCopy.longitude}</label>
+                          <input
+                            id="venue-lng"
+                            type="number"
+                            step="0.000001"
+                            inputMode="decimal"
+                            disabled={!canEdit}
+                            placeholder="27.9288"
+                            value={draft.lng}
+                            onChange={(event) => updateDraft("lng", event.target.value)}
+                          />
+                        </div>
+                        <ApplicationLocationPicker
+                          key={`${selected.id}:${draft.city_id}`}
+                          config={mapConfig}
+                          center={locations.find((city) => city.id === draft.city_id)?.center ?? BALTI_CENTER}
+                          query={`${draft.name} ${draft.address} Moldova`}
+                          lat={draft.lat}
+                          lng={draft.lng}
+                          disabled={!canEdit}
+                          selectedHint={cabinetCopy.mapPoint}
+                          editHint={cabinetCopy.mapHint}
+                          onChange={(nextLat, nextLng) => {
+                            setDraft((current) =>
+                              current
+                                ? { ...current, lat: nextLat, lng: nextLng }
+                                : current,
+                            );
+                          }}
+                        />
                       </div>
                     </div>
-                  </div>
 
-                  {canEdit && (
-                    <div className="owner-form-footer">
-                      <div>
-                        <strong>{completion}% {cabinetCopy.filled}</strong>
-                        <p>
-                          {missingChecks.length
-                            ? `Осталось: ${missingChecks.map((check) => check.label).join(", ")}.`
-                            : cabinetCopy.ready}
-                        </p>
+                    <div className="owner-form-section">
+                      <div className="owner-form-title">
+                        <span>03</span>
+                        <div>
+                          <h3>{cabinetCopy.contacts}</h3>
+                          <p>{cabinetCopy.contactsHint}</p>
+                        </div>
                       </div>
-                      <div>
-                        <button type="button" className="panel-btn ghost" disabled={busy} onClick={() => void onSave()}>{cabinetCopy.save}</button>
-                        <button type="button" className="panel-btn" disabled={busy || missingChecks.length > 0} onClick={() => void onSubmit()}>{cabinetCopy.submit}</button>
+                      <div className="owner-form-fields">
+                        <div className="field">
+                          <label htmlFor="venue-phone">{cabinetCopy.phone}</label>
+                          <input
+                            id="venue-phone"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            disabled={!canEdit}
+                            placeholder="+373 600 00 000"
+                            value={draft.phone}
+                            onChange={(event) => updateDraft("phone", event.target.value)}
+                          />
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-email">{cabinetCopy.email}</label>
+                          <input
+                            id="venue-email"
+                            type="email"
+                            inputMode="email"
+                            autoComplete="email"
+                            disabled={!canEdit}
+                            value={draft.email}
+                            onChange={(event) => updateDraft("email", event.target.value)}
+                          />
+                        </div>
+                        <div className="field owner-field-wide">
+                          <label htmlFor="venue-website">
+                            {cabinetCopy.website} <span className="field-optional">{cabinetCopy.optional}</span>
+                          </label>
+                          <input
+                            id="venue-website"
+                            type="url"
+                            inputMode="url"
+                            autoComplete="url"
+                            disabled={!canEdit}
+                            placeholder="https://restaurant.md"
+                            value={draft.website}
+                            onChange={(event) => updateDraft("website", event.target.value)}
+                          />
+                          <small>{cabinetCopy.websiteHint}</small>
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-price">{cabinetCopy.price}</label>
+                          <select
+                            id="venue-price"
+                            disabled={!canEdit}
+                            value={draft.price_level}
+                            onChange={(event) => updateDraft("price_level", event.target.value)}
+                          >
+                            <option value="1">{cabinetCopy.price1}</option>
+                            <option value="2">{cabinetCopy.price2}</option>
+                            <option value="3">{cabinetCopy.price3}</option>
+                          </select>
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-check">{cabinetCopy.average}</label>
+                          <input
+                            id="venue-check"
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            disabled={!canEdit}
+                            placeholder="350"
+                            value={draft.average_check}
+                            onChange={(event) => updateDraft("average_check", event.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
-                  )}
+
+                    <div className="owner-form-section">
+                      <div className="owner-form-title">
+                        <span>04</span>
+                        <div>
+                          <h3>{cabinetCopy.photos}</h3>
+                          <p>{cabinetCopy.photosHint}</p>
+                        </div>
+                      </div>
+                      <div className="owner-photo-area">
+                        <div className="photo-grid owner-photo-grid">
+                          {(selected.photo_urls || []).map((url, index) => (
+                            <div key={url} className="photo-thumb owner-photo-thumb">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={mediaUrl(url)} alt={`Photo ${index + 1}`} />
+                              {index === 0 && <span>{cabinetCopy.cover}</span>}
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  aria-label={locale === "ro" ? "Șterge foto" : locale === "en" ? "Delete photo" : "Удалить фото"}
+                                  onClick={() => void onRemovePhoto(url)}
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          {canEdit && (selected.photo_urls?.length || 0) < 8 && (
+                            <label className="owner-photo-upload">
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={(event) => {
+                                  void onPhoto(event.target.files?.[0] ?? null);
+                                  event.target.value = "";
+                                }}
+                              />
+                              <span aria-hidden="true">+</span>
+                              <strong>{cabinetCopy.addPhoto}</strong>
+                              <small>JPG, PNG, WebP · max 5 MB</small>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {canEdit && (
+                      <div className="owner-form-footer">
+                        <div>
+                          <strong>{completion}% {cabinetCopy.filled}</strong>
+                          <p>
+                            {missingChecks.length
+                              ? `${locale === "ru" ? "Осталось: " : locale === "ro" ? "Rămase: " : "Remaining: "}${missingChecks.map((check) => check.label).join(", ")}.`
+                              : cabinetCopy.ready}
+                          </p>
+                        </div>
+                        <div>
+                          <button
+                            type="button"
+                            className="panel-btn ghost"
+                            disabled={busy}
+                            onClick={() => void onSave()}
+                          >
+                            {cabinetCopy.save}
+                          </button>
+                          <button
+                            type="button"
+                            className="panel-btn"
+                            disabled={busy || missingChecks.length > 0}
+                            onClick={() => void onSubmit()}
+                          >
+                            {cabinetCopy.submit}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </form>
                 </section>
               )}
 
@@ -1148,42 +1449,68 @@ export default function CabinetPage() {
                 selected.venue_id ? (
                   <CabinetOpsPanel venueId={selected.venue_id} />
                 ) : (
-                  <p className="fa-muted">
-                    Операции зала, меню и QR доступны после публикации ресторана.
-                  </p>
+                  <div className="owner-section-empty">
+                    <span aria-hidden="true"><OpsIcon /></span>
+                    <h3>{cabinetCopy.opsTitle}</h3>
+                    <p>
+                      {locale === "ro"
+                        ? "Operațiunile pentru sală, meniu și QR devin disponibile după publicarea restaurantului pe hartă."
+                        : locale === "en"
+                        ? "Floor plan, menu, and QR code operations unlock once your restaurant is published on the map."
+                        : "Операции зала, меню и QR доступны после публикации ресторана на карте."}
+                    </p>
+                  </div>
                 )
               )}
 
               {section === "reservations" && (
                 <section className="owner-reservations">
                   <div className="owner-filter-row">
-                    <div className="owner-filters" role="group" aria-label="Фильтр бронирований">
+                    <div className="owner-filters" role="group" aria-label={cabinetCopy.reservations}>
                       {([
-                        ["upcoming", "Предстоящие"],
-                        ["history", "История"],
-                        ["all", "Все"],
+                        ["upcoming", cabinetCopy.filterUpcoming],
+                        ["history", cabinetCopy.filterHistory],
+                        ["all", cabinetCopy.filterAll],
                       ] as const).map(([value, label]) => (
-                        <button key={value} type="button" className={reservationFilter === value ? "active" : ""} onClick={() => setReservationFilter(value)}>{label}</button>
+                        <button
+                          key={value}
+                          type="button"
+                          className={reservationFilter === value ? "active" : ""}
+                          onClick={() => setReservationFilter(value)}
+                          aria-pressed={reservationFilter === value}
+                        >
+                          {label}
+                        </button>
                       ))}
                     </div>
-                    <span>{filteredReservations.length} записей</span>
+                    <span>{filteredReservations.length} {cabinetCopy.records}</span>
                   </div>
+
                   {!selected.venue_id ? (
                     <div className="owner-section-empty">
-                      <span>▦</span>
-                      <h3>Брони откроются после публикации</h3>
-                      <p>Когда ресторан появится на карте, новые бронирования автоматически будут доступны здесь.</p>
+                      <span aria-hidden="true"><ReservationsIcon /></span>
+                      <h3>{locale === "ro" ? "Rezervările se activează după publicare" : locale === "en" ? "Bookings unlock after publishing" : "Брони откроются после публикации"}</h3>
+                      <p>{cabinetCopy.bookingsAppearAfterPublish}</p>
                     </div>
                   ) : filteredReservations.length === 0 ? (
                     <div className="owner-section-empty">
-                      <span>▦</span>
-                      <h3>В этом разделе пока пусто</h3>
-                      <p>Новые брони появятся здесь сразу после подтверждения гостем.</p>
+                      <span aria-hidden="true"><ReservationsIcon /></span>
+                      <h3>{locale === "ro" ? "Nicio rezervare în această secțiune" : locale === "en" ? "No bookings in this section" : "В этом разделе пока пусто"}</h3>
+                      <p>{cabinetCopy.noBookingsYet}</p>
                     </div>
                   ) : (
                     <div className="owner-card owner-booking-list">
                       {filteredReservations.map((reservation) => (
-                        <ReservationRow key={reservation.id} reservation={reservation} />
+                        <ReservationRow
+                          key={reservation.id}
+                          reservation={reservation}
+                          locale={locale}
+                          reservationLabels={reservationLabels}
+                          tableLabel={cabinetCopy.table}
+                          guestLabel={cabinetCopy.guest}
+                          guestSingle={cabinetCopy.guestSingle}
+                          guestPlural={cabinetCopy.guestPlural}
+                        />
                       ))}
                     </div>
                   )}
@@ -1193,29 +1520,41 @@ export default function CabinetPage() {
               {section === "activity" && (
                 <section className="owner-activity">
                   <div className="owner-audit-intro">
-                    <span>✓</span>
+                    <span><CheckIcon /></span>
                     <div>
-                      <strong>Журнал ведётся автоматически</strong>
-                      <p>Сохраняются изменения профиля, фотографии и решения модератора. Записи нельзя редактировать из кабинета.</p>
+                      <strong>{cabinetCopy.auditAutoNotice}</strong>
+                      <p>{cabinetCopy.auditAutoNoticeHint}</p>
                     </div>
                   </div>
+
                   {activityLoading ? (
-                    <div className="owner-section-empty"><p>Загружаем историю…</p></div>
+                    <div className="owner-section-empty">
+                      <p>{cabinetCopy.loadingHistory}</p>
+                    </div>
                   ) : activity.length === 0 ? (
-                    <div className="owner-section-empty"><span>↺</span><h3>История пока пуста</h3></div>
+                    <div className="owner-section-empty">
+                      <span aria-hidden="true"><ActivityIcon /></span>
+                      <h3>{cabinetCopy.emptyHistory}</h3>
+                    </div>
                   ) : (
                     <div className="owner-card owner-timeline">
                       {activity.map((entry) => (
                         <article key={entry.id}>
-                          <div className="owner-timeline-mark"><span>{entry.actor_role === "admin" ? "FA" : initials(user)}</span><i /></div>
+                          <div className="owner-timeline-mark">
+                            <span>{entry.actor_role === "admin" ? "S" : initials(user)}</span>
+                            <i />
+                          </div>
                           <div className="owner-timeline-content">
                             <div>
                               <strong>{activityLabels[entry.action] || entry.action}</strong>
-                              <time>{formatDateTime(entry.created_at)}</time>
+                              <time>{formatDateTime(entry.created_at, locale)}</time>
                             </div>
-                            <p>{entry.actor_role === "admin" ? "Команда Seatiko" : user.display_name || "Владелец ресторана"}</p>
+                            <p>{entry.actor_role === "admin" ? cabinetCopy.seatikoTeam : user.display_name || cabinetCopy.venueOwner}</p>
                             {entry.changed_fields?.length > 0 && (
-                              <small>Изменено: {entry.changed_fields.map((field) => fieldLabels[field] || field).join(", ")}</small>
+                              <small>
+                                {cabinetCopy.changedFields}:{" "}
+                                {entry.changed_fields.map((field) => fieldLabels[field] || field).join(", ")}
+                              </small>
                             )}
                             {entry.note && <blockquote>{entry.note}</blockquote>}
                           </div>
@@ -1233,28 +1572,51 @@ export default function CabinetPage() {
   );
 }
 
-function ReservationRow({ reservation }: { reservation: RestaurantReservation }) {
+function ReservationRow({
+  reservation,
+  locale,
+  reservationLabels,
+  tableLabel,
+  guestLabel,
+  guestSingle,
+  guestPlural,
+}: {
+  reservation: RestaurantReservation;
+  locale: string;
+  reservationLabels: Record<string, string>;
+  tableLabel: string;
+  guestLabel: string;
+  guestSingle: string;
+  guestPlural: string;
+}) {
+  const loc = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
   const bookingDate = new Date(reservation.reserved_for);
   const statusClass = reservation.status.toLowerCase().replace("_", "-");
+
   return (
     <article className="owner-booking-row">
       <div className="owner-booking-date">
-        <strong>{bookingDate.toLocaleDateString("ru-RU", { day: "2-digit" })}</strong>
-        <span>{bookingDate.toLocaleDateString("ru-RU", { month: "short" }).replace(".", "")}</span>
+        <strong>{bookingDate.toLocaleDateString(loc, { day: "2-digit" })}</strong>
+        <span>{bookingDate.toLocaleDateString(loc, { month: "short" }).replace(".", "")}</span>
       </div>
       <div className="owner-booking-time">
-        <strong>{bookingDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</strong>
-        <span>Стол №{reservation.table_number || "—"}</span>
+        <strong>{bookingDate.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })}</strong>
+        <span>{tableLabel} {reservation.table_number || "—"}</span>
       </div>
       <div className="owner-booking-guest">
-        <span>{(reservation.guest_name || "Г").slice(0, 1).toUpperCase()}</span>
-        <p><strong>{reservation.guest_name || "Гость"}</strong><small>{reservation.guest_email}</small></p>
+        <span>{(reservation.guest_name || guestLabel).slice(0, 1).toUpperCase()}</span>
+        <p>
+          <strong>{reservation.guest_name || guestLabel}</strong>
+          <small>{reservation.guest_email}</small>
+        </p>
       </div>
       <div className="owner-booking-party">
         <strong>{reservation.guests}</strong>
-        <span>{reservation.guests === 1 ? "гость" : "гостей"}</span>
+        <span>{reservation.guests === 1 ? guestSingle : guestPlural}</span>
       </div>
-      <span className={`owner-reservation-status ${statusClass}`}>{reservationLabels[reservation.status] || reservation.status}</span>
+      <span className={`owner-reservation-status ${statusClass}`}>
+        {reservationLabels[reservation.status] || reservation.status}
+      </span>
     </article>
   );
 }
