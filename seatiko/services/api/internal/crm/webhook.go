@@ -19,11 +19,12 @@ import (
 type webhookEnvelope struct {
 	// Twenty 1.x used event/data in examples; current Twenty sends
 	// eventName/record. Supporting both keeps upgrades backwards compatible.
-	Event     string         `json:"event"`
-	EventName string         `json:"eventName"`
-	Data      map[string]any `json:"data"`
-	Record    map[string]any `json:"record"`
-	Timestamp string         `json:"timestamp"`
+	Event         string         `json:"event"`
+	EventName     string         `json:"eventName"`
+	Data          map[string]any `json:"data"`
+	Record        map[string]any `json:"record"`
+	UpdatedFields []string       `json:"updatedFields"`
+	Timestamp     string         `json:"timestamp"`
 }
 
 func verifyWebhookSignature(secret, timestamp, signature string, payload []byte) error {
@@ -153,6 +154,27 @@ func (s *Syncer) HandleWebhook(payload []byte, signature, signatureTimestamp str
 		applicationID := mapText(data, "seatikoId")
 		if applicationID == "" {
 			return false, nil
+		}
+		if event.UpdatedFields != nil {
+			// Current Twenty webhooks contain the entire record. Import only
+			// changed editable fields so a kanban drag cannot rewrite translations
+			// or unrelated profile details from the single-language CRM projection.
+			changed := make(map[string]any)
+			for _, name := range event.UpdatedFields {
+				switch name {
+				case "name", "restaurantDescription", "cuisine", "openingHours", "restaurantPhones",
+					"restaurantEmails", "domainName", "cityId", "latitude", "longitude", "priceLevel", "averageCheckMdl", "address":
+					if value, exists := data[name]; exists {
+						changed[name] = value
+					}
+				}
+			}
+			data = changed
+			if len(data) == 0 {
+				// Restore protected lifecycle fields through the normal reconciler.
+				s.Trigger()
+				return false, nil
+			}
 		}
 		patch := store.ApplicationUpdate{}
 		if value := strings.TrimSpace(mapText(data, "name")); value != "" {
