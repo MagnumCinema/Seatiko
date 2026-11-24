@@ -118,6 +118,12 @@ export type MapPlacesResponse = {
     google_count: number;
     database_count: number;
   };
+  /** Set when /discover filters are sent: places in the area, matches, and which filter to loosen at 0. */
+  filters?: {
+    total: number;
+    matched: number;
+    relax?: { filter: string; matched: number };
+  };
 };
 
 export type TableStatus = "FREE" | "RESERVED" | "OCCUPIED" | "CLEANING";
@@ -148,6 +154,9 @@ export type User = {
   role?: UserRole | string;
   diet_preferences?: string[];
   favorite_venues?: string[];
+  /** Profile photo (POST /me/avatar), absolute or `/media/...`; load it through `mediaUrl`. */
+  avatar_url?: string;
+  deleted_at?: string;
   /** Read-only: staff confirmed 18+ in person (APP_LOGIC §8.4). */
   adult_preorder_allowed?: boolean;
   adult_verification?: AdultVerification;
@@ -394,8 +403,24 @@ export type WaitlistSummary = {
   free_tables: number;
 };
 
+export type DiscoverAiPrefs = {
+  cuisine: string[];
+  restaurant_type: string[];
+  budget?: { min: number; max: number } | null;
+  occasion: string[];
+  practical: string[];
+};
+
 export type DiscoverResult = {
+  /** Ranked venues (same order as `ranked`). */
   venues: Venue[];
+  ranked?: { venue_id: string; score: number; reasons: string[] }[];
+  prefs?: DiscoverAiPrefs;
+  /** Ready for `/?${query_string}#map`. */
+  query_string?: string;
+  /** false when nothing passes the filters and the ranking is approximate. */
+  exact?: boolean;
+  source?: "groq" | "rules";
   explanation?: LocalizedString | string;
 };
 
@@ -522,10 +547,14 @@ export async function fetchMapPlaces(
     bounds?: MapBounds;
     query?: string;
     bookableOnly?: boolean;
+    /** Encoded /discover preferences (encodePreferences) for server-side match counts. */
+    filters?: string;
+    /** Guest position for the "nearby" filter. */
+    near?: { lat: number; lng: number } | null;
     signal?: AbortSignal;
   },
 ): Promise<MapPlacesResponse> {
-  const { bounds, includeGoogle, locale, query, bookableOnly, signal } = options;
+  const { bounds, includeGoogle, locale, query, bookableOnly, filters, near, signal } = options;
   return apiFetch<MapPlacesResponse>("/api/v1/map/places", {
     auth: false,
     signal,
@@ -536,6 +565,9 @@ export async function fetchMapPlaces(
       bounds: bounds && [bounds.south, bounds.west, bounds.north, bounds.east].join(","),
       q: query?.trim(),
       bookable_only: bookableOnly ? "true" : undefined,
+      ...(filters ? Object.fromEntries(new URLSearchParams(filters)) : {}),
+      lat: near ? near.lat : undefined,
+      lng: near ? near.lng : undefined,
     },
   });
 }
@@ -642,6 +674,8 @@ export async function fetchCollections(): Promise<HolidayCollection[]> {
 export async function discoverAi(input: {
   query: string;
   city_id?: string;
+  locale?: string;
+  prefs?: DiscoverAiPrefs;
   filters?: string[];
 }): Promise<DiscoverResult> {
   return apiFetch<DiscoverResult>("/api/v1/discover/ai", {
@@ -1632,4 +1666,38 @@ export type PreorderMenuItem = MenuItem & {
 export async function fetchPreorderMenu(venueId: string): Promise<PreorderMenuItem[]> {
   const data = await apiFetch<{ menu: PreorderMenuItem[] }>(`/api/v1/me/venues/${venueId}/preorder-menu`);
   return data.menu ?? [];
+}
+
+/** Uploads a profile photo (JPEG/PNG/WebP ≤ 5 MB); the server stores a 512 px square JPEG. */
+export async function uploadAvatar(file: File): Promise<User> {
+  const token = getToken();
+  const form = new FormData();
+  form.append("file", file);
+  const url = new URL(`${API_URL}/api/v1/me/avatar`, window.location.origin);
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    let code = `http_${res.status}`;
+    try {
+      const err = (await res.json()) as { error?: string };
+      if (err.error) code = err.error;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, code);
+  }
+  return ((await res.json()) as { user: User }).user;
+}
+
+export async function deleteAvatar(): Promise<User> {
+  const data = await apiFetch<{ user: User }>("/api/v1/me/avatar", { method: "DELETE" });
+  return data.user;
+}
+
+/** GDPR account deletion (guests). Errors: wrong_password, role_not_allowed. */
+export async function deleteAccount(password: string): Promise<{ deleted: boolean; cancelled_reservations: number }> {
+  return apiFetch("/api/v1/me", { method: "DELETE", body: { password } });
 }

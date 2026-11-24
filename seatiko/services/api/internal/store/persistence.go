@@ -39,6 +39,7 @@ type persistedState struct {
 type persistedUser struct {
 	models.User
 	PasswordHash string `json:"password_hash"`
+	AvatarKey    string `json:"avatar_key,omitempty"`
 }
 
 // NewPersistent creates the same store used by the API, but keeps all mutable
@@ -342,6 +343,7 @@ func (s *MemoryStore) applyState(state persistedState) {
 		for id, persisted := range state.Users {
 			user := persisted.User
 			user.PasswordHash = persisted.PasswordHash
+			user.AvatarKey = persisted.AvatarKey
 			s.users[id] = user
 		}
 	}
@@ -403,7 +405,7 @@ func (s *MemoryStore) applyState(state persistedState) {
 func (s *MemoryStore) stateLocked() persistedState {
 	users := make(map[string]persistedUser, len(s.users))
 	for id, user := range s.users {
-		users[id] = persistedUser{User: user, PasswordHash: user.PasswordHash}
+		users[id] = persistedUser{User: user, PasswordHash: user.PasswordHash, AvatarKey: user.AvatarKey}
 	}
 	return persistedState{
 		Cities:         s.cities,

@@ -1,7 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	"image/png"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,7 +19,9 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/seatiko/api/internal/discover"
 	"github.com/seatiko/api/internal/handlers"
+	"github.com/seatiko/api/internal/media"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
 	"github.com/seatiko/api/internal/store"
@@ -215,5 +222,161 @@ func TestAvailabilityEndpoint(t *testing.T) {
 				t.Fatalf("timezone %q, %d venues", data.Timezone, len(data.Venues))
 			}
 		})
+	}
+}
+
+func authedRequest(router http.Handler, method, path, token string, body io.Reader, contentType string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(method, path, body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	res := httptest.NewRecorder()
+	router.ServeHTTP(res, req)
+	return res
+}
+
+func TestAvatarAndAccountDeletion(t *testing.T) {
+	uploads := t.TempDir()
+	api := &handlers.API{UploadDir: uploads, Store: store.NewMemory(), JWTSecret: "test-secret-test-secret",
+		Media: media.Local{Dir: uploads, URLPrefix: "/uploads"}}
+	router := newRouter(api)
+	post := func(path, body string) *httptest.ResponseRecorder {
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(res, req)
+		return res
+	}
+	post("/api/v1/auth/register", `{"email":"bye@example.com","password":"secret123","first_name":"Ion"}`)
+	login := post("/api/v1/auth/login", `{"email":"bye@example.com","password":"secret123"}`)
+	var auth struct{ Token string }
+	_ = json.Unmarshal(login.Body.Bytes(), &auth)
+	if auth.Token == "" {
+		t.Fatalf("login: %s", login.Body.String())
+	}
+
+	// Upload: PNG in, 512 JPEG stored, URL on the profile.
+	img := image.NewRGBA(image.Rect(0, 0, 900, 600))
+	var pngBuf bytes.Buffer
+	_ = png.Encode(&pngBuf, img)
+	var form bytes.Buffer
+	mw := multipart.NewWriter(&form)
+	fw, _ := mw.CreateFormFile("file", "me.png")
+	_, _ = fw.Write(pngBuf.Bytes())
+	_ = mw.Close()
+	up := authedRequest(router, http.MethodPost, "/api/v1/me/avatar", auth.Token, &form, mw.FormDataContentType())
+	var withAvatar struct{ User models.User }
+	_ = json.Unmarshal(up.Body.Bytes(), &withAvatar)
+	if up.Code != http.StatusOK || !strings.HasPrefix(withAvatar.User.AvatarURL, "/uploads/avatars/") {
+		t.Fatalf("upload %d %s", up.Code, up.Body.String())
+	}
+	stored := filepath.Join(uploads, strings.TrimPrefix(withAvatar.User.AvatarURL, "/uploads/"))
+	if _, err := os.Stat(stored); err != nil {
+		t.Fatalf("avatar file missing: %v", err)
+	}
+
+	// SVG disguised as PNG is refused.
+	form.Reset()
+	mw = multipart.NewWriter(&form)
+	fw, _ = mw.CreateFormFile("file", "evil.png")
+	_, _ = fw.Write([]byte(`<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>`))
+	_ = mw.Close()
+	if res := authedRequest(router, http.MethodPost, "/api/v1/me/avatar", auth.Token, &form, mw.FormDataContentType()); res.Code != http.StatusUnsupportedMediaType {
+		t.Fatalf("svg upload = %d", res.Code)
+	}
+
+	if res := authedRequest(router, http.MethodDelete, "/api/v1/me/avatar", auth.Token, nil, ""); res.Code != http.StatusOK {
+		t.Fatalf("delete avatar = %d", res.Code)
+	}
+	if _, err := os.Stat(stored); !os.IsNotExist(err) {
+		t.Fatal("avatar file kept after DELETE /me/avatar")
+	}
+
+	if res := authedRequest(router, http.MethodDelete, "/api/v1/me", auth.Token, strings.NewReader(`{"password":"nope"}`), "application/json"); res.Code != http.StatusForbidden {
+		t.Fatalf("delete with wrong password = %d", res.Code)
+	}
+	if res := authedRequest(router, http.MethodDelete, "/api/v1/me", auth.Token, strings.NewReader(`{"password":"secret123"}`), "application/json"); res.Code != http.StatusOK {
+		t.Fatalf("delete account = %d %s", res.Code, res.Body.String())
+	}
+	if res := authedRequest(router, http.MethodGet, "/api/v1/me", auth.Token, nil, ""); res.Code != http.StatusUnauthorized || !strings.Contains(res.Body.String(), "account_deleted") {
+		t.Fatalf("old token after deletion = %d %s", res.Code, res.Body.String())
+	}
+	if res := post("/api/v1/auth/login", `{"email":"bye@example.com","password":"secret123"}`); res.Code == http.StatusOK {
+		t.Fatal("deleted account can sign in")
+	}
+}
+
+func TestMapPlacesFilterCounts(t *testing.T) {
+	router := newRouter(&handlers.API{UploadDir: t.TempDir(), Store: store.NewMemory()})
+	get := func(q string) models.MapPlacesResponse {
+		res := httptest.NewRecorder()
+		router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/v1/map/places?include_google=false"+q, nil))
+		var data models.MapPlacesResponse
+		_ = json.Unmarshal(res.Body.Bytes(), &data)
+		return data
+	}
+	if get("").Filters != nil {
+		t.Fatal("filters block without /discover params")
+	}
+	moldovan := get("&cuisine=moldovan")
+	if moldovan.Filters == nil || moldovan.Filters.Total != 10 || moldovan.Filters.Matched < 1 || moldovan.Filters.Matched >= 10 {
+		t.Fatalf("moldovan counts %+v", moldovan.Filters)
+	}
+	if len(moldovan.Places) != 10 {
+		t.Fatal("counts must not change the place list")
+	}
+	impossible := get("&cuisine=mexican")
+	if impossible.Filters.Matched != 0 || impossible.Filters.Relax == nil || impossible.Filters.Relax.Filter != "cuisine" {
+		t.Fatalf("empty state hint %+v", impossible.Filters)
+	}
+}
+
+func TestDiscoverAI(t *testing.T) {
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"cuisine\":[\"moldovan\"],\"restaurant_type\":[],\"budget\":null,\"occasion\":[\"family\"],\"practical\":[],\"explanation\":\"Молдавская кухня для семьи.\"}"}}]}`))
+	}))
+	defer fake.Close()
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(500) }))
+	defer down.Close()
+
+	type result struct {
+		Venues []models.Venue `json:"venues"`
+		Ranked []struct {
+			VenueID string `json:"venue_id"`
+			Reasons []string
+		} `json:"ranked"`
+		QueryString string `json:"query_string"`
+		Source      string `json:"source"`
+		Exact       bool   `json:"exact"`
+		Explanation string `json:"explanation"`
+	}
+	ask := func(groq *discover.Groq, body string) (int, result) {
+		router := newRouter(&handlers.API{UploadDir: t.TempDir(), Store: store.NewMemory(), Groq: groq})
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/discover/ai", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(res, req)
+		var out result
+		_ = json.Unmarshal(res.Body.Bytes(), &out)
+		return res.Code, out
+	}
+
+	code, r := ask(nil, `{"query":"недорогое итальянское на свидание"}`)
+	if code != 200 || r.Source != "rules" || !strings.Contains(r.QueryString, "cuisine=italian") || len(r.Venues) == 0 || len(r.Venues) != len(r.Ranked) {
+		t.Fatalf("rules: %d %+v", code, r)
+	}
+	code, r = ask(&discover.Groq{APIKey: "k", BaseURL: fake.URL}, `{"query":"куда с детьми поесть мамалыгу","prefs":{"budget":{"min":50,"max":200}}}`)
+	if code != 200 || r.Source != "groq" || r.Explanation == "" || !strings.Contains(r.QueryString, "cuisine=moldovan") ||
+		!strings.Contains(r.QueryString, "budget=50-200") || r.Ranked[0].VenueID != "venue-1" || r.Exact {
+		// No Moldovan venue at price level 1: approximate ranking, La Plăcinte still first.
+		t.Fatalf("groq: %d %+v", code, r)
+	}
+	code, r = ask(&discover.Groq{APIKey: "k", BaseURL: down.URL}, `{"query":"pizza"}`)
+	if code != 200 || r.Source != "rules" || !strings.Contains(r.QueryString, "italian") {
+		t.Fatalf("groq down must fall back to rules: %d %+v", code, r)
+	}
+	if code, _ := ask(nil, `{"query":"`+strings.Repeat("я", 301)+`"}`); code != 400 {
+		t.Fatalf("too long query = %d", code)
 	}
 }

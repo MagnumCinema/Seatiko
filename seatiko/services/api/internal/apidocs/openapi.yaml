@@ -278,6 +278,13 @@ paths:
           schema:
             type: string
           description: Optional viewport in south,west,north,east order. Example 46.92,28.72,47.12,29.02.
+        - name: cuisine
+          in: query
+          required: false
+          schema:
+            type: string
+          description: /discover filters (cuisine, type, budget=MIN-MAX, occasion, practical, lat, lng). When present the
+            response has `filters` {total, matched, relax}; the place list is not filtered.
         - name: lang
           in: query
           required: false
@@ -539,6 +546,9 @@ paths:
       summary: AI Discover
       tags:
         - Map and venues
+      description: Reads a free-text request (RU/RO/EN, up to 300 characters) into /discover filters with Groq when
+        GROQ_API_KEY is set, else (or on any model error) with keyword rules; merges them with `prefs` and ranks the city's
+        venues. `query_string` is ready for /?{query_string}#map. 20 requests per minute per IP.
       requestBody:
         required: true
         content:
@@ -555,8 +565,38 @@ paths:
                 properties:
                   venues:
                     type: array
+                    description: Ranked venues (legacy shape for older clients).
                     items:
                       $ref: '#/components/schemas/Venue'
+                  ranked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        venue_id:
+                          type: string
+                        score:
+                          type: number
+                        reasons:
+                          type: array
+                          description: cuisine, budget, type, occasion:<id>, open_now, free_tables, partners
+                          items:
+                            type: string
+                  prefs:
+                    $ref: '#/components/schemas/DiscoverPrefs'
+                  query_string:
+                    type: string
+                  exact:
+                    type: boolean
+                    description: false when nothing passes the filters and the ranking is approximate.
+                  source:
+                    type: string
+                    enum:
+                      - groq
+                      - rules
+                  explanation:
+                    type: string
+                    description: One sentence from the model in the request language; empty for rules.
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/auth/register:
@@ -646,6 +686,99 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/updateMeReq'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteMe
+      summary: Delete Me
+      tags:
+        - Accounts
+      description: GDPR account deletion for guests. Requires the current password. Personal data is anonymised
+        (name, email, phone, diet, favourites, avatar, reservation notes, waitlist and event contacts); upcoming
+        reservations and their preorders are cancelled; orders stay for accounting without personal data. Tokens issued
+        before stop working (401 account_deleted). Errors wrong_password (403), role_not_allowed (403, non-guests).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                  cancelled_reservations:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/avatar:
+    post:
+      operationId: UploadAvatar
+      summary: Upload Avatar
+      tags:
+        - Accounts
+      description: Profile photo. JPEG, PNG or WebP by magic bytes (SVG and anything else refused), up to 5 MB, at most
+        10 uploads per minute per user. Stored as a 512×512 JPEG (centre crop, metadata removed) in S3-compatible storage
+        (S3_BUCKET) or the local upload dir. The previous photo is deleted.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '413':
+          description: file_too_large
+        '415':
+          description: unsupported_image
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteAvatar
+      summary: Delete Avatar
+      tags:
+        - Accounts
+      description: Removes the photo from storage and the profile.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: OK
@@ -3851,6 +3984,12 @@ components:
           type: array
           items:
             type: string
+        avatar_url:
+          type: string
+          description: Profile photo URL (POST /me/avatar).
+        deleted_at:
+          type: string
+          format: date-time
         adult_preorder_allowed:
           type: boolean
           description: Read-only. Granted by venue staff after an in-person ID check (APP_LOGIC 8.4).
@@ -4290,6 +4429,45 @@ components:
       properties:
         query:
           type: string
+          maxLength: 300
+        city_id:
+          type: string
+          default: city-balti
+        locale:
+          type: string
+          enum:
+            - ru
+            - en
+            - ro
+          description: Language of the explanation.
+        prefs:
+          $ref: '#/components/schemas/DiscoverPrefs'
+    DiscoverPrefs:
+      type: object
+      properties:
+        cuisine:
+          type: array
+          items:
+            type: string
+        restaurant_type:
+          type: array
+          items:
+            type: string
+        budget:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        occasion:
+          type: array
+          items:
+            type: string
+        practical:
+          type: array
+          items:
+            type: string
     createEventInquiryReq:
       type: object
       required:

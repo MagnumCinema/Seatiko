@@ -485,6 +485,20 @@ API=http://localhost/api/v1
 - Каждая выдача и отзыв пишутся в журнал (`adult_permission_log` в снапшоте, `GET /admin/adult-permission-log?user_id=`).
 - Предзаказ (BACKEND_TASKS №1) проверяет каждую позицию так же, как `CanPreorderItem`.
 
+#### Аккаунт: удаление и аватар
+
+| Метод | Маршрут | Назначение |
+|---|---|---|
+| `DELETE` | `/me` | удалить аккаунт гостя (`password`), обезличивание по GDPR — [BACKEND_TASKS](./BACKEND_TASKS.md) №17 |
+| `POST/DELETE` | `/me/avatar` | фото профиля (multipart `file`) — №18 |
+
+Хранилище файлов (`internal/media`): `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_URL`, `S3_PATH_STYLE` (по умолчанию path-style). Пустой `S3_BUCKET` — локальная папка `UPLOAD_DIR` (`/uploads/...`). В docker-compose: сервис `minio` (`cgr.dev/chainguard/minio`, логин/пароль `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`), `minio-init` создаёт бакет с публичным чтением, nginx отдаёт файлы по `/media/`.
+
+#### /discover: счётчик и AI
+
+- `GET /map/places?...&cuisine=&type=&budget=MIN-MAX&occasion=&practical=&lat=&lng=` → `filters: {total, matched, relax}` (№11).
+- `POST /discover/ai` `{query, locale, city_id, prefs}` → фильтры и места (№10). Groq: `GROQ_API_KEY` (кладите в `.env.integration.local`, он не в git), `GROQ_MODEL` (по умолчанию `openai/gpt-oss-120b`); без ключа — правила. 20 запросов/мин с IP.
+
 ### Маршруты владельца
 
 | Метод | Маршрут | Назначение |

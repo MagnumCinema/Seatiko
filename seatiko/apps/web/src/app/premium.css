@@ -15526,3 +15526,109 @@ html[data-theme="light"] .menu-dish-popup-x {
   font-size: 0.72rem;
   font-weight: 700;
 }
+
+/* Account deletion (components/guest-profile.tsx) */
+.guest-delete-row .guest-setting-meta strong {
+  color: #e5484d;
+}
+.guest-delete-account-btn {
+  border-color: color-mix(in srgb, #e5484d 55%, transparent) !important;
+  color: #e5484d !important;
+}
+.guest-delete-dialog {
+  max-width: 460px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+}
+.guest-delete-dialog h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.guest-delete-dialog p {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.guest-delete-dialog form {
+  display: grid;
+  gap: 12px;
+}
+.guest-delete-dialog label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.guest-delete-dialog input {
+  padding: 10px 12px;
+  border: 1px solid var(--fa-border);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.guest-delete-dialog .guest-delete-error {
+  color: #e5484d;
+  font-weight: 600;
+}
+.guest-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.guest-delete-confirm {
+  background: #e5484d !important;
+  border-color: #e5484d !important;
+  color: #fff !important;
+}
+.guest-delete-confirm:disabled {
+  opacity: 0.6;
+}
+
+/* /discover match counter on the map (components/venue-map.tsx) */
+.live-map-found {
+  font-weight: 700;
+  color: var(--site-accent, #e9b96e);
+}
+.live-map-relax {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--site-accent, #e9b96e);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* /discover assistant answers (components/discover/guided-chat.tsx) */
+.discover-chat-msg p {
+  margin: 0;
+}
+.discover-chat-msg.pending {
+  opacity: 0.7;
+  font-style: italic;
+}
+.discover-chat-top {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+.discover-chat-venues {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.discover-chat-venues a,
+.discover-chat-map-link {
+  color: inherit;
+  font-weight: 700;
+}
+.discover-chat-map-link {
+  display: inline-block;
+  margin-top: 8px;
+}

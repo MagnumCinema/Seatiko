@@ -1812,40 +1812,6 @@ func (s *MemoryStore) ListCollections() []models.HolidayCollection {
 	return out
 }
 
-func (s *MemoryStore) AIRecommend(query string) []models.Venue {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	q := strings.ToLower(strings.TrimSpace(query))
-	if q == "" {
-		out := make([]models.Venue, 0, len(s.venues))
-		for _, v := range s.venues {
-			out = append(out, v)
-		}
-		return out
-	}
-
-	out := make([]models.Venue, 0)
-	for _, v := range s.venues {
-		blob := strings.ToLower(strings.Join([]string{
-			v.Name.RU, v.Name.EN, v.Name.RO,
-			v.Description.RU, v.Description.EN, v.Description.RO,
-			strings.Join(v.Cuisine, " "),
-		}, " "))
-		if strings.Contains(blob, q) {
-			out = append(out, v)
-			continue
-		}
-		for _, word := range strings.Fields(q) {
-			if len(word) >= 3 && strings.Contains(blob, word) {
-				out = append(out, v)
-				break
-			}
-		}
-	}
-	return out
-}
-
 const MaxApplicationPhotos = 8
 
 func localizedEqual(a, b models.LocalizedString) bool {
