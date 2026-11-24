@@ -305,3 +305,28 @@ func TestAvatarAndAccountDeletion(t *testing.T) {
 		t.Fatal("deleted account can sign in")
 	}
 }
+
+func TestMapPlacesFilterCounts(t *testing.T) {
+	router := newRouter(&handlers.API{UploadDir: t.TempDir(), Store: store.NewMemory()})
+	get := func(q string) models.MapPlacesResponse {
+		res := httptest.NewRecorder()
+		router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/v1/map/places?include_google=false"+q, nil))
+		var data models.MapPlacesResponse
+		_ = json.Unmarshal(res.Body.Bytes(), &data)
+		return data
+	}
+	if get("").Filters != nil {
+		t.Fatal("filters block without /discover params")
+	}
+	moldovan := get("&cuisine=moldovan")
+	if moldovan.Filters == nil || moldovan.Filters.Total != 10 || moldovan.Filters.Matched < 1 || moldovan.Filters.Matched >= 10 {
+		t.Fatalf("moldovan counts %+v", moldovan.Filters)
+	}
+	if len(moldovan.Places) != 10 {
+		t.Fatal("counts must not change the place list")
+	}
+	impossible := get("&cuisine=mexican")
+	if impossible.Filters.Matched != 0 || impossible.Filters.Relax == nil || impossible.Filters.Relax.Filter != "cuisine" {
+		t.Fatalf("empty state hint %+v", impossible.Filters)
+	}
+}

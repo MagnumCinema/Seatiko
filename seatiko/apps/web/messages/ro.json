@@ -616,5 +616,7 @@
   "account.avatar_error_size": "Fișierul depășește 5 MB.",
   "account.avatar_error": "Fotografia nu a putut fi încărcată.",
   "account.avatar_uploading": "Se încarcă fotografia…",
-  "profile.age18_verified": "Confirmat {date}"
+  "profile.age18_verified": "Confirmat {date}",
+  "map.found": "Găsite: {matched} din {total}",
+  "map.relax": "Eliminați „{filter}” — vor fi {count}"
 }

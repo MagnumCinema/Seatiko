@@ -616,5 +616,7 @@
   "account.avatar_error_size": "Файл больше 5 МБ.",
   "account.avatar_error": "Не удалось загрузить фото.",
   "account.avatar_uploading": "Загружаем фото…",
-  "profile.age18_verified": "Подтверждено {date}"
+  "profile.age18_verified": "Подтверждено {date}",
+  "map.found": "Найдено: {matched} из {total}",
+  "map.relax": "Уберите «{filter}» — будет {count}"
 }

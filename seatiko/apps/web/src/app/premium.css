@@ -15587,3 +15587,19 @@ html[data-theme="light"] .menu-dish-popup-x {
 .guest-delete-confirm:disabled {
   opacity: 0.6;
 }
+
+/* /discover match counter on the map (components/venue-map.tsx) */
+.live-map-found {
+  font-weight: 700;
+  color: var(--site-accent, #e9b96e);
+}
+.live-map-relax {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--site-accent, #e9b96e);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}

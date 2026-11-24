@@ -118,6 +118,12 @@ export type MapPlacesResponse = {
     google_count: number;
     database_count: number;
   };
+  /** Set when /discover filters are sent: places in the area, matches, and which filter to loosen at 0. */
+  filters?: {
+    total: number;
+    matched: number;
+    relax?: { filter: string; matched: number };
+  };
 };
 
 export type TableStatus = "FREE" | "RESERVED" | "OCCUPIED" | "CLEANING";
@@ -525,10 +531,14 @@ export async function fetchMapPlaces(
     bounds?: MapBounds;
     query?: string;
     bookableOnly?: boolean;
+    /** Encoded /discover preferences (encodePreferences) for server-side match counts. */
+    filters?: string;
+    /** Guest position for the "nearby" filter. */
+    near?: { lat: number; lng: number } | null;
     signal?: AbortSignal;
   },
 ): Promise<MapPlacesResponse> {
-  const { bounds, includeGoogle, locale, query, bookableOnly, signal } = options;
+  const { bounds, includeGoogle, locale, query, bookableOnly, filters, near, signal } = options;
   return apiFetch<MapPlacesResponse>("/api/v1/map/places", {
     auth: false,
     signal,
@@ -539,6 +549,9 @@ export async function fetchMapPlaces(
       bounds: bounds && [bounds.south, bounds.west, bounds.north, bounds.east].join(","),
       q: query?.trim(),
       bookable_only: bookableOnly ? "true" : undefined,
+      ...(filters ? Object.fromEntries(new URLSearchParams(filters)) : {}),
+      lat: near ? near.lat : undefined,
+      lng: near ? near.lng : undefined,
     },
   });
 }

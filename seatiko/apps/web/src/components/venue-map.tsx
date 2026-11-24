@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from "maplibre-gl";
 import {
@@ -16,8 +17,10 @@ import {
   type MapPlacesResponse,
 } from "@/lib/api";
 import {
+  encodePreferences,
   filterAndRankPlaces,
   formatBudgetAmount,
+  relaxPreference,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -322,7 +325,8 @@ function VenueMapArea({
   query: string;
   bookableOnly: boolean;
 }) {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
+  const router = useRouter();
   const { currency } = useCurrency();
   const copy = mapCopy[locale];
   const labels = areaCopy[locale];
@@ -350,9 +354,11 @@ function VenueMapArea({
   const includeGoogle = useGoogle && googleReady && !bookableOnly;
   const validViewport = useGoogle && viewport &&
     viewport.south < viewport.north && viewport.west < viewport.east ? viewport : undefined;
+  const filters = preferences ? encodePreferences(preferences) : "";
+  const near = preferences?.practical.includes("nearby") ? userGeo : null;
   const request = useMemo(
-    () => ({ cityId, includeGoogle, locale, bounds: validViewport, query, bookableOnly, retry }),
-    [cityId, includeGoogle, locale, validViewport, query, bookableOnly, retry],
+    () => ({ cityId, includeGoogle, locale, bounds: validViewport, query, bookableOnly, filters, near, retry }),
+    [cityId, includeGoogle, locale, validViewport, query, bookableOnly, filters, near, retry],
   );
   const [result, setResult] = useState<{
     request: typeof request;
@@ -899,6 +905,11 @@ function VenueMapArea({
               <span>
                 <i /> {loading ? copy.loadingVenues : `${places.length} ${copy.online}`}
               </span>
+              {!loading && preferences && data?.filters ? (
+                <span className="live-map-found" role="status">
+                  {t("map.found", { matched: data.filters.matched, total: data.filters.total })}
+                </span>
+              ) : null}
               {!useGoogle && <small>{copy.updated}</small>}
             </div>
             <div className="venue-map-legend" aria-label={copy.legendAria}>
@@ -1051,6 +1062,27 @@ function VenueMapArea({
         ) : !loadError ? (
           <p className="venue-map-address" role="status">
             {loading ? copy.loadingVenues : emptyMessage}
+            {!loading && preferences && data?.filters?.relax ? (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  className="live-map-relax"
+                  onClick={() => {
+                    const next = encodePreferences(relaxPreference(preferences, data.filters!.relax!.filter));
+                    router.replace(next ? `/?${next}#map` : "/#map", { scroll: false });
+                  }}
+                >
+                  {t("map.relax", {
+                    filter:
+                      data.filters.relax.filter === "cuisine" || data.filters.relax.filter === "budget"
+                        ? discoverCopy.steps[data.filters.relax.filter]
+                        : (discoverCopy.chips[data.filters.relax.filter as keyof typeof discoverCopy.chips] ?? data.filters.relax.filter),
+                    count: data.filters.relax.matched,
+                  })}
+                </button>
+              </>
+            ) : null}
           </p>
         ) : null}
 

@@ -616,5 +616,7 @@
   "account.avatar_error_size": "The file is larger than 5 MB.",
   "account.avatar_error": "Could not upload the photo.",
   "account.avatar_uploading": "Uploading photo…",
-  "profile.age18_verified": "Confirmed {date}"
+  "profile.age18_verified": "Confirmed {date}",
+  "map.found": "Found: {matched} of {total}",
+  "map.relax": "Remove “{filter}” to see {count}"
 }

@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"github.com/seatiko/api/internal/discover"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
 	"github.com/seatiko/api/internal/store"
@@ -164,6 +165,17 @@ func (a *API) ListMapPlaces(c *gin.Context) {
 			response.Source.DatabaseCount++
 		}
 		response.Places = append(response.Places, place)
+	}
+	// "Найдено: N" for /discover: counts with the same hard filters as the web.
+	if prefs := discover.ParsePrefs(c.Request.URL.Query()); !prefs.Empty() {
+		var origin *discover.Origin
+		lat, latErr := strconv.ParseFloat(c.Query("lat"), 64)
+		lng, lngErr := strconv.ParseFloat(c.Query("lng"), 64)
+		if latErr == nil && lngErr == nil && !math.IsNaN(lat) && !math.IsNaN(lng) {
+			origin = &discover.Origin{Lat: lat, Lng: lng}
+		}
+		counts := discover.Count(response.Places, prefs, origin)
+		response.Filters = &counts
 	}
 	c.JSON(http.StatusOK, response)
 }
