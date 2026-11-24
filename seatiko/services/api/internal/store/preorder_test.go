@@ -94,7 +94,11 @@ func TestSavePreorderRules(t *testing.T) {
 		{"wine without 18+", 3 * time.Hour, nil, []OrderItemInput{item("m-v1-13", 1)}, "", ErrAgeVerificationRequired},
 		{"venue switched preorder off", 3 * time.Hour, func(m *MemoryStore) { v := m.venues["venue-1"]; v.AllowPreorder = false; m.venues["venue-1"] = v }, []OrderItemInput{item("m1", 1)}, "", ErrPreorderDisabled},
 		{"kitchen already started", 20 * time.Minute, nil, []OrderItemInput{item("m1", 1)}, "", ErrPreorderClosed},
-		{"checked in", 3 * time.Hour, func(m *MemoryStore) { r := m.reservations["pre-res"]; r.Status = models.ReservationCheckedIn; m.reservations["pre-res"] = r }, []OrderItemInput{item("m1", 1)}, "", ErrPreorderClosed},
+		{"checked in", 3 * time.Hour, func(m *MemoryStore) {
+			r := m.reservations["pre-res"]
+			r.Status = models.ReservationCheckedIn
+			m.reservations["pre-res"] = r
+		}, []OrderItemInput{item("m1", 1)}, "", ErrPreorderClosed},
 		{"someone else's booking", 3 * time.Hour, nil, []OrderItemInput{item("m1", 1)}, demoStaffID, ErrForbidden},
 	}
 	for _, tc := range cases {

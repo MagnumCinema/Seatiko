@@ -618,5 +618,13 @@
   "account.avatar_uploading": "Загружаем фото…",
   "profile.age18_verified": "Подтверждено {date}",
   "map.found": "Найдено: {matched} из {total}",
-  "map.relax": "Уберите «{filter}» — будет {count}"
+  "map.relax": "Уберите «{filter}» — будет {count}",
+  "discover_ai.thinking": "Подбираю…",
+  "discover_ai.understood": "Вот что я понял: {filters}.",
+  "discover_ai.not_understood": "Не удалось понять запрос. Попробуйте назвать кухню, повод или бюджет — или выберите фильтры слева.",
+  "discover_ai.approx": "Точных совпадений нет — показываю самые близкие.",
+  "discover_ai.top": "Подходят:",
+  "discover_ai.show_map": "Показать на карте",
+  "discover_ai.error": "Ассистент сейчас недоступен. Выберите фильтры слева.",
+  "discover_ai.budget": "{min}–{max} MDL"
 }

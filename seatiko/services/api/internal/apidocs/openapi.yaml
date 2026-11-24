@@ -278,6 +278,13 @@ paths:
           schema:
             type: string
           description: Optional viewport in south,west,north,east order. Example 46.92,28.72,47.12,29.02.
+        - name: cuisine
+          in: query
+          required: false
+          schema:
+            type: string
+          description: /discover filters (cuisine, type, budget=MIN-MAX, occasion, practical, lat, lng). When present the
+            response has `filters` {total, matched, relax}; the place list is not filtered.
         - name: lang
           in: query
           required: false
@@ -539,6 +546,9 @@ paths:
       summary: AI Discover
       tags:
         - Map and venues
+      description: Reads a free-text request (RU/RO/EN, up to 300 characters) into /discover filters with Groq when
+        GROQ_API_KEY is set, else (or on any model error) with keyword rules; merges them with `prefs` and ranks the city's
+        venues. `query_string` is ready for /?{query_string}#map. 20 requests per minute per IP.
       requestBody:
         required: true
         content:
@@ -555,8 +565,38 @@ paths:
                 properties:
                   venues:
                     type: array
+                    description: Ranked venues (legacy shape for older clients).
                     items:
                       $ref: '#/components/schemas/Venue'
+                  ranked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        venue_id:
+                          type: string
+                        score:
+                          type: number
+                        reasons:
+                          type: array
+                          description: cuisine, budget, type, occasion:<id>, open_now, free_tables, partners
+                          items:
+                            type: string
+                  prefs:
+                    $ref: '#/components/schemas/DiscoverPrefs'
+                  query_string:
+                    type: string
+                  exact:
+                    type: boolean
+                    description: false when nothing passes the filters and the ranking is approximate.
+                  source:
+                    type: string
+                    enum:
+                      - groq
+                      - rules
+                  explanation:
+                    type: string
+                    description: One sentence from the model in the request language; empty for rules.
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/auth/register:
@@ -4389,6 +4429,45 @@ components:
       properties:
         query:
           type: string
+          maxLength: 300
+        city_id:
+          type: string
+          default: city-balti
+        locale:
+          type: string
+          enum:
+            - ru
+            - en
+            - ro
+          description: Language of the explanation.
+        prefs:
+          $ref: '#/components/schemas/DiscoverPrefs'
+    DiscoverPrefs:
+      type: object
+      properties:
+        cuisine:
+          type: array
+          items:
+            type: string
+        restaurant_type:
+          type: array
+          items:
+            type: string
+        budget:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        occasion:
+          type: array
+          items:
+            type: string
+        practical:
+          type: array
+          items:
+            type: string
     createEventInquiryReq:
       type: object
       required:

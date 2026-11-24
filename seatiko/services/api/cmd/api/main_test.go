@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/seatiko/api/internal/discover"
 	"github.com/seatiko/api/internal/handlers"
 	"github.com/seatiko/api/internal/media"
 	"github.com/seatiko/api/internal/models"
@@ -328,5 +329,54 @@ func TestMapPlacesFilterCounts(t *testing.T) {
 	impossible := get("&cuisine=mexican")
 	if impossible.Filters.Matched != 0 || impossible.Filters.Relax == nil || impossible.Filters.Relax.Filter != "cuisine" {
 		t.Fatalf("empty state hint %+v", impossible.Filters)
+	}
+}
+
+func TestDiscoverAI(t *testing.T) {
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"cuisine\":[\"moldovan\"],\"restaurant_type\":[],\"budget\":null,\"occasion\":[\"family\"],\"practical\":[],\"explanation\":\"Молдавская кухня для семьи.\"}"}}]}`))
+	}))
+	defer fake.Close()
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(500) }))
+	defer down.Close()
+
+	type result struct {
+		Venues []models.Venue `json:"venues"`
+		Ranked []struct {
+			VenueID string `json:"venue_id"`
+			Reasons []string
+		} `json:"ranked"`
+		QueryString string `json:"query_string"`
+		Source      string `json:"source"`
+		Exact       bool   `json:"exact"`
+		Explanation string `json:"explanation"`
+	}
+	ask := func(groq *discover.Groq, body string) (int, result) {
+		router := newRouter(&handlers.API{UploadDir: t.TempDir(), Store: store.NewMemory(), Groq: groq})
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/discover/ai", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(res, req)
+		var out result
+		_ = json.Unmarshal(res.Body.Bytes(), &out)
+		return res.Code, out
+	}
+
+	code, r := ask(nil, `{"query":"недорогое итальянское на свидание"}`)
+	if code != 200 || r.Source != "rules" || !strings.Contains(r.QueryString, "cuisine=italian") || len(r.Venues) == 0 || len(r.Venues) != len(r.Ranked) {
+		t.Fatalf("rules: %d %+v", code, r)
+	}
+	code, r = ask(&discover.Groq{APIKey: "k", BaseURL: fake.URL}, `{"query":"куда с детьми поесть мамалыгу","prefs":{"budget":{"min":50,"max":200}}}`)
+	if code != 200 || r.Source != "groq" || r.Explanation == "" || !strings.Contains(r.QueryString, "cuisine=moldovan") ||
+		!strings.Contains(r.QueryString, "budget=50-200") || r.Ranked[0].VenueID != "venue-1" || r.Exact {
+		// No Moldovan venue at price level 1: approximate ranking, La Plăcinte still first.
+		t.Fatalf("groq: %d %+v", code, r)
+	}
+	code, r = ask(&discover.Groq{APIKey: "k", BaseURL: down.URL}, `{"query":"pizza"}`)
+	if code != 200 || r.Source != "rules" || !strings.Contains(r.QueryString, "italian") {
+		t.Fatalf("groq down must fall back to rules: %d %+v", code, r)
+	}
+	if code, _ := ask(nil, `{"query":"`+strings.Repeat("я", 301)+`"}`); code != 400 {
+		t.Fatalf("too long query = %d", code)
 	}
 }

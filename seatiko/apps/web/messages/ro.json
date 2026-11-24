@@ -618,5 +618,13 @@
   "account.avatar_uploading": "Se încarcă fotografia…",
   "profile.age18_verified": "Confirmat {date}",
   "map.found": "Găsite: {matched} din {total}",
-  "map.relax": "Eliminați „{filter}” — vor fi {count}"
+  "map.relax": "Eliminați „{filter}” — vor fi {count}",
+  "discover_ai.thinking": "Caut…",
+  "discover_ai.understood": "Iată ce am înțeles: {filters}.",
+  "discover_ai.not_understood": "Nu am înțeles cererea. Încercați să numiți bucătăria, ocazia sau bugetul — sau folosiți filtrele din stânga.",
+  "discover_ai.approx": "Nu există potriviri exacte — arăt cele mai apropiate.",
+  "discover_ai.top": "Potrivite:",
+  "discover_ai.show_map": "Arată pe hartă",
+  "discover_ai.error": "Asistentul nu este disponibil acum. Folosiți filtrele din stânga.",
+  "discover_ai.budget": "{min}–{max} MDL"
 }

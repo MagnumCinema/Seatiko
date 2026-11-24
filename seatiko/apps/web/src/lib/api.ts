@@ -403,8 +403,24 @@ export type WaitlistSummary = {
   free_tables: number;
 };
 
+export type DiscoverAiPrefs = {
+  cuisine: string[];
+  restaurant_type: string[];
+  budget?: { min: number; max: number } | null;
+  occasion: string[];
+  practical: string[];
+};
+
 export type DiscoverResult = {
+  /** Ranked venues (same order as `ranked`). */
   venues: Venue[];
+  ranked?: { venue_id: string; score: number; reasons: string[] }[];
+  prefs?: DiscoverAiPrefs;
+  /** Ready for `/?${query_string}#map`. */
+  query_string?: string;
+  /** false when nothing passes the filters and the ranking is approximate. */
+  exact?: boolean;
+  source?: "groq" | "rules";
   explanation?: LocalizedString | string;
 };
 
@@ -658,6 +674,8 @@ export async function fetchCollections(): Promise<HolidayCollection[]> {
 export async function discoverAi(input: {
   query: string;
   city_id?: string;
+  locale?: string;
+  prefs?: DiscoverAiPrefs;
   filters?: string[];
 }): Promise<DiscoverResult> {
   return apiFetch<DiscoverResult>("/api/v1/discover/ai", {

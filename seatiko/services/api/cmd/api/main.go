@@ -11,6 +11,7 @@ import (
 	"github.com/seatiko/api/internal/auth"
 	"github.com/seatiko/api/internal/config"
 	"github.com/seatiko/api/internal/crm"
+	"github.com/seatiko/api/internal/discover"
 	"github.com/seatiko/api/internal/handlers"
 	"github.com/seatiko/api/internal/media"
 	"github.com/seatiko/api/internal/models"
@@ -51,6 +52,7 @@ func main() {
 		JWTSecret: cfg.JWTSecret,
 		UploadDir: cfg.UploadDir,
 		Media:     mediaStore(cfg),
+		Groq:      &discover.Groq{APIKey: cfg.GroqAPIKey, Model: cfg.GroqModel},
 	}
 
 	go runPreorderKitchen(mem)
@@ -96,7 +98,7 @@ func newRouter(api *handlers.API) *gin.Engine {
 		v1.GET("/venues/:id/menu", api.ListMenu)
 		v1.GET("/venues/:id/waitlist/summary", api.GetWaitlistSummary)
 		v1.GET("/collections", api.ListCollections)
-		v1.POST("/discover/ai", api.AIDiscover)
+		v1.POST("/discover/ai", auth.RateLimitMiddleware(20, time.Minute), api.AIDiscover)
 
 		authLimit := auth.RateLimitMiddleware(40, time.Minute)
 		v1.POST("/auth/register", authLimit, api.Register)

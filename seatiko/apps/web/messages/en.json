@@ -618,5 +618,13 @@
   "account.avatar_uploading": "Uploading photo…",
   "profile.age18_verified": "Confirmed {date}",
   "map.found": "Found: {matched} of {total}",
-  "map.relax": "Remove “{filter}” to see {count}"
+  "map.relax": "Remove “{filter}” to see {count}",
+  "discover_ai.thinking": "Looking…",
+  "discover_ai.understood": "Here is what I understood: {filters}.",
+  "discover_ai.not_understood": "I couldn't understand that. Try naming a cuisine, occasion or budget — or use the filters on the left.",
+  "discover_ai.approx": "No exact matches — showing the closest ones.",
+  "discover_ai.top": "Good fits:",
+  "discover_ai.show_map": "Show on the map",
+  "discover_ai.error": "The assistant is unavailable right now. Use the filters on the left.",
+  "discover_ai.budget": "{min}–{max} MDL"
 }
