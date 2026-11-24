@@ -177,6 +177,23 @@ function LockIcon() {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  );
+}
+
 const cabinetReferenceTime = Date.now();
 
 function toDraft(app: VenueApplication, locale: LocaleCode): Draft {
@@ -245,6 +262,32 @@ function storedDraft(applicationId: string, cityId: string): Draft | null {
 
 function clearStoredDraft(applicationId: string) {
   localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${applicationId}`);
+}
+
+const PENDING_CHANGES_PREFIX = "seatiko_venue_pending_changes:";
+
+function getPendingChanges(applicationId: string): Draft | null {
+  try {
+    const raw = localStorage.getItem(`${PENDING_CHANGES_PREFIX}${applicationId}`);
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setPendingChanges(applicationId: string, draft: Draft) {
+  try {
+    localStorage.setItem(
+      `${PENDING_CHANGES_PREFIX}${applicationId}`,
+      JSON.stringify(draft),
+    );
+  } catch {}
+}
+
+function clearPendingChanges(applicationId: string) {
+  try {
+    localStorage.removeItem(`${PENDING_CHANGES_PREFIX}${applicationId}`);
+  } catch {}
 }
 
 function clearStoredDraftWhenPersisted(
@@ -535,6 +578,8 @@ export default function CabinetPage() {
   const [apps, setApps] = useState<VenueApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [isEditingApproved, setIsEditingApproved] = useState(false);
+  const [hasPendingModeration, setHasPendingModeration] = useState(false);
   const [section, setSection] = useState<Section>("overview");
   const [reservations, setReservations] = useState<RestaurantReservation[]>([]);
   const [reservationFilter, setReservationFilter] =
@@ -655,8 +700,13 @@ export default function CabinetPage() {
       const nextId = selected?.id ?? null;
       if (draftApplicationRef.current !== nextId) {
         draftApplicationRef.current = nextId;
+        const pending = selected ? getPendingChanges(selected.id) : null;
+        setHasPendingModeration(Boolean(pending));
+        setIsEditingApproved(false);
         setDraft(
-          selected ? storedDraft(selected.id, selected.city_id) ?? toDraft(selected, locale) : null,
+          selected
+            ? pending ?? storedDraft(selected.id, selected.city_id) ?? toDraft(selected, locale)
+            : null,
         );
       }
       if (selected) void refreshActivity(selected.id);
@@ -853,6 +903,26 @@ export default function CabinetPage() {
     setDraft((current) => (current ? { ...current, [key]: value } : current));
   }
 
+  async function onSubmitProposedChanges() {
+    if (!selected || !draft) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setPendingChanges(selected.id, draft);
+      setHasPendingModeration(true);
+      setIsEditingApproved(false);
+      setMsg(cabinetCopy.changesSubmittedSuccess);
+      await refreshActivity(selected.id);
+    } catch (value) {
+      showApiError(
+        value,
+        locale === "ru" ? "Ошибка сохранения" : locale === "ro" ? "Eroare la salvare" : "Error saving draft",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!user) {
     return (
       <div className="panel-page owner-loading" role="status" aria-live="polite">
@@ -866,7 +936,8 @@ export default function CabinetPage() {
   const completedChecks = checks.filter((check) => check.done).length;
   const missingChecks = checks.filter((check) => !check.done);
   const completion = checks.length ? Math.round((completedChecks / checks.length) * 100) : 0;
-  const canEdit = selected ? editable(selected.status) : false;
+  const isDraftStatus = selected ? editable(selected.status) : false;
+  const canEdit = isDraftStatus || isEditingApproved;
   const futureBookings = selectedReservations.filter(
     (reservation) =>
       new Date(reservation.reserved_for).getTime() >= cabinetReferenceTime &&
@@ -1224,14 +1295,76 @@ export default function CabinetPage() {
 
               {section === "profile" && draft && (
                 <section className="owner-profile">
-                  {!canEdit && (
-                    <div className="owner-lock-note" role="note">
-                      <span><LockIcon /></span>
-                      <p>{getEditLockHint(selected.status, cabinetCopy)}</p>
-                    </div>
+                  {!isDraftStatus && (
+                    <>
+                      {isEditingApproved ? (
+                        <div className="owner-edit-mode-note" role="alert">
+                          <div className="owner-edit-mode-info">
+                            <span className="owner-edit-icon"><EditIcon /></span>
+                            <div>
+                              <strong>{cabinetCopy.editModeActiveTitle}</strong>
+                              <p>{cabinetCopy.editModeActiveHint}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="panel-btn ghost small"
+                            onClick={() => {
+                              setDraft(toDraft(selected, locale));
+                              setIsEditingApproved(false);
+                            }}
+                          >
+                            {cabinetCopy.cancelEdit}
+                          </button>
+                        </div>
+                      ) : hasPendingModeration ? (
+                        <div className="owner-pending-moderation-note" role="status">
+                          <span className="owner-pending-badge-icon"><ClockIcon /></span>
+                          <div className="owner-pending-content">
+                            <strong>{cabinetCopy.pendingModerationTitle}</strong>
+                            <p>{cabinetCopy.pendingModerationHint}</p>
+                          </div>
+                          <div className="owner-pending-actions">
+                            <button
+                              type="button"
+                              className="panel-btn ghost small"
+                              onClick={() => {
+                                clearPendingChanges(selected.id);
+                                setHasPendingModeration(false);
+                                setDraft(toDraft(selected, locale));
+                              }}
+                            >
+                              {cabinetCopy.cancelEdit}
+                            </button>
+                            <button
+                              type="button"
+                              className="panel-btn small"
+                              onClick={() => setIsEditingApproved(true)}
+                            >
+                              {cabinetCopy.editAgain}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="owner-lock-note" role="note">
+                          <div className="owner-lock-info">
+                            <span><LockIcon /></span>
+                            <p>{getEditLockHint(selected.status, cabinetCopy)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            className="panel-btn owner-edit-data-btn"
+                            onClick={() => setIsEditingApproved(true)}
+                          >
+                            <EditIcon />
+                            <span>{cabinetCopy.editApprovedData}</span>
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
 
-                  <form onSubmit={(e) => { e.preventDefault(); if (canEdit) void onSave(); }}>
+                  <form onSubmit={(e) => { e.preventDefault(); if (isEditingApproved) void onSubmitProposedChanges(); else if (canEdit) void onSave(); }}>
                     <div className="owner-form-section">
                       <div className="owner-form-title">
                         <span>01</span>
@@ -1505,32 +1638,64 @@ export default function CabinetPage() {
 
                     {canEdit && (
                       <div className="owner-form-footer">
-                        <div>
-                          <strong>{completion}% {cabinetCopy.filled}</strong>
-                          <p>
-                            {missingChecks.length
-                              ? `${locale === "ru" ? "Осталось: " : locale === "ro" ? "Rămase: " : "Remaining: "}${missingChecks.map((check) => check.label).join(", ")}.`
-                              : cabinetCopy.ready}
-                          </p>
-                        </div>
-                        <div>
-                          <button
-                            type="button"
-                            className="panel-btn ghost"
-                            disabled={busy}
-                            onClick={() => void onSave()}
-                          >
-                            {cabinetCopy.save}
-                          </button>
-                          <button
-                            type="button"
-                            className="panel-btn"
-                            disabled={busy || missingChecks.length > 0}
-                            onClick={() => void onSubmit()}
-                          >
-                            {cabinetCopy.submit}
-                          </button>
-                        </div>
+                        {isEditingApproved ? (
+                          <>
+                            <div>
+                              <strong>{cabinetCopy.editApprovedData}</strong>
+                              <p>{cabinetCopy.editModeActiveHint}</p>
+                            </div>
+                            <div className="owner-form-footer-actions">
+                              <button
+                                type="button"
+                                className="panel-btn ghost"
+                                disabled={busy}
+                                onClick={() => {
+                                  setDraft(toDraft(selected, locale));
+                                  setIsEditingApproved(false);
+                                }}
+                              >
+                                {cabinetCopy.cancelEdit}
+                              </button>
+                              <button
+                                type="button"
+                                className="panel-btn"
+                                disabled={busy}
+                                onClick={() => void onSubmitProposedChanges()}
+                              >
+                                {cabinetCopy.submitForModeration}
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div>
+                              <strong>{completion}% {cabinetCopy.filled}</strong>
+                              <p>
+                                {missingChecks.length
+                                  ? `${locale === "ru" ? "Осталось: " : locale === "ro" ? "Rămase: " : "Remaining: "}${missingChecks.map((check) => check.label).join(", ")}.`
+                                  : cabinetCopy.ready}
+                              </p>
+                            </div>
+                            <div>
+                              <button
+                                type="button"
+                                className="panel-btn ghost"
+                                disabled={busy}
+                                onClick={() => void onSave()}
+                              >
+                                {cabinetCopy.save}
+                              </button>
+                              <button
+                                type="button"
+                                className="panel-btn"
+                                disabled={busy || missingChecks.length > 0}
+                                onClick={() => void onSubmit()}
+                              >
+                                {cabinetCopy.submit}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </form>
