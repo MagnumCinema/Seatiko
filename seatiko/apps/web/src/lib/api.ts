@@ -148,7 +148,23 @@ export type User = {
   role?: UserRole | string;
   diet_preferences?: string[];
   favorite_venues?: string[];
+  /** Read-only: staff confirmed 18+ in person (APP_LOGIC §8.4). */
+  adult_preorder_allowed?: boolean;
+  adult_verification?: AdultVerification;
   created_at: string;
+};
+
+/** Who confirmed the guest is 18+, where and when (shown read-only in the account). */
+export type AdultVerification = {
+  verified_at: string;
+  verified_by_staff_id: string;
+  verified_by_staff_role: "waiter" | "manager" | "admin" | string;
+  verified_by_staff_display_name: string;
+  verified_at_venue_id: string;
+  id_document_checked: boolean;
+  id_document_type: "id_card" | "passport" | "other" | string;
+  revoked_at?: string;
+  revoked_by_staff_id?: string;
 };
 
 export type AuthResponse = { token: string; user: User };
@@ -288,6 +304,8 @@ export type MenuItem = {
   /** Dish photo (absolute URL or path under the API). */
   image_url?: string;
   contains_alcohol: boolean;
+  /** 18+ item: preorder needs `adult_preorder_allowed`; always true for alcohol. */
+  requires_age_18?: boolean;
   /** `popular` | `vegetarian` | `spicy`. */
   tags?: string[];
   position?: number;
