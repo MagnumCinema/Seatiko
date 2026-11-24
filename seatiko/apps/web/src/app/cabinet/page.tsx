@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
@@ -15,10 +16,12 @@ import {
 } from "@/components/cabinet-ops";
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
 import { useLocale } from "@/components/locale-provider";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { StatusBadge } from "@/components/status-badge";
 import {
   ApiError,
   createApplication,
+  deleteApplication,
   emptyLocalized,
   fetchMe,
   fetchMapConfig,
@@ -605,7 +608,20 @@ export default function CabinetPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deletingApp, setDeletingApp] = useState<VenueApplication | null>(null);
+  const deleteAppModalRef = useRef<HTMLElement>(null);
   const draftApplicationRef = useRef<string | null>(null);
+
+  useDialogFocus(!!deletingApp, deleteAppModalRef, () => setDeletingApp(null));
+
+  useEffect(() => {
+    if (!deletingApp) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [deletingApp]);
 
   const selected = apps.find((app) => app.id === selectedId) ?? null;
 
@@ -832,6 +848,37 @@ export default function CabinetPage() {
       showApiError(
         value,
         locale === "ru" ? "Не удалось создать ресторан" : locale === "ro" ? "Eroare la crearea localului" : "Failed to create restaurant",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDeleteConfirm() {
+    if (!deletingApp) return;
+    const target = deletingApp;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteApplication(target.id);
+      clearStoredDraft(target.id);
+      clearPendingChanges(target.id);
+      const remaining = apps.filter((item) => item.id !== target.id);
+      setApps(remaining);
+      setSelectedId(remaining[0]?.id ?? null);
+      setSection("overview");
+      setDeletingApp(null);
+      setMsg(
+        locale === "ru"
+          ? "Заведение удалено"
+          : locale === "ro"
+          ? "Localul a fost șters"
+          : "Venue deleted",
+      );
+    } catch (value) {
+      showApiError(
+        value,
+        locale === "ru" ? "Не удалось удалить заведение" : locale === "ro" ? "Nu s-a putut șterge localul" : "Failed to delete venue",
       );
     } finally {
       setBusy(false);
@@ -1185,6 +1232,14 @@ export default function CabinetPage() {
                           onClick={() => setSection("activity")}
                         >
                           {cabinetCopy.checkHistory}
+                        </button>
+                        <button
+                          type="button"
+                          className="panel-btn ghost danger"
+                          disabled={busy}
+                          onClick={() => setDeletingApp(selected)}
+                        >
+                          {locale === "ro" ? "Șterge localul" : locale === "en" ? "Delete venue" : "Удалить заведение"}
                         </button>
                       </div>
                     </div>
@@ -1724,6 +1779,14 @@ export default function CabinetPage() {
                             <div>
                               <button
                                 type="button"
+                                className="panel-btn ghost danger"
+                                disabled={busy}
+                                onClick={() => setDeletingApp(selected)}
+                              >
+                                {locale === "ro" ? "Șterge localul" : locale === "en" ? "Delete venue" : "Удалить заведение"}
+                              </button>
+                              <button
+                                type="button"
                                 className="panel-btn ghost"
                                 disabled={busy}
                                 onClick={() => void onSave()}
@@ -1875,6 +1938,83 @@ export default function CabinetPage() {
           )}
         </main>
       </div>
+
+      {deletingApp && typeof document !== "undefined" && createPortal(
+        <div className="booking-popup-root cabinet-delete-modal-root" role="presentation">
+          <button
+            type="button"
+            className="booking-popup-backdrop"
+            aria-label={cabinetCopy.opsMenuCancel}
+            onClick={() => setDeletingApp(null)}
+          />
+          <section
+            ref={deleteAppModalRef}
+            className="booking-popup cabinet-delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cabinet-venue-delete-title"
+          >
+            <div className="booking-popup-card cabinet-delete-card">
+              <button
+                type="button"
+                className="booking-popup-x"
+                onClick={() => setDeletingApp(null)}
+                aria-label={cabinetCopy.opsMenuCancel}
+              >
+                ×
+              </button>
+              <div className="cabinet-delete-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <h3 id="cabinet-venue-delete-title">
+                {locale === "ro"
+                  ? "Ștergeți localul?"
+                  : locale === "en"
+                  ? "Delete venue?"
+                  : "Удалить заведение?"}
+              </h3>
+              <p className="cabinet-delete-text">
+                {(() => {
+                  const venueName =
+                    pickLocale(deletingApp.name, locale) ||
+                    pickLocale(deletingApp.name, "ru") ||
+                    (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан");
+                  return locale === "ro"
+                    ? `Sigur doriți să ștergeți «${venueName}»? Vor fi șterse și mesele, meniul, personalul și turele asociate.`
+                    : locale === "en"
+                    ? `Are you sure you want to delete «${venueName}»? Associated tables, menu, staff, and shifts will also be removed.`
+                    : `Вы уверены, что хотите удалить «${venueName}»? Все связанные столы, меню, персонал и смены будут удалены безвозвратно.`;
+                })()}
+              </p>
+              <div className="cabinet-delete-actions">
+                <button
+                  type="button"
+                  className="panel-btn danger"
+                  disabled={busy}
+                  onClick={() => void onDeleteConfirm()}
+                >
+                  {locale === "ro" ? "Șterge localul" : locale === "en" ? "Delete venue" : "Удалить заведение"}
+                </button>
+                <button
+                  type="button"
+                  className="panel-btn ghost"
+                  data-autofocus
+                  disabled={busy}
+                  onClick={() => setDeletingApp(null)}
+                >
+                  {cabinetCopy.opsMenuCancel}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
     </PanelShell>
   );
 }

@@ -535,3 +535,32 @@ func TestWorkShiftsAndSchedule(t *testing.T) {
 		t.Fatalf("copy week shifts: err=%v, copied=%d, skipped=%d", err, len(copied), skipped)
 	}
 }
+
+func TestDeleteApplicationCleanup(t *testing.T) {
+	mem := NewMemory()
+	owner, _, venueID := publishTestVenue(t, mem, "delete-owner@example.com")
+	other := registerTestUser(t, mem, "other-owner@example.com", models.RoleRestaurant)
+
+	apps := mem.ListApplicationsByOwner(owner.ID)
+	if len(apps) != 1 {
+		t.Fatalf("expected 1 app, got %d", len(apps))
+	}
+	appID := apps[0].ID
+
+	// Forbidden for non-owner
+	if err := mem.DeleteApplication(other.ID, appID); err != ErrForbidden {
+		t.Fatalf("expected ErrForbidden for non-owner, got %v", err)
+	}
+
+	// Owner deletes venue/application
+	if err := mem.DeleteApplication(owner.ID, appID); err != nil {
+		t.Fatalf("delete application: %v", err)
+	}
+
+	if remaining := mem.ListApplicationsByOwner(owner.ID); len(remaining) != 0 {
+		t.Fatalf("expected 0 apps after delete, got %d", len(remaining))
+	}
+	if _, err := mem.GetVenue(venueID); err != ErrNotFound {
+		t.Fatalf("expected venue removed after delete, got %v", err)
+	}
+}

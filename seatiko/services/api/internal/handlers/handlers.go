@@ -838,6 +838,21 @@ func (a *API) ListMyApplications(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"applications": a.Store.ListApplicationsByOwner(a.userID(c))})
 }
 
+func (a *API) DeleteRestaurantApplication(c *gin.Context) {
+	err := a.Store.DeleteApplication(a.userID(c), c.Param("id"))
+	switch err {
+	case nil:
+		a.triggerCRM()
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	case store.ErrNotFound:
+		c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+	case store.ErrForbidden:
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "delete_failed"})
+	}
+}
+
 func (a *API) GetMyApplication(c *gin.Context) {
 	app, err := a.Store.GetApplication(c.Param("id"))
 	if err != nil {

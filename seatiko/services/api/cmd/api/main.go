@@ -158,6 +158,7 @@ func newRouter(api *handlers.API) *gin.Engine {
 				restaurant.GET("/applications", api.ListMyApplications)
 				restaurant.GET("/reservations", api.ListRestaurantReservations)
 				restaurant.GET("/applications/:id", api.GetMyApplication)
+				restaurant.DELETE("/applications/:id", api.DeleteRestaurantApplication)
 				restaurant.GET("/applications/:id/activity", api.ListApplicationActivity)
 				restaurant.PATCH("/applications/:id", api.UpdateRestaurantApplication)
 				restaurant.POST("/applications/:id/photos", api.UploadApplicationPhoto)

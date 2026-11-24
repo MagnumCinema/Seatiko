@@ -1727,6 +1727,31 @@ paths:
                     $ref: '#/components/schemas/VenueApplication'
         default:
           $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteRestaurantApplication
+      summary: Delete Restaurant Application / Venue
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/restaurant/applications/{id}/activity:
     get:
       operationId: ListApplicationActivity

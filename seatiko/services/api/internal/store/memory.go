@@ -2388,6 +2388,70 @@ func (s *MemoryStore) CreateApplication(ownerID string) (models.VenueApplication
 	return app, nil
 }
 
+func (s *MemoryStore) DeleteApplication(requesterID, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	app, ok := s.applications[id]
+	if !ok {
+		return ErrNotFound
+	}
+	requester, ok := s.users[requesterID]
+	if !ok {
+		return ErrNotFound
+	}
+	if app.OwnerUserID != requesterID && requester.Role != models.RoleAdmin {
+		return ErrForbidden
+	}
+
+	targetIDs := map[string]struct{}{id: {}}
+	if app.VenueID != nil && *app.VenueID != "" {
+		targetIDs[*app.VenueID] = struct{}{}
+		delete(s.venues, *app.VenueID)
+	}
+
+	delete(s.applications, id)
+	delete(s.activities, id)
+
+	for tableID, table := range s.tables {
+		if _, match := targetIDs[table.VenueID]; match {
+			delete(s.tables, tableID)
+		}
+	}
+	for itemID, item := range s.menuItems {
+		if _, match := targetIDs[item.VenueID]; match {
+			delete(s.menuItems, itemID)
+		}
+	}
+	for staffID, member := range s.staffMembers {
+		if _, match := targetIDs[member.VenueID]; match {
+			delete(s.staffMembers, staffID)
+		}
+	}
+	for shiftID, shift := range s.shifts {
+		if _, match := targetIDs[shift.VenueID]; match {
+			delete(s.shifts, shiftID)
+		}
+	}
+	for callID, call := range s.waiterCalls {
+		if _, match := targetIDs[call.VenueID]; match {
+			delete(s.waiterCalls, callID)
+		}
+	}
+	for reqID, change := range s.profileChanges {
+		if change.ApplicationID == id {
+			delete(s.profileChanges, reqID)
+		}
+	}
+	for wlID, entry := range s.waitlist {
+		if _, match := targetIDs[entry.VenueID]; match {
+			delete(s.waitlist, wlID)
+		}
+	}
+	return nil
+}
+
 func (s *MemoryStore) GetApplication(id string) (models.VenueApplication, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

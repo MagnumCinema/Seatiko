@@ -708,6 +708,12 @@ export async function createApplication(): Promise<VenueApplication> {
   return data.application;
 }
 
+export async function deleteApplication(id: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>(`/api/v1/restaurant/applications/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function updateApplication(
   id: string,
   input: ApplicationUpdate,
