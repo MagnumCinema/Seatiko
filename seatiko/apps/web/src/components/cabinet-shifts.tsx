@@ -1176,7 +1176,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
           />
           <section
             ref={batchModalRef}
-            className="booking-popup cabinet-shift-dialog"
+            className="booking-popup cabinet-shift-dialog wide"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cabinet-batch-shift-title"
@@ -1261,148 +1261,150 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                 </div>
 
-                <div className="cabinet-shift-field-group">
-                  <div className="cabinet-shift-staff-header">
-                    <label>{copy.plannerSelectWaiters} ({validBatchWaiters.length})</label>
-                    {waiters.length > 0 && (
-                      <div className="cabinet-shift-staff-bulk-actions">
-                        <button
-                          type="button"
-                          className="cabinet-shift-bulk-btn"
-                          onClick={() =>
-                            setBatchWaiters(
-                              waiters
-                                .filter((w) => !findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd))
-                                .map((w) => w.id),
-                            )
-                          }
-                        >
-                          {copy.opsScheduleSelectAll}
-                        </button>
-                        <button
-                          type="button"
-                          className="cabinet-shift-bulk-btn"
-                          onClick={() => setBatchWaiters([])}
-                        >
-                          {copy.opsScheduleDeselectAll}
-                        </button>
+                <div className="cabinet-shift-roles-split">
+                  <div className="cabinet-shift-field-group">
+                    <div className="cabinet-shift-staff-header">
+                      <label>👤 {copy.plannerSelectWaiters} ({validBatchWaiters.length})</label>
+                      {waiters.length > 0 && (
+                        <div className="cabinet-shift-staff-bulk-actions">
+                          <button
+                            type="button"
+                            className="cabinet-shift-bulk-btn"
+                            onClick={() =>
+                              setBatchWaiters(
+                                waiters
+                                  .filter((w) => !findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd))
+                                  .map((w) => w.id),
+                              )
+                            }
+                          >
+                            {copy.opsScheduleSelectAll}
+                          </button>
+                          <button
+                            type="button"
+                            className="cabinet-shift-bulk-btn"
+                            onClick={() => setBatchWaiters([])}
+                          >
+                            {copy.opsScheduleDeselectAll}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {waiters.length === 0 ? (
+                      <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
+                        {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
+                      </p>
+                    ) : (
+                      <div className="cabinet-shift-staff-grid">
+                        {waiters.map((w) => {
+                          const conflict = findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd);
+                          const isSelected = !conflict && validBatchWaiters.includes(w.id);
+                          const name = w.name?.trim() || w.email.split("@")[0];
+                          return (
+                            <button
+                              key={w.id}
+                              type="button"
+                              disabled={!!conflict}
+                              title={conflict ? formatConflictLabel(conflict, locale) : undefined}
+                              className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
+                              onClick={() => {
+                                if (conflict) return;
+                                setBatchWaiters((prev) =>
+                                  isSelected ? prev.filter((id) => id !== w.id) : [...prev, w.id]
+                                );
+                              }}
+                            >
+                              <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
+                              <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                {name.slice(0, 2).toUpperCase()}
+                              </span>
+                              <span className="cabinet-shift-staff-pill-meta">
+                                <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                {conflict && (
+                                  <small className="cabinet-shift-pill-conflict">
+                                    {formatConflictLabel(conflict, locale)}
+                                  </small>
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
 
-                  {waiters.length === 0 ? (
-                    <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                      {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
-                    </p>
-                  ) : (
-                    <div className="cabinet-shift-staff-grid">
-                      {waiters.map((w) => {
-                        const conflict = findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd);
-                        const isSelected = !conflict && validBatchWaiters.includes(w.id);
-                        const name = w.name?.trim() || w.email.split("@")[0];
-                        return (
+                  <div className="cabinet-shift-field-group">
+                    <div className="cabinet-shift-staff-header">
+                      <label>👨‍🍳 {copy.plannerSelectCooks} ({validBatchCooks.length})</label>
+                      {cooks.length > 0 && (
+                        <div className="cabinet-shift-staff-bulk-actions">
                           <button
-                            key={w.id}
                             type="button"
-                            disabled={!!conflict}
-                            title={conflict ? formatConflictLabel(conflict, locale) : undefined}
-                            className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
-                            onClick={() => {
-                              if (conflict) return;
-                              setBatchWaiters((prev) =>
-                                isSelected ? prev.filter((id) => id !== w.id) : [...prev, w.id]
-                              );
-                            }}
+                            className="cabinet-shift-bulk-btn"
+                            onClick={() =>
+                              setBatchCooks(
+                                cooks
+                                  .filter((c) => !findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd))
+                                  .map((c) => c.id),
+                              )
+                            }
                           >
-                            <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
-                            <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                              {name.slice(0, 2).toUpperCase()}
-                            </span>
-                            <span className="cabinet-shift-staff-pill-meta">
-                              <span className="cabinet-shift-staff-pill-name">{name}</span>
-                              {conflict && (
-                                <small className="cabinet-shift-pill-conflict">
-                                  {formatConflictLabel(conflict, locale)}
-                                </small>
-                              )}
-                            </span>
+                            {copy.opsScheduleSelectAll}
                           </button>
-                        );
-                      })}
+                          <button
+                            type="button"
+                            className="cabinet-shift-bulk-btn"
+                            onClick={() => setBatchCooks([])}
+                          >
+                            {copy.opsScheduleDeselectAll}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="cabinet-shift-field-group">
-                  <div className="cabinet-shift-staff-header">
-                    <label>{copy.plannerSelectCooks} ({validBatchCooks.length})</label>
-                    {cooks.length > 0 && (
-                      <div className="cabinet-shift-staff-bulk-actions">
-                        <button
-                          type="button"
-                          className="cabinet-shift-bulk-btn"
-                          onClick={() =>
-                            setBatchCooks(
-                              cooks
-                                .filter((c) => !findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd))
-                                .map((c) => c.id),
-                            )
-                          }
-                        >
-                          {copy.opsScheduleSelectAll}
-                        </button>
-                        <button
-                          type="button"
-                          className="cabinet-shift-bulk-btn"
-                          onClick={() => setBatchCooks([])}
-                        >
-                          {copy.opsScheduleDeselectAll}
-                        </button>
+                    {cooks.length === 0 ? (
+                      <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
+                        {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
+                      </p>
+                    ) : (
+                      <div className="cabinet-shift-staff-grid">
+                        {cooks.map((c) => {
+                          const conflict = findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd);
+                          const isSelected = !conflict && validBatchCooks.includes(c.id);
+                          const name = c.name?.trim() || c.email.split("@")[0];
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              disabled={!!conflict}
+                              title={conflict ? formatConflictLabel(conflict, locale) : undefined}
+                              className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
+                              onClick={() => {
+                                if (conflict) return;
+                                setBatchCooks((prev) =>
+                                  isSelected ? prev.filter((id) => id !== c.id) : [...prev, c.id]
+                                );
+                              }}
+                            >
+                              <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
+                              <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                {name.slice(0, 2).toUpperCase()}
+                              </span>
+                              <span className="cabinet-shift-staff-pill-meta">
+                                <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                {conflict && (
+                                  <small className="cabinet-shift-pill-conflict">
+                                    {formatConflictLabel(conflict, locale)}
+                                  </small>
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-
-                  {cooks.length === 0 ? (
-                    <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                      {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
-                    </p>
-                  ) : (
-                    <div className="cabinet-shift-staff-grid">
-                      {cooks.map((c) => {
-                        const conflict = findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd);
-                        const isSelected = !conflict && validBatchCooks.includes(c.id);
-                        const name = c.name?.trim() || c.email.split("@")[0];
-                        return (
-                          <button
-                            key={c.id}
-                            type="button"
-                            disabled={!!conflict}
-                            title={conflict ? formatConflictLabel(conflict, locale) : undefined}
-                            className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
-                            onClick={() => {
-                              if (conflict) return;
-                              setBatchCooks((prev) =>
-                                isSelected ? prev.filter((id) => id !== c.id) : [...prev, c.id]
-                              );
-                            }}
-                          >
-                            <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
-                            <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                              {name.slice(0, 2).toUpperCase()}
-                            </span>
-                            <span className="cabinet-shift-staff-pill-meta">
-                              <span className="cabinet-shift-staff-pill-name">{name}</span>
-                              {conflict && (
-                                <small className="cabinet-shift-pill-conflict">
-                                  {formatConflictLabel(conflict, locale)}
-                                </small>
-                              )}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
 
                 <div className="cabinet-shift-field-group">
@@ -1602,7 +1604,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
           />
           <section
             ref={recurringModalRef}
-            className="booking-popup cabinet-shift-dialog"
+            className="booking-popup cabinet-shift-dialog generator"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cabinet-recurring-modal-title"
@@ -1860,155 +1862,157 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                 </div>
 
-                {/* Separate Waiters Section */}
-                {(() => {
-                  const selectedWaiterCount = waiters.filter((w) => recurringStaffIds.includes(w.id)).length;
-                  const teamASet = new Set(recurringAssignments.teamAStaff);
-                  const teamBSet = new Set(recurringAssignments.teamBStaff);
-                  const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
-                  return (
-                    <div className="cabinet-shift-field-group">
-                      <div className="cabinet-shift-staff-header">
-                        <label>👤 {copy.plannerSelectWaiters} ({selectedWaiterCount})</label>
-                        {waiters.length > 0 && (
-                          <div className="cabinet-shift-staff-bulk-actions">
-                            <button
-                              type="button"
-                              className="cabinet-shift-bulk-btn"
-                              onClick={() =>
-                                setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...waiters.map((w) => w.id)])))
-                              }
-                            >
-                              {copy.opsScheduleSelectAll}
-                            </button>
-                            <button
-                              type="button"
-                              className="cabinet-shift-bulk-btn"
-                              onClick={() => {
-                                const waiterIds = new Set(waiters.map((w) => w.id));
-                                setRecurringStaffIds((prev) => prev.filter((id) => !waiterIds.has(id)));
-                              }}
-                            >
-                              {copy.opsScheduleDeselectAll}
-                            </button>
+                <div className="cabinet-shift-roles-split">
+                  {/* Separate Waiters Section */}
+                  {(() => {
+                    const selectedWaiterCount = waiters.filter((w) => recurringStaffIds.includes(w.id)).length;
+                    const teamASet = new Set(recurringAssignments.teamAStaff);
+                    const teamBSet = new Set(recurringAssignments.teamBStaff);
+                    const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
+                    return (
+                      <div className="cabinet-shift-field-group">
+                        <div className="cabinet-shift-staff-header">
+                          <label>👤 {copy.plannerSelectWaiters} ({selectedWaiterCount})</label>
+                          {waiters.length > 0 && (
+                            <div className="cabinet-shift-staff-bulk-actions">
+                              <button
+                                type="button"
+                                className="cabinet-shift-bulk-btn"
+                                onClick={() =>
+                                  setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...waiters.map((w) => w.id)])))
+                                }
+                              >
+                                {copy.opsScheduleSelectAll}
+                              </button>
+                              <button
+                                type="button"
+                                className="cabinet-shift-bulk-btn"
+                                onClick={() => {
+                                  const waiterIds = new Set(waiters.map((w) => w.id));
+                                  setRecurringStaffIds((prev) => prev.filter((id) => !waiterIds.has(id)));
+                                }}
+                              >
+                                {copy.opsScheduleDeselectAll}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {waiters.length === 0 ? (
+                          <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
+                            {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
+                          </p>
+                        ) : (
+                          <div className="cabinet-shift-staff-grid">
+                            {waiters.map((m) => {
+                              const isSelected = recurringStaffIds.includes(m.id);
+                              const name = m.name?.trim() || m.email.split("@")[0];
+                              const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
+                              return (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                                  onClick={() => {
+                                    setRecurringStaffIds((prev) =>
+                                      isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                                    );
+                                  }}
+                                >
+                                  <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                                  <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                    {name.slice(0, 2).toUpperCase()}
+                                  </span>
+                                  <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                  {waveTag && (
+                                    <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
+                                      {waveTag}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
+                    );
+                  })()}
 
-                      {waiters.length === 0 ? (
-                        <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                          {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
-                        </p>
-                      ) : (
-                        <div className="cabinet-shift-staff-grid">
-                          {waiters.map((m) => {
-                            const isSelected = recurringStaffIds.includes(m.id);
-                            const name = m.name?.trim() || m.email.split("@")[0];
-                            const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
-                            return (
+                  {/* Separate Cooks Section */}
+                  {(() => {
+                    const selectedCookCount = cooks.filter((c) => recurringStaffIds.includes(c.id)).length;
+                    const teamASet = new Set(recurringAssignments.teamAStaff);
+                    const teamBSet = new Set(recurringAssignments.teamBStaff);
+                    const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
+                    return (
+                      <div className="cabinet-shift-field-group">
+                        <div className="cabinet-shift-staff-header">
+                          <label>👨‍🍳 {copy.plannerSelectCooks} ({selectedCookCount})</label>
+                          {cooks.length > 0 && (
+                            <div className="cabinet-shift-staff-bulk-actions">
                               <button
-                                key={m.id}
                                 type="button"
-                                className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                                className="cabinet-shift-bulk-btn"
+                                onClick={() =>
+                                  setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...cooks.map((c) => c.id)])))
+                                }
+                              >
+                                {copy.opsScheduleSelectAll}
+                              </button>
+                              <button
+                                type="button"
+                                className="cabinet-shift-bulk-btn"
                                 onClick={() => {
-                                  setRecurringStaffIds((prev) =>
-                                    isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
-                                  );
+                                  const cookIds = new Set(cooks.map((c) => c.id));
+                                  setRecurringStaffIds((prev) => prev.filter((id) => !cookIds.has(id)));
                                 }}
                               >
-                                <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
-                                <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                                  {name.slice(0, 2).toUpperCase()}
-                                </span>
-                                <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                {waveTag && (
-                                  <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
-                                    {waveTag}
-                                  </span>
-                                )}
+                                {copy.opsScheduleDeselectAll}
                               </button>
-                            );
-                          })}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
 
-                {/* Separate Cooks Section */}
-                {(() => {
-                  const selectedCookCount = cooks.filter((c) => recurringStaffIds.includes(c.id)).length;
-                  const teamASet = new Set(recurringAssignments.teamAStaff);
-                  const teamBSet = new Set(recurringAssignments.teamBStaff);
-                  const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
-                  return (
-                    <div className="cabinet-shift-field-group">
-                      <div className="cabinet-shift-staff-header">
-                        <label>👨‍🍳 {copy.plannerSelectCooks} ({selectedCookCount})</label>
-                        {cooks.length > 0 && (
-                          <div className="cabinet-shift-staff-bulk-actions">
-                            <button
-                              type="button"
-                              className="cabinet-shift-bulk-btn"
-                              onClick={() =>
-                                setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...cooks.map((c) => c.id)])))
-                              }
-                            >
-                              {copy.opsScheduleSelectAll}
-                            </button>
-                            <button
-                              type="button"
-                              className="cabinet-shift-bulk-btn"
-                              onClick={() => {
-                                const cookIds = new Set(cooks.map((c) => c.id));
-                                setRecurringStaffIds((prev) => prev.filter((id) => !cookIds.has(id)));
-                              }}
-                            >
-                              {copy.opsScheduleDeselectAll}
-                            </button>
+                        {cooks.length === 0 ? (
+                          <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
+                            {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
+                          </p>
+                        ) : (
+                          <div className="cabinet-shift-staff-grid">
+                            {cooks.map((m) => {
+                              const isSelected = recurringStaffIds.includes(m.id);
+                              const name = m.name?.trim() || m.email.split("@")[0];
+                              const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
+                              return (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                                  onClick={() => {
+                                    setRecurringStaffIds((prev) =>
+                                      isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                                    );
+                                  }}
+                                >
+                                  <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                                  <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                    {name.slice(0, 2).toUpperCase()}
+                                  </span>
+                                  <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                  {waveTag && (
+                                    <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
+                                      {waveTag}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
-
-                      {cooks.length === 0 ? (
-                        <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                          {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
-                        </p>
-                      ) : (
-                        <div className="cabinet-shift-staff-grid">
-                          {cooks.map((m) => {
-                            const isSelected = recurringStaffIds.includes(m.id);
-                            const name = m.name?.trim() || m.email.split("@")[0];
-                            const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
-                            return (
-                              <button
-                                key={m.id}
-                                type="button"
-                                className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
-                                onClick={() => {
-                                  setRecurringStaffIds((prev) =>
-                                    isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
-                                  );
-                                }}
-                              >
-                                <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
-                                <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                                  {name.slice(0, 2).toUpperCase()}
-                                </span>
-                                <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                {waveTag && (
-                                  <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
-                                    {waveTag}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                    );
+                  })()}
+                </div>
 
                 <div className="cabinet-shift-field-group">
                   <label htmlFor="rec-note">{copy.opsScheduleNoteLabel}</label>
@@ -2367,7 +2371,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
           />
           <section
             ref={swapModalRef}
-            className="booking-popup cabinet-shift-dialog"
+            className="booking-popup cabinet-shift-dialog wide"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cabinet-swap-modal-title"

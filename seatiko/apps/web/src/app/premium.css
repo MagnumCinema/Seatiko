@@ -5917,10 +5917,34 @@ html[data-theme="light"] .cabinet-shift-status-badge.declined {
   }
 }
 
-/* Shift Assignment Modal */
+/* Shift Assignment & Generator Modals */
+.cabinet-shift-dialog {
+  width: min(100%, 580px);
+}
+.cabinet-shift-dialog.wide {
+  width: min(100%, 780px);
+}
+.cabinet-shift-dialog.generator {
+  width: min(100%, 920px);
+}
 .cabinet-shift-card {
-  max-width: 500px !important;
+  max-width: none !important;
   width: 100%;
+  padding: 26px 28px 24px;
+}
+.cabinet-shift-roles-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .cabinet-shift-roles-split {
+    grid-template-columns: 1fr;
+  }
+  .cabinet-shift-card {
+    padding: 20px 18px 18px;
+  }
 }
 .cabinet-shift-dialog-sub {
   font-size: 0.8rem;
@@ -7287,7 +7311,7 @@ html[data-theme="light"] .cabinet-quick-conflict-warning {
 
 /* Personal Staff Schedule Modal */
 .cabinet-personal-dialog {
-  width: min(100%, 540px);
+  width: min(100%, 720px);
 }
 .cabinet-personal-head {
   display: flex;
