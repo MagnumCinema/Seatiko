@@ -17,13 +17,13 @@
 | 5 | 18+ / `adult_preorder_allowed` + staff grant | APP_LOGIC §8.4 | Открыто |
 | 6 | Реальные способы оплаты | кабинет гостя | Открыто |
 | 7 | Уточнить координаты демо-ресторанов | страница ресторана | Открыто |
-| 8 | `free_tables: 0` не терять в JSON карты (`omitempty`) | карта / map places | Открыто |
+| 8 | `free_tables: 0` не терять в JSON карты (`omitempty`) | карта / map places | Сделано |
 | 9 | Локали EN/RO для Google-only мест на карте | карта / Places | Открыто |
 | 10 | Discover AI: NL-запрос → prefs / ranked venues | `/discover` AI-стаб | Открыто |
 | 11 | Live count «Найдено: N» для discover/map filters | `/discover` filters bar | Открыто |
 | 12 | OAuth / Social Logins (Google, Apple, Telegram) | `/login` соцсети | Открыто |
 | 13 | Password Reset / Сброс пароля | `/login` забыли пароль | Открыто |
-| 14 | Seed демо-владельца ресторана (`RoleRestaurant`) | `/login`, `/cabinet` | Открыто |
+| 14 | Seed демо-владельца ресторана (`RoleRestaurant`) | `/login`, `/cabinet` | Сделано |
 | 15 | Онбординг персонала (Email-инвайты и QR-код подключения смены) | `/staff`, `/cabinet` | Открыто |
 | 16 | Верификация корпоративного email владельца заведения | `/register` | Открыто |
 | 17 | GDPR / Удаление аккаунта гостя (`DELETE /api/v1/me`) | `/account` | Открыто |
@@ -80,7 +80,7 @@
 
 Метки на карте «Как добраться» иногда не совпадают с адресом (например Beermaster Pub). Поправить `lat`/`lng` в сиде (`memory.go` / демо-данные) и при необходимости backfill в persistence, как для меню.
 
-### 8. `free_tables: 0` в ответе map places — **Открыто**
+### 8. `free_tables: 0` в ответе map places — **Сделано**
 
 У `MapPlace.FreeTables` (и части числовых полей) стоит `json:",omitempty"`. При 0 свободных столов ключ пропадает из JSON, попап карты может не показать «0 столов», хотя бронь всё ещё доступна. Убрать `omitempty` у `FreeTables` (как у `Venue.FreeTables`) или явно отдавать `0`.
 
@@ -141,7 +141,7 @@
 
 **Сейчас на фронте:** информационный попап/блок с подсказкой и контактом поддержки.
 
-### 14. Seed демо-владельца ресторана (`RoleRestaurant`) — **Открыто**
+### 14. Seed демо-владельца ресторана (`RoleRestaurant`) — **Сделано**
 
 **Контекст.** В `internal/store/memory.go` зашиты только `admin@seatiko.local` (с ролью `admin`) и `guest@seatiko.local` (с ролью `guest`). Пользователя с ролью `restaurant` в стандартном сиде нет, из-за чего для тестирования `/cabinet` приходится либо заходить под админом, либо регистрировать нового владельца через `/register`.
 
