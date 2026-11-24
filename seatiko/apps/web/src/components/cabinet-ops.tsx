@@ -14,13 +14,16 @@ import { LeafIcon, FlameIcon } from "@/components/venue-icons";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
+  createVenueWorkShift,
   deleteOwnerMenuItem,
+  deleteVenueWorkShift,
   emptyLocalized,
   fetchVenueAnalytics,
   inviteVenueStaff,
   listOwnerMenu,
   listVenueQR,
   listVenueStaff,
+  listVenueWorkShifts,
   mediaUrl,
   pickLocale,
   regenerateVenueQR,
@@ -34,6 +37,7 @@ import {
   type StaffMember,
   type Table,
   type VenueAnalytics,
+  type WorkShift,
 } from "@/lib/api";
 
 type Props = { venueId: string };
@@ -298,6 +302,49 @@ export function CabinetRulesPanel({ venueId }: Props) {
   );
 }
 
+function getTodayDateString(): string {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
+function getTomorrowDateString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatShiftDate(dateStr: string, locale: "ru" | "ro" | "en"): string {
+  const today = getTodayDateString();
+  const tomorrow = getTomorrowDateString();
+  if (dateStr === today) {
+    return locale === "ro" ? "Astăzi" : locale === "en" ? "Today" : "Сегодня";
+  }
+  if (dateStr === tomorrow) {
+    return locale === "ro" ? "Mâine" : locale === "en" ? "Tomorrow" : "Завтра";
+  }
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    const lang = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
+    return d.toLocaleDateString(lang, { day: "numeric", month: "short", weekday: "short" });
+  } catch {
+    return dateStr;
+  }
+}
+
+function calcShiftDuration(start: string, end: string, locale: "ru" | "ro" | "en"): string {
+  const [sh, sm] = (start || "").split(":").map(Number);
+  const [eh, em] = (end || "").split(":").map(Number);
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return "";
+  let mins = eh * 60 + em - (sh * 60 + sm);
+  if (mins < 0) mins += 24 * 60;
+  const hrs = Math.floor(mins / 60);
+  const remMin = mins % 60;
+  const hUnit = locale === "ro" ? "ore" : locale === "en" ? "h" : "ч";
+  const mUnit = locale === "ro" ? "min" : locale === "en" ? "m" : "мин";
+  if (remMin === 0) return `${hrs} ${hUnit}`;
+  return `${hrs} ${hUnit} ${remMin} ${mUnit}`;
+}
+
 /**
  * Staff & Shift Analytics Panel
  */
@@ -306,18 +353,38 @@ export function CabinetStaffPanel({ venueId }: Props) {
   const copy = getSiteCopy(locale).cabinet;
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [analytics, setAnalytics] = useState<VenueAnalytics | null>(null);
+  const [shifts, setShifts] = useState<WorkShift[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"waiter" | "cook">("waiter");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Shifts schedule state
+  const [selectedRoleTab, setSelectedRoleTab] = useState<"all" | "waiter" | "cook">("all");
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>("all");
+  const [customDateFilter, setCustomDateFilter] = useState<string>("");
+  const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+  const shiftModalRef = useRef<HTMLElement>(null);
+  useDialogFocus(isShiftModalOpen, shiftModalRef, () => setIsShiftModalOpen(false));
+
+  // Shift assignment form state
+  const [shiftRole, setShiftRole] = useState<"waiter" | "cook">("waiter");
+  const [shiftStaffId, setShiftStaffId] = useState("");
+  const [shiftDate, setShiftDate] = useState(getTodayDateString());
+  const [shiftStart, setShiftStart] = useState("10:00");
+  const [shiftEnd, setShiftEnd] = useState("22:00");
+  const [shiftNote, setShiftNote] = useState("");
+
   async function reload() {
-    const [members, stats] = await Promise.all([
+    const [members, stats, shiftList] = await Promise.all([
       listVenueStaff(venueId),
       fetchVenueAnalytics(venueId),
+      listVenueWorkShifts(venueId),
     ]);
     setStaff(members);
     setAnalytics(stats);
+    setShifts(shiftList);
   }
 
   useEffect(() => {
@@ -366,6 +433,21 @@ export function CabinetStaffPanel({ venueId }: Props) {
       setBusy(false);
     }
   }
+
+  const filteredShifts = useMemo(() => {
+    return shifts.filter((s) => {
+      if (selectedRoleTab !== "all" && s.role !== selectedRoleTab) return false;
+      if (selectedDateFilter === "today") return s.date === getTodayDateString();
+      if (selectedDateFilter === "tomorrow") return s.date === getTomorrowDateString();
+      if (selectedDateFilter !== "all" && s.date !== selectedDateFilter) return false;
+      return true;
+    });
+  }, [shifts, selectedRoleTab, selectedDateFilter]);
+
+  const availableStaffForModal = useMemo(() => {
+    const filtered = staff.filter((m) => (m.role || "waiter") === shiftRole);
+    return filtered.length > 0 ? filtered : staff;
+  }, [staff, shiftRole]);
 
   return (
     <div className="cabinet-ops">
@@ -422,10 +504,10 @@ export function CabinetStaffPanel({ venueId }: Props) {
             <h3>{copy.opsStaffTitle}</h3>
             <p className="cabinet-ops-sub">
               {locale === "ro"
-                ? "Invitați chelneri și administratori pentru acces la comenzile din sală"
+                ? "Invitați chelneri și bucătari pentru acces la comenzile din sală și bucătărie"
                 : locale === "en"
-                ? "Invite waitstaff and managers for access to hall orders"
-                : "Приглашайте официантов и администраторов для работы с заказами в зале"}
+                ? "Invite waitstaff and cooks for access to floor orders and kitchen"
+                : "Приглашайте официантов и поваров для работы с заказами в зале и на кухне"}
             </p>
           </div>
         </div>
@@ -436,18 +518,28 @@ export function CabinetStaffPanel({ venueId }: Props) {
             e.preventDefault();
             if (!email.trim()) return;
             void run(async () => {
-              const created = await inviteVenueStaff(venueId, email.trim(), name.trim());
+              const created = await inviteVenueStaff(venueId, email.trim(), name.trim(), inviteRole);
               setStaff((prev) => [...prev, created]);
               setEmail("");
               setName("");
+              setInviteRole("waiter");
             }, locale === "ro" ? "Invitația a fost expediată" : locale === "en" ? "Invitation sent" : "Приглашение отправлено");
           }}
         >
-          <div className="cabinet-ops-inputs-grid">
+          <div className="cabinet-ops-inputs-grid cabinet-staff-invite-grid">
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as "waiter" | "cook")}
+              className="cabinet-staff-input cabinet-staff-role-select"
+              aria-label={copy.opsStaffRoleLabel}
+            >
+              <option value="waiter">{copy.opsStaffRoleWaiter}</option>
+              <option value="cook">{copy.opsStaffRoleCook}</option>
+            </select>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={locale === "ro" ? "Nume și prenume chelner" : locale === "en" ? "Waiter full name" : "Имя и фамилия официанта"}
+              placeholder={locale === "ro" ? "Nume și prenume" : locale === "en" ? "Full name" : "Имя и фамилия"}
               type="text"
               className="cabinet-staff-input"
             />
@@ -483,6 +575,8 @@ export function CabinetStaffPanel({ venueId }: Props) {
             staff.map((member) => {
               const displayName = member.name?.trim() || member.email.split("@")[0];
               const isOnShift = member.on_shift ?? (member.status === "ACTIVE");
+              const isCook = member.role === "cook";
+              const isAdmin = member.role === "admin";
               return (
                 <li key={member.id} className="cabinet-staff-card">
                   <div className="cabinet-staff-card-left">
@@ -492,6 +586,9 @@ export function CabinetStaffPanel({ venueId }: Props) {
                     <div className="cabinet-staff-info">
                       <div className="cabinet-staff-name-row">
                         <strong className="cabinet-staff-name">{displayName}</strong>
+                        <span className={`cabinet-staff-role-tag role-${member.role || "waiter"}`}>
+                          {isCook ? copy.opsStaffRoleCook : isAdmin ? copy.opsStaffRoleAdmin : copy.opsStaffRoleWaiter}
+                        </span>
                         <span className={`cabinet-staff-shift-pill ${isOnShift ? "on-shift" : "off-shift"}`}>
                           <span className="cabinet-staff-shift-dot" />
                           {isOnShift
@@ -501,10 +598,6 @@ export function CabinetStaffPanel({ venueId }: Props) {
                       </div>
                       <span className="cabinet-staff-email">{member.email}</span>
                       <small className="cabinet-staff-meta">
-                        {member.role === "admin"
-                          ? (locale === "ro" ? "Administrator" : locale === "en" ? "Manager" : "Администратор")
-                          : (locale === "ro" ? "Ospătar" : locale === "en" ? "Waiter" : "Официант")}
-                        {" · "}
                         {member.status === "ACTIVE"
                           ? (locale === "ro" ? "Activ" : locale === "en" ? "Active" : "Активен")
                           : (locale === "ro" ? "Invitație trimisă" : locale === "en" ? "Invited" : "Приглашён")}
@@ -529,7 +622,7 @@ export function CabinetStaffPanel({ venueId }: Props) {
                             prev.map((s) => (s.id === member.id ? { ...s, on_shift: updated.on_shift } : s)),
                           );
                         }, !isOnShift
-                          ? (locale === "ro" ? "Chelnerul a intrat în tură" : locale === "en" ? "Waiter entered shift" : "Официант вышел на смену")
+                          ? (locale === "ro" ? "Personalul a intrat în tură" : locale === "en" ? "Staff entered shift" : "Сотрудник вышел на смену")
                           : (locale === "ro" ? "Tura a fost încheiată" : locale === "en" ? "Shift ended" : "Смена завершена"))
                       }
                     >
@@ -567,6 +660,410 @@ export function CabinetStaffPanel({ venueId }: Props) {
           )}
         </ul>
       </section>
+
+      {/* Work Shifts & Schedule Section */}
+      <section className="owner-card cabinet-ops-card cabinet-schedule-card">
+        <div className="owner-card-head cabinet-schedule-head">
+          <div>
+            <span className="owner-kicker">{copy.staff}</span>
+            <h3>{copy.opsScheduleTitle}</h3>
+            <p className="cabinet-ops-sub">{copy.opsScheduleSubtitle}</p>
+          </div>
+          <button
+            type="button"
+            className="panel-btn primary cabinet-assign-shift-btn"
+            onClick={() => {
+              const matched = staff.find((m) => (m.role || "waiter") === shiftRole) || staff[0];
+              if (matched) setShiftStaffId(matched.id);
+              setIsShiftModalOpen(true);
+            }}
+          >
+            {copy.opsScheduleAddBtn}
+          </button>
+        </div>
+
+        {/* Schedule Filter Bar */}
+        <div className="cabinet-schedule-filters">
+          {/* Role Tabs */}
+          <div className="cabinet-category-pills cabinet-schedule-role-pills" role="tablist">
+            <button
+              type="button"
+              className={selectedRoleTab === "all" ? "active" : ""}
+              onClick={() => setSelectedRoleTab("all")}
+            >
+              {copy.opsScheduleTabAll} ({shifts.length})
+            </button>
+            <button
+              type="button"
+              className={selectedRoleTab === "waiter" ? "active" : ""}
+              onClick={() => setSelectedRoleTab("waiter")}
+            >
+              {copy.opsScheduleTabWaiters} ({shifts.filter((s) => (s.role || "waiter") === "waiter").length})
+            </button>
+            <button
+              type="button"
+              className={selectedRoleTab === "cook" ? "active" : ""}
+              onClick={() => setSelectedRoleTab("cook")}
+            >
+              {copy.opsScheduleTabCooks} ({shifts.filter((s) => s.role === "cook").length})
+            </button>
+          </div>
+
+          {/* Date Filter Chips & Date Picker */}
+          <div className="cabinet-schedule-date-filter-row">
+            <div className="cabinet-schedule-date-chips">
+              <button
+                type="button"
+                className={`cabinet-schedule-date-chip ${selectedDateFilter === "all" && !customDateFilter ? "active" : ""}`}
+                onClick={() => {
+                  setSelectedDateFilter("all");
+                  setCustomDateFilter("");
+                }}
+              >
+                {copy.opsScheduleFilterDateAll}
+              </button>
+              <button
+                type="button"
+                className={`cabinet-schedule-date-chip ${selectedDateFilter === "today" ? "active" : ""}`}
+                onClick={() => {
+                  setSelectedDateFilter("today");
+                  setCustomDateFilter("");
+                }}
+              >
+                {copy.opsScheduleFilterToday}
+              </button>
+              <button
+                type="button"
+                className={`cabinet-schedule-date-chip ${selectedDateFilter === "tomorrow" ? "active" : ""}`}
+                onClick={() => {
+                  setSelectedDateFilter("tomorrow");
+                  setCustomDateFilter("");
+                }}
+              >
+                {copy.opsScheduleFilterTomorrow}
+              </button>
+            </div>
+            <div className="cabinet-schedule-custom-date">
+              <input
+                type="date"
+                value={customDateFilter}
+                onChange={(e) => {
+                  setCustomDateFilter(e.target.value);
+                  setSelectedDateFilter(e.target.value ? e.target.value : "all");
+                }}
+                className="cabinet-schedule-date-input"
+                title={copy.opsScheduleDateLabel}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Shifts List */}
+        {filteredShifts.length === 0 ? (
+          <div className="cabinet-ops-empty cabinet-schedule-empty">
+            <p>{copy.opsScheduleEmpty}</p>
+            <button
+              type="button"
+              className="panel-btn primary sm"
+              style={{ marginTop: 12 }}
+              onClick={() => {
+                const matched = staff.find((m) => (m.role || "waiter") === shiftRole) || staff[0];
+                if (matched) setShiftStaffId(matched.id);
+                setIsShiftModalOpen(true);
+              }}
+            >
+              {copy.opsScheduleAddBtn}
+            </button>
+          </div>
+        ) : (
+          <ul className="cabinet-schedule-list">
+            {filteredShifts.map((shift) => {
+              const durationStr = calcShiftDuration(shift.start_time, shift.end_time, locale);
+              return (
+                <li key={shift.id} className={`cabinet-schedule-item status-${shift.status.toLowerCase()}`}>
+                  <div className="cabinet-schedule-item-time">
+                    <span className="cabinet-schedule-date-pill">
+                      {formatShiftDate(shift.date, locale)}
+                    </span>
+                    <strong className="cabinet-schedule-hours">
+                      {shift.start_time} – {shift.end_time}
+                    </strong>
+                    {durationStr && <small className="cabinet-schedule-duration">{durationStr}</small>}
+                  </div>
+
+                  <div className="cabinet-schedule-item-staff">
+                    <span className="cabinet-staff-avatar sm" aria-hidden="true">
+                      {(shift.staff_name || "?").slice(0, 2).toUpperCase()}
+                    </span>
+                    <div>
+                      <div className="cabinet-schedule-staff-name-row">
+                        <strong className="cabinet-schedule-staff-name">{shift.staff_name}</strong>
+                        <span className={`cabinet-staff-role-tag role-${shift.role || "waiter"}`}>
+                          {shift.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
+                        </span>
+                      </div>
+                      {shift.note && (
+                        <p className="cabinet-schedule-item-note">
+                          <span>📍</span> {shift.note}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="cabinet-schedule-item-right">
+                    <span className={`cabinet-shift-status-badge ${shift.status.toLowerCase()}`}>
+                      {shift.status === "CONFIRMED" && <span className="shift-badge-icon">✓</span>}
+                      {shift.status === "PENDING" && <span className="shift-badge-icon">⏳</span>}
+                      {shift.status === "DECLINED" && <span className="shift-badge-icon">✕</span>}
+                      {shift.status === "CONFIRMED"
+                        ? copy.opsScheduleConfirmed
+                        : shift.status === "DECLINED"
+                        ? copy.opsScheduleDeclined
+                        : copy.opsSchedulePending}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="panel-btn ghost sm danger cabinet-schedule-delete-btn"
+                      disabled={busy}
+                      title={copy.opsScheduleDeleteBtn}
+                      onClick={() => {
+                        const confirmMsg =
+                          locale === "ro"
+                            ? `Ștergeți tura pentru ${shift.staff_name} (${shift.date})?`
+                            : locale === "en"
+                            ? `Delete shift for ${shift.staff_name} (${shift.date})?`
+                            : `Удалить смену для ${shift.staff_name} (${shift.date})?`;
+                        if (!window.confirm(confirmMsg)) return;
+
+                        void run(async () => {
+                          await deleteVenueWorkShift(venueId, shift.id);
+                          setShifts((prev) => prev.filter((s) => s.id !== shift.id));
+                        }, locale === "ro" ? "Tura a fost ștearsă" : locale === "en" ? "Shift deleted" : "Смена удалена");
+                      }}
+                    >
+                      {locale === "ro" ? "Șterge" : locale === "en" ? "Delete" : "Удалить"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Assign Shift Modal Popup */}
+      {isShiftModalOpen && typeof document !== "undefined" && createPortal(
+        <div className="booking-popup-root cabinet-shift-modal-root" role="presentation">
+          <button
+            type="button"
+            className="booking-popup-backdrop"
+            aria-label={copy.opsMenuCancel}
+            onClick={() => setIsShiftModalOpen(false)}
+          />
+          <section
+            ref={shiftModalRef}
+            className="booking-popup cabinet-shift-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cabinet-shift-dialog-title"
+          >
+            <div className="booking-popup-card cabinet-shift-card">
+              <button
+                type="button"
+                className="booking-popup-x"
+                onClick={() => setIsShiftModalOpen(false)}
+                aria-label={copy.opsMenuCancel}
+              >
+                ×
+              </button>
+
+              <h3 id="cabinet-shift-dialog-title">{copy.opsScheduleAssignModalTitle}</h3>
+              <p className="cabinet-shift-dialog-sub">{copy.opsScheduleSubtitle}</p>
+
+              <form
+                className="cabinet-shift-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!shiftStaffId) return;
+                  void run(async () => {
+                    const created = await createVenueWorkShift(venueId, {
+                      staff_id: shiftStaffId,
+                      date: shiftDate,
+                      start_time: shiftStart,
+                      end_time: shiftEnd,
+                      note: shiftNote.trim() || undefined,
+                    });
+                    setShifts((prev) => [...prev, created]);
+                    setIsShiftModalOpen(false);
+                    setShiftNote("");
+                  }, locale === "ro" ? "Tura a fost programată cu succes" : locale === "en" ? "Shift assigned successfully" : "Смена успешно назначена");
+                }}
+              >
+                {/* Role Switch */}
+                <div className="cabinet-shift-field-group">
+                  <label>{copy.opsScheduleRoleFilter}</label>
+                  <div className="cabinet-shift-role-toggle">
+                    <button
+                      type="button"
+                      className={`cabinet-shift-role-btn ${shiftRole === "waiter" ? "active" : ""}`}
+                      onClick={() => {
+                        setShiftRole("waiter");
+                        const matched = staff.find((m) => (m.role || "waiter") === "waiter") || staff[0];
+                        if (matched) setShiftStaffId(matched.id);
+                      }}
+                    >
+                      {copy.opsStaffRoleWaiter}
+                    </button>
+                    <button
+                      type="button"
+                      className={`cabinet-shift-role-btn ${shiftRole === "cook" ? "active" : ""}`}
+                      onClick={() => {
+                        setShiftRole("cook");
+                        const matched = staff.find((m) => (m.role || "waiter") === "cook") || staff[0];
+                        if (matched) setShiftStaffId(matched.id);
+                      }}
+                    >
+                      {copy.opsStaffRoleCook}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Staff Selection */}
+                <div className="cabinet-shift-field-group">
+                  <label htmlFor="shift-staff-select">{copy.opsScheduleStaffSelect}</label>
+                  <select
+                    id="shift-staff-select"
+                    value={shiftStaffId}
+                    onChange={(e) => setShiftStaffId(e.target.value)}
+                    required
+                    className="cabinet-shift-input"
+                  >
+                    {availableStaffForModal.length === 0 ? (
+                      <option value="">{copy.opsScheduleSelectPlaceholder}</option>
+                    ) : (
+                      availableStaffForModal.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name || member.email} ({member.email})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* Date Selection */}
+                <div className="cabinet-shift-field-group">
+                  <label htmlFor="shift-date-input">{copy.opsScheduleDateLabel}</label>
+                  <input
+                    id="shift-date-input"
+                    type="date"
+                    required
+                    value={shiftDate}
+                    onChange={(e) => setShiftDate(e.target.value)}
+                    className="cabinet-shift-input"
+                  />
+                </div>
+
+                {/* Quick Shift Time Presets */}
+                <div className="cabinet-shift-field-group">
+                  <label>{copy.opsSchedulePresetsTitle}</label>
+                  <div className="cabinet-shift-preset-buttons">
+                    <button
+                      type="button"
+                      className={`cabinet-shift-preset-pill ${shiftStart === "08:00" && shiftEnd === "16:00" ? "active" : ""}`}
+                      onClick={() => {
+                        setShiftStart("08:00");
+                        setShiftEnd("16:00");
+                      }}
+                    >
+                      {copy.opsSchedulePresetMorning}
+                    </button>
+                    <button
+                      type="button"
+                      className={`cabinet-shift-preset-pill ${shiftStart === "10:00" && shiftEnd === "22:00" ? "active" : ""}`}
+                      onClick={() => {
+                        setShiftStart("10:00");
+                        setShiftEnd("22:00");
+                      }}
+                    >
+                      {copy.opsSchedulePresetDay}
+                    </button>
+                    <button
+                      type="button"
+                      className={`cabinet-shift-preset-pill ${shiftStart === "14:00" && shiftEnd === "23:00" ? "active" : ""}`}
+                      onClick={() => {
+                        setShiftStart("14:00");
+                        setShiftEnd("23:00");
+                      }}
+                    >
+                      {copy.opsSchedulePresetEvening}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Time Range Inputs */}
+                <div className="cabinet-shift-time-row">
+                  <div className="cabinet-shift-field-group">
+                    <label htmlFor="shift-start-time">{copy.opsScheduleTimeStart}</label>
+                    <input
+                      id="shift-start-time"
+                      type="time"
+                      required
+                      value={shiftStart}
+                      onChange={(e) => setShiftStart(e.target.value)}
+                      className="cabinet-shift-input"
+                    />
+                  </div>
+                  <div className="cabinet-shift-field-group">
+                    <label htmlFor="shift-end-time">{copy.opsScheduleTimeEnd}</label>
+                    <input
+                      id="shift-end-time"
+                      type="time"
+                      required
+                      value={shiftEnd}
+                      onChange={(e) => setShiftEnd(e.target.value)}
+                      className="cabinet-shift-input"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional Note */}
+                <div className="cabinet-shift-field-group">
+                  <label htmlFor="shift-note-input">{copy.opsScheduleNoteLabel}</label>
+                  <input
+                    id="shift-note-input"
+                    type="text"
+                    value={shiftNote}
+                    onChange={(e) => setShiftNote(e.target.value)}
+                    placeholder={copy.opsScheduleNotePlaceholder}
+                    className="cabinet-shift-input"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="cabinet-shift-actions">
+                  <button
+                    type="submit"
+                    className="panel-btn primary"
+                    disabled={busy || !shiftStaffId}
+                  >
+                    {copy.opsScheduleSubmitBtn}
+                  </button>
+                  <button
+                    type="button"
+                    className="panel-btn ghost"
+                    disabled={busy}
+                    onClick={() => setIsShiftModalOpen(false)}
+                  >
+                    {copy.opsMenuCancel}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

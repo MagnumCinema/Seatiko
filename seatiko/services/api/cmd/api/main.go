@@ -147,6 +147,8 @@ func newRouter(api *handlers.API) *gin.Engine {
 				staff.POST("/waitlist/:id/notify", api.StaffNotifyWaitlist)
 				staff.POST("/waitlist/:id/seat", api.StaffSeatWaitlist)
 				staff.POST("/waitlist/:id/close", api.StaffCloseWaitlist)
+				staff.GET("/shifts", api.ListMyStaffShifts)
+				staff.POST("/shifts/:shiftId/respond", api.RespondStaffShift)
 			}
 
 			restaurant := authed.Group("/restaurant")
@@ -178,6 +180,9 @@ func newRouter(api *handlers.API) *gin.Engine {
 				restaurant.GET("/venues/:venueId/staff", api.ListVenueStaff)
 				restaurant.DELETE("/venues/:venueId/staff/:staffId", api.RemoveVenueStaff)
 				restaurant.POST("/venues/:venueId/staff/:staffId/shift", api.ToggleStaffShift)
+				restaurant.GET("/venues/:venueId/shifts", api.ListVenueWorkShifts)
+				restaurant.POST("/venues/:venueId/shifts", api.CreateVenueWorkShift)
+				restaurant.DELETE("/venues/:venueId/shifts/:shiftId", api.DeleteVenueWorkShift)
 			}
 
 			admin := authed.Group("/admin")

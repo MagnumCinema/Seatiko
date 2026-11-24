@@ -5641,6 +5641,480 @@ html[data-theme="light"] .cabinet-staff-card-actions .panel-btn.shift-active {
   border-color: #86efac !important;
 }
 
+/* Staff Role Selector & Tags */
+.cabinet-staff-invite-grid {
+  display: grid;
+  grid-template-columns: 130px 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 768px) {
+  .cabinet-staff-invite-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.cabinet-staff-role-select {
+  cursor: pointer;
+}
+.cabinet-staff-role-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cabinet-staff-role-tag.role-waiter {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+html[data-theme="light"] .cabinet-staff-role-tag.role-waiter {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+.cabinet-staff-role-tag.role-cook {
+  background: rgba(233, 185, 110, 0.15);
+  color: #e9b96e;
+  border: 1px solid rgba(233, 185, 110, 0.35);
+}
+html[data-theme="light"] .cabinet-staff-role-tag.role-cook {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+.cabinet-staff-role-tag.role-admin {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+html[data-theme="light"] .cabinet-staff-role-tag.role-admin {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border-color: #e9d5ff;
+}
+
+/* Cabinet Staff Schedule Section */
+.cabinet-schedule-card {
+  margin-top: 8px;
+}
+.cabinet-schedule-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cabinet-assign-shift-btn {
+  font-weight: 700;
+}
+.cabinet-schedule-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 0 20px;
+}
+.cabinet-schedule-role-pills {
+  margin: 0 !important;
+}
+.cabinet-schedule-date-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cabinet-schedule-date-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cabinet-schedule-date-chip {
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--site-border);
+  background: color-mix(in srgb, var(--site-surface) 60%, transparent);
+  color: var(--site-muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cabinet-schedule-date-chip:hover {
+  color: var(--site-fg);
+  border-color: var(--site-accent, #e9b96e);
+}
+.cabinet-schedule-date-chip.active {
+  background: rgba(233, 185, 110, 0.16);
+  color: var(--site-accent, #e9b96e);
+  border-color: rgba(233, 185, 110, 0.45);
+  font-weight: 700;
+}
+html[data-theme="light"] .cabinet-schedule-date-chip.active {
+  background: #e4efe8;
+  color: #175f43;
+  border-color: rgba(23, 95, 67, 0.35);
+}
+.cabinet-schedule-custom-date {
+  display: flex;
+  align-items: center;
+}
+.cabinet-schedule-date-input {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-fg);
+  cursor: pointer;
+}
+
+/* Shifts List */
+.cabinet-schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.cabinet-schedule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  background: var(--site-surface);
+  transition: all 0.15s ease;
+}
+.cabinet-schedule-item:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+.cabinet-schedule-item.status-confirmed {
+  border-left: 3px solid #22c55e;
+}
+.cabinet-schedule-item.status-pending {
+  border-left: 3px solid #eab308;
+}
+.cabinet-schedule-item.status-declined {
+  border-left: 3px solid #ef4444;
+}
+.cabinet-schedule-item-time {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+.cabinet-schedule-date-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--site-muted);
+}
+.cabinet-schedule-hours {
+  font-size: 0.94rem;
+  font-weight: 750;
+  color: var(--site-fg);
+  letter-spacing: -0.01em;
+}
+.cabinet-schedule-duration {
+  font-size: 0.7rem;
+  color: var(--site-muted);
+}
+.cabinet-schedule-item-staff {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.cabinet-staff-avatar.sm {
+  width: 36px;
+  height: 36px;
+  font-size: 0.8rem;
+}
+.cabinet-schedule-staff-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cabinet-schedule-staff-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--site-fg);
+}
+.cabinet-schedule-item-note {
+  font-size: 0.74rem;
+  color: var(--site-muted);
+  margin: 3px 0 0;
+}
+.cabinet-schedule-item-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.cabinet-shift-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cabinet-shift-status-badge.confirmed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+html[data-theme="light"] .cabinet-shift-status-badge.confirmed {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+.cabinet-shift-status-badge.pending {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+}
+html[data-theme="light"] .cabinet-shift-status-badge.pending {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fde047;
+}
+.cabinet-shift-status-badge.declined {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+html[data-theme="light"] .cabinet-shift-status-badge.declined {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.shift-badge-icon {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+@media (max-width: 680px) {
+  .cabinet-schedule-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cabinet-schedule-item-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Shift Assignment Modal */
+.cabinet-shift-card {
+  max-width: 500px !important;
+  width: 100%;
+}
+.cabinet-shift-dialog-sub {
+  font-size: 0.8rem;
+  color: var(--site-muted);
+  margin: -6px 0 16px;
+}
+.cabinet-shift-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cabinet-shift-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cabinet-shift-field-group label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--site-fg);
+}
+.cabinet-shift-role-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.cabinet-shift-role-btn {
+  min-height: 38px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--site-border);
+  background: var(--site-surface);
+  color: var(--site-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cabinet-shift-role-btn.active {
+  background: rgba(233, 185, 110, 0.18);
+  color: var(--site-accent, #e9b96e);
+  border-color: rgba(233, 185, 110, 0.5);
+}
+html[data-theme="light"] .cabinet-shift-role-btn.active {
+  background: #e4efe8;
+  color: #175f43;
+  border-color: rgba(23, 95, 67, 0.4);
+}
+.cabinet-shift-input {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--input-fg);
+  font-size: 0.84rem;
+}
+.cabinet-shift-input:focus {
+  outline: none;
+  border-color: var(--site-accent, #e9b96e);
+  box-shadow: 0 0 0 3px rgba(233, 185, 110, 0.2);
+}
+html[data-theme="light"] .cabinet-shift-input:focus {
+  border-color: #246046;
+  box-shadow: 0 0 0 3px rgba(36, 96, 70, 0.18);
+}
+.cabinet-shift-preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cabinet-shift-preset-pill {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--site-border);
+  background: color-mix(in srgb, var(--site-surface) 70%, transparent);
+  color: var(--site-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cabinet-shift-preset-pill:hover {
+  color: var(--site-fg);
+  border-color: var(--site-accent, #e9b96e);
+}
+.cabinet-shift-preset-pill.active {
+  background: rgba(233, 185, 110, 0.15);
+  color: var(--site-accent, #e9b96e);
+  border-color: rgba(233, 185, 110, 0.4);
+}
+html[data-theme="light"] .cabinet-shift-preset-pill.active {
+  background: #e4efe8;
+  color: #175f43;
+  border-color: rgba(23, 95, 67, 0.35);
+}
+.cabinet-shift-time-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cabinet-shift-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.cabinet-shift-actions button {
+  flex: 1;
+}
+
+/* Staff Portal Shift Notification & Confirmation */
+.staff-shifts-alert-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1.5px solid rgba(234, 179, 8, 0.45);
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(233, 185, 110, 0.08));
+  border-radius: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 18px rgba(234, 179, 8, 0.1);
+}
+html[data-theme="light"] .staff-shifts-alert-card {
+  border-color: #fde047;
+  background: linear-gradient(135deg, #fefce8, #fef9c3);
+  box-shadow: 0 4px 14px rgba(202, 138, 4, 0.08);
+}
+.staff-shifts-alert-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.staff-shifts-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+.staff-shifts-alert-content h4 {
+  margin: 0 0 10px;
+  font-size: 0.94rem;
+  font-weight: 750;
+  color: var(--site-fg);
+}
+.staff-pending-shifts-list {
+  display: grid;
+  gap: 10px;
+}
+.staff-pending-shift-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--site-surface);
+  border: 1px solid var(--site-border);
+  flex-wrap: wrap;
+}
+.staff-pending-shift-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.staff-pending-shift-time {
+  font-size: 0.88rem;
+  color: var(--site-fg);
+  font-weight: 700;
+}
+.staff-pending-shift-note {
+  font-size: 0.74rem;
+  color: var(--site-muted);
+}
+.staff-pending-shift-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.staff-pending-shift-actions.inline {
+  margin-left: 8px;
+}
+.staff-shift-accept-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 700;
+}
+.staff-shift-accept-btn:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+}
+.staff-shifts-section {
+  margin-bottom: 22px;
+}
+
 .cabinet-category-pills {
   display: flex;
   flex-wrap: wrap;

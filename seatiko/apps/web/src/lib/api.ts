@@ -1105,10 +1105,25 @@ export type StaffMember = {
   user_id?: string;
   name?: string;
   email: string;
-  role: string;
+  role: "waiter" | "cook" | "admin" | string;
   status: string;
   on_shift?: boolean;
   created_at: string;
+};
+
+export type WorkShift = {
+  id: string;
+  venue_id: string;
+  staff_id: string;
+  staff_name: string;
+  role: "waiter" | "cook" | string;
+  date: string; // YYYY-MM-DD
+  start_time: string; // HH:MM
+  end_time: string; // HH:MM
+  status: "PENDING" | "CONFIRMED" | "DECLINED";
+  note?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export async function replaceVenueTables(
@@ -1222,12 +1237,69 @@ export async function inviteVenueStaff(
   venueId: string,
   email: string,
   name?: string,
+  role?: string,
 ): Promise<StaffMember> {
   const data = await apiFetch<{ staff: StaffMember }>(
     `/api/v1/restaurant/venues/${venueId}/staff/invite`,
-    { method: "POST", body: { email, name } },
+    { method: "POST", body: { email, name, role } },
   );
   return data.staff;
+}
+
+export async function listVenueWorkShifts(
+  venueId: string,
+  role?: string,
+): Promise<WorkShift[]> {
+  const data = await apiFetch<{ shifts: WorkShift[] }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts`,
+    { query: role ? { role } : undefined },
+  );
+  return data.shifts ?? [];
+}
+
+export async function createVenueWorkShift(
+  venueId: string,
+  input: {
+    staff_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    note?: string;
+  },
+): Promise<WorkShift> {
+  const data = await apiFetch<{ shift: WorkShift }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts`,
+    { method: "POST", body: input },
+  );
+  return data.shift;
+}
+
+export async function deleteVenueWorkShift(
+  venueId: string,
+  shiftId: string,
+): Promise<void> {
+  await apiFetch<{ ok: boolean }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/${shiftId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function listMyStaffShifts(): Promise<WorkShift[]> {
+  const data = await apiFetch<{ shifts: WorkShift[] }>(
+    `/api/v1/staff/shifts`,
+  );
+  return data.shifts ?? [];
+}
+
+export async function respondStaffShift(
+  shiftId: string,
+  status: "CONFIRMED" | "DECLINED",
+): Promise<WorkShift> {
+  const data = await apiFetch<{ shift: WorkShift }>(
+    `/api/v1/staff/shifts/${shiftId}/respond`,
+    { method: "POST", body: { status } },
+  );
+  return data.shift;
 }
 
 export async function listVenueStaff(venueId: string): Promise<StaffMember[]> {

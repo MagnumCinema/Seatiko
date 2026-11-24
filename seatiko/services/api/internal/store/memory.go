@@ -101,6 +101,7 @@ type MemoryStore struct {
 	applications   map[string]models.VenueApplication
 	activities     map[string][]models.ApplicationActivity
 	staffMembers   map[string]models.StaffMember
+	shifts         map[string]models.WorkShift
 	profileChanges map[string]models.ProfileChangeRequest
 	waitlist       map[string]models.WaitlistEntry
 	eventInquiries map[string]models.EventInquiry
@@ -124,6 +125,7 @@ func NewMemory() *MemoryStore {
 		applications:   make(map[string]models.VenueApplication),
 		activities:     make(map[string][]models.ApplicationActivity),
 		staffMembers:   make(map[string]models.StaffMember),
+		shifts:         make(map[string]models.WorkShift),
 		profileChanges: make(map[string]models.ProfileChangeRequest),
 		waitlist:       make(map[string]models.WaitlistEntry),
 		eventInquiries: make(map[string]models.EventInquiry),
@@ -606,6 +608,93 @@ func (s *MemoryStore) seed() {
 			Status:    models.StaffStatusActive,
 			OnShift:   false,
 			CreatedAt: time.Now().UTC().Add(-24 * time.Hour),
+		}
+
+		demoStaffMemberID3 := "staff-member-demo-3"
+		s.staffMembers[demoStaffMemberID3] = models.StaffMember{
+			ID:        demoStaffMemberID3,
+			VenueID:   "venue-1",
+			Name:      "Elena Moraru",
+			Email:     "elena.moraru@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   true,
+			CreatedAt: time.Now().UTC().Add(-48 * time.Hour),
+		}
+
+		demoStaffMemberID4 := "staff-member-demo-4"
+		s.staffMembers[demoStaffMemberID4] = models.StaffMember{
+			ID:        demoStaffMemberID4,
+			VenueID:   "venue-1",
+			Name:      "Mihail Ceban",
+			Email:     "mihail.ceban@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: time.Now().UTC().Add(-72 * time.Hour),
+		}
+
+		todayStr := time.Now().UTC().Format("2006-01-02")
+		tomorrowStr := time.Now().UTC().Add(24 * time.Hour).Format("2006-01-02")
+
+		s.shifts["shift-demo-1"] = models.WorkShift{
+			ID:        "shift-demo-1",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID,
+			StaffName: staff.DisplayName,
+			Role:      models.StaffRoleWaiter,
+			Date:      todayStr,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Основной зал",
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+
+		s.shifts["shift-demo-2"] = models.WorkShift{
+			ID:        "shift-demo-2",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID2,
+			StaffName: "Alexandru Rusu",
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Вечерняя смена / терраса",
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+
+		s.shifts["shift-demo-3"] = models.WorkShift{
+			ID:        "shift-demo-3",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID3,
+			StaffName: "Elena Moraru",
+			Role:      models.StaffRoleCook,
+			Date:      todayStr,
+			StartTime: "09:00",
+			EndTime:   "18:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Шеф / горячий цех",
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+
+		s.shifts["shift-demo-4"] = models.WorkShift{
+			ID:        "shift-demo-4",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID4,
+			StaffName: "Mihail Ceban",
+			Role:      models.StaffRoleCook,
+			Date:      tomorrowStr,
+			StartTime: "12:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Холодный цех / заготовки",
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
 		}
 	}
 }
@@ -2618,6 +2707,14 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		if member.VenueID == id {
 			member.VenueID = venueID
 			s.staffMembers[sID] = member
+		}
+	}
+
+	// Migrate any work shifts scheduled under this application during onboarding
+	for shID, shift := range s.shifts {
+		if shift.VenueID == id {
+			shift.VenueID = venueID
+			s.shifts[shID] = shift
 		}
 	}
 

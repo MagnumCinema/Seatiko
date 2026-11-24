@@ -94,10 +94,33 @@ const (
 
 const (
 	StaffRoleWaiter    = "waiter"
+	StaffRoleCook      = "cook"
 	StaffStatusInvited = "INVITED"
 	StaffStatusActive  = "ACTIVE"
 	StaffStatusRevoked = "REVOKED"
 )
+
+const (
+	ShiftStatusPending   = "PENDING"
+	ShiftStatusConfirmed = "CONFIRMED"
+	ShiftStatusDeclined  = "DECLINED"
+)
+
+// WorkShift represents a scheduled work shift for a waiter or cook.
+type WorkShift struct {
+	ID        string    `json:"id"`
+	VenueID   string    `json:"venue_id"`
+	StaffID   string    `json:"staff_id"`
+	StaffName string    `json:"staff_name"`
+	Role      string    `json:"role"`
+	Date      string    `json:"date"`
+	StartTime string    `json:"start_time"`
+	EndTime   string    `json:"end_time"`
+	Status    string    `json:"status"`
+	Note      string    `json:"note,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 // StaffMember is a venue staff invite or active membership.
 type StaffMember struct {

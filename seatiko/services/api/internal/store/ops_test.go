@@ -390,3 +390,90 @@ func TestDraftVenueOnboardingAndPublishMigration(t *testing.T) {
 		t.Fatalf("published rules not migrated properly: %v, %#v", err, publishedVenue)
 	}
 }
+
+func TestWorkShiftsAndSchedule(t *testing.T) {
+	mem := NewMemory()
+	owner, _, venueID := publishTestVenue(t, mem, "schedule-owner@example.com")
+	waiterUser := registerTestUser(t, mem, "waiter-schedule@example.com", models.RoleGuest)
+	cookUser := registerTestUser(t, mem, "cook-schedule@example.com", models.RoleGuest)
+
+	// Invite waiter
+	waiter, err := mem.InviteStaff(owner.ID, venueID, waiterUser.Email, "Vasile Chelner", models.StaffRoleWaiter)
+	if err != nil || waiter.Role != models.StaffRoleWaiter {
+		t.Fatalf("invite waiter: %v", err)
+	}
+
+	// Invite cook
+	cook, err := mem.InviteStaff(owner.ID, venueID, cookUser.Email, "Gheorghe Bucatar", models.StaffRoleCook)
+	if err != nil || cook.Role != models.StaffRoleCook {
+		t.Fatalf("invite cook: %v", err)
+	}
+
+	// Create waiter shift
+	waiterShift, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   waiter.ID,
+		Date:      "2026-11-25",
+		StartTime: "10:00",
+		EndTime:   "22:00",
+		Note:      "Зал 1",
+	})
+	if err != nil || waiterShift.Status != models.ShiftStatusPending || waiterShift.Role != models.StaffRoleWaiter {
+		t.Fatalf("create waiter shift: %v, %#v", err, waiterShift)
+	}
+
+	// Create cook shift
+	cookShift, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   cook.ID,
+		Date:      "2026-11-25",
+		StartTime: "09:00",
+		EndTime:   "18:00",
+		Note:      "Кухня / горячий цех",
+	})
+	if err != nil || cookShift.Role != models.StaffRoleCook {
+		t.Fatalf("create cook shift: %v, %#v", err, cookShift)
+	}
+
+	// Filter by role
+	waiterShifts, err := mem.ListWorkShifts(owner.ID, venueID, models.StaffRoleWaiter)
+	if err != nil || len(waiterShifts) != 1 || waiterShifts[0].ID != waiterShift.ID {
+		t.Fatalf("list waiter shifts: %v, %#v", err, waiterShifts)
+	}
+
+	cookShifts, err := mem.ListWorkShifts(owner.ID, venueID, models.StaffRoleCook)
+	if err != nil || len(cookShifts) != 1 || cookShifts[0].ID != cookShift.ID {
+		t.Fatalf("list cook shifts: %v, %#v", err, cookShifts)
+	}
+
+	allShifts, err := mem.ListWorkShifts(owner.ID, venueID)
+	if err != nil || len(allShifts) != 2 {
+		t.Fatalf("list all shifts: %v, count=%d", err, len(allShifts))
+	}
+
+	// Waiter views their shifts
+	myShifts, err := mem.ListMyStaffShifts(waiterUser.ID)
+	if err != nil || len(myShifts) != 1 {
+		t.Fatalf("list my staff shifts: %v, %#v", err, myShifts)
+	}
+
+	// Waiter responds to shift (confirms)
+	confirmedShift, err := mem.RespondToWorkShift(waiterUser.ID, waiterShift.ID, models.ShiftStatusConfirmed)
+	if err != nil || confirmedShift.Status != models.ShiftStatusConfirmed {
+		t.Fatalf("confirm shift: %v, %#v", err, confirmedShift)
+	}
+
+	// Cook responds to shift (declines)
+	declinedShift, err := mem.RespondToWorkShift(cookUser.ID, cookShift.ID, models.ShiftStatusDeclined)
+	if err != nil || declinedShift.Status != models.ShiftStatusDeclined {
+		t.Fatalf("decline shift: %v, %#v", err, declinedShift)
+	}
+
+	// Owner deletes a shift
+	if err := mem.DeleteWorkShift(owner.ID, venueID, cookShift.ID); err != nil {
+		t.Fatalf("delete shift: %v", err)
+	}
+
+	afterDelete, err := mem.ListWorkShifts(owner.ID, venueID)
+	if err != nil || len(afterDelete) != 1 {
+		t.Fatalf("after delete count = %d", len(afterDelete))
+	}
+}

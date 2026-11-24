@@ -29,6 +29,7 @@ type persistedState struct {
 	Applications   map[string]models.VenueApplication      `json:"applications"`
 	Activities     map[string][]models.ApplicationActivity `json:"activities"`
 	StaffMembers   map[string]models.StaffMember           `json:"staff_members"`
+	WorkShifts     map[string]models.WorkShift             `json:"work_shifts"`
 	ProfileChanges map[string]models.ProfileChangeRequest  `json:"profile_changes"`
 	Waitlist       map[string]models.WaitlistEntry         `json:"waitlist"`
 	DemoMenuVer    int                                     `json:"demo_menu_version"`
@@ -235,6 +236,14 @@ func (s *MemoryStore) ensureDemoUsersLocked() {
 		}
 	}
 
+	for shiftID, shift := range demo.shifts {
+		if _, exists := s.shifts[shiftID]; !exists {
+			s.shifts[shiftID] = shift
+			changed = true
+			log.Printf("seeded missing demo shift %s for venue %s", shiftID, shift.VenueID)
+		}
+	}
+
 	if changed {
 		s.persistBestEffortLocked()
 	}
@@ -377,6 +386,9 @@ func (s *MemoryStore) applyState(state persistedState) {
 	if state.StaffMembers != nil {
 		s.staffMembers = state.StaffMembers
 	}
+	if state.WorkShifts != nil {
+		s.shifts = state.WorkShifts
+	}
 	if state.ProfileChanges != nil {
 		s.profileChanges = state.ProfileChanges
 	}
@@ -406,6 +418,7 @@ func (s *MemoryStore) stateLocked() persistedState {
 		Applications:   s.applications,
 		Activities:     s.activities,
 		StaffMembers:   s.staffMembers,
+		WorkShifts:     s.shifts,
 		ProfileChanges: s.profileChanges,
 		Waitlist:       s.waitlist,
 		DemoMenuVer:    s.demoMenuVer,
