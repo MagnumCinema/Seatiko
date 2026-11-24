@@ -48,6 +48,8 @@ type Venue struct {
 	VisitDurationMin      int             `json:"visit_duration_min"`
 	MaxVisitDurationMin   int             `json:"max_visit_duration_min"`
 	AllowPreorder         bool            `json:"allow_preorder"`
+	// PreorderLeadMin: the kitchen gets a preorder this many minutes before the booking (0 = default 30).
+	PreorderLeadMin int `json:"preorder_lead_min"`
 	// HoursText is the opening hours line, e.g. "Пн–Вс 10:00–22:00" (venue local time).
 	HoursText string `json:"hours_text,omitempty"`
 }
@@ -258,6 +260,7 @@ type Reservation struct {
 	CreatedAt          time.Time         `json:"created_at"`
 	UpdatedAt          time.Time         `json:"updated_at"`
 	// Guest list enrichment (filled on read, not persisted separately).
+	Preorder     *Order          `json:"preorder,omitempty"`
 	VenueName    LocalizedString `json:"venue_name,omitempty"`
 	TableNumber  int             `json:"table_number,omitempty"`
 	TableNumbers []int           `json:"table_numbers,omitempty"`
@@ -298,6 +301,7 @@ type RestaurantReservation struct {
 	Status             ReservationStatus `json:"status"`
 	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
 	CreatedAt          time.Time         `json:"created_at"`
+	Preorder           *Order            `json:"preorder,omitempty"`
 }
 
 // VenueScheduleSlot is the public busy window for a table — no guest PII.
@@ -376,23 +380,47 @@ type OrderItem struct {
 	MenuItemID string          `json:"menu_item_id"`
 	Name       LocalizedString `json:"name"`
 	Qty        int             `json:"qty"`
-	Price      int             `json:"price"`
+	// Price is per unit at the moment of ordering; later menu price changes do not affect it.
+	Price int `json:"price"`
+	// RequiresAge18 / ContainsAlcohol are copied from the menu item when ordered.
+	RequiresAge18   bool `json:"requires_age_18,omitempty"`
+	ContainsAlcohol bool `json:"contains_alcohol,omitempty"`
+	// AgeCheck tracks the in-person ID check for 18+ items of a preorder:
+	// PENDING_AGE_CHECK until staff confirm it when serving (APP_LOGIC §8.4).
+	AgeCheck string `json:"age_check,omitempty"`
+	// Unavailable is computed on read: the dish was deleted or put on the stop list after ordering.
+	Unavailable bool `json:"unavailable,omitempty"`
 }
 
+const (
+	AgeCheckPending   = "PENDING_AGE_CHECK"
+	AgeCheckConfirmed = "CONFIRMED"
+)
+
 type Order struct {
-	ID            string          `json:"id"`
-	SessionID     string          `json:"session_id"`
-	UserID        string          `json:"user_id"`
-	VenueID       string          `json:"venue_id"`
-	Items         []OrderItem     `json:"items"`
-	Status        OrderStatus     `json:"status"`
-	Total         int             `json:"total"`
-	CheckNumber   string          `json:"check_number,omitempty"`
-	PaymentMethod string          `json:"payment_method,omitempty"`
-	PaidAt        *time.Time      `json:"paid_at,omitempty"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	VenueName     LocalizedString `json:"venue_name,omitempty"`
+	ID        string `json:"id"`
+	SessionID string `json:"session_id"`
+	// Preorder: dishes ordered ahead for a reservation (BACKEND_TASKS №1).
+	Preorder      bool   `json:"preorder,omitempty"`
+	ReservationID string `json:"reservation_id,omitempty"`
+	// KitchenAt is when the kitchen should start a preorder (reserved_for − preorder_lead_min);
+	// the guest can change or cancel it until then.
+	KitchenAt *time.Time `json:"kitchen_at,omitempty"`
+	// KitchenDue is computed on read: a submitted preorder whose KitchenAt has passed.
+	KitchenDue bool `json:"kitchen_due,omitempty"`
+	// AdultItemsRemovedAt: 18+ items were taken out because the guest's 18+ permission was revoked.
+	AdultItemsRemovedAt *time.Time      `json:"adult_items_removed_at,omitempty"`
+	UserID              string          `json:"user_id"`
+	VenueID             string          `json:"venue_id"`
+	Items               []OrderItem     `json:"items"`
+	Status              OrderStatus     `json:"status"`
+	Total               int             `json:"total"`
+	CheckNumber         string          `json:"check_number,omitempty"`
+	PaymentMethod       string          `json:"payment_method,omitempty"`
+	PaidAt              *time.Time      `json:"paid_at,omitempty"`
+	CreatedAt           time.Time       `json:"created_at"`
+	UpdatedAt           time.Time       `json:"updated_at"`
+	VenueName           LocalizedString `json:"venue_name,omitempty"`
 }
 
 type WaiterCallReason string

@@ -237,6 +237,8 @@ export type Reservation = {
   arrival_confirmed_at?: string | null;
   expected_arrival?: string | null;
   created_at: string;
+  /** Active preorder of this reservation, if any. */
+  preorder?: Order;
   venue_name?: LocalizedString;
   table_number?: number;
 };
@@ -316,7 +318,14 @@ export type OrderItem = {
   menu_item_id: string;
   name: LocalizedString;
   qty: number;
+  /** Per unit, fixed when ordered. */
   price: number;
+  requires_age_18?: boolean;
+  contains_alcohol?: boolean;
+  /** 18+ items of a preorder: staff check an ID in person before serving. */
+  age_check?: "PENDING_AGE_CHECK" | "CONFIRMED";
+  /** The dish was deleted or stopped after ordering. */
+  unavailable?: boolean;
 };
 
 export type Order = {
@@ -333,6 +342,13 @@ export type Order = {
   payment_method?: string;
   paid_at?: string | null;
   venue_name?: LocalizedString;
+  /** Dishes ordered ahead for a reservation (`PUT /reservations/:id/preorder`). */
+  preorder?: boolean;
+  reservation_id?: string;
+  /** Kitchen starts at this time; the guest can change or cancel until then. */
+  kitchen_at?: string;
+  kitchen_due?: boolean;
+  adult_items_removed_at?: string;
 };
 
 export type HolidayCollection = {
@@ -1489,3 +1505,29 @@ export async function adminReviewChangeRequest(
 }
 
 
+
+/** The reservation's active preorder (404 when there is none). */
+export async function fetchPreorder(reservationId: string): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/reservations/${reservationId}/preorder`);
+  return data.order;
+}
+
+/** Creates or replaces the preorder for the guest's reservation; prices are fixed when saved. */
+export async function savePreorder(
+  reservationId: string,
+  items: { menu_item_id: string; qty: number }[],
+): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/reservations/${reservationId}/preorder`, {
+    method: "PUT",
+    body: { items },
+  });
+  return data.order;
+}
+
+/** Cancels the preorder before the kitchen starts it. */
+export async function cancelPreorder(reservationId: string): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/reservations/${reservationId}/preorder`, {
+    method: "DELETE",
+  });
+  return data.order;
+}

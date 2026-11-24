@@ -450,6 +450,17 @@ API=http://localhost/api/v1
 | `POST` | `/staff/reservations/:id/adult-verification` | официант / владелец / админ подтверждает 18+ гостя этой брони (тело: `id_document_checked: true`, `id_document_type`: `id_card` / `passport` / `other`) |
 | `POST` | `/staff/venues/:venueId/guests/:userId/adult-verification/revoke` | владелец или админ отзывает 18+ (тело: `reason`, необязательно) |
 
+| `GET/PUT/DELETE` | `/reservations/:id/preorder` | предзаказ блюд к своей брони: получить / создать или заменить (`items: [{menu_item_id, qty}]`) / отменить |
+| `POST` | `/staff/orders/:id/age-check` | проверка документа перед подачей 18+ из предзаказа (`id_document_checked`, `approved`) |
+
+#### Предзаказ к брони (`internal/store/preorder.go`, APP_LOGIC §5.3, §7)
+
+- Предзаказ — это `Order` с `preorder: true` и `reservation_id`; персонал видит его в `GET /staff/orders`, гость — в `GET /orders` и в `preorder` своей брони, владелец и персонал — в списках броней.
+- Создать или изменить можно только для своей брони в статусе `CONFIRMED`, если у ресторана включён `allow_preorder`, и до `kitchen_at` = `reserved_for` − `preorder_lead_min` (правило ресторана 0–180 мин, по умолчанию 30). После `kitchen_at` у заказа `kitchen_due: true` — кухне пора начинать.
+- Цена фиксируется при сохранении; блюдо, позже удалённое или в стоп-листе, отмечается `unavailable: true`. Стоп-лист при сохранении — `item_unavailable` (409), чужое блюдо — 404, пустой список или `qty` вне 1–20 — `invalid_items` (400).
+- 18+: без `adult_preorder_allowed` — `age_verification_required` (403); алкоголь только у ресторана с лицензией. Позиции 18+ сохраняются с `age_check: PENDING_AGE_CHECK`; пока персонал не проверил документ (`/staff/orders/:id/age-check`), заказ нельзя отметить `SERVED` / `PAID` и оплатить (`age_check_pending`, 409). Отказ убирает позиции 18+ из заказа. Отзыв 18+ убирает их из ещё не начатых предзаказов гостя (`adult_items_removed_at`).
+- Отмена брони отменяет её предзаказ; при check-in по QR предзаказ привязывается к сессии стола. Push-уведомлений в проекте пока нет: кухня и зал видят новые и изменённые предзаказы в списке заказов (`updated_at`).
+
 #### 18+ и предзаказ (`internal/store/adult.go`, APP_LOGIC §8.4)
 
 - `requires_age_18` у позиции меню; для `contains_alcohol` всегда `true` (при сохранении, в сиде и при загрузке снапшота).
@@ -457,7 +468,7 @@ API=http://localhost/api/v1
 - Выдать можно только по брони в статусе `CHECKED_IN` не старше 12 часов, только с `id_document_checked: true`, только сотрудником этого заведения (роль `waiter`), владельцем (`manager`) или админом; себе выдать нельзя. Ошибки: `id_document_required` (400), `invalid_id_document_type` (400), `visit_required` (409), `forbidden` (403).
 - Отозвать может владелец заведения, где у гостя была бронь, или админ платформы; официант — нет.
 - Каждая выдача и отзыв пишутся в журнал (`adult_permission_log` в снапшоте, `GET /admin/adult-permission-log?user_id=`).
-- Предзаказ (BACKEND_TASKS №1) обязан проверять каждую позицию через `CanPreorderItem`.
+- Предзаказ (BACKEND_TASKS №1) проверяет каждую позицию так же, как `CanPreorderItem`.
 
 ### Маршруты владельца
 

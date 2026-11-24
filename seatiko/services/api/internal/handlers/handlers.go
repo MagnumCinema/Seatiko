@@ -746,6 +746,8 @@ func (a *API) PayOrder(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "order_not_found"})
 	case store.ErrForbidden:
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrAgeCheckPending:
+		c.JSON(http.StatusConflict, gin.H{"error": "age_check_pending"})
 	case store.ErrConflict:
 		c.JSON(http.StatusConflict, gin.H{"error": "conflict"})
 	case store.ErrBadRequest:
