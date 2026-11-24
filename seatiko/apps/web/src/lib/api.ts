@@ -1531,3 +1531,105 @@ export async function cancelPreorder(reservationId: string): Promise<Order> {
   });
   return data.order;
 }
+
+export type NotificationKind =
+  | "PREORDER_CREATED"
+  | "PREORDER_UPDATED"
+  | "PREORDER_CANCELLED"
+  | "PREORDER_PREPARING"
+  | "PREORDER_ADULT_REMOVED"
+  | "PREORDER_AGE_REFUSED"
+  | "ADULT_GRANTED"
+  | "ADULT_REVOKED";
+
+/** In-app notification (GET /me/notifications, live via /me/notifications/stream). */
+export type AppNotification = {
+  id: string;
+  user_id: string;
+  kind: NotificationKind | string;
+  venue_id?: string;
+  venue_name?: LocalizedString;
+  reservation_id?: string;
+  order_id?: string;
+  at?: string;
+  created_at: string;
+  read_at?: string;
+};
+
+export async function fetchNotifications(limit = 30): Promise<{ notifications: AppNotification[]; unread: number }> {
+  const data = await apiFetch<{ notifications: AppNotification[]; unread: number }>("/api/v1/me/notifications", {
+    query: { limit },
+  });
+  return { notifications: data.notifications ?? [], unread: data.unread ?? 0 };
+}
+
+/** Marks the given notifications read (all when `ids` is omitted); returns the new unread count. */
+export async function markNotificationsRead(ids?: string[]): Promise<number> {
+  const data = await apiFetch<{ unread: number }>("/api/v1/me/notifications/read", {
+    method: "POST",
+    body: ids ? { ids } : {},
+  });
+  return data.unread ?? 0;
+}
+
+/**
+ * Opens the live notification stream (Server-Sent Events over fetch, so the Bearer
+ * token goes in a header). Resolves when the stream ends; rejects on HTTP errors.
+ */
+export async function openNotificationStream(
+  onEvent: (event: string, data: string) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const token = getToken();
+  if (!token) throw new ApiError(401, "unauthorized");
+  const url = new URL(`${API_URL}/api/v1/me/notifications/stream`, window.location.origin);
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "text/event-stream", Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal,
+  });
+  if (!res.ok || !res.body) throw new ApiError(res.status, `http_${res.status}`);
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  const parser = createSseParser(onEvent);
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    parser(value);
+  }
+}
+
+/** Incremental text/event-stream parser: feed it chunks, it calls `onEvent` per complete event. */
+export function createSseParser(onEvent: (event: string, data: string) => void): (chunk: string) => void {
+  let buffer = "";
+  return (chunk) => {
+    buffer += chunk.replace(/\r\n/g, "\n");
+    let end = buffer.indexOf("\n\n");
+    while (end !== -1) {
+      const block = buffer.slice(0, end);
+      buffer = buffer.slice(end + 2);
+      let event = "message";
+      const data: string[] = [];
+      for (const line of block.split("\n")) {
+        if (!line || line.startsWith(":")) continue;
+        const colon = line.indexOf(":");
+        const field = colon === -1 ? line : line.slice(0, colon);
+        const value = colon === -1 ? "" : line.slice(colon + 1).replace(/^ /, "");
+        if (field === "event") event = value;
+        else if (field === "data") data.push(value);
+      }
+      if (data.length) onEvent(event, data.join("\n"));
+      end = buffer.indexOf("\n\n");
+    }
+  };
+}
+
+export type PreorderMenuItem = MenuItem & {
+  orderable: boolean;
+  blocked_reason?: "stopped" | "age_verification_required" | string;
+};
+
+/** Venue menu as the current guest may preorder it (18+ blocked without verification). */
+export async function fetchPreorderMenu(venueId: string): Promise<PreorderMenuItem[]> {
+  const data = await apiFetch<{ menu: PreorderMenuItem[] }>(`/api/v1/me/venues/${venueId}/preorder-menu`);
+  return data.menu ?? [];
+}

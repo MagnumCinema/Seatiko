@@ -1749,9 +1749,30 @@ export function GuestProfile({
                               <span>Пожелание: {res.notes}</span>
                             </div>
                           )}
+                          {res.preorder && (
+                            <div className="guest-booking-detail-item guest-booking-preorder">
+                              <span>
+                                {t("account.preorder_summary", {
+                                  count: t("account.preorder_items", {
+                                    count: res.preorder.items.reduce((sum, line) => sum + line.qty, 0),
+                                  }),
+                                  total: res.preorder.total,
+                                })}
+                                {res.preorder.status === "PREPARING" ? ` · ${t("account.preorder_preparing")}` : ""}
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="guest-booking-actions">
+                          {!isCheckedIn && res.status === "CONFIRMED" && (
+                            <Link
+                              href={`/venues/${res.venue_id}/menu?preorder=${encodeURIComponent(res.id)}`}
+                              className="btn btn-outline guest-preorder-btn"
+                            >
+                              <span>{res.preorder ? t("account.preorder_edit") : t("account.preorder_add")}</span>
+                            </Link>
+                          )}
                           {!isCheckedIn && (
                             <button
                               type="button"

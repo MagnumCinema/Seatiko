@@ -710,6 +710,102 @@ paths:
                     type: string
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/me/notifications:
+    get:
+      operationId: ListNotifications
+      summary: List Notifications
+      tags:
+        - Accounts
+      description: In-app notifications of the current user, newest first, with the unread count. Kinds
+        PREORDER_CREATED, PREORDER_UPDATED, PREORDER_CANCELLED (venue staff and owner), PREORDER_PREPARING (kitchen and
+        guest, when kitchen_at comes), PREORDER_ADULT_REMOVED, PREORDER_AGE_REFUSED, ADULT_GRANTED, ADULT_REVOKED (guest).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unread
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - '1'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread:
+                    type: integer
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/notifications/read:
+    post:
+      operationId: MarkNotificationsRead
+      summary: Mark Notifications Read
+      tags:
+        - Accounts
+      description: Marks the given notifications as read; without ids, all of them.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  marked:
+                    type: integer
+                  unread:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/notifications/stream:
+    get:
+      operationId: StreamNotifications
+      summary: Stream Notifications
+      tags:
+        - Accounts
+      description: Server-Sent Events. First a `ready` event with the unread count, then a `notification` event (JSON
+        Notification) for every new message, and a comment ping every 25 s. Send the Bearer token in the
+        Authorization header (read the stream with fetch, not EventSource).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/me/venues/{id}/preorder-menu:
     get:
       operationId: MyPreorderMenu
@@ -4037,6 +4133,41 @@ components:
           type: string
         table_number:
           type: integer
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - PREORDER_CREATED
+            - PREORDER_UPDATED
+            - PREORDER_CANCELLED
+            - PREORDER_PREPARING
+            - PREORDER_ADULT_REMOVED
+            - PREORDER_AGE_REFUSED
+            - ADULT_GRANTED
+            - ADULT_REVOKED
+        venue_id:
+          type: string
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        reservation_id:
+          type: string
+        order_id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
     VenueScheduleSlot:
       type: object
       properties:

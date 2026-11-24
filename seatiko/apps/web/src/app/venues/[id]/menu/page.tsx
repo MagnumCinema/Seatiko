@@ -8,13 +8,21 @@ import { QtyStepper, VenueMenuBoard, pluralLabel } from "@/components/venue-menu
 import { BoltIcon, MenuBookIcon, TableIcon } from "@/components/venue-icons";
 import { useLocale } from "@/components/locale-provider";
 import {
+  ApiError,
+  cancelPreorder,
   fetchMenu,
+  fetchPreorder,
+  fetchPreorderMenu,
   fetchVenue,
+  getToken,
   mediaUrl,
   pickLocale,
+  savePreorder,
   type MenuItem,
+  type Order,
   type Venue,
 } from "@/lib/api";
+import type { MessageKey } from "@/components/locale-provider";
 import { venueBookingHref } from "@/lib/booking-link";
 import {
   changeSelection,
@@ -31,7 +39,10 @@ export default function VenueMenuPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const venueId = params.id;
-  const isPreorder = searchParams.get("preorder") === "1";
+  const preorderParam = searchParams.get("preorder");
+  const isPreorder = preorderParam !== null && preorderParam !== "0";
+  // `?preorder=<reservation id>` (from the booking confirmation) sends the selection to the restaurant.
+  const reservationId = preorderParam && preorderParam !== "1" ? preorderParam : null;
   const tableParam = searchParams.get("table");
   const { locale, t } = useLocale();
   const cuisineLabels: Record<string, string> = getSiteCopy(locale).catalog.cuisines;
@@ -41,6 +52,38 @@ export default function VenueMenuPage() {
   const [loading, setLoading] = useState(true);
   const [selection, setSelection] = useState<MenuSelection>(() => loadMenuSelection(venueId));
   const [selectionOpen, setSelectionOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [preorder, setPreorder] = useState<Order | null>(null);
+  const [blocked, setBlocked] = useState<Record<string, string>>({});
+  const [preorderState, setPreorderState] = useState<"idle" | "saving" | "cancelled">("idle");
+  const [preorderError, setPreorderError] = useState<MessageKey | null>(null);
+
+  // Preorder mode: load the saved preorder (it replaces the local list) and which dishes this guest may preorder.
+  useEffect(() => {
+    if (!reservationId) return;
+    let alive = true;
+    const token = getToken();
+    queueMicrotask(() => {
+      if (alive) setSignedIn(Boolean(token));
+    });
+    if (!token) return;
+    Promise.all([
+      fetchPreorder(reservationId).catch(() => null),
+      fetchPreorderMenu(venueId).catch(() => []),
+    ]).then(([saved, rules]) => {
+      if (!alive) return;
+      setBlocked(Object.fromEntries(rules.filter((r) => !r.orderable).map((r) => [r.id, r.blocked_reason ?? ""])));
+      if (saved) {
+        setPreorder(saved);
+        const fromServer = Object.fromEntries(saved.items.map((line) => [line.menu_item_id, line.qty]));
+        setSelection(fromServer);
+        saveMenuSelection(venueId, fromServer);
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [reservationId, venueId]);
 
   useEffect(() => {
     let alive = true;
@@ -76,6 +119,51 @@ export default function VenueMenuPage() {
       saveMenuSelection(venueId, next);
       return next;
     });
+  }
+
+  const preorderLocked =
+    preorder !== null &&
+    (preorder.status !== "SUBMITTED" || (preorder.kitchen_at ? new Date(preorder.kitchen_at) <= new Date() : false));
+
+  function preorderErrorKey(error: unknown): MessageKey {
+    const code = error instanceof ApiError ? error.code : "";
+    if (code === "preorder_closed") return "menu_page.preorder_error_closed";
+    if (code === "preorder_disabled") return "menu_page.preorder_error_disabled";
+    if (code === "item_unavailable") return "menu_page.preorder_error_unavailable";
+    if (code === "age_verification_required") return "menu_page.preorder_error_age";
+    return "menu_page.preorder_error";
+  }
+
+  async function sendPreorder() {
+    if (!reservationId) return;
+    const items = lines
+      .filter(({ item }) => !blocked[item.id])
+      .map(({ item, qty }) => ({ menu_item_id: item.id, qty }));
+    if (items.length === 0) return;
+    setPreorderState("saving");
+    setPreorderError(null);
+    try {
+      setPreorder(await savePreorder(reservationId, items));
+      setPreorderState("idle");
+      setSelectionOpen(false);
+    } catch (error) {
+      setPreorderError(preorderErrorKey(error));
+      setPreorderState("idle");
+    }
+  }
+
+  async function dropPreorder() {
+    if (!reservationId) return;
+    setPreorderState("saving");
+    setPreorderError(null);
+    try {
+      await cancelPreorder(reservationId);
+      setPreorder(null);
+      setPreorderState("cancelled");
+    } catch (error) {
+      setPreorderError(preorderErrorKey(error));
+      setPreorderState("idle");
+    }
   }
 
   function clearSelection() {
@@ -186,6 +274,50 @@ export default function VenueMenuPage() {
                 {tableParam ? `${t("menu_page.preorder_table", { table: tableParam })} ` : ""}
                 {t("menu_page.preorder_body")}
               </p>
+              {reservationId && !signedIn ? (
+                <p className="menu-preorder-status">
+                  {t("menu_page.preorder_login")}{" "}
+                  <Link href={`/login?next=${encodeURIComponent(`/venues/${venueId}/menu?preorder=${reservationId}`)}`}>
+                    {t("menu_page.preorder_login_cta")}
+                  </Link>
+                </p>
+              ) : null}
+              {preorder ? (
+                <p className="menu-preorder-status" role="status">
+                  {preorderLocked
+                    ? t("menu_page.preorder_kitchen")
+                    : t("menu_page.preorder_sent", {
+                        time: preorder.kitchen_at
+                          ? new Date(preorder.kitchen_at).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
+                          : "",
+                      })}
+                  {preorder.items.some((line) => line.age_check === "PENDING_AGE_CHECK")
+                    ? ` ${t("menu_page.preorder_age_pending")}`
+                    : ""}
+                  {!preorderLocked ? (
+                    <>
+                      {" "}
+                      <button
+                        type="button"
+                        className="menu-preorder-cancel"
+                        disabled={preorderState === "saving"}
+                        onClick={() => void dropPreorder()}
+                      >
+                        {t("menu_page.preorder_cancel")}
+                      </button>
+                    </>
+                  ) : null}
+                </p>
+              ) : preorderState === "cancelled" ? (
+                <p className="menu-preorder-status" role="status">
+                  {t("menu_page.preorder_cancelled")}
+                </p>
+              ) : null}
+              {preorderError ? (
+                <p className="menu-preorder-status error" role="alert">
+                  {t(preorderError)}
+                </p>
+              ) : null}
             </div>
             <Link className="venue-cta venue-cta-outline" href={venueHref}>
               {t("menu_page.preorder_back")}
@@ -260,8 +392,13 @@ export default function VenueMenuPage() {
                 {lines.map(({ item, qty }) => {
                   const dish = pickLocale(item.name, locale);
                   return (
-                    <li key={item.id}>
-                      <span className="menu-selection-name">{dish}</span>
+                    <li key={item.id} className={blocked[item.id] ? "blocked" : undefined}>
+                      <span className="menu-selection-name">
+                        {dish}
+                        {blocked[item.id] === "age_verification_required" ? (
+                          <small className="menu-selection-flag">{t("menu_page.preorder_age_blocked")}</small>
+                        ) : null}
+                      </span>
                       <QtyStepper item={item} qty={qty} name={dish} price={item.price} t={t} onChangeQty={changeQty} />
                       <b>{item.price * qty} MDL</b>
                     </li>
@@ -272,7 +409,26 @@ export default function VenueMenuPage() {
                 <span>{t("menu_page.selection_total")}</span>
                 <b>{totals.total} MDL</b>
               </div>
-              <p className="menu-selection-hint">{t("menu_page.selection_hint")}</p>
+              <p className="menu-selection-hint">
+                {reservationId && signedIn ? t("menu_page.preorder_hint") : t("menu_page.selection_hint")}
+                {reservationId && lines.some(({ item }) => blocked[item.id] === "age_verification_required")
+                  ? ` ${t("menu_page.preorder_age_hint")}`
+                  : ""}
+              </p>
+              {reservationId && signedIn && !preorderLocked ? (
+                <button
+                  type="button"
+                  className="venue-cta venue-cta-hero menu-selection-send"
+                  disabled={preorderState === "saving" || lines.every(({ item }) => blocked[item.id])}
+                  onClick={() => void sendPreorder()}
+                >
+                  {preorderState === "saving"
+                    ? t("menu_page.preorder_saving")
+                    : preorder
+                      ? t("menu_page.preorder_update")
+                      : t("menu_page.preorder_send")}
+                </button>
+              ) : null}
               <button type="button" className="menu-selection-clear" onClick={clearSelection}>
                 {t("menu_page.selection_clear")}
               </button>

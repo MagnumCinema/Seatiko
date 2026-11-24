@@ -267,7 +267,7 @@ export function BookingConfirmation({
             {allowPreorder ? (
               <Link
                 className="wide"
-                href={`/venues/${venue.id}/menu?preorder=1&table=${encodeURIComponent(tableNumbers)}`}
+                href={`/venues/${venue.id}/menu?preorder=${encodeURIComponent(booked.id)}&table=${encodeURIComponent(tableNumbers)}`}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 3v8a3 3 0 0 0 3 3v7M7 3v6M10 3v8a3 3 0 0 1-3 3M17 21V3c-2 1.5-3 4-3 7v4h3" />

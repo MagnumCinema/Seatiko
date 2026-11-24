@@ -582,3 +582,30 @@ type VenueAvailability struct {
 	// LaterToday lists the day's first free starts when none are near the requested time.
 	LaterToday []AvailabilitySlot `json:"later_today,omitempty"`
 }
+
+// Notification kinds (APP_LOGIC §13).
+const (
+	NotifyPreorderCreated      = "PREORDER_CREATED"
+	NotifyPreorderUpdated      = "PREORDER_UPDATED"
+	NotifyPreorderCancelled    = "PREORDER_CANCELLED"
+	NotifyPreorderPreparing    = "PREORDER_PREPARING"
+	NotifyPreorderAdultRemoved = "PREORDER_ADULT_REMOVED"
+	NotifyPreorderAgeRefused   = "PREORDER_AGE_REFUSED"
+	NotifyAdultGranted         = "ADULT_GRANTED"
+	NotifyAdultRevoked         = "ADULT_REVOKED"
+)
+
+// Notification is an in-app message for one user; clients localise it by Kind.
+type Notification struct {
+	ID            string          `json:"id"`
+	UserID        string          `json:"user_id"`
+	Kind          string          `json:"kind"`
+	VenueID       string          `json:"venue_id,omitempty"`
+	VenueName     LocalizedString `json:"venue_name,omitempty"`
+	ReservationID string          `json:"reservation_id,omitempty"`
+	OrderID       string          `json:"order_id,omitempty"`
+	// At is the reservation or kitchen time the message is about, if any.
+	At        *time.Time `json:"at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
+}
