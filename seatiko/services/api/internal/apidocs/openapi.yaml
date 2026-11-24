@@ -710,6 +710,36 @@ paths:
                     type: string
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/me/venues/{id}/preorder-menu:
+    get:
+      operationId: MyPreorderMenu
+      summary: My Preorder Menu
+      tags:
+        - Accounts
+      description: The venue menu for preordering to a booking as the current guest. requires_age_18 items are not
+        orderable (blocked_reason age_verification_required) until staff grant adult_preorder_allowed.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  menu:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PreorderMenuItem'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/staff/invites/{id}/accept:
     post:
       operationId: AcceptStaffInvite
@@ -1471,6 +1501,96 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/reservations/{id}/adult-verification:
+    post:
+      operationId: StaffGrantAdultPreorder
+      summary: Staff Grant Adult Preorder
+      tags:
+        - Staff
+      description: Venue staff confirm in person that the checked-in guest of this reservation is 18+, after seeing an
+        ID document. Opens preorder of all requires_age_18 items. Recorded on the caller's staff account and in the
+        audit log. The reservation must be CHECKED_IN within the last 12 hours.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_document_checked
+                - id_document_type
+              properties:
+                id_document_checked:
+                  type: boolean
+                  description: Must be true; the staff member saw an ID document with a photo.
+                id_document_type:
+                  type: string
+                  enum:
+                    - id_card
+                    - passport
+                    - other
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdultStatus'
+        '400':
+          description: id_document_required or invalid_id_document_type
+        '403':
+          description: Not staff of this venue, or granting to yourself
+        '409':
+          description: visit_required (reservation not checked in recently)
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/venues/{venueId}/guests/{userId}/adult-verification/revoke:
+    post:
+      operationId: StaffRevokeAdultPreorder
+      summary: Staff Revoke Adult Preorder
+      tags:
+        - Staff
+      description: The venue owner or a platform admin withdraws the guest's 18+ preorder permission. Waiters cannot
+        revoke. The guest must have a reservation at this venue (admins excepted).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdultStatus'
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/staff/waitlist:
@@ -2425,6 +2545,35 @@ paths:
                       $ref: '#/components/schemas/AdminOrderRow'
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/admin/adult-permission-log:
+    get:
+      operationId: AdminAdultPermissionLog
+      summary: Admin Adult Permission Log
+      tags:
+        - Administration
+      description: Audit of every 18+ grant and revoke, newest first.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdultPermissionLogEntry'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/admin/crm/status:
     get:
       operationId: AdminCRMStatus
@@ -3107,6 +3256,9 @@ components:
           type: string
         contains_alcohol:
           type: boolean
+        requires_age_18:
+          type: boolean
+          description: 18+ item; preorder needs adult_preorder_allowed. Always true when contains_alcohol is.
         tags:
           type: array
           items:
@@ -3142,6 +3294,9 @@ components:
           type: string
         contains_alcohol:
           type: boolean
+        requires_age_18:
+          type: boolean
+          description: 18+ item; preorder needs adult_preorder_allowed. Always true when contains_alcohol is.
         tags:
           type: array
           items:
@@ -3424,6 +3579,11 @@ components:
           type: array
           items:
             type: string
+        adult_preorder_allowed:
+          type: boolean
+          description: Read-only. Granted by venue staff after an in-person ID check (APP_LOGIC 8.4).
+        adult_verification:
+          $ref: '#/components/schemas/AdultVerification'
         created_at:
           type: string
           format: date-time
@@ -3585,6 +3745,86 @@ components:
           type: string
         profile_url:
           type: string
+    AdultVerification:
+      type: object
+      description: Who confirmed the guest is 18+, where and when; read-only for the guest.
+      properties:
+        verified_at:
+          type: string
+          format: date-time
+        verified_by_staff_id:
+          type: string
+        verified_by_staff_role:
+          type: string
+          enum:
+            - waiter
+            - manager
+            - admin
+        verified_by_staff_display_name:
+          type: string
+        verified_at_venue_id:
+          type: string
+        id_document_checked:
+          type: boolean
+        id_document_type:
+          type: string
+        revoked_at:
+          type: string
+          format: date-time
+        revoked_by_staff_id:
+          type: string
+    AdultStatus:
+      type: object
+      properties:
+        user_id:
+          type: string
+        adult_preorder_allowed:
+          type: boolean
+        adult_verification:
+          $ref: '#/components/schemas/AdultVerification'
+    AdultPermissionLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        action:
+          type: string
+          enum:
+            - GRANT
+            - REVOKE
+        staff_id:
+          type: string
+        staff_role:
+          type: string
+        staff_display_name:
+          type: string
+        venue_id:
+          type: string
+        reservation_id:
+          type: string
+        id_document_checked:
+          type: boolean
+        id_document_type:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    PreorderMenuItem:
+      allOf:
+        - $ref: '#/components/schemas/MenuItem'
+        - type: object
+          properties:
+            orderable:
+              type: boolean
+            blocked_reason:
+              type: string
+              enum:
+                - stopped
+                - age_verification_required
     VenueAvailability:
       type: object
       properties:

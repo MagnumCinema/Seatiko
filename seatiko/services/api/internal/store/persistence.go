@@ -31,6 +31,7 @@ type persistedState struct {
 	StaffMembers   map[string]models.StaffMember           `json:"staff_members"`
 	ProfileChanges map[string]models.ProfileChangeRequest  `json:"profile_changes"`
 	Waitlist       map[string]models.WaitlistEntry         `json:"waitlist"`
+	AdultLog       []models.AdultPermissionLogEntry        `json:"adult_permission_log,omitempty"`
 	DemoMenuVer    int                                     `json:"demo_menu_version"`
 }
 
@@ -387,6 +388,10 @@ func (s *MemoryStore) applyState(state persistedState) {
 	if state.Waitlist != nil {
 		s.waitlist = state.Waitlist
 	}
+	s.adultLog = state.AdultLog
+	for id, item := range s.menuItems {
+		s.menuItems[id] = normalizeAgeRestriction(item)
+	}
 	s.demoMenuVer = state.DemoMenuVer
 }
 
@@ -412,6 +417,7 @@ func (s *MemoryStore) stateLocked() persistedState {
 		StaffMembers:   s.staffMembers,
 		ProfileChanges: s.profileChanges,
 		Waitlist:       s.waitlist,
+		AdultLog:       s.adultLog,
 		DemoMenuVer:    s.demoMenuVer,
 	}
 }

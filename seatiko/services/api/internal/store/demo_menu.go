@@ -282,6 +282,7 @@ func demoMenu() []models.MenuItem {
 				VolumeML:        d.volumeML,
 				ImageURL:        demoDishImage(d),
 				ContainsAlcohol: d.alcohol,
+				RequiresAge18:   d.alcohol,
 				Tags:            d.tags,
 				Position:        i + 1,
 			})

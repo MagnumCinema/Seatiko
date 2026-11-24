@@ -104,6 +104,7 @@ type MemoryStore struct {
 	profileChanges map[string]models.ProfileChangeRequest
 	waitlist       map[string]models.WaitlistEntry
 	eventInquiries map[string]models.EventInquiry
+	adultLog       []models.AdultPermissionLogEntry
 	demoMenuVer    int
 }
 

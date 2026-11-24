@@ -155,19 +155,23 @@ type VenueAnalytics struct {
 }
 
 type User struct {
-	ID              string    `json:"id"`
-	Email           string    `json:"email"`
-	Phone           string    `json:"phone,omitempty"`
-	PasswordHash    string    `json:"-"`
-	FirstName       string    `json:"first_name"`
-	LastName        string    `json:"last_name"`
-	DisplayName     string    `json:"display_name"`
-	Locale          string    `json:"locale"`
-	Role            string    `json:"role"`
-	DietPreferences []string  `json:"diet_preferences,omitempty"`
-	FavoriteVenues  []string  `json:"favorite_venues,omitempty"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID              string   `json:"id"`
+	Email           string   `json:"email"`
+	Phone           string   `json:"phone,omitempty"`
+	PasswordHash    string   `json:"-"`
+	FirstName       string   `json:"first_name"`
+	LastName        string   `json:"last_name"`
+	DisplayName     string   `json:"display_name"`
+	Locale          string   `json:"locale"`
+	Role            string   `json:"role"`
+	DietPreferences []string `json:"diet_preferences,omitempty"`
+	FavoriteVenues  []string `json:"favorite_venues,omitempty"`
+	// AdultPreorderAllowed lets the guest preorder requires_age_18 items. Only staff can
+	// grant it after checking an ID in person (APP_LOGIC §8.4); guests cannot set it.
+	AdultPreorderAllowed bool               `json:"adult_preorder_allowed"`
+	AdultVerification    *AdultVerification `json:"adult_verification,omitempty"`
+	CreatedAt            time.Time          `json:"created_at"`
+	UpdatedAt            time.Time          `json:"updated_at"`
 }
 
 type ApplicationStatus string
@@ -360,9 +364,12 @@ type MenuItem struct {
 	VolumeML        int      `json:"volume_ml,omitempty"`
 	ImageURL        string   `json:"image_url,omitempty"`
 	ContainsAlcohol bool     `json:"contains_alcohol"`
-	Tags            []string `json:"tags,omitempty"`
-	Position        int      `json:"position,omitempty"`
-	Stopped         bool     `json:"stopped"`
+	// RequiresAge18: guests may preorder it only with adult_preorder_allowed (APP_LOGIC §8.4).
+	// Always true when ContainsAlcohol is.
+	RequiresAge18 bool     `json:"requires_age_18"`
+	Tags          []string `json:"tags,omitempty"`
+	Position      int      `json:"position,omitempty"`
+	Stopped       bool     `json:"stopped"`
 }
 
 type OrderItem struct {
@@ -472,6 +479,58 @@ type WaitlistSummary struct {
 	Waiting    int    `json:"waiting"`
 	QuotedWait int    `json:"quoted_wait_min"`
 	FreeTables int    `json:"free_tables"`
+}
+
+const (
+	AdultActionGrant  = "GRANT"
+	AdultActionRevoke = "REVOKE"
+
+	IDDocumentIDCard   = "id_card"
+	IDDocumentPassport = "passport"
+	IDDocumentOther    = "other"
+
+	AdultStaffRoleWaiter  = "waiter"
+	AdultStaffRoleManager = "manager"
+	AdultStaffRoleAdmin   = "admin"
+)
+
+// AdultVerification records who confirmed the guest is 18+, where and when,
+// and who revoked it. The guest sees it read-only.
+type AdultVerification struct {
+	VerifiedAt        time.Time  `json:"verified_at"`
+	StaffID           string     `json:"verified_by_staff_id"`
+	StaffRole         string     `json:"verified_by_staff_role"`
+	StaffDisplayName  string     `json:"verified_by_staff_display_name"`
+	VenueID           string     `json:"verified_at_venue_id"`
+	IDDocumentChecked bool       `json:"id_document_checked"`
+	IDDocumentType    string     `json:"id_document_type"`
+	RevokedAt         *time.Time `json:"revoked_at,omitempty"`
+	RevokedByStaffID  string     `json:"revoked_by_staff_id,omitempty"`
+}
+
+// AdultPermissionLogEntry is the append-only audit of every 18+ grant and revoke.
+type AdultPermissionLogEntry struct {
+	ID                string    `json:"id"`
+	UserID            string    `json:"user_id"`
+	Action            string    `json:"action"`
+	StaffID           string    `json:"staff_id"`
+	StaffRole         string    `json:"staff_role"`
+	StaffDisplayName  string    `json:"staff_display_name"`
+	VenueID           string    `json:"venue_id"`
+	ReservationID     string    `json:"reservation_id,omitempty"`
+	IDDocumentChecked bool      `json:"id_document_checked"`
+	IDDocumentType    string    `json:"id_document_type,omitempty"`
+	Reason            string    `json:"reason,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
+// PreorderMenuItem is a menu item as seen by one guest when preordering to a booking.
+type PreorderMenuItem struct {
+	MenuItem
+	// Orderable: the guest may add it to a preorder now.
+	Orderable bool `json:"orderable"`
+	// BlockedReason is set when not orderable: "stopped" or "age_verification_required".
+	BlockedReason string `json:"blocked_reason,omitempty"`
 }
 
 // AvailabilitySlot is a free booking start and the table it would use.

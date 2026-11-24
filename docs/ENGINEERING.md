@@ -446,6 +446,18 @@ API=http://localhost/api/v1
 | `GET` | `/orders` | свои заказы |
 | `GET` | `/staff/waiter-calls?venue_id=...` | вызовы по ресторану |
 | `POST` | `/staff/waiter-calls/:id/accept` | принять вызов |
+| `GET` | `/me/venues/:id/preorder-menu` | меню для предзаказа от лица гостя: у каждой позиции `orderable` и `blocked_reason` (`age_verification_required` для 18+ без разрешения) |
+| `POST` | `/staff/reservations/:id/adult-verification` | официант / владелец / админ подтверждает 18+ гостя этой брони (тело: `id_document_checked: true`, `id_document_type`: `id_card` / `passport` / `other`) |
+| `POST` | `/staff/venues/:venueId/guests/:userId/adult-verification/revoke` | владелец или админ отзывает 18+ (тело: `reason`, необязательно) |
+
+#### 18+ и предзаказ (`internal/store/adult.go`, APP_LOGIC §8.4)
+
+- `requires_age_18` у позиции меню; для `contains_alcohol` всегда `true` (при сохранении, в сиде и при загрузке снапшота).
+- `adult_preorder_allowed` и `adult_verification` у `User` (кто, с какой ролью, где, когда, какой документ, кто отозвал). Гость видит их только для чтения: `PATCH /me` их не меняет.
+- Выдать можно только по брони в статусе `CHECKED_IN` не старше 12 часов, только с `id_document_checked: true`, только сотрудником этого заведения (роль `waiter`), владельцем (`manager`) или админом; себе выдать нельзя. Ошибки: `id_document_required` (400), `invalid_id_document_type` (400), `visit_required` (409), `forbidden` (403).
+- Отозвать может владелец заведения, где у гостя была бронь, или админ платформы; официант — нет.
+- Каждая выдача и отзыв пишутся в журнал (`adult_permission_log` в снапшоте, `GET /admin/adult-permission-log?user_id=`).
+- Предзаказ (BACKEND_TASKS №1) обязан проверять каждую позицию через `CanPreorderItem`.
 
 ### Маршруты владельца
 
@@ -467,6 +479,7 @@ API=http://localhost/api/v1
 | `POST` | `/admin/applications/:id/review` | review/approve/reject |
 | `POST` | `/admin/applications/:id/publish` | публикация |
 | `POST` | `/admin/integrations/twenty/reconcile` | немедленная CRM-сверка |
+| `GET` | `/admin/adult-permission-log?user_id=` | журнал выдачи и отзыва 18+ |
 
 ## Примеры полного сценария
 

@@ -30,6 +30,7 @@ type MenuItemInput struct {
 	VolumeML        *int                    `json:"volume_ml"`
 	ImageURL        *string                 `json:"image_url"`
 	ContainsAlcohol bool                    `json:"contains_alcohol"`
+	RequiresAge18   bool                    `json:"requires_age_18"`
 	Tags            []string                `json:"tags"`
 	Stopped         bool                    `json:"stopped"`
 }
@@ -203,6 +204,7 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 		VolumeML:        existing.VolumeML,
 		ImageURL:        existing.ImageURL,
 		ContainsAlcohol: input.ContainsAlcohol,
+		RequiresAge18:   input.RequiresAge18,
 		Tags:            existing.Tags,
 		Position:        existing.Position,
 		Stopped:         input.Stopped,
@@ -225,6 +227,7 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 	if input.Tags != nil {
 		item.Tags = input.Tags
 	}
+	item = normalizeAgeRestriction(item)
 	s.menuItems[id] = item
 	return item, nil
 }
