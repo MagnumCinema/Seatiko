@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	"github.com/seatiko/api/internal/handlers"
@@ -166,6 +167,52 @@ func TestMapSearchAndBookingFilter(t *testing.T) {
 			if strings.Join(ids, ",") != tc.ids || data.Source.DatabaseCount != len(ids) ||
 				data.Source.GoogleStatus != "not_requested" || data.Places == nil {
 				t.Fatalf("unexpected map response: ids=%v, source=%+v", ids, data.Source)
+			}
+		})
+	}
+}
+
+func TestAvailabilityEndpoint(t *testing.T) {
+	router := newRouter(&handlers.API{UploadDir: t.TempDir(), Store: store.NewMemory()})
+	tomorrow := time.Now().In(store.VenueLocation).AddDate(0, 0, 1)
+	at := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 19, 0, 0, 0, store.VenueLocation)
+	cases := []struct {
+		query  string
+		status int
+	}{
+		{"", 200},
+		{"?city_id=all&guests=4", 200},
+		{"?at=" + url.QueryEscape(at.Format(time.RFC3339)) + "&guests=2&duration_min=120", 200},
+		{"?date=" + tomorrow.Format("2006-01-02"), 200},
+		{"?city_id=unknown", 404},
+		{"?guests=0", 400},
+		{"?guests=abc", 400},
+		{"?duration_min=999", 400},
+		{"?limit=13", 400},
+		{"?window_min=-1", 400},
+		{"?at=tomorrow", 400},
+		{"?date=2026-13-01", 400},
+		{"?date=" + time.Now().AddDate(1, 0, 0).Format("2006-01-02"), 400},
+	}
+	for _, tc := range cases {
+		t.Run(tc.query, func(t *testing.T) {
+			res := httptest.NewRecorder()
+			router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/v1/availability"+tc.query, nil))
+			if res.Code != tc.status {
+				t.Fatalf("status = %d, want %d: %s", res.Code, tc.status, res.Body.String())
+			}
+			if tc.status != http.StatusOK {
+				return
+			}
+			var data struct {
+				Timezone string                     `json:"timezone"`
+				Venues   []models.VenueAvailability `json:"venues"`
+			}
+			if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
+				t.Fatal(err)
+			}
+			if data.Timezone != "Europe/Chisinau" || len(data.Venues) != 10 {
+				t.Fatalf("timezone %q, %d venues", data.Timezone, len(data.Venues))
 			}
 		})
 	}

@@ -406,20 +406,30 @@ API=http://localhost/api/v1
 | `GET` | `/integrations/twenty/status` | состояние CRM sync |
 | `POST` | `/integrations/twenty/webhook` | подписанный webhook Twenty |
 
-### Поиск свободных столов (TODO: перенести на сервер)
+### Поиск свободных столов
 
-Очередь бэкенд-задач: [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) №2.
+Очередь бэкенд-задач: [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) №2 (сделано).
 
-Сейчас (пилот, 10 ресторанов) страница `/book` загружает `GET /venues`, затем для каждого ресторана `GET /venues/:id/tables` и `GET /venues/:id/schedule` и считает свободные времена в браузере (`apps/web/src/lib/venue-availability.ts`, тесты рядом). Это 1 + 2·N запросов и логика, продублированная на клиенте.
-
-Целевой вариант — один публичный маршрут:
+Страница `/book` делает один запрос `GET /api/v1/availability` (плюс `GET /venues` для карточек). Столы ресторана подгружаются только при открытии формы брони.
 
 | Метод | Маршрут | Назначение |
 |---|---|---|
-| `GET` | `/availability?city_id=&at=<ISO>&guests=N&duration_min=M&window_min=90&limit=4` | рестораны, где есть стол на `guests` на `duration_min` около `at`; для каждого — ближайшие свободные начала и подходящий стол |
+| `GET` | `/availability?city_id=&at=<RFC3339>&date=YYYY-MM-DD&guests=N&duration_min=M&window_min=90&limit=4` | все рестораны города; для каждого — подходит ли стол на `guests`, ближайшие свободные начала около `at` и стол для каждого |
 
-Ответ: `{ "venues": [{ "venue_id", "duration_min", "exact": bool, "slots": [{ "starts_at", "table_id" }] }] }`, отсортировано: точное совпадение → ближе по времени → рейтинг.
-Требования: та же проверка пересечений, что в `CreateReservationWithDuration` (`tableBusyAtLocked`, окна броней, занятые столы, `booking_interval_min`, `max_visit_duration_min`, часы работы); тесты в `store` на совпадение с созданием брони. После внедрения `venue-availability.ts` остаётся только для отображения.
+Параметры: `city_id` (по умолчанию `city-balti`, `all` — все города), `at` — желаемое начало; без него берутся первые свободные начала дня `date` (по умолчанию сегодня). `guests` 1–50 (по умолчанию 2), `duration_min` 0–480 (0 — длительность ресторана по умолчанию), `window_min` 0–360, `limit` 1–12. Не дальше 90 дней вперёд. Лимит 60 запросов в минуту.
+
+Ответ: `{ "timezone": "Europe/Chisinau", "venues": [{ "venue_id", "duration_min", "fits", "exact", "slots": [{ "starts_at", "table_id", "table_number" }], "later_today"? }] }`. Сортировка: точное совпадение → ближе по времени → рейтинг. `later_today` — первые свободные начала дня, если около `at` ничего нет.
+
+Правила (`internal/store/availability.go`):
+
+- свободен = `CreateReservationWithDuration` примет этот стол в это время (`tableBusyAtLocked`: брони, их окна, занятые и убираемые столы);
+- шаг — `booking_interval_min`; длительность — самая длинная из предлагаемых ресторану, не больше запрошенной (как `durationOptions` во фронте);
+- только в часы работы (`hours_text` ресторана, время `Europe/Chisinau`, закрытие после полуночи поддерживается; без часов — 10:00–23:00) и не раньше чем через 15 минут от текущего момента;
+- выбирается самый маленький подходящий стол.
+
+Часы работы теперь хранятся на сервере: поле `hours_text` у `Venue` (сид в `internal/store/venue_hours.go`, backfill старых снапшотов, копируется из анкеты при публикации и одобрении изменений профиля). Тесты: `internal/store/availability_test.go` (в том числе каждое предложенное время реально бронируется) и `TestAvailabilityEndpoint`.
+
+`apps/web/src/lib/venue-availability.ts`: `fromApiAvailability` переводит ответ сервера в формат карточек; браузерный расчёт `venueAvailability` остался для тестов и экранов одного ресторана. Отображаемые часы по локалям по-прежнему в `apps/web/src/lib/venue-hours.ts`.
 
 ### Маршруты пользователя с JWT
 

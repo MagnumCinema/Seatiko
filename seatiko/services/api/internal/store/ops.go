@@ -692,6 +692,7 @@ func (s *MemoryStore) AdminReviewProfileChange(adminID, requestID, status, note 
 				venue.Lng = app.Lng
 				venue.PriceLevel = app.PriceLevel
 				venue.AverageCheck = app.AverageCheck
+				venue.HoursText = app.HoursText
 				s.venues[venue.ID] = venue
 			}
 		}
