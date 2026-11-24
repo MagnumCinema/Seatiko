@@ -15526,3 +15526,64 @@ html[data-theme="light"] .menu-dish-popup-x {
   font-size: 0.72rem;
   font-weight: 700;
 }
+
+/* Account deletion (components/guest-profile.tsx) */
+.guest-delete-row .guest-setting-meta strong {
+  color: #e5484d;
+}
+.guest-delete-account-btn {
+  border-color: color-mix(in srgb, #e5484d 55%, transparent) !important;
+  color: #e5484d !important;
+}
+.guest-delete-dialog {
+  max-width: 460px;
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+}
+.guest-delete-dialog h3 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.guest-delete-dialog p {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.guest-delete-dialog form {
+  display: grid;
+  gap: 12px;
+}
+.guest-delete-dialog label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.guest-delete-dialog input {
+  padding: 10px 12px;
+  border: 1px solid var(--fa-border);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.guest-delete-dialog .guest-delete-error {
+  color: #e5484d;
+  font-weight: 600;
+}
+.guest-delete-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.guest-delete-confirm {
+  background: #e5484d !important;
+  border-color: #e5484d !important;
+  color: #fff !important;
+}
+.guest-delete-confirm:disabled {
+  opacity: 0.6;
+}

@@ -170,6 +170,11 @@ type User struct {
 	FavoriteVenues  []string `json:"favorite_venues,omitempty"`
 	// AdultPreorderAllowed lets the guest preorder requires_age_18 items. Only staff can
 	// grant it after checking an ID in person (APP_LOGIC §8.4); guests cannot set it.
+	// AvatarURL is the public URL of the profile photo (POST /me/avatar); AvatarKey is its storage key.
+	AvatarURL string `json:"avatar_url,omitempty"`
+	AvatarKey string `json:"-"`
+	// DeletedAt: the guest deleted the account (DELETE /me); personal data is anonymised.
+	DeletedAt            *time.Time         `json:"deleted_at,omitempty"`
 	AdultPreorderAllowed bool               `json:"adult_preorder_allowed"`
 	AdultVerification    *AdultVerification `json:"adult_verification,omitempty"`
 	CreatedAt            time.Time          `json:"created_at"`

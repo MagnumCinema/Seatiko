@@ -23,6 +23,17 @@ type Config struct {
 	GooglePlacesAPIKey   string
 	GoogleMapsBrowserKey string
 	GoogleMapsMapID      string
+	// S3-compatible storage for user uploads (avatars). Empty S3Bucket = local UploadDir.
+	S3Endpoint  string
+	S3Region    string
+	S3Bucket    string
+	S3AccessKey string
+	S3SecretKey string
+	S3PublicURL string
+	S3PathStyle bool
+	// Groq (OpenAI-compatible) for /discover AI; empty key = rule-based only.
+	GroqAPIKey string
+	GroqModel  string
 }
 
 func Load() Config {
@@ -77,5 +88,14 @@ func Load() Config {
 		GooglePlacesAPIKey:   os.Getenv("GOOGLE_PLACES_API_KEY"),
 		GoogleMapsBrowserKey: os.Getenv("GOOGLE_MAPS_BROWSER_KEY"),
 		GoogleMapsMapID:      os.Getenv("GOOGLE_MAPS_MAP_ID"),
+		S3Endpoint:           os.Getenv("S3_ENDPOINT"),
+		S3Region:             os.Getenv("S3_REGION"),
+		S3Bucket:             os.Getenv("S3_BUCKET"),
+		S3AccessKey:          os.Getenv("S3_ACCESS_KEY_ID"),
+		S3SecretKey:          os.Getenv("S3_SECRET_ACCESS_KEY"),
+		S3PublicURL:          os.Getenv("S3_PUBLIC_URL"),
+		S3PathStyle:          os.Getenv("S3_PATH_STYLE") != "false",
+		GroqAPIKey:           os.Getenv("GROQ_API_KEY"),
+		GroqModel:            os.Getenv("GROQ_MODEL"),
 	}
 }

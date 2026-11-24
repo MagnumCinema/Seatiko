@@ -17,6 +17,10 @@ import {
   updateEmail,
   updateMe,
   updatePassword,
+  uploadAvatar,
+  deleteAvatar,
+  deleteAccount,
+  mediaUrl,
   updateReservation,
   type EventInquiry,
   type Reservation,
@@ -457,8 +461,9 @@ export function GuestProfile({
   const [bookingSubTab, setBookingSubTab] = useState<"active" | "history">("active");
   const [ticketModalRes, setTicketModalRes] = useState<Reservation | null>(null);
 
-  // Avatar State (Placeholder with LocalStorage persistence)
+  // Avatar: uploaded photo from the API (S3); icon presets stay on this device.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    if (user?.avatar_url) return mediaUrl(user.avatar_url);
     if (typeof window === "undefined" || !user) return null;
     try {
       return localStorage.getItem(`seatiko_guest_avatar_${user.id}`);
@@ -466,6 +471,11 @@ export function GuestProfile({
       return null;
     }
   });
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -765,28 +775,43 @@ export function GuestProfile({
   }
 
   // Avatar Management Handlers
-  function handleAvatarFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    e.target.value = "";
+    if (!file || !user) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast("Файл слишком большой. Максимальный размер 5 МБ.");
+      toast(t("account.avatar_error_size"));
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        setAvatarUrl(dataUrl);
-        try {
-          if (user) localStorage.setItem(`seatiko_guest_avatar_${user.id}`, dataUrl);
-        } catch {
-          // ignore storage error
-        }
-        toast(copy.avatarUpdated || "Аватар профиля успешно обновлён");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast(t("account.avatar_error_type"));
+      return;
+    }
+    setAvatarBusy(true);
+    toast(t("account.avatar_uploading"));
+    try {
+      const updated = await uploadAvatar(file);
+      if (updated.avatar_url) setAvatarUrl(mediaUrl(updated.avatar_url));
+      try {
+        localStorage.removeItem(`seatiko_guest_avatar_${user.id}`);
+      } catch {
+        // ignore
       }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
+      onUserUpdated?.(updated);
+      setShowAvatarModal(false);
+      toast(copy.avatarUpdated || "Аватар профиля успешно обновлён");
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : "";
+      toast(
+        code === "file_too_large"
+          ? t("account.avatar_error_size")
+          : code === "unsupported_image"
+            ? t("account.avatar_error_type")
+            : t("account.avatar_error"),
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
   }
 
   function handleSelectPresetAvatar(preset: string) {
@@ -800,6 +825,11 @@ export function GuestProfile({
   }
 
   function handleRemoveAvatar() {
+    if (user?.avatar_url) {
+      deleteAvatar()
+        .then((updated) => onUserUpdated?.(updated))
+        .catch(() => toast(t("account.avatar_error")));
+    }
     setAvatarUrl(null);
     try {
       if (user) localStorage.removeItem(`seatiko_guest_avatar_${user.id}`);
@@ -807,6 +837,29 @@ export function GuestProfile({
       // ignore
     }
     toast(copy.avatarRemoved || "Фото профиля удалено");
+  }
+
+  async function handleDeleteAccount() {
+    if (!deletePassword) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount(deletePassword);
+      setShowDeleteAccount(false);
+      toast(t("account.delete_done"));
+      onLogout();
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : "";
+      setDeleteError(
+        code === "wrong_password"
+          ? t("account.delete_wrong_password")
+          : code === "role_not_allowed"
+            ? t("account.delete_not_guest")
+            : t("account.delete_error"),
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   // Confirm Arrival
@@ -2457,7 +2510,11 @@ export function GuestProfile({
                   <span>Необходимо для заказа алкогольных напитков</span>
                 </div>
                 <span className="guest-age-status-badge">
-                  {t("profile.age18_unverified")}
+                  {user?.adult_preorder_allowed && user.adult_verification
+                    ? t("profile.age18_verified", {
+                        date: new Date(user.adult_verification.verified_at).toLocaleDateString(locale),
+                      })
+                    : t("profile.age18_unverified")}
                 </span>
               </div>
 
@@ -2476,6 +2533,73 @@ export function GuestProfile({
                   <span>{copy.logoutButton}</span>
                 </button>
               </div>
+
+              {/* GDPR account deletion */}
+              {user?.role === "guest" || !user?.role ? (
+                <div className="guest-settings-row guest-delete-row">
+                  <div className="guest-setting-meta">
+                    <strong>{t("account.delete_title")}</strong>
+                    <span>{t("account.delete_hint")}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline guest-delete-account-btn"
+                    onClick={() => {
+                      setDeletePassword("");
+                      setDeleteError(null);
+                      setShowDeleteAccount(true);
+                    }}
+                  >
+                    {t("account.delete_button")}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {showDeleteAccount && (
+          <div
+            className="guest-modal-backdrop"
+            role="presentation"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !deleteBusy) setShowDeleteAccount(false);
+            }}
+          >
+            <div className="guest-modal-dialog guest-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
+              <h3 id="delete-account-title">{t("account.delete_confirm_title")}</h3>
+              <p>{t("account.delete_confirm_body")}</p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleDeleteAccount();
+                }}
+              >
+                <label>
+                  <span>{t("account.delete_password")}</span>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </label>
+                {deleteError ? (
+                  <p className="guest-delete-error" role="alert">
+                    {deleteError}
+                  </p>
+                ) : null}
+                <div className="guest-delete-actions">
+                  <button type="button" className="btn btn-outline" disabled={deleteBusy} onClick={() => setShowDeleteAccount(false)}>
+                    {t("common.cancel")}
+                  </button>
+                  <button type="submit" className="btn guest-delete-confirm" disabled={deleteBusy || !deletePassword}>
+                    {deleteBusy ? t("account.delete_progress") : t("account.delete_submit")}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
@@ -3199,10 +3323,11 @@ export function GuestProfile({
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
                     style={{ display: "none" }}
-                    onChange={handleAvatarFileUpload}
+                    onChange={(e) => void handleAvatarFileUpload(e)}
                   />
                   <button
                     type="button"
+                    disabled={avatarBusy}
                     className="btn btn-gold guest-avatar-upload-file-btn"
                     onClick={() => avatarInputRef.current?.click()}
                   >

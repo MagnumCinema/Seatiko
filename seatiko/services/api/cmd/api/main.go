@@ -12,6 +12,7 @@ import (
 	"github.com/seatiko/api/internal/config"
 	"github.com/seatiko/api/internal/crm"
 	"github.com/seatiko/api/internal/handlers"
+	"github.com/seatiko/api/internal/media"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
 	"github.com/seatiko/api/internal/store"
@@ -49,6 +50,7 @@ func main() {
 		}),
 		JWTSecret: cfg.JWTSecret,
 		UploadDir: cfg.UploadDir,
+		Media:     mediaStore(cfg),
 	}
 
 	go runPreorderKitchen(mem)
@@ -101,9 +103,12 @@ func newRouter(api *handlers.API) *gin.Engine {
 		v1.POST("/auth/login", authLimit, api.Login)
 
 		authed := v1.Group("/")
-		authed.Use(auth.Middleware(api.JWTSecret))
+		authed.Use(auth.Middleware(api.JWTSecret), api.RequireActiveAccount)
 		{
 			authed.GET("/me", api.Me)
+			authed.DELETE("/me", api.DeleteMe)
+			authed.POST("/me/avatar", auth.RateLimitPerUser(10, time.Minute), api.UploadAvatar)
+			authed.DELETE("/me/avatar", api.DeleteAvatar)
 			authed.PATCH("/me", api.UpdateMe)
 			authed.PATCH("/me/email", api.UpdateEmail)
 			authed.PATCH("/me/password", api.UpdatePassword)
@@ -236,5 +241,19 @@ func runPreorderKitchen(mem *store.MemoryStore) {
 		if n := mem.StartPreorderKitchen(now); n > 0 {
 			log.Printf("preorders sent to the kitchen: %d", n)
 		}
+	}
+}
+
+// mediaStore picks S3-compatible storage when S3_BUCKET is set, else the local upload dir.
+func mediaStore(cfg config.Config) media.Store {
+	if cfg.S3Bucket == "" {
+		log.Printf("media: local storage in %s (set S3_BUCKET for S3)", cfg.UploadDir)
+		return media.Local{Dir: cfg.UploadDir, URLPrefix: "/uploads"}
+	}
+	log.Printf("media: S3 bucket %s at %s", cfg.S3Bucket, cfg.S3Endpoint)
+	return &media.S3{
+		Endpoint: cfg.S3Endpoint, Region: cfg.S3Region, Bucket: cfg.S3Bucket,
+		AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey,
+		PublicURL: cfg.S3PublicURL, PathStyle: cfg.S3PathStyle,
 	}
 }

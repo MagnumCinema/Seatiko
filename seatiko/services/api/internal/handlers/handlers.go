@@ -15,6 +15,7 @@ import (
 	"github.com/seatiko/api/internal/crm"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
+	"github.com/seatiko/api/internal/media"
 	"github.com/seatiko/api/internal/store"
 )
 
@@ -25,6 +26,8 @@ type API struct {
 	Maps         *places.Integration
 	JWTSecret    string
 	UploadDir    string
+	// Media stores avatars (S3 or local UploadDir); nil disables uploads.
+	Media media.Store
 }
 
 func (a *API) triggerCRM() {

@@ -15,10 +15,24 @@ type rateBucket struct {
 
 // RateLimitMiddleware limits requests per client IP.
 func RateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
+	return rateLimit(limit, window, func(c *gin.Context) string { return c.ClientIP() })
+}
+
+// RateLimitPerUser limits requests per signed-in user (after Middleware), else per IP.
+func RateLimitPerUser(limit int, window time.Duration) gin.HandlerFunc {
+	return rateLimit(limit, window, func(c *gin.Context) string {
+		if id := c.GetString("userID"); id != "" {
+			return "user:" + id
+		}
+		return c.ClientIP()
+	})
+}
+
+func rateLimit(limit int, window time.Duration, keyOf func(*gin.Context) string) gin.HandlerFunc {
 	var mu sync.Mutex
 	buckets := map[string]*rateBucket{}
 	return func(c *gin.Context) {
-		ip := c.ClientIP()
+		ip := keyOf(c)
 		now := time.Now()
 		mu.Lock()
 		bucket, ok := buckets[ip]

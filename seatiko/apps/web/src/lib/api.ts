@@ -148,6 +148,9 @@ export type User = {
   role?: UserRole | string;
   diet_preferences?: string[];
   favorite_venues?: string[];
+  /** Profile photo (POST /me/avatar), absolute or `/media/...`; load it through `mediaUrl`. */
+  avatar_url?: string;
+  deleted_at?: string;
   /** Read-only: staff confirmed 18+ in person (APP_LOGIC §8.4). */
   adult_preorder_allowed?: boolean;
   adult_verification?: AdultVerification;
@@ -1632,4 +1635,38 @@ export type PreorderMenuItem = MenuItem & {
 export async function fetchPreorderMenu(venueId: string): Promise<PreorderMenuItem[]> {
   const data = await apiFetch<{ menu: PreorderMenuItem[] }>(`/api/v1/me/venues/${venueId}/preorder-menu`);
   return data.menu ?? [];
+}
+
+/** Uploads a profile photo (JPEG/PNG/WebP ≤ 5 MB); the server stores a 512 px square JPEG. */
+export async function uploadAvatar(file: File): Promise<User> {
+  const token = getToken();
+  const form = new FormData();
+  form.append("file", file);
+  const url = new URL(`${API_URL}/api/v1/me/avatar`, window.location.origin);
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    let code = `http_${res.status}`;
+    try {
+      const err = (await res.json()) as { error?: string };
+      if (err.error) code = err.error;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, code);
+  }
+  return ((await res.json()) as { user: User }).user;
+}
+
+export async function deleteAvatar(): Promise<User> {
+  const data = await apiFetch<{ user: User }>("/api/v1/me/avatar", { method: "DELETE" });
+  return data.user;
+}
+
+/** GDPR account deletion (guests). Errors: wrong_password, role_not_allowed. */
+export async function deleteAccount(password: string): Promise<{ deleted: boolean; cancelled_reservations: number }> {
+  return apiFetch("/api/v1/me", { method: "DELETE", body: { password } });
 }
