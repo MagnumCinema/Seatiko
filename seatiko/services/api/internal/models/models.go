@@ -48,6 +48,8 @@ type Venue struct {
 	VisitDurationMin      int             `json:"visit_duration_min"`
 	MaxVisitDurationMin   int             `json:"max_visit_duration_min"`
 	AllowPreorder         bool            `json:"allow_preorder"`
+	// HoursText is the opening hours line, e.g. "Пн–Вс 10:00–22:00" (venue local time).
+	HoursText string `json:"hours_text,omitempty"`
 }
 
 // VenueReview is a guest-facing review shown on the venue page (seeded or from Google Places).
@@ -529,4 +531,26 @@ type PreorderMenuItem struct {
 	Orderable bool `json:"orderable"`
 	// BlockedReason is set when not orderable: "stopped" or "age_verification_required".
 	BlockedReason string `json:"blocked_reason,omitempty"`
+}
+
+// AvailabilitySlot is a free booking start and the table it would use.
+type AvailabilitySlot struct {
+	StartsAt    time.Time `json:"starts_at"`
+	TableID     string    `json:"table_id"`
+	TableNumber int       `json:"table_number"`
+}
+
+// VenueAvailability is one venue's answer in GET /availability.
+type VenueAvailability struct {
+	VenueID string `json:"venue_id"`
+	// DurationMin is the booking length the venue accepts closest to the requested one.
+	DurationMin int `json:"duration_min"`
+	// Fits: some table seats the whole party.
+	Fits bool `json:"fits"`
+	// Exact: one of the slots starts exactly at the requested time.
+	Exact bool `json:"exact"`
+	// Slots are up to `limit` free starts nearest the requested time, chronological.
+	Slots []AvailabilitySlot `json:"slots"`
+	// LaterToday lists the day's first free starts when none are near the requested time.
+	LaterToday []AvailabilitySlot `json:"later_today,omitempty"`
 }

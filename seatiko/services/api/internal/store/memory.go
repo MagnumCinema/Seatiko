@@ -325,6 +325,9 @@ func (s *MemoryStore) seed() {
 		},
 	}
 	for _, v := range venues {
+		if v.HoursText == "" {
+			v.HoursText = seedVenueHours[v.ID]
+		}
 		s.venues[v.ID] = v
 	}
 
@@ -2416,6 +2419,7 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		ImageURL:              imageURL,
 		PhotoURLs:             photos,
 		Website:               app.Website,
+		HoursText:             app.HoursText,
 		AlcoholLicense:        false,
 		SessionStartBeforeMin: 15,
 		ReleaseBeforeMin:      10,

@@ -170,6 +170,92 @@ paths:
                     type: string
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/availability:
+    get:
+      operationId: SearchAvailability
+      summary: Search Availability
+      tags:
+        - Map and venues
+      description: Free tables across a city's venues for a party around the wanted time. A start is free when a
+        reservation for that table and duration would be accepted, it lies inside the venue opening hours (Europe/Chisinau)
+        and at least 15 minutes from now. The smallest fitting table is picked. Venues are sorted by exact match, then
+        the closest free start, then rating; every venue of the city is returned so clients can show too-small or full
+        venues. Rate limited to 60 requests per minute.
+      parameters:
+        - name: city_id
+          in: query
+          required: false
+          schema:
+            type: string
+            default: city-balti
+          description: A city ID returned by GET /api/v1/cities, or all.
+        - name: at
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Wanted start (RFC 3339). Omit for the earliest free starts of the day.
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Local day (YYYY-MM-DD, Europe/Chisinau) when at is omitted. Defaults to today.
+        - name: guests
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 2
+        - name: duration_min
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 480
+            default: 0
+          description: Wanted booking length; each venue answers with its longest allowed length not above it. 0 is
+            the venue default.
+        - name: window_min
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 360
+            default: 90
+          description: How far from at a free start still matches.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            default: 4
+          description: Free starts per venue.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timezone:
+                    type: string
+                    example: Europe/Chisinau
+                  venues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueAvailability'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/map/places:
     get:
       operationId: ListMapPlaces
@@ -3571,6 +3657,9 @@ components:
           type: integer
         allow_preorder:
           type: boolean
+        hours_text:
+          type: string
+          description: Opening hours line in venue local time, e.g. "Пн–Вс 10:00–22:00".
     VenueAnalytics:
       type: object
       properties:
@@ -3736,6 +3825,40 @@ components:
               enum:
                 - stopped
                 - age_verification_required
+    VenueAvailability:
+      type: object
+      properties:
+        venue_id:
+          type: string
+        duration_min:
+          type: integer
+          description: Booking length the venue accepts closest to the requested one.
+        fits:
+          type: boolean
+          description: Some table seats the whole party.
+        exact:
+          type: boolean
+          description: One of the slots starts exactly at the requested time.
+        slots:
+          type: array
+          description: Up to limit free starts nearest the requested time, chronological.
+          items:
+            $ref: '#/components/schemas/AvailabilitySlot'
+        later_today:
+          type: array
+          description: The day's first free starts when none are near the requested time.
+          items:
+            $ref: '#/components/schemas/AvailabilitySlot'
+    AvailabilitySlot:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        table_id:
+          type: string
+        table_number:
+          type: integer
     VenueScheduleSlot:
       type: object
       properties:

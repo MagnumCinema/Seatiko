@@ -139,6 +139,10 @@ func (s *MemoryStore) backfillVenueMediaLocked() {
 			current.ImageURL = fresh.ImageURL
 			changed = true
 		}
+		if current.HoursText == "" && fresh.HoursText != "" {
+			current.HoursText = fresh.HoursText
+			changed = true
+		}
 		if len(current.Reviews) == 0 && len(fresh.Reviews) > 0 {
 			current.Reviews = append([]models.VenueReview(nil), fresh.Reviews...)
 			current.ReviewCount = fresh.ReviewCount

@@ -1,9 +1,9 @@
 /**
- * Pilot availability search: computed in the browser from each venue's public
- * schedule. Planned replacement: server-side `GET /api/v1/availability`
- * (docs/ENGINEERING.md, "Availability search").
+ * Availability search. `/book` uses the server (`GET /api/v1/availability`) and
+ * `fromApiAvailability` maps its answer to the shapes below; `venueAvailability`
+ * is the same calculation in the browser, kept for single-venue views and tests.
  */
-import type { Table, VenueScheduleSlot } from "@/lib/api";
+import type { ApiAvailabilitySlot, ApiVenueAvailability, Table, VenueScheduleSlot } from "@/lib/api";
 import {
   buildAnyTableSlots,
   type AnyTableSlot,
@@ -108,4 +108,25 @@ export function availabilityRank(result: VenueAvailability, target: Date | null)
   const first = result.slots[0].start.getTime();
   if (!target) return first;
   return Math.min(...result.slots.map((slot) => Math.abs(slot.start.getTime() - target.getTime())));
+}
+
+function fromApiSlot(slot: ApiAvailabilitySlot): AnyTableSlot {
+  return { start: new Date(slot.starts_at), available: true, tableId: slot.table_id };
+}
+
+/** Maps one venue of GET /availability to the result and the "later today" fallback. */
+export function fromApiAvailability(
+  api: ApiVenueAvailability,
+  target: Date | null,
+): { availability: VenueAvailability; laterToday: VenueAvailability | null } {
+  const slots = (api.slots ?? []).map(fromApiSlot);
+  const exact =
+    api.exact && target ? (slots.find((slot) => slot.start.getTime() === target.getTime()) ?? null) : null;
+  const availability: VenueAvailability = { durationMin: api.duration_min, fits: api.fits, exact, slots };
+  const later = api.later_today ?? [];
+  const laterToday =
+    target && api.fits && slots.length === 0 && later.length
+      ? { durationMin: api.duration_min, fits: true, exact: null, slots: later.map(fromApiSlot) }
+      : null;
+  return { availability, laterToday };
 }
