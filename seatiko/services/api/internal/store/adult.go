@@ -139,7 +139,9 @@ func (s *MemoryStore) GrantAdultPreorder(staffUserID, reservationID string, inpu
 		IDDocumentType:    input.IDDocumentType,
 		CreatedAt:         now,
 	})
+	s.notifyLocked(models.NotifyAdultGranted, []string{guest.ID}, reservation.VenueID, reservation.ID, "", nil)
 	s.persistBestEffortLocked()
+	s.flushPushLocked()
 	return guest, nil
 }
 
@@ -192,7 +194,9 @@ func (s *MemoryStore) RevokeAdultPreorder(staffUserID, venueID, guestUserID, rea
 		Reason:           strings.TrimSpace(reason),
 		CreatedAt:        now,
 	})
+	s.notifyLocked(models.NotifyAdultRevoked, []string{guest.ID}, venueID, "", "", nil)
 	s.persistBestEffortLocked()
+	s.flushPushLocked()
 	return guest, nil
 }
 

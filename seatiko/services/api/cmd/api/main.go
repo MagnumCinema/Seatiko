@@ -51,6 +51,8 @@ func main() {
 		UploadDir: cfg.UploadDir,
 	}
 
+	go runPreorderKitchen(mem)
+
 	r := newRouter(api)
 	log.Printf("Seatiko API listening on %s", cfg.Addr)
 	if err := r.Run(cfg.Addr); err != nil {
@@ -106,6 +108,9 @@ func newRouter(api *handlers.API) *gin.Engine {
 			authed.PATCH("/me/email", api.UpdateEmail)
 			authed.PATCH("/me/password", api.UpdatePassword)
 			authed.GET("/me/venues/:id/preorder-menu", api.MyPreorderMenu)
+			authed.GET("/me/notifications", api.ListNotifications)
+			authed.POST("/me/notifications/read", api.MarkNotificationsRead)
+			authed.GET("/me/notifications/stream", api.StreamNotifications)
 			authed.POST("/staff/invites/:id/accept", api.AcceptStaffInvite)
 
 			authed.POST("/reservations", api.CreateReservation)
@@ -219,5 +224,17 @@ func corsMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Next()
+	}
+}
+
+// runPreorderKitchen starts preorders on time: at kitchen_at they move to PREPARING
+// and the kitchen and the guest are notified.
+func runPreorderKitchen(mem *store.MemoryStore) {
+	tick := time.NewTicker(30 * time.Second)
+	defer tick.Stop()
+	for now := range tick.C {
+		if n := mem.StartPreorderKitchen(now); n > 0 {
+			log.Printf("preorders sent to the kitchen: %d", n)
+		}
 	}
 }

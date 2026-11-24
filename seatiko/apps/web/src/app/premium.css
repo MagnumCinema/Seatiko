@@ -15353,3 +15353,176 @@ html[data-theme="light"] .menu-dish-popup-x {
     border-radius: 0 0 16px 16px;
   }
 }
+
+/* Header notifications bell (components/notifications-bell.tsx) */
+.site-notify {
+  position: relative;
+}
+
+.site-notify-trigger {
+  position: relative;
+}
+
+.site-notify-trigger:hover {
+  transform: translateY(-1px);
+}
+
+.site-notify-badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--site-accent);
+  color: var(--site-bg);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--site-bg);
+}
+
+.site-notify-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(70vh, 480px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--site-bg) 94%, var(--auth-card-bg));
+  color: var(--site-fg);
+  box-shadow: 0 16px 36px color-mix(in srgb, #000 22%, transparent);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.site-notify-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--site-border);
+  font-size: 0.82rem;
+}
+
+.site-notify-head button {
+  border: 0;
+  background: transparent;
+  color: var(--site-accent);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.site-notify-empty {
+  margin: 0;
+  padding: 18px 12px;
+  color: var(--site-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.site-notify-panel ul {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.site-notify-panel li button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px 9px 18px;
+  position: relative;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--site-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-notify-panel li button:hover {
+  background: color-mix(in srgb, var(--site-fg) 7%, transparent);
+  color: var(--site-fg);
+}
+
+.site-notify-panel li button.unread {
+  color: var(--site-fg);
+}
+
+.site-notify-panel li button.unread::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--site-accent);
+}
+
+.site-notify-text {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.site-notify-panel time {
+  font-size: 0.68rem;
+  color: var(--site-muted);
+}
+
+/* Menu preorder sent to the restaurant (app/venues/[id]/menu) */
+.menu-preorder p.menu-preorder-status {
+  margin-top: 4px;
+  color: var(--fa-text);
+  font-weight: 600;
+}
+.menu-preorder p.menu-preorder-status.error {
+  color: #e5484d;
+}
+.menu-preorder-status a,
+.menu-preorder-cancel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.menu-preorder-cancel:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.menu-selection-send {
+  width: 100%;
+  margin-top: 10px;
+  justify-content: center;
+}
+.menu-selection-send:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.menu-selection-body li.blocked .menu-selection-name {
+  opacity: 0.7;
+}
+.menu-selection-flag {
+  display: block;
+  margin-top: 2px;
+  color: #e9b96e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}

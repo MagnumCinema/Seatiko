@@ -459,7 +459,22 @@ API=http://localhost/api/v1
 - Создать или изменить можно только для своей брони в статусе `CONFIRMED`, если у ресторана включён `allow_preorder`, и до `kitchen_at` = `reserved_for` − `preorder_lead_min` (правило ресторана 0–180 мин, по умолчанию 30). После `kitchen_at` у заказа `kitchen_due: true` — кухне пора начинать.
 - Цена фиксируется при сохранении; блюдо, позже удалённое или в стоп-листе, отмечается `unavailable: true`. Стоп-лист при сохранении — `item_unavailable` (409), чужое блюдо — 404, пустой список или `qty` вне 1–20 — `invalid_items` (400).
 - 18+: без `adult_preorder_allowed` — `age_verification_required` (403); алкоголь только у ресторана с лицензией. Позиции 18+ сохраняются с `age_check: PENDING_AGE_CHECK`; пока персонал не проверил документ (`/staff/orders/:id/age-check`), заказ нельзя отметить `SERVED` / `PAID` и оплатить (`age_check_pending`, 409). Отказ убирает позиции 18+ из заказа. Отзыв 18+ убирает их из ещё не начатых предзаказов гостя (`adult_items_removed_at`).
-- Отмена брони отменяет её предзаказ; при check-in по QR предзаказ привязывается к сессии стола. Push-уведомлений в проекте пока нет: кухня и зал видят новые и изменённые предзаказы в списке заказов (`updated_at`).
+- Отмена брони отменяет её предзаказ; при check-in по QR предзаказ привязывается к сессии стола.
+- В `kitchen_at` фоновый планировщик API (раз в 30 с, `StartPreorderKitchen`) переводит предзаказ в `PREPARING` и уведомляет кухню и гостя.
+- Веб: ссылка «Предзаказать еду к приходу» после брони и кнопка в кабинете гостя ведут в `/venues/:id/menu?preorder=<reservation id>`; там «Ваш выбор» отправляется в ресторан (`PUT`), меняется и отменяется до `kitchen_at`; позиции 18+ без разрешения помечены и не отправляются (`GET /me/venues/:id/preorder-menu`). Без `?preorder=<id>` список по-прежнему только на устройстве.
+
+#### Уведомления (`internal/store/notifications.go`, APP_LOGIC §13)
+
+| Метод | Маршрут | Назначение |
+|---|---|---|
+| `GET` | `/me/notifications?unread=1&limit=50` | свои уведомления (новые сверху) и `unread` |
+| `POST` | `/me/notifications/read` | прочитать `ids` или все |
+| `GET` | `/me/notifications/stream` | Server-Sent Events: `ready` (`unread`), затем `notification` на каждое новое; ping каждые 25 с |
+
+- События: `PREORDER_CREATED` / `UPDATED` / `CANCELLED` — владельцу и активному персоналу ресторана; `PREORDER_PREPARING` — кухне и гостю; `PREORDER_ADULT_REMOVED`, `PREORDER_AGE_REFUSED`, `ADULT_GRANTED`, `ADULT_REVOKED` — гостю. Хранятся в снапшоте, до 200 на пользователя.
+- Поток читается через `fetch` (токен в заголовке `Authorization`, `EventSource` не умеет); nginx отдаёт `/api/v1/me/notifications/stream` без буферизации (`config/nginx/nginx.conf`).
+- Веб: колокольчик в шапке (`components/notifications-bell.tsx`) — счётчик, список, «прочитать все»; переподключение с паузой 3–60 с и опрос раз в минуту, пока поток недоступен.
+- Push на телефон / в закрытый браузер (Web Push, FCM) пока нет: уведомления приходят, когда сайт открыт, и ждут в списке.
 
 #### 18+ и предзаказ (`internal/store/adult.go`, APP_LOGIC §8.4)
 
