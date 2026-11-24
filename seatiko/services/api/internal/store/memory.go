@@ -105,6 +105,9 @@ type MemoryStore struct {
 	waitlist       map[string]models.WaitlistEntry
 	eventInquiries map[string]models.EventInquiry
 	adultLog       []models.AdultPermissionLogEntry
+	notifications  []models.Notification
+	pendingPush    []models.Notification
+	hub            notificationHub
 	demoMenuVer    int
 }
 
@@ -1186,6 +1189,7 @@ func (s *MemoryStore) CancelReservation(userID, reservationID string) (models.Re
 	r.UpdatedAt = time.Now().UTC()
 	s.reservations[reservationID] = r
 	s.cancelPreorderForReservationLocked(reservationID, r.UpdatedAt)
+	defer s.flushPushLocked()
 
 	if t, ok := s.tables[r.TableID]; ok {
 		if t.ReservationID != nil && *t.ReservationID == reservationID {

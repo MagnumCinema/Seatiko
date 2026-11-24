@@ -32,6 +32,7 @@ type persistedState struct {
 	ProfileChanges map[string]models.ProfileChangeRequest  `json:"profile_changes"`
 	Waitlist       map[string]models.WaitlistEntry         `json:"waitlist"`
 	AdultLog       []models.AdultPermissionLogEntry        `json:"adult_permission_log,omitempty"`
+	Notifications  []models.Notification                   `json:"notifications,omitempty"`
 	DemoMenuVer    int                                     `json:"demo_menu_version"`
 }
 
@@ -392,6 +393,7 @@ func (s *MemoryStore) applyState(state persistedState) {
 		s.waitlist = state.Waitlist
 	}
 	s.adultLog = state.AdultLog
+	s.notifications = state.Notifications
 	for id, item := range s.menuItems {
 		s.menuItems[id] = normalizeAgeRestriction(item)
 	}
@@ -421,6 +423,7 @@ func (s *MemoryStore) stateLocked() persistedState {
 		ProfileChanges: s.profileChanges,
 		Waitlist:       s.waitlist,
 		AdultLog:       s.adultLog,
+		Notifications:  s.notifications,
 		DemoMenuVer:    s.demoMenuVer,
 	}
 }

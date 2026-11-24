@@ -169,7 +169,13 @@ func (s *MemoryStore) SavePreorder(userID, reservationID string, items []OrderIt
 	o.AdultItemsRemovedAt = nil
 	o.UpdatedAt = now
 	s.orders[o.ID] = o
+	kind := models.NotifyPreorderUpdated
+	if !exists {
+		kind = models.NotifyPreorderCreated
+	}
+	s.notifyLocked(kind, s.venueStaffRecipientsLocked(r.VenueID), r.VenueID, r.ID, o.ID, &r.ReservedFor)
 	s.persistBestEffortLocked()
+	s.flushPushLocked()
 	return s.decorateOrderLocked(o, now), nil
 }
 
@@ -189,7 +195,10 @@ func (s *MemoryStore) CancelPreorder(userID, reservationID string) (models.Order
 	o.Status = models.OrderCancelled
 	o.UpdatedAt = now
 	s.orders[o.ID] = o
+	r := s.reservations[reservationID]
+	s.notifyLocked(models.NotifyPreorderCancelled, s.venueStaffRecipientsLocked(o.VenueID), o.VenueID, reservationID, o.ID, &r.ReservedFor)
 	s.persistBestEffortLocked()
+	s.flushPushLocked()
 	return s.decorateOrderLocked(o, now), nil
 }
 
@@ -225,6 +234,8 @@ func (s *MemoryStore) cancelPreorderForReservationLocked(reservationID string, n
 	o.Status = models.OrderCancelled
 	o.UpdatedAt = now
 	s.orders[o.ID] = o
+	r := s.reservations[reservationID]
+	s.notifyLocked(models.NotifyPreorderCancelled, s.venueStaffRecipientsLocked(o.VenueID), o.VenueID, reservationID, o.ID, &r.ReservedFor)
 }
 
 // linkPreorderToSessionLocked attaches the reservation's preorder to the table session
@@ -262,6 +273,8 @@ func (s *MemoryStore) dropAdultPreorderItemsLocked(userID string, now time.Time)
 		}
 		o.UpdatedAt = now
 		s.orders[id] = o
+		s.notifyLocked(models.NotifyPreorderAdultRemoved, []string{o.UserID}, o.VenueID, o.ReservationID, o.ID, nil)
+		s.notifyLocked(models.NotifyPreorderUpdated, s.venueStaffRecipientsLocked(o.VenueID), o.VenueID, o.ReservationID, o.ID, nil)
 	}
 }
 
@@ -297,13 +310,18 @@ func (s *MemoryStore) StaffConfirmPreorderAgeCheck(staffUserID, orderID string, 
 		kept = append(kept, it)
 		total += it.Price * it.Qty
 	}
+	refused := len(kept) < len(o.Items)
 	o.Items, o.Total = kept, total
 	if len(kept) == 0 {
 		o.Status = models.OrderCancelled
 	}
 	o.UpdatedAt = now
 	s.orders[o.ID] = o
+	if refused {
+		s.notifyLocked(models.NotifyPreorderAgeRefused, []string{o.UserID}, o.VenueID, o.ReservationID, o.ID, nil)
+	}
 	s.persistBestEffortLocked()
+	s.flushPushLocked()
 	return s.decorateOrderLocked(o, now), nil
 }
 
