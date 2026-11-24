@@ -2528,6 +2528,52 @@ paths:
                       type: object
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/copy-week:
+    post:
+      operationId: CopyVenueWorkShiftsWeek
+      summary: Copy Previous Week Work Shifts
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source_start_date
+                - target_start_date
+              properties:
+                source_start_date:
+                  type: string
+                target_start_date:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shifts:
+                    type: array
+                    items:
+                      type: object
+                  created_count:
+                    type: integer
+                  skipped_count:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/restaurant/venues/{venueId}/shifts/{shiftId}/swap:
     post:
       operationId: SwapVenueWorkShift

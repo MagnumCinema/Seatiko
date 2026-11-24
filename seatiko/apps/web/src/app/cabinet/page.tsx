@@ -26,6 +26,7 @@ import {
   listApplicationActivity,
   listMyApplications,
   listRestaurantReservations,
+  listVenueWorkShifts,
   mediaUrl,
   pickLocale,
   removeApplicationPhoto,
@@ -598,6 +599,7 @@ export default function CabinetPage() {
   const [reservations, setReservations] = useState<RestaurantReservation[]>([]);
   const [reservationFilter, setReservationFilter] =
     useState<ReservationFilter>("upcoming");
+  const [shiftAlertCount, setShiftAlertCount] = useState(0);
   const [activity, setActivity] = useState<ApplicationActivity[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -729,6 +731,28 @@ export default function CabinetPage() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [selected, locale, refreshActivity]);
+
+  useEffect(() => {
+    const targetVenueId = selected ? selected.venue_id || selected.id : "";
+    if (!targetVenueId) return;
+    let cancelled = false;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    listVenueWorkShifts(targetVenueId)
+      .then((list) => {
+        if (cancelled) return;
+        const count = list.filter(
+          (s) => s.date >= todayStr && (s.status === "SWAP_REQUESTED" || s.status === "DECLINED"),
+        ).length;
+        setShiftAlertCount(count);
+      })
+      .catch(() => {
+        if (!cancelled) setShiftAlertCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
 
   useEffect(() => {
     if (!selectedId || !draft || draftApplicationRef.current !== selectedId) {
@@ -1035,6 +1059,9 @@ export default function CabinetPage() {
                 >
                   <span className="owner-nav-icon">{item.icon}</span>
                   <span>{item.label}</span>
+                  {item.id === "shifts" && shiftAlertCount > 0 && (
+                    <b className="owner-nav-alert-badge">{shiftAlertCount}</b>
+                  )}
                   {item.id === "reservations" && futureBookings.length > 0 && (
                     <b>{futureBookings.length}</b>
                   )}
@@ -1737,7 +1764,10 @@ export default function CabinetPage() {
               )}
 
               {section === "shifts" && (
-                <CabinetShiftsPlanner venueId={effectiveVenueId} />
+                <CabinetShiftsPlanner
+                  venueId={effectiveVenueId}
+                  onAlertCountChange={setShiftAlertCount}
+                />
               )}
 
               {section === "reservations" && (

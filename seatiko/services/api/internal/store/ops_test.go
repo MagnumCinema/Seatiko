@@ -525,4 +525,13 @@ func TestWorkShiftsAndSchedule(t *testing.T) {
 	if err != nil || len(afterDelete) != 6 {
 		t.Fatalf("after delete count = %d", len(afterDelete))
 	}
+
+	// Copy week from 2026-11-23..2026-11-29 to next week 2026-11-30..2026-12-06
+	copied, skipped, err := mem.CopyWeekWorkShifts(owner.ID, venueID, CopyWeekShiftsInput{
+		SourceStartDate: "2026-11-23",
+		TargetStartDate: "2026-11-30",
+	})
+	if err != nil || len(copied) != 6 || skipped != 0 {
+		t.Fatalf("copy week shifts: err=%v, copied=%d, skipped=%d", err, len(copied), skipped)
+	}
 }

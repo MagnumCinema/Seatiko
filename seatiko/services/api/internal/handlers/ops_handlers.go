@@ -127,6 +127,20 @@ func (a *API) BatchCreateVenueWorkShifts(c *gin.Context) {
 	writeOpsResult(c, err, gin.H{"shifts": shifts}, http.StatusCreated)
 }
 
+func (a *API) CopyVenueWorkShiftsWeek(c *gin.Context) {
+	var req store.CopyWeekShiftsInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shifts, skipped, err := a.Store.CopyWeekWorkShifts(a.userID(c), c.Param("venueId"), req)
+	writeOpsResult(c, err, gin.H{
+		"shifts":        shifts,
+		"created_count": len(shifts),
+		"skipped_count": skipped,
+	}, http.StatusCreated)
+}
+
 func (a *API) SwapVenueWorkShift(c *gin.Context) {
 	var req struct {
 		NewStaffID string `json:"new_staff_id" binding:"required"`

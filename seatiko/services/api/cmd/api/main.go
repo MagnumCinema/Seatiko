@@ -183,6 +183,7 @@ func newRouter(api *handlers.API) *gin.Engine {
 				restaurant.GET("/venues/:venueId/shifts", api.ListVenueWorkShifts)
 				restaurant.POST("/venues/:venueId/shifts", api.CreateVenueWorkShift)
 				restaurant.POST("/venues/:venueId/shifts/batch", api.BatchCreateVenueWorkShifts)
+				restaurant.POST("/venues/:venueId/shifts/copy-week", api.CopyVenueWorkShiftsWeek)
 				restaurant.POST("/venues/:venueId/shifts/:shiftId/swap", api.SwapVenueWorkShift)
 				restaurant.DELETE("/venues/:venueId/shifts/:shiftId", api.DeleteVenueWorkShift)
 			}

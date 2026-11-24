@@ -6822,6 +6822,514 @@ html[data-theme="light"] .cabinet-shift-status-badge.swap_requested {
   border-color: #fca5a5;
 }
 
+/* Sidebar alert badge on Shifts tab */
+.owner-nav-alert-badge {
+  background: #ef4444 !important;
+  color: #fff !important;
+}
+
+/* Planner Toolbar & View Tabs */
+.cabinet-planner-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--site-border);
+  background: color-mix(in srgb, var(--site-surface) 60%, transparent);
+}
+.cabinet-planner-view-tabs,
+.cabinet-planner-role-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--site-bg) 55%, var(--site-surface));
+  border: 1px solid var(--site-border);
+}
+.cabinet-planner-view-tab,
+.cabinet-planner-role-filter button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--site-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.cabinet-planner-view-tab.active,
+.cabinet-planner-role-filter button.active {
+  background: var(--site-accent, #e9b96e);
+  color: #111813;
+}
+html[data-theme="light"] .cabinet-planner-view-tab.active,
+html[data-theme="light"] .cabinet-planner-role-filter button.active {
+  background: #246046;
+  color: #fff;
+}
+
+/* Global Alert Center Enhancements */
+.cabinet-planner-global-alerts {
+  margin-bottom: 20px;
+}
+.cabinet-planner-alerts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cabinet-planner-swap-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.cabinet-planner-alert-date {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(233, 185, 110, 0.16);
+  color: var(--site-accent, #e9b96e);
+}
+html[data-theme="light"] .cabinet-planner-alert-date {
+  background: #e4efe8;
+  color: #175f43;
+}
+.cabinet-planner-swap-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Weekly Staff Roster Matrix */
+.cabinet-roster-matrix-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--site-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--site-surface) 75%, transparent);
+}
+.cabinet-roster-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+.cabinet-roster-table th,
+.cabinet-roster-table td {
+  border-bottom: 1px solid var(--site-border);
+  border-right: 1px solid color-mix(in srgb, var(--site-border) 65%, transparent);
+  vertical-align: top;
+}
+.cabinet-roster-table th:last-child,
+.cabinet-roster-table td:last-child {
+  border-right: none;
+}
+.cabinet-roster-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 195px;
+  background: var(--site-surface);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+}
+.cabinet-roster-th-staff {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--site-muted);
+  vertical-align: middle !important;
+}
+.cabinet-roster-th-day {
+  padding: 6px;
+  text-align: center;
+  background: color-mix(in srgb, var(--site-surface) 85%, transparent);
+}
+.cabinet-roster-th-day.today {
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 12%, var(--site-surface));
+}
+.cabinet-roster-day-head-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+.cabinet-roster-day-head-btn:hover {
+  background: color-mix(in srgb, var(--site-fg) 6%, transparent);
+}
+.cabinet-roster-day-name {
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: var(--site-fg);
+}
+.cabinet-roster-coverage {
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: var(--site-muted);
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--site-fg) 6%, transparent);
+}
+.cabinet-roster-coverage.low {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.14);
+}
+html[data-theme="light"] .cabinet-roster-coverage.low {
+  color: #b45309;
+  background: #fef3c7;
+}
+.cabinet-roster-group-head {
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--site-accent, #e9b96e);
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 8%, var(--site-surface));
+}
+html[data-theme="light"] .cabinet-roster-group-head {
+  color: #175f43;
+  background: #eef5f0;
+}
+.cabinet-roster-staff-cell {
+  padding: 6px 8px;
+}
+.cabinet-roster-staff-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--site-fg);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+.cabinet-roster-staff-btn:hover {
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 12%, transparent);
+}
+.cabinet-roster-staff-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cabinet-roster-staff-meta strong {
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cabinet-roster-staff-meta small {
+  font-size: 0.7rem;
+  color: var(--site-muted);
+}
+.cabinet-roster-day-cell {
+  padding: 6px;
+  height: 58px;
+}
+.cabinet-roster-day-cell.today {
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 5%, transparent);
+}
+.cabinet-roster-cell-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 44px;
+  justify-content: center;
+}
+.cabinet-roster-shift-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 5px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 0.71rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+  white-space: nowrap;
+}
+.cabinet-roster-shift-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.cabinet-roster-shift-chip.status-confirmed {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.32);
+}
+.cabinet-roster-shift-chip.status-pending {
+  background: rgba(233, 185, 110, 0.18);
+  color: #e9b96e;
+  border-color: rgba(233, 185, 110, 0.38);
+}
+.cabinet-roster-shift-chip.status-swap_requested {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.45);
+}
+.cabinet-roster-shift-chip.status-declined {
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--site-muted);
+  border-color: var(--site-border);
+  text-decoration: line-through;
+}
+html[data-theme="light"] .cabinet-roster-shift-chip.status-confirmed {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+html[data-theme="light"] .cabinet-roster-shift-chip.status-pending {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+html[data-theme="light"] .cabinet-roster-shift-chip.status-swap_requested {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.cabinet-roster-cell-add {
+  width: 100%;
+  min-height: 30px;
+  border: 1px dashed transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--site-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.38;
+  transition: all 0.15s ease;
+}
+.cabinet-roster-day-cell:hover .cabinet-roster-cell-add,
+.cabinet-roster-cell-add:focus-visible {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--site-accent, #e9b96e) 50%, var(--site-border));
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 10%, transparent);
+  color: var(--site-accent, #e9b96e);
+}
+html[data-theme="light"] .cabinet-roster-day-cell:hover .cabinet-roster-cell-add {
+  color: #246046;
+  border-color: rgba(36, 96, 70, 0.45);
+  background: #eef5f0;
+}
+.cabinet-roster-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  font-size: 0.74rem;
+  color: var(--site-muted);
+  background: color-mix(in srgb, var(--site-surface) 90%, transparent);
+}
+.cabinet-roster-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.legend-dot.confirmed { background: #34d399; }
+.legend-dot.pending { background: #e9b96e; }
+.legend-dot.swap_requested { background: #ef4444; }
+.legend-dot.declined { background: #94a3b8; }
+.cabinet-roster-legend-tip {
+  margin-left: auto;
+  font-style: italic;
+}
+
+/* 2/2 Wave Rotation Selector */
+.cabinet-wave-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .cabinet-wave-selector {
+    grid-template-columns: 1fr;
+  }
+}
+.cabinet-wave-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--site-border);
+  background: var(--site-surface);
+  color: var(--site-fg);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cabinet-wave-btn strong {
+  font-size: 0.76rem;
+}
+.cabinet-wave-btn small {
+  font-size: 0.68rem;
+  color: var(--site-muted);
+  line-height: 1.25;
+}
+.cabinet-wave-btn.active {
+  border-color: var(--site-accent, #e9b96e);
+  background: rgba(233, 185, 110, 0.15);
+}
+html[data-theme="light"] .cabinet-wave-btn.active {
+  border-color: #246046;
+  background: #e4efe8;
+}
+
+/* Quick Assign Conflict Warning & Copy Icon */
+.cabinet-quick-conflict-warning {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+html[data-theme="light"] .cabinet-quick-conflict-warning {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+.cabinet-copy-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.45rem;
+  background: rgba(233, 185, 110, 0.16);
+}
+
+/* Personal Staff Schedule Modal */
+.cabinet-personal-dialog {
+  width: min(100%, 540px);
+}
+.cabinet-personal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.cabinet-personal-head h3 {
+  margin: 0;
+}
+.cabinet-personal-head .cabinet-shift-dialog-sub {
+  margin: 2px 0 0;
+}
+.cabinet-personal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.cabinet-personal-stats > div {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--site-border);
+  background: color-mix(in srgb, var(--site-surface) 70%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cabinet-personal-stats span {
+  font-size: 0.72rem;
+  color: var(--site-muted);
+}
+.cabinet-personal-stats strong {
+  font-size: 1.15rem;
+  font-weight: 750;
+  color: var(--site-fg);
+}
+.cabinet-personal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cabinet-personal-toolbar strong {
+  font-size: 0.88rem;
+}
+.cabinet-personal-shifts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 290px;
+  overflow-y: auto;
+}
+.cabinet-personal-shift-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--site-border);
+  background: var(--site-surface);
+}
+.cabinet-personal-shift-row > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cabinet-personal-shift-row strong {
+  font-size: 0.82rem;
+  color: var(--site-fg);
+}
+.cabinet-personal-shift-row small {
+  font-size: 0.72rem;
+  color: var(--site-muted);
+}
+.cabinet-personal-shift-row small.reason {
+  color: #ef4444;
+}
+.cabinet-personal-shift-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 
 .cabinet-category-pills {
   display: flex;

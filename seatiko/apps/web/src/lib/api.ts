@@ -1302,6 +1302,19 @@ export async function batchCreateVenueWorkShifts(
   return data.shifts ?? [];
 }
 
+export async function copyVenueWorkShiftsWeek(
+  venueId: string,
+  input: {
+    source_start_date: string;
+    target_start_date: string;
+  },
+): Promise<{ shifts: WorkShift[]; created_count: number; skipped_count: number }> {
+  return apiFetch<{ shifts: WorkShift[]; created_count: number; skipped_count: number }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/copy-week`,
+    { method: "POST", body: input },
+  );
+}
+
 export async function swapVenueWorkShiftStaff(
   venueId: string,
   shiftId: string,

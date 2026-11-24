@@ -639,6 +639,11 @@ type BatchWorkShiftsInput struct {
 	Note      string   `json:"note"`
 }
 
+type CopyWeekShiftsInput struct {
+	SourceStartDate string `json:"source_start_date"`
+	TargetStartDate string `json:"target_start_date"`
+}
+
 func parseShiftTimeMinutes(hhmm string) (int, bool) {
 	parts := strings.Split(strings.TrimSpace(hhmm), ":")
 	if len(parts) != 2 {
@@ -748,6 +753,93 @@ func (s *MemoryStore) BatchCreateWorkShifts(ownerID, venueID string, input Batch
 		return nil, ErrConflict
 	}
 	return created, nil
+}
+
+func (s *MemoryStore) CopyWeekWorkShifts(ownerID, venueID string, input CopyWeekShiftsInput) ([]models.WorkShift, int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
+		return nil, 0, ErrForbidden
+	}
+	venueID = s.resolveVenueIDLocked(venueID)
+
+	srcStart, err1 := time.Parse("2006-01-02", strings.TrimSpace(input.SourceStartDate))
+	dstStart, err2 := time.Parse("2006-01-02", strings.TrimSpace(input.TargetStartDate))
+	if err1 != nil || err2 != nil {
+		return nil, 0, ErrBadRequest
+	}
+
+	// Collect active source week shifts
+	type candidate struct {
+		shift      models.WorkShift
+		targetDate string
+	}
+	candidates := make([]candidate, 0)
+	for _, shift := range s.shifts {
+		if shift.VenueID != venueID || shift.Status == models.ShiftStatusDeclined {
+			continue
+		}
+		shiftDate, err := time.Parse("2006-01-02", shift.Date)
+		if err != nil {
+			continue
+		}
+		dayDiff := int(shiftDate.Sub(srcStart).Hours() / 24)
+		if dayDiff < 0 || dayDiff > 6 {
+			continue
+		}
+		// Ensure staff member still exists in venue
+		member, ok := s.staffMembers[shift.StaffID]
+		if !ok || member.VenueID != venueID {
+			continue
+		}
+		targetDate := dstStart.AddDate(0, 0, dayDiff).Format("2006-01-02")
+		candidates = append(candidates, candidate{shift: shift, targetDate: targetDate})
+	}
+
+	if len(candidates) == 0 {
+		return []models.WorkShift{}, 0, nil
+	}
+
+	created := make([]models.WorkShift, 0, len(candidates))
+	skipped := 0
+	for _, c := range candidates {
+		if s.hasShiftConflictLocked(venueID, c.shift.StaffID, c.targetDate, c.shift.StartTime, c.shift.EndTime, "") {
+			skipped++
+			continue
+		}
+		member := s.staffMembers[c.shift.StaffID]
+		displayName := member.Name
+		if displayName == "" {
+			displayName = member.Email
+		}
+		role := member.Role
+		if role == "" {
+			role = c.shift.Role
+		}
+		newShift := models.WorkShift{
+			ID:        uuid.NewString(),
+			VenueID:   venueID,
+			StaffID:   c.shift.StaffID,
+			StaffName: displayName,
+			Role:      role,
+			Date:      c.targetDate,
+			StartTime: c.shift.StartTime,
+			EndTime:   c.shift.EndTime,
+			Status:    models.ShiftStatusPending,
+			Note:      c.shift.Note,
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		}
+		s.shifts[newShift.ID] = newShift
+		created = append(created, newShift)
+	}
+
+	if len(created) == 0 && skipped > 0 {
+		return nil, skipped, ErrConflict
+	}
+	return created, skipped, nil
 }
 
 func (s *MemoryStore) CreateWorkShift(ownerID, venueID string, input WorkShiftInput) (models.WorkShift, error) {
