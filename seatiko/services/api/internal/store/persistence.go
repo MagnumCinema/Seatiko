@@ -129,6 +129,9 @@ func (s *MemoryStore) backfillVenueMediaLocked() {
 	defer s.mu.Unlock()
 	changed := s.dropLegacyPlacesPhotosLocked()
 	demo := NewMemory()
+	if s.backfillVenueGeoLocked(demo.venues) {
+		changed = true
+	}
 	for id, fresh := range demo.venues {
 		current, ok := s.venues[id]
 		if !ok {

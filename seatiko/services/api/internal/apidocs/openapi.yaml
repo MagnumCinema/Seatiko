@@ -302,7 +302,7 @@ paths:
             type: string
             maxLength: 100
           description: Search by venue name or street address in the selected area.
-          example: Independenței 45
+          example: Ștefan cel Mare 57
         - name: bookable_only
           in: query
           required: false
