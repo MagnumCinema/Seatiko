@@ -709,7 +709,7 @@ export function CabinetMenuPanel({ venueId }: Props) {
             aria-label={form.id ? copy.opsMenuEditDish : copy.opsMenuAddDish}
             aria-labelledby="cabinet-dish-popup-title"
           >
-            <div className="booking-popup-card menu-dish-popup-card">
+            <div className="booking-popup-card menu-dish-popup-card cabinet-dish-popup-card">
               <button
                 type="button"
                 className="booking-popup-x menu-dish-popup-x"
@@ -863,6 +863,7 @@ export function CabinetMenuPanel({ venueId }: Props) {
                       <label htmlFor="edit-dish-price" className="sr-only">
                         {copy.opsMenuPricePlaceholder}
                       </label>
+                      <span className="cabinet-dish-price-prefix">{copy.opsMenuPriceLabel}</span>
                       <input
                         id="edit-dish-price"
                         type="number"
@@ -873,7 +874,7 @@ export function CabinetMenuPanel({ venueId }: Props) {
                         onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                         placeholder="0"
                       />
-                      <span>MDL</span>
+                      <span className="cabinet-dish-currency">MDL</span>
                     </div>
 
                     <button
@@ -889,7 +890,7 @@ export function CabinetMenuPanel({ venueId }: Props) {
 
                     <button
                       type="button"
-                      className="panel-btn ghost"
+                      className="cabinet-dish-cancel-btn"
                       onClick={() => setIsModalOpen(false)}
                       disabled={busy}
                     >
