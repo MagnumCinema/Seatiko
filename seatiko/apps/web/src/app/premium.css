@@ -4902,6 +4902,48 @@ html[data-theme="light"] .owner-filters button.active { background: #fff; color:
 }
 .cabinet-staff-list li span { color: var(--site-muted); margin-left: 6px; }
 
+.cabinet-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 20px;
+}
+.cabinet-category-pills button {
+  min-height: 36px;
+  padding: 6px 14px;
+  color: var(--site-muted);
+  border: 1px solid var(--site-border);
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--site-surface) 70%, transparent);
+  font-size: .74rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.cabinet-category-pills button:hover {
+  color: var(--site-fg);
+  border-color: var(--site-accent, #d77b48);
+}
+.cabinet-category-pills button.active {
+  color: #fff;
+  background: var(--site-accent, #d77b48);
+  border-color: var(--site-accent, #d77b48);
+}
+.cabinet-search-input {
+  min-height: 40px;
+  padding: 8px 14px;
+  color: var(--input-fg);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  font-size: .8rem;
+  min-width: 220px;
+}
+.cabinet-search-input:focus {
+  outline: none;
+  border-color: #d77b48;
+}
+
 @media (max-width: 980px) {
   .owner-register-shell { grid-template-columns: 1fr; max-width: 720px; padding-top: 48px; }
   .owner-register-story h1 { font-size: clamp(3rem, 9vw, 5rem); }
@@ -4910,7 +4952,7 @@ html[data-theme="light"] .owner-filters button.active { background: #fff; color:
   .owner-person,
   .owner-support { display: none; }
   .owner-venue-switcher { padding-top: 0; }
-  .owner-nav { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .owner-nav { overflow-x: auto; grid-template-columns: repeat(6, minmax(110px, 1fr)); padding-bottom: 3px; }
   .owner-nav button { grid-template-columns: 20px minmax(0,1fr) auto; }
   .owner-overview-grid { grid-template-columns: 1fr; }
   .owner-metrics { grid-template-columns: 1fr 1fr; }
@@ -4928,7 +4970,7 @@ html[data-theme="light"] .owner-filters button.active { background: #fff; color:
   .panel-page:has(.owner-dashboard) .panel-email { display: none; }
   .owner-dashboard { border-radius: 16px; }
   .owner-sidebar { padding: 15px 10px 10px; }
-  .owner-nav { overflow-x: auto; grid-template-columns: repeat(5, minmax(132px, 1fr)); padding-bottom: 3px; }
+  .owner-nav { overflow-x: auto; grid-template-columns: repeat(6, minmax(115px, 1fr)); padding-bottom: 3px; }
   .owner-content { padding: 22px 15px 30px; }
   .owner-section-head { align-items: start; }
   .owner-section-status { flex-direction: column; align-items: end; gap: 4px; }

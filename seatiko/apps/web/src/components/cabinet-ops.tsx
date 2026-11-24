@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   FloorPlanEditor,
@@ -68,31 +68,30 @@ const emptyForm = (): MenuForm => ({
   alcohol: false,
 });
 
-export function CabinetOpsPanel({ venueId }: Props) {
+/**
+ * Floor & Hall Management Panel (Floor plan, QR codes, Booking rules, Staff, Shift analytics)
+ */
+export function CabinetFloorPanel({ venueId }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).cabinet;
   const [tables, setTables] = useState<Table[]>([]);
   const [draft, setDraft] = useState<FloorDraftTable[]>([]);
   const [dirty, setDirty] = useState(false);
-  const [menu, setMenu] = useState<MenuItem[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [analytics, setAnalytics] = useState<VenueAnalytics | null>(null);
   const [email, setEmail] = useState("");
-  const [form, setForm] = useState<MenuForm>(emptyForm);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function reload() {
-    const [qr, items, members, stats] = await Promise.all([
+    const [qr, members, stats] = await Promise.all([
       listVenueQR(venueId),
-      listOwnerMenu(venueId),
       listVenueStaff(venueId),
       fetchVenueAnalytics(venueId),
     ]);
     setTables(qr);
     setDraft(tablesToDraft(qr));
     setDirty(false);
-    setMenu(items);
     setStaff(members);
     setAnalytics(stats);
   }
@@ -107,10 +106,10 @@ export function CabinetOpsPanel({ venueId }: Props) {
           if (!cancelled) {
             setMessage(
               locale === "ro"
-                ? "Eroare la încărcarea datelor operaționale"
+                ? "Eroare la încărcarea datelor sălii"
                 : locale === "en"
-                ? "Failed to load operational data"
-                : "Не удалось загрузить операционные данные",
+                ? "Failed to load floor data"
+                : "Не удалось загрузить данные зала",
             );
           }
         })
@@ -144,47 +143,6 @@ export function CabinetOpsPanel({ venueId }: Props) {
     }
   }
 
-  function editItem(item: MenuItem) {
-    setForm({
-      id: item.id,
-      name: item.name.ru || item.name.en || "",
-      category: item.category.ru || item.category.en || "Основное",
-      description: item.description.ru || item.description.en || "",
-      price: String(item.price),
-      alcohol: item.contains_alcohol,
-    });
-  }
-
-  async function saveDish() {
-    const name = form.name.trim();
-    if (!name) return;
-    const payload = {
-      name: emptyLocalized(name),
-      category: emptyLocalized(form.category.trim() || "Основное"),
-      description: emptyLocalized(form.description.trim()),
-      price: Number(form.price) || 0,
-      contains_alcohol: form.alcohol,
-    };
-    await run(async () => {
-      if (form.id) {
-        await updateOwnerMenuItem(venueId, form.id, payload);
-      } else {
-        await upsertOwnerMenuItem(venueId, payload);
-      }
-      setForm(emptyForm());
-    }, form.id ? (locale === "ro" ? "Preparat actualizat" : locale === "en" ? "Dish updated" : "Блюдо обновлено") : (locale === "ro" ? "Preparat adăugat" : locale === "en" ? "Dish added" : "Блюдо добавлено"));
-  }
-
-  const grouped = CATEGORIES.map((cat) => ({
-    cat,
-    label: CATEGORY_NAMES[cat]?.[locale] || cat,
-    items: menu.filter((m) => (m.category.ru || m.category.en) === cat),
-  })).filter((g) => g.items.length > 0);
-
-  const other = menu.filter(
-    (m) => !CATEGORIES.includes(m.category.ru || m.category.en || ""),
-  );
-
   return (
     <div className="cabinet-ops">
       {message && (
@@ -203,7 +161,7 @@ export function CabinetOpsPanel({ venueId }: Props) {
       <section className="owner-card cabinet-ops-card">
         <div className="owner-card-head cabinet-ops-floor-head">
           <div>
-            <span className="owner-kicker">{copy.opsTitle}</span>
+            <span className="owner-kicker">{copy.floor}</span>
             <h3>{copy.opsFloorPlan}</h3>
             <p className="cabinet-ops-sub">
               {copy.opsFloorPlanHint}
@@ -262,7 +220,7 @@ export function CabinetOpsPanel({ venueId }: Props) {
         />
 
         {tables.length > 0 && (
-          <details className="cabinet-ops-qr">
+          <details className="cabinet-ops-qr" open>
             <summary>{copy.opsQrTitle} ({tables.length})</summary>
             <p className="cabinet-ops-sub">{copy.opsQrHint}</p>
             <div className="cabinet-qr-grid">
@@ -304,173 +262,11 @@ export function CabinetOpsPanel({ venueId }: Props) {
         )}
       </section>
 
-      {/* Menu Management Section */}
-      <section className="owner-card cabinet-ops-card">
-        <div className="owner-card-head">
-          <div>
-            <span className="owner-kicker">{copy.opsTitle}</span>
-            <h3>{copy.opsMenuTitle}</h3>
-            <p className="cabinet-ops-sub">{copy.opsMenuHint}</p>
-          </div>
-        </div>
-
-        <form
-          className="cabinet-menu-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void saveDish();
-          }}
-        >
-          <div className="field">
-            <label htmlFor="menu-dish-name">{copy.opsMenuNamePlaceholder}</label>
-            <input
-              id="menu-dish-name"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder={copy.opsMenuNamePlaceholder}
-              required
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="menu-dish-cat">{locale === "ro" ? "Categorie" : locale === "en" ? "Category" : "Категория"}</label>
-            <select
-              id="menu-dish-cat"
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_NAMES[c]?.[locale] || c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="menu-dish-price">{copy.opsMenuPricePlaceholder}</label>
-            <input
-              id="menu-dish-price"
-              value={form.price}
-              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-              placeholder={copy.opsMenuPricePlaceholder}
-              inputMode="numeric"
-              required
-            />
-          </div>
-          <div className="field owner-field-wide">
-            <label htmlFor="menu-dish-desc">{copy.opsMenuDescPlaceholder}</label>
-            <textarea
-              id="menu-dish-desc"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder={copy.opsMenuDescPlaceholder}
-              rows={2}
-            />
-          </div>
-          <label className="cabinet-menu-check owner-field-wide">
-            <input
-              type="checkbox"
-              checked={form.alcohol}
-              onChange={(e) => setForm((f) => ({ ...f, alcohol: e.target.checked }))}
-            />
-            <span>{copy.opsMenuAlcohol}</span>
-          </label>
-          <div className="cabinet-ops-row owner-field-wide">
-            <button
-              type="submit"
-              className="panel-btn"
-              disabled={busy || !form.name.trim()}
-            >
-              {form.id ? copy.opsMenuEditDish : copy.opsMenuAddDish}
-            </button>
-            {form.id ? (
-              <button
-                type="button"
-                className="panel-btn ghost"
-                disabled={busy}
-                onClick={() => setForm(emptyForm())}
-              >
-                {locale === "ro" ? "Anulează" : locale === "en" ? "Cancel" : "Отмена"}
-              </button>
-            ) : null}
-          </div>
-        </form>
-
-        {menu.length === 0 ? (
-          <p className="cabinet-ops-empty">{copy.opsMenuEmpty}</p>
-        ) : (
-          <div className="cabinet-menu-list">
-            {[...grouped, ...(other.length ? [{ cat: "other", label: locale === "ro" ? "Altele" : locale === "en" ? "Other" : "Другое", items: other }] : [])].map(
-              (group) => (
-                <div key={group.cat} className="cabinet-menu-group">
-                  <h4>{group.label}</h4>
-                  <ul>
-                    {group.items.map((item) => (
-                      <li key={item.id} className={item.stopped ? "stopped" : ""}>
-                        <div>
-                          <strong>
-                            {item.name.ru || item.name.en}
-                            {item.contains_alcohol ? " · 18+" : ""}
-                          </strong>
-                          <span className="cabinet-dish-price">
-                            {item.price} MDL
-                            {item.stopped ? ` · ${copy.opsMenuStop.toLowerCase()}` : ""}
-                          </span>
-                          {item.description.ru ? <p>{item.description.ru}</p> : null}
-                        </div>
-                        <div className="cabinet-menu-actions">
-                          <button
-                            type="button"
-                            className="panel-btn ghost sm"
-                            onClick={() => editItem(item)}
-                          >
-                            {copy.opsMenuEdit}
-                          </button>
-                          <button
-                            type="button"
-                            className="panel-btn ghost sm"
-                            onClick={() =>
-                              run(async () => {
-                                await stopOwnerMenuItem(venueId, item.id, !item.stopped);
-                              }, locale === "ro" ? "Stop-list actualizat" : locale === "en" ? "Stop-list updated" : "Стоп-лист обновлён")
-                            }
-                          >
-                            {item.stopped ? copy.opsMenuResume : copy.opsMenuStop}
-                          </button>
-                          <button
-                            type="button"
-                            className="panel-btn ghost sm danger"
-                            onClick={() => {
-                              if (
-                                !window.confirm(
-                                  `${locale === "ro" ? "Ștergeți" : locale === "en" ? "Delete" : "Удалить"} «${item.name.ru || item.name.en}»?`,
-                                )
-                              ) {
-                                return;
-                              }
-                              void run(async () => {
-                                await deleteOwnerMenuItem(venueId, item.id);
-                                if (form.id === item.id) setForm(emptyForm());
-                              }, locale === "ro" ? "Preparat șters" : locale === "en" ? "Dish removed" : "Блюдо удалено");
-                            }}
-                          >
-                            {copy.opsMenuDelete}
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ),
-            )}
-          </div>
-        )}
-      </section>
-
       {/* Booking Rules Section */}
       <section className="owner-card cabinet-ops-card">
         <div className="owner-card-head">
           <div>
-            <span className="owner-kicker">{copy.opsTitle}</span>
+            <span className="owner-kicker">{copy.floor}</span>
             <h3>{copy.opsRulesTitle}</h3>
           </div>
         </div>
@@ -481,7 +277,7 @@ export function CabinetOpsPanel({ venueId }: Props) {
       <section className="owner-card cabinet-ops-card">
         <div className="owner-card-head">
           <div>
-            <span className="owner-kicker">{copy.opsTitle}</span>
+            <span className="owner-kicker">{copy.floor}</span>
             <h3>{copy.opsStaffTitle}</h3>
           </div>
         </div>
@@ -523,7 +319,7 @@ export function CabinetOpsPanel({ venueId }: Props) {
         <section className="owner-card cabinet-ops-card">
           <div className="owner-card-head">
             <div>
-              <span className="owner-kicker">{copy.opsTitle}</span>
+              <span className="owner-kicker">{copy.floor}</span>
               <h3>{copy.opsAnalyticsTitle}</h3>
             </div>
           </div>
@@ -543,6 +339,383 @@ export function CabinetOpsPanel({ venueId }: Props) {
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+/**
+ * Menu & Stop-List Management Panel
+ */
+export function CabinetMenuPanel({ venueId }: Props) {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).cabinet;
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [form, setForm] = useState<MenuForm>(emptyForm);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function reload() {
+    const items = await listOwnerMenu(venueId);
+    setMenu(items);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setBusy(true);
+      reload()
+        .catch(() => {
+          if (!cancelled) {
+            setMessage(
+              locale === "ro"
+                ? "Eroare la încărcarea meniului"
+                : locale === "en"
+                ? "Failed to load menu"
+                : "Не удалось загрузить меню",
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setBusy(false);
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueId]);
+
+  async function run(action: () => Promise<void>, ok: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await action();
+      await reload();
+      setMessage(ok);
+    } catch {
+      setMessage(
+        locale === "ro"
+          ? "Eroare la salvare"
+          : locale === "en"
+          ? "Save error"
+          : "Ошибка сохранения",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function editItem(item: MenuItem) {
+    setForm({
+      id: item.id,
+      name: item.name.ru || item.name.en || "",
+      category: item.category.ru || item.category.en || "Основное",
+      description: item.description.ru || item.description.en || "",
+      price: String(item.price),
+      alcohol: item.contains_alcohol,
+    });
+    // Scroll smoothly to form
+    const formElem = document.getElementById("cabinet-menu-form-anchor");
+    if (formElem) formElem.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function saveDish() {
+    const name = form.name.trim();
+    if (!name) return;
+    const payload = {
+      name: emptyLocalized(name),
+      category: emptyLocalized(form.category.trim() || "Основное"),
+      description: emptyLocalized(form.description.trim()),
+      price: Number(form.price) || 0,
+      contains_alcohol: form.alcohol,
+    };
+    await run(async () => {
+      if (form.id) {
+        await updateOwnerMenuItem(venueId, form.id, payload);
+      } else {
+        await upsertOwnerMenuItem(venueId, payload);
+      }
+      setForm(emptyForm());
+    }, form.id ? (locale === "ro" ? "Preparat actualizat" : locale === "en" ? "Dish updated" : "Блюдо обновлено") : (locale === "ro" ? "Preparat adăugat" : locale === "en" ? "Dish added" : "Блюдо добавлено"));
+  }
+
+  const filteredDishes = useMemo(() => {
+    return menu.filter((item) => {
+      const matchCat =
+        selectedCategory === "all" ||
+        (item.category.ru || item.category.en) === selectedCategory;
+      const matchQuery =
+        !searchQuery.trim() ||
+        (item.name.ru || item.name.en || "")
+          .toLowerCase()
+          .includes(searchQuery.trim().toLowerCase()) ||
+        (item.description.ru || item.description.en || "")
+          .toLowerCase()
+          .includes(searchQuery.trim().toLowerCase());
+      return matchCat && matchQuery;
+    });
+  }, [menu, selectedCategory, searchQuery]);
+
+  const grouped = useMemo(() => {
+    return CATEGORIES.map((cat) => ({
+      cat,
+      label: CATEGORY_NAMES[cat]?.[locale] || cat,
+      items: filteredDishes.filter((m) => (m.category.ru || m.category.en) === cat),
+    })).filter((g) => g.items.length > 0);
+  }, [filteredDishes, locale]);
+
+  const otherDishes = useMemo(() => {
+    return filteredDishes.filter(
+      (m) => !CATEGORIES.includes(m.category.ru || m.category.en || ""),
+    );
+  }, [filteredDishes]);
+
+  return (
+    <div className="cabinet-ops">
+      {message && (
+        <div className="owner-notice success" role="alert">
+          <span>✓</span>
+          <p>{message}</p>
+        </div>
+      )}
+      {busy && (
+        <p className="fa-muted">
+          {locale === "ro" ? "Se încarcă…" : locale === "en" ? "Loading…" : "Загрузка…"}
+        </p>
+      )}
+
+      {/* Menu Form Card */}
+      <section id="cabinet-menu-form-anchor" className="owner-card cabinet-ops-card">
+        <div className="owner-card-head">
+          <div>
+            <span className="owner-kicker">{copy.menu}</span>
+            <h3>{form.id ? copy.opsMenuEditDish : copy.opsMenuAddDish}</h3>
+            <p className="cabinet-ops-sub">{copy.opsMenuHint}</p>
+          </div>
+        </div>
+
+        <form
+          className="cabinet-menu-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveDish();
+          }}
+        >
+          <div className="field">
+            <label htmlFor="menu-dish-name">{copy.opsMenuNamePlaceholder}</label>
+            <input
+              id="menu-dish-name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder={copy.opsMenuNamePlaceholder}
+              required
+              enterKeyHint="next"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="menu-dish-cat">
+              {locale === "ro" ? "Categorie" : locale === "en" ? "Category" : "Категория"}
+            </label>
+            <select
+              id="menu-dish-cat"
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_NAMES[c]?.[locale] || c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="menu-dish-price">{copy.opsMenuPricePlaceholder}</label>
+            <input
+              id="menu-dish-price"
+              value={form.price}
+              onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+              placeholder={copy.opsMenuPricePlaceholder}
+              inputMode="numeric"
+              required
+              enterKeyHint="next"
+            />
+          </div>
+          <div className="field owner-field-wide">
+            <label htmlFor="menu-dish-desc">{copy.opsMenuDescPlaceholder}</label>
+            <textarea
+              id="menu-dish-desc"
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder={copy.opsMenuDescPlaceholder}
+              rows={2}
+            />
+          </div>
+          <label className="cabinet-menu-check owner-field-wide">
+            <input
+              type="checkbox"
+              checked={form.alcohol}
+              onChange={(e) => setForm((f) => ({ ...f, alcohol: e.target.checked }))}
+            />
+            <span>{copy.opsMenuAlcohol}</span>
+          </label>
+          <div className="cabinet-ops-row owner-field-wide">
+            <button
+              type="submit"
+              className="panel-btn"
+              disabled={busy || !form.name.trim()}
+            >
+              {form.id ? copy.opsMenuEditDish : copy.opsMenuAddDish}
+            </button>
+            {form.id ? (
+              <button
+                type="button"
+                className="panel-btn ghost"
+                disabled={busy}
+                onClick={() => setForm(emptyForm())}
+              >
+                {locale === "ro" ? "Anulează" : locale === "en" ? "Cancel" : "Отмена"}
+              </button>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
+      {/* Menu Catalog & Stop List */}
+      <section className="owner-card cabinet-ops-card">
+        <div className="owner-card-head" style={{ marginBottom: 16 }}>
+          <div>
+            <span className="owner-kicker">{copy.menu}</span>
+            <h3>{copy.menuSectionTitle} ({menu.length})</h3>
+            <p className="cabinet-ops-sub">{copy.menuSectionSubtitle}</p>
+          </div>
+          <div className="cabinet-menu-search">
+            <input
+              type="search"
+              placeholder={locale === "ro" ? "Caută preparat…" : locale === "en" ? "Search dish…" : "Поиск блюда…"}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="cabinet-search-input"
+            />
+          </div>
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="cabinet-category-pills" role="group" aria-label="Категории меню">
+          <button
+            type="button"
+            className={selectedCategory === "all" ? "active" : ""}
+            onClick={() => setSelectedCategory("all")}
+          >
+            {locale === "ro" ? "Toate" : locale === "en" ? "All" : "Все"} ({menu.length})
+          </button>
+          {CATEGORIES.map((cat) => {
+            const count = menu.filter((m) => (m.category.ru || m.category.en) === cat).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={cat}
+                type="button"
+                className={selectedCategory === cat ? "active" : ""}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {CATEGORY_NAMES[cat]?.[locale] || cat} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {menu.length === 0 ? (
+          <p className="cabinet-ops-empty">{copy.opsMenuEmpty}</p>
+        ) : filteredDishes.length === 0 ? (
+          <p className="cabinet-ops-empty">
+            {locale === "ro" ? "Niciun preparat găsit" : locale === "en" ? "No dishes found" : "Ничего не найдено"}
+          </p>
+        ) : (
+          <div className="cabinet-menu-list">
+            {[
+              ...grouped,
+              ...(otherDishes.length
+                ? [{ cat: "other", label: locale === "ro" ? "Altele" : locale === "en" ? "Other" : "Другое", items: otherDishes }]
+                : []),
+            ].map((group) => (
+              <div key={group.cat} className="cabinet-menu-group">
+                <h4>{group.label}</h4>
+                <ul>
+                  {group.items.map((item) => (
+                    <li key={item.id} className={item.stopped ? "stopped" : ""}>
+                      <div>
+                        <strong>
+                          {item.name.ru || item.name.en}
+                          {item.contains_alcohol ? " · 18+" : ""}
+                        </strong>
+                        <span className="cabinet-dish-price">
+                          {item.price} MDL
+                          {item.stopped ? ` · ${copy.opsMenuStop.toLowerCase()}` : ""}
+                        </span>
+                        {item.description.ru ? <p>{item.description.ru}</p> : null}
+                      </div>
+                      <div className="cabinet-menu-actions">
+                        <button
+                          type="button"
+                          className="panel-btn ghost sm"
+                          onClick={() => editItem(item)}
+                        >
+                          {copy.opsMenuEdit}
+                        </button>
+                        <button
+                          type="button"
+                          className="panel-btn ghost sm"
+                          onClick={() =>
+                            run(async () => {
+                              await stopOwnerMenuItem(venueId, item.id, !item.stopped);
+                            }, locale === "ro" ? "Stop-list actualizat" : locale === "en" ? "Stop-list updated" : "Стоп-лист обновлён")
+                          }
+                        >
+                          {item.stopped ? copy.opsMenuResume : copy.opsMenuStop}
+                        </button>
+                        <button
+                          type="button"
+                          className="panel-btn ghost sm danger"
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                `${locale === "ro" ? "Ștergeți" : locale === "en" ? "Delete" : "Удалить"} «${item.name.ru || item.name.en}»?`,
+                              )
+                            ) {
+                              return;
+                            }
+                            void run(async () => {
+                              await deleteOwnerMenuItem(venueId, item.id);
+                              if (form.id === item.id) setForm(emptyForm());
+                            }, locale === "ro" ? "Preparat șters" : locale === "en" ? "Dish removed" : "Блюдо удалено");
+                          }}
+                        >
+                          {copy.opsMenuDelete}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Combined operations panel for backwards compatibility
+ */
+export function CabinetOpsPanel({ venueId }: Props) {
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <CabinetFloorPanel venueId={venueId} />
+      <CabinetMenuPanel venueId={venueId} />
     </div>
   );
 }

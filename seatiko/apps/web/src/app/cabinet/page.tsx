@@ -7,7 +7,7 @@ import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
 import { GoogleLocationPicker } from "@/components/google-location-picker";
 import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
-import { CabinetOpsPanel } from "@/components/cabinet-ops";
+import { CabinetFloorPanel, CabinetMenuPanel } from "@/components/cabinet-ops";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -37,7 +37,7 @@ import {
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 
-type Section = "overview" | "profile" | "ops" | "reservations" | "activity";
+type Section = "overview" | "profile" | "floor" | "menu" | "reservations" | "activity";
 type ReservationFilter = "upcoming" | "history" | "all";
 
 const DRAFT_STORAGE_PREFIX = "seatiko:restaurant-draft:";
@@ -81,12 +81,23 @@ function ProfileIcon() {
   );
 }
 
-function OpsIcon() {
+function FloorIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect width="8" height="8" x="3" y="3" rx="2" />
-      <path d="M7 11v4a2 2 0 0 0 2 2h4" />
-      <rect width="8" height="8" x="13" y="13" rx="2" />
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M9 21V9" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+      <path d="M6 6h10" />
+      <path d="M6 10h10" />
+      <path d="M6 14h6" />
     </svg>
   );
 }
@@ -472,7 +483,8 @@ export default function CabinetPage() {
     () => [
       { id: "overview", label: cabinetCopy.overview, icon: <OverviewIcon /> },
       { id: "profile", label: cabinetCopy.profile, icon: <ProfileIcon /> },
-      { id: "ops", label: cabinetCopy.ops, icon: <OpsIcon /> },
+      { id: "floor", label: cabinetCopy.floor, icon: <FloorIcon /> },
+      { id: "menu", label: cabinetCopy.menu, icon: <MenuIcon /> },
       { id: "reservations", label: cabinetCopy.reservations, icon: <ReservationsIcon /> },
       { id: "activity", label: cabinetCopy.activity, icon: <ActivityIcon /> },
     ],
@@ -928,14 +940,16 @@ export default function CabinetPage() {
                   <span className="owner-kicker">
                     {section === "overview" && (locale === "ro" ? "Panou de control" : locale === "en" ? "Control Center" : "Центр управления")}
                     {section === "profile" && cabinetCopy.dataForGuests}
-                    {section === "ops" && cabinetCopy.ops}
+                    {section === "floor" && cabinetCopy.floorTitle}
+                    {section === "menu" && cabinetCopy.menuSectionTitle}
                     {section === "reservations" && (locale === "ro" ? "Activitate operațională" : locale === "en" ? "Operations" : "Операционная работа")}
                     {section === "activity" && (locale === "ro" ? "Jurnal de transparență" : locale === "en" ? "Audit & Transparency" : "Прозрачность аккаунта")}
                   </span>
                   <h2>
                     {section === "overview" && (pickLocale(selected.name, locale) || pickLocale(selected.name, "ru") || (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан"))}
                     {section === "profile" && cabinetCopy.profile}
-                    {section === "ops" && cabinetCopy.opsTitle}
+                    {section === "floor" && cabinetCopy.floor}
+                    {section === "menu" && cabinetCopy.menu}
                     {section === "reservations" && cabinetCopy.reservations}
                     {section === "activity" && cabinetCopy.activity}
                   </h2>
@@ -1445,19 +1459,37 @@ export default function CabinetPage() {
                 </section>
               )}
 
-              {section === "ops" && (
+              {section === "floor" && (
                 selected.venue_id ? (
-                  <CabinetOpsPanel venueId={selected.venue_id} />
+                  <CabinetFloorPanel venueId={selected.venue_id} />
                 ) : (
                   <div className="owner-section-empty">
-                    <span aria-hidden="true"><OpsIcon /></span>
-                    <h3>{cabinetCopy.opsTitle}</h3>
+                    <span aria-hidden="true"><FloorIcon /></span>
+                    <h3>{cabinetCopy.floor}</h3>
                     <p>
                       {locale === "ro"
-                        ? "Operațiunile pentru sală, meniu și QR devin disponibile după publicarea restaurantului pe hartă."
+                        ? "Gestionarea sălii și a codurilor QR devine disponibilă după publicarea restaurantului pe hartă."
                         : locale === "en"
-                        ? "Floor plan, menu, and QR code operations unlock once your restaurant is published on the map."
-                        : "Операции зала, меню и QR доступны после публикации ресторана на карте."}
+                        ? "Floor plan and table QR code management unlock once your restaurant is published on the map."
+                        : "Схема зала и QR-коды столов доступны после публикации ресторана на карте."}
+                    </p>
+                  </div>
+                )
+              )}
+
+              {section === "menu" && (
+                selected.venue_id ? (
+                  <CabinetMenuPanel venueId={selected.venue_id} />
+                ) : (
+                  <div className="owner-section-empty">
+                    <span aria-hidden="true"><MenuIcon /></span>
+                    <h3>{cabinetCopy.menu}</h3>
+                    <p>
+                      {locale === "ro"
+                        ? "Gestionarea meniului devine disponibilă după publicarea restaurantului pe hartă."
+                        : locale === "en"
+                        ? "Menu management unlocks once your restaurant is published on the map."
+                        : "Управление меню доступно после публикации ресторана на карте."}
                     </p>
                   </div>
                 )
