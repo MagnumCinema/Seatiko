@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { PanelShell } from "@/components/panel-shell";
 import { StaffWaitlist } from "@/components/staff-waitlist";
 import { useLocale } from "@/components/locale-provider";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
   fetchMe,
@@ -59,6 +61,12 @@ export default function StaffPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myShifts, setMyShifts] = useState<WorkShift[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Swap Request Modal State
+  const [swapModalShift, setSwapModalShift] = useState<WorkShift | null>(null);
+  const [swapReason, setSwapReason] = useState("");
+  const swapModalRef = useRef<HTMLElement>(null);
+  useDialogFocus(!!swapModalShift, swapModalRef, () => setSwapModalShift(null));
 
   useEffect(() => {
     if (!getToken()) {
@@ -201,13 +209,30 @@ export default function StaffPage() {
                   <span className={`cabinet-shift-status-badge ${shift.status.toLowerCase()}`}>
                     {shift.status === "CONFIRMED" && <span className="shift-badge-icon">✓</span>}
                     {shift.status === "PENDING" && <span className="shift-badge-icon">⏳</span>}
+                    {shift.status === "SWAP_REQUESTED" && <span className="shift-badge-icon">⚠️</span>}
                     {shift.status === "DECLINED" && <span className="shift-badge-icon">✕</span>}
                     {shift.status === "CONFIRMED"
                       ? copy.opsScheduleConfirmed
+                      : shift.status === "SWAP_REQUESTED"
+                      ? copy.staffSwapStatusBadge
                       : shift.status === "DECLINED"
                       ? copy.opsScheduleDeclined
                       : copy.opsSchedulePending}
                   </span>
+
+                  {shift.status === "CONFIRMED" && (
+                    <button
+                      type="button"
+                      className="panel-btn ghost sm danger"
+                      onClick={() => {
+                        setSwapModalShift(shift);
+                        setSwapReason("");
+                      }}
+                      title={copy.staffSwapRequestBtn}
+                    >
+                      ⚠️ {copy.staffSwapRequestBtn}
+                    </button>
+                  )}
 
                   {shift.status === "PENDING" && (
                     <div className="staff-pending-shift-actions inline">
@@ -303,6 +328,87 @@ export default function StaffPage() {
           </li>
         ))}
       </ul>
+
+      {/* Staff Shift Swap Request Modal */}
+      {swapModalShift && typeof document !== "undefined" && createPortal(
+        <div className="booking-popup-root cabinet-shift-modal-root" role="presentation">
+          <button
+            type="button"
+            className="booking-popup-backdrop"
+            aria-label={copy.opsMenuCancel}
+            onClick={() => setSwapModalShift(null)}
+          />
+          <section
+            ref={swapModalRef}
+            className="booking-popup cabinet-shift-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="staff-swap-title"
+          >
+            <div className="booking-popup-card cabinet-shift-card">
+              <button
+                type="button"
+                className="booking-popup-x"
+                onClick={() => setSwapModalShift(null)}
+                aria-label={copy.opsMenuCancel}
+              >
+                ×
+              </button>
+
+              <h3 id="staff-swap-title">{copy.staffSwapModalTitle}</h3>
+              <p className="cabinet-shift-dialog-sub">
+                {formatStaffShiftDate(swapModalShift.date, locale)} · {swapModalShift.start_time} – {swapModalShift.end_time}
+              </p>
+
+              <form
+                className="cabinet-shift-form"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!swapReason.trim()) return;
+                  await respondStaffShift(swapModalShift.id, "SWAP_REQUESTED", swapReason.trim());
+                  const refreshed = await listMyStaffShifts();
+                  setMyShifts(refreshed);
+                  setSwapModalShift(null);
+                }}
+              >
+                <div className="cabinet-shift-field-group">
+                  <label htmlFor="staff-swap-reason-input">
+                    {locale === "ro" ? "Motivul absenței" : locale === "en" ? "Absence reason" : "Причина отсутствия"}
+                  </label>
+                  <textarea
+                    id="staff-swap-reason-input"
+                    required
+                    rows={3}
+                    value={swapReason}
+                    onChange={(e) => setSwapReason(e.target.value)}
+                    placeholder={copy.staffSwapReasonPlaceholder}
+                    className="cabinet-shift-input"
+                    style={{ height: "auto", resize: "vertical" }}
+                  />
+                </div>
+
+                <div className="cabinet-shift-actions">
+                  <button
+                    type="submit"
+                    className="panel-btn primary danger"
+                    disabled={!swapReason.trim()}
+                  >
+                    {copy.staffSwapSendBtn}
+                  </button>
+                  <button
+                    type="button"
+                    className="panel-btn ghost"
+                    onClick={() => setSwapModalShift(null)}
+                  >
+                    {copy.opsMenuCancel}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
     </PanelShell>
   );
 }

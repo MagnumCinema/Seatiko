@@ -461,10 +461,28 @@ func TestWorkShiftsAndSchedule(t *testing.T) {
 		t.Fatalf("confirm shift: %v, %#v", err, confirmedShift)
 	}
 
-	// Cook responds to shift (declines)
-	declinedShift, err := mem.RespondToWorkShift(cookUser.ID, cookShift.ID, models.ShiftStatusDeclined)
-	if err != nil || declinedShift.Status != models.ShiftStatusDeclined {
-		t.Fatalf("decline shift: %v, %#v", err, declinedShift)
+	// Cook responds to shift (requests swap with reason)
+	declinedShift, err := mem.RespondToWorkShift(cookUser.ID, cookShift.ID, models.ShiftStatusSwapRequested, "Заболел, не смогу выйти")
+	if err != nil || declinedShift.Status != models.ShiftStatusSwapRequested || declinedShift.Reason != "Заболел, не смогу выйти" {
+		t.Fatalf("swap request shift: %v, %#v", err, declinedShift)
+	}
+
+	// Owner swaps cook with another staff member (e.g. waiter)
+	swappedShift, err := mem.SwapWorkShift(owner.ID, venueID, cookShift.ID, waiter.ID)
+	if err != nil || swappedShift.StaffID != waiter.ID || swappedShift.Status != models.ShiftStatusPending {
+		t.Fatalf("swap shift staff: %v, %#v", err, swappedShift)
+	}
+
+	// Batch create shifts
+	batchShifts, err := mem.BatchCreateWorkShifts(owner.ID, venueID, BatchWorkShiftsInput{
+		StaffIDs:  []string{waiter.ID, cook.ID},
+		Dates:     []string{"2026-11-26", "2026-11-27"},
+		StartTime: "10:00",
+		EndTime:   "22:00",
+		Note:      "Общая смена",
+	})
+	if err != nil || len(batchShifts) != 4 {
+		t.Fatalf("batch create shifts: %v, count=%d", err, len(batchShifts))
 	}
 
 	// Owner deletes a shift
@@ -473,7 +491,7 @@ func TestWorkShiftsAndSchedule(t *testing.T) {
 	}
 
 	afterDelete, err := mem.ListWorkShifts(owner.ID, venueID)
-	if err != nil || len(afterDelete) != 1 {
+	if err != nil || len(afterDelete) != 5 {
 		t.Fatalf("after delete count = %d", len(afterDelete))
 	}
 }

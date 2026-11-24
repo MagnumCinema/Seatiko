@@ -897,6 +897,7 @@ func (s *MemoryStore) ListTables(venueID string) []models.Table {
 			out = append(out, t)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Number < out[j].Number })
 	return out
 }
 

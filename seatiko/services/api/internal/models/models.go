@@ -101,9 +101,10 @@ const (
 )
 
 const (
-	ShiftStatusPending   = "PENDING"
-	ShiftStatusConfirmed = "CONFIRMED"
-	ShiftStatusDeclined  = "DECLINED"
+	ShiftStatusPending       = "PENDING"
+	ShiftStatusConfirmed     = "CONFIRMED"
+	ShiftStatusDeclined      = "DECLINED"
+	ShiftStatusSwapRequested = "SWAP_REQUESTED"
 )
 
 // WorkShift represents a scheduled work shift for a waiter or cook.
@@ -118,6 +119,7 @@ type WorkShift struct {
 	EndTime   string    `json:"end_time"`
 	Status    string    `json:"status"`
 	Note      string    `json:"note,omitempty"`
+	Reason    string    `json:"reason,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

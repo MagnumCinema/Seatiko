@@ -621,6 +621,69 @@ type WorkShiftInput struct {
 	Note      string `json:"note"`
 }
 
+type BatchWorkShiftsInput struct {
+	StaffIDs  []string `json:"staff_ids"`
+	Dates     []string `json:"dates"`
+	StartTime string   `json:"start_time"`
+	EndTime   string   `json:"end_time"`
+	Note      string   `json:"note"`
+}
+
+func (s *MemoryStore) BatchCreateWorkShifts(ownerID, venueID string, input BatchWorkShiftsInput) ([]models.WorkShift, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
+		return nil, ErrForbidden
+	}
+	venueID = s.resolveVenueIDLocked(venueID)
+	startTime := strings.TrimSpace(input.StartTime)
+	endTime := strings.TrimSpace(input.EndTime)
+	if startTime == "" || endTime == "" || len(input.StaffIDs) == 0 || len(input.Dates) == 0 {
+		return nil, ErrBadRequest
+	}
+
+	created := make([]models.WorkShift, 0, len(input.StaffIDs)*len(input.Dates))
+	for _, staffID := range input.StaffIDs {
+		member, ok := s.staffMembers[strings.TrimSpace(staffID)]
+		if !ok || member.VenueID != venueID {
+			continue
+		}
+		displayName := member.Name
+		if displayName == "" {
+			displayName = member.Email
+		}
+		role := member.Role
+		if role == "" {
+			role = models.StaffRoleWaiter
+		}
+		for _, date := range input.Dates {
+			d := strings.TrimSpace(date)
+			if d == "" {
+				continue
+			}
+			shift := models.WorkShift{
+				ID:        uuid.NewString(),
+				VenueID:   venueID,
+				StaffID:   member.ID,
+				StaffName: displayName,
+				Role:      role,
+				Date:      d,
+				StartTime: startTime,
+				EndTime:   endTime,
+				Status:    models.ShiftStatusPending,
+				Note:      strings.TrimSpace(input.Note),
+				CreatedAt: time.Now().UTC(),
+				UpdatedAt: time.Now().UTC(),
+			}
+			s.shifts[shift.ID] = shift
+			created = append(created, shift)
+		}
+	}
+	return created, nil
+}
+
 func (s *MemoryStore) CreateWorkShift(ownerID, venueID string, input WorkShiftInput) (models.WorkShift, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -749,7 +812,7 @@ func (s *MemoryStore) ListMyStaffShifts(userID string) ([]models.WorkShift, erro
 	return out, nil
 }
 
-func (s *MemoryStore) RespondToWorkShift(userID, shiftID, response string) (models.WorkShift, error) {
+func (s *MemoryStore) RespondToWorkShift(userID, shiftID, response string, reason ...string) (models.WorkShift, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.persistBestEffortLocked()
@@ -759,7 +822,7 @@ func (s *MemoryStore) RespondToWorkShift(userID, shiftID, response string) (mode
 		return models.WorkShift{}, ErrNotFound
 	}
 	resp := strings.ToUpper(strings.TrimSpace(response))
-	if resp != models.ShiftStatusConfirmed && resp != models.ShiftStatusDeclined {
+	if resp != models.ShiftStatusConfirmed && resp != models.ShiftStatusDeclined && resp != models.ShiftStatusSwapRequested {
 		return models.WorkShift{}, ErrBadRequest
 	}
 	shift, ok := s.shifts[shiftID]
@@ -776,6 +839,44 @@ func (s *MemoryStore) RespondToWorkShift(userID, shiftID, response string) (mode
 	}
 
 	shift.Status = resp
+	if len(reason) > 0 && strings.TrimSpace(reason[0]) != "" {
+		shift.Reason = strings.TrimSpace(reason[0])
+	}
+	shift.UpdatedAt = time.Now().UTC()
+	s.shifts[shiftID] = shift
+	return shift, nil
+}
+
+func (s *MemoryStore) SwapWorkShift(ownerID, venueID, shiftID, newStaffID string) (models.WorkShift, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
+		return models.WorkShift{}, ErrForbidden
+	}
+	venueID = s.resolveVenueIDLocked(venueID)
+	shift, ok := s.shifts[shiftID]
+	if !ok || shift.VenueID != venueID {
+		return models.WorkShift{}, ErrNotFound
+	}
+	newMember, ok := s.staffMembers[newStaffID]
+	if !ok || newMember.VenueID != venueID {
+		return models.WorkShift{}, ErrBadRequest
+	}
+	displayName := newMember.Name
+	if displayName == "" {
+		displayName = newMember.Email
+	}
+	role := newMember.Role
+	if role == "" {
+		role = shift.Role
+	}
+	shift.StaffID = newMember.ID
+	shift.StaffName = displayName
+	shift.Role = role
+	shift.Status = models.ShiftStatusPending
+	shift.Reason = "" // reset reason after replacement
 	shift.UpdatedAt = time.Now().UTC()
 	s.shifts[shiftID] = shift
 	return shift, nil

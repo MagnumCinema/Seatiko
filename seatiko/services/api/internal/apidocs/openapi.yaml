@@ -2474,6 +2474,102 @@ paths:
                     type: boolean
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/batch:
+    post:
+      operationId: BatchCreateVenueWorkShifts
+      summary: Batch Create Venue Work Shifts
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - staff_ids
+                - dates
+                - start_time
+                - end_time
+              properties:
+                staff_ids:
+                  type: array
+                  items:
+                    type: string
+                dates:
+                  type: array
+                  items:
+                    type: string
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shifts:
+                    type: array
+                    items:
+                      type: object
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/{shiftId}/swap:
+    post:
+      operationId: SwapVenueWorkShift
+      summary: Swap Staff Member for Shift
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: shiftId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_staff_id
+              properties:
+                new_staff_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shift:
+                    type: object
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/admin/overview:
     get:
       operationId: AdminOverview

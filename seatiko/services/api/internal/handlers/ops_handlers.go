@@ -117,6 +117,28 @@ func (a *API) CreateVenueWorkShift(c *gin.Context) {
 	writeOpsResult(c, err, gin.H{"shift": shift}, http.StatusCreated)
 }
 
+func (a *API) BatchCreateVenueWorkShifts(c *gin.Context) {
+	var req store.BatchWorkShiftsInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shifts, err := a.Store.BatchCreateWorkShifts(a.userID(c), c.Param("venueId"), req)
+	writeOpsResult(c, err, gin.H{"shifts": shifts}, http.StatusCreated)
+}
+
+func (a *API) SwapVenueWorkShift(c *gin.Context) {
+	var req struct {
+		NewStaffID string `json:"new_staff_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shift, err := a.Store.SwapWorkShift(a.userID(c), c.Param("venueId"), c.Param("shiftId"), req.NewStaffID)
+	writeOpsResult(c, err, gin.H{"shift": shift}, http.StatusOK)
+}
+
 func (a *API) ListVenueWorkShifts(c *gin.Context) {
 	role := c.Query("role")
 	shifts, err := a.Store.ListWorkShifts(a.userID(c), c.Param("venueId"), role)
@@ -136,12 +158,13 @@ func (a *API) ListMyStaffShifts(c *gin.Context) {
 func (a *API) RespondStaffShift(c *gin.Context) {
 	var req struct {
 		Status string `json:"status" binding:"required"`
+		Reason string `json:"reason"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
 		return
 	}
-	shift, err := a.Store.RespondToWorkShift(a.userID(c), c.Param("shiftId"), req.Status)
+	shift, err := a.Store.RespondToWorkShift(a.userID(c), c.Param("shiftId"), req.Status, req.Reason)
 	writeOpsResult(c, err, gin.H{"shift": shift}, http.StatusOK)
 }
 

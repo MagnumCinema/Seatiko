@@ -1120,8 +1120,9 @@ export type WorkShift = {
   date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM
-  status: "PENDING" | "CONFIRMED" | "DECLINED";
+  status: "PENDING" | "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED";
   note?: string;
+  reason?: string;
   created_at: string;
   updated_at: string;
 };
@@ -1284,6 +1285,35 @@ export async function deleteVenueWorkShift(
   );
 }
 
+export async function batchCreateVenueWorkShifts(
+  venueId: string,
+  input: {
+    staff_ids: string[];
+    dates: string[];
+    start_time: string;
+    end_time: string;
+    note?: string;
+  },
+): Promise<WorkShift[]> {
+  const data = await apiFetch<{ shifts: WorkShift[] }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/batch`,
+    { method: "POST", body: input },
+  );
+  return data.shifts ?? [];
+}
+
+export async function swapVenueWorkShiftStaff(
+  venueId: string,
+  shiftId: string,
+  newStaffId: string,
+): Promise<WorkShift> {
+  const data = await apiFetch<{ shift: WorkShift }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/${shiftId}/swap`,
+    { method: "POST", body: { new_staff_id: newStaffId } },
+  );
+  return data.shift;
+}
+
 export async function listMyStaffShifts(): Promise<WorkShift[]> {
   const data = await apiFetch<{ shifts: WorkShift[] }>(
     `/api/v1/staff/shifts`,
@@ -1293,11 +1323,12 @@ export async function listMyStaffShifts(): Promise<WorkShift[]> {
 
 export async function respondStaffShift(
   shiftId: string,
-  status: "CONFIRMED" | "DECLINED",
+  status: "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED",
+  reason?: string,
 ): Promise<WorkShift> {
   const data = await apiFetch<{ shift: WorkShift }>(
     `/api/v1/staff/shifts/${shiftId}/respond`,
-    { method: "POST", body: { status } },
+    { method: "POST", body: { status, reason } },
   );
   return data.shift;
 }
