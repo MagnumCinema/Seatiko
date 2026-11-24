@@ -579,7 +579,7 @@ export function CabinetMenuPanel({ venueId }: Props) {
             />
             <button
               type="button"
-              className="panel-btn primary"
+              className="panel-btn primary cabinet-add-dish-btn"
               onClick={openAddDish}
             >
               + {copy.opsMenuAddDish}
@@ -617,7 +617,7 @@ export function CabinetMenuPanel({ venueId }: Props) {
             <p>{copy.opsMenuEmpty}</p>
             <button
               type="button"
-              className="panel-btn primary"
+              className="panel-btn primary cabinet-add-dish-btn"
               onClick={openAddDish}
               style={{ marginTop: 14 }}
             >
@@ -879,13 +879,10 @@ export function CabinetMenuPanel({ venueId }: Props) {
 
                     <button
                       type="submit"
-                      className="venue-cta venue-cta-hero cabinet-dish-save-cta"
+                      className="cabinet-dish-save-cta"
                       disabled={busy || !form.name.trim()}
                     >
-                      <span>{form.id ? copy.opsMenuEditDish : copy.opsMenuAddDish}</span>
-                      <b>
-                        {form.price || 0} <small>MDL</small>
-                      </b>
+                      {form.id ? copy.opsMenuEditDish : copy.opsMenuAddDish}
                     </button>
 
                     <button
