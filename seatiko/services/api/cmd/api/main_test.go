@@ -133,9 +133,9 @@ func TestMapSearchAndBookingFilter(t *testing.T) {
 		code  int
 	}{
 		{"name in city", "?city_id=city-balti&q=LA+placinte&include_google=false", "venue-1", false, 200},
-		{"address across Moldova", "?city_id=all&q=Independentei+45&include_google=false", "venue-1", false, 200},
-		{"include all translations", "?city_id=all&q=" + url.QueryEscape("Независимости 45") + "&include_google=false", "venue-1", false, 200},
-		{"combined name and address", "?q=placinte+45&include_google=false", "venue-1", false, 200},
+		{"address across Moldova", "?city_id=all&q=Stefan+cel+Mare+57&include_google=false", "venue-1", false, 200},
+		{"include all translations", "?city_id=all&q=" + url.QueryEscape("Штефан чел Маре 57") + "&include_google=false", "venue-1", false, 200},
+		{"combined name and address", "?q=placinte+57&include_google=false", "venue-1", false, 200},
 		{"wrong area", "?bounds=47.78,27.84,47.82,28.02&q=placinte&include_google=false", "", false, 200},
 		{"bookable in Moldova", "?city_id=all&bookable_only=true", "venue-1,venue-2,venue-3", true, 200},
 		{"seatiko place without tables", "?q=wine+house&bookable_only=true", "", true, 200},
