@@ -4001,7 +4001,7 @@ html[data-theme="light"] .owner-venue-switcher button.active {
   place-items: center;
   color: #fff;
   border-radius: 8px;
-  background: #d77b48;
+  background: linear-gradient(135deg, #246046, #163e2c);
   font-size: .75rem;
   font-style: normal;
   font-weight: 850;
@@ -4077,14 +4077,18 @@ html[data-theme="light"] .owner-nav button.active {
   padding: 0 5px;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: #0d241c;
   border-radius: 10px;
-  background: #d77b48;
+  background: linear-gradient(135deg, #e9b96e, #d49a46);
   font-size: .6rem;
   font-weight: 800;
 }
+html[data-theme="light"] .owner-nav button b {
+  color: #ffffff;
+  background: #246046;
+}
 .owner-support {
-  margin-top: auto;
+  margin-top: 18px;
   padding: 16px;
   border: 1px solid var(--site-border);
   border-radius: 14px;
@@ -4102,9 +4106,19 @@ html[data-theme="light"] .owner-nav button.active {
   line-height: 1.45;
 }
 .owner-support a {
-  color: var(--site-accent, #ca7040);
+  color: var(--site-accent, #e9b96e);
   font-size: .68rem;
   font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+html[data-theme="light"] .owner-support {
+  background: #ffffff;
+  border-color: rgba(33, 68, 54, .12);
+  box-shadow: 0 2px 8px rgba(34, 61, 50, .04);
+}
+html[data-theme="light"] .owner-support a {
+  color: #1f593f;
 }
 
 .owner-content {
