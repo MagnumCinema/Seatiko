@@ -180,6 +180,7 @@ func (s *MemoryStore) RevokeAdultPreorder(staffUserID, venueID, guestUserID, rea
 	}
 	guest.UpdatedAt = now
 	s.users[guest.ID] = guest
+	s.dropAdultPreorderItemsLocked(guest.ID, now)
 	s.adultLog = append(s.adultLog, models.AdultPermissionLogEntry{
 		ID:               uuid.NewString(),
 		UserID:           guest.ID,

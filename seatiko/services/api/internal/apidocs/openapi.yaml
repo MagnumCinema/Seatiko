@@ -906,6 +906,102 @@ paths:
                     $ref: '#/components/schemas/Reservation'
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/reservations/{id}/preorder:
+    get:
+      operationId: GetPreorder
+      summary: Get Preorder
+      tags:
+        - Reservations
+      description: The reservation's active preorder, for its guest or for staff, the owner of the venue or an admin.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+    put:
+      operationId: SavePreorder
+      summary: Save Preorder
+      tags:
+        - Reservations
+      description: Creates or replaces the guest's preorder for their CONFIRMED reservation. Allowed until kitchen_at
+        (reserved_for minus the venue's preorder_lead_min, default 30). Prices are fixed when saved. requires_age_18
+        items need adult_preorder_allowed and stay PENDING_AGE_CHECK until staff check an ID when serving. Errors
+        invalid_items (400), age_verification_required (403), preorder_disabled, preorder_closed, item_unavailable (409).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  maxItems: 30
+                  items:
+                    $ref: '#/components/schemas/OrderItemInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: CancelPreorder
+      summary: Cancel Preorder
+      tags:
+        - Reservations
+      description: Cancels the guest's preorder before kitchen_at. Cancelling the reservation also cancels it.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/reservations/{id}/cancel:
     post:
       operationId: CancelReservation
@@ -1429,6 +1525,48 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/orders/{id}/age-check:
+    post:
+      operationId: StaffPreorderAgeCheck
+      summary: Staff Preorder Age Check
+      tags:
+        - Staff
+      description: In-person ID check before serving 18+ items of a preorder. approved=true (needs id_document_checked)
+        marks them CONFIRMED; approved=false removes them from the order. Until then the order cannot be marked SERVED
+        or PAID (age_check_pending, 409).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - approved
+              properties:
+                id_document_checked:
+                  type: boolean
+                approved:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/staff/orders/{id}:
@@ -3017,6 +3155,11 @@ components:
           type: integer
         allow_preorder:
           type: boolean
+        preorder_lead_min:
+          type: integer
+          minimum: 0
+          maximum: 180
+          description: Minutes before the booking the kitchen gets a preorder (0 = default 30).
         session_start_before_min:
           type: integer
         release_before_min:
@@ -3337,6 +3480,22 @@ components:
           format: date-time
         venue_name:
           $ref: '#/components/schemas/LocalizedString'
+        preorder:
+          type: boolean
+          description: Ordered ahead for a reservation.
+        reservation_id:
+          type: string
+        kitchen_at:
+          type: string
+          format: date-time
+          description: When the kitchen starts a preorder; the guest can change it until then.
+        kitchen_due:
+          type: boolean
+          description: Computed. A submitted preorder whose kitchen_at has passed.
+        adult_items_removed_at:
+          type: string
+          format: date-time
+          description: 18+ items were removed because the guest's 18+ permission was revoked.
     OrderItem:
       type: object
       properties:
@@ -3348,6 +3507,19 @@ components:
           type: integer
         price:
           type: integer
+          description: Per unit, fixed when ordered.
+        requires_age_18:
+          type: boolean
+        contains_alcohol:
+          type: boolean
+        age_check:
+          type: string
+          enum:
+            - PENDING_AGE_CHECK
+            - CONFIRMED
+        unavailable:
+          type: boolean
+          description: Computed. The dish was deleted or stopped after ordering.
     OrderItemInput:
       type: object
       properties:
@@ -3421,6 +3593,8 @@ components:
           type: array
           items:
             type: integer
+        preorder:
+          $ref: '#/components/schemas/Order'
     RestaurantReservation:
       type: object
       properties:
@@ -3452,6 +3626,8 @@ components:
         created_at:
           type: string
           format: date-time
+        preorder:
+          $ref: '#/components/schemas/Order'
     Session:
       type: object
       properties:
@@ -3657,6 +3833,8 @@ components:
           type: integer
         allow_preorder:
           type: boolean
+        preorder_lead_min:
+          type: integer
         hours_text:
           type: string
           description: Opening hours line in venue local time, e.g. "Пн–Вс 10:00–22:00".

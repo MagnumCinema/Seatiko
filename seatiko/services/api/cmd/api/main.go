@@ -113,6 +113,9 @@ func newRouter(api *handlers.API) *gin.Engine {
 			authed.PATCH("/reservations/:id", api.UpdateReservation)
 			authed.POST("/reservations/:id/confirm-arrival", api.ConfirmArrival)
 			authed.POST("/reservations/:id/cancel", api.CancelReservation)
+			authed.GET("/reservations/:id/preorder", api.GetPreorder)
+			authed.PUT("/reservations/:id/preorder", api.SavePreorder)
+			authed.DELETE("/reservations/:id/preorder", api.CancelPreorder)
 			authed.DELETE("/reservations/:id", api.DeleteReservation)
 			authed.DELETE("/reservations/history", api.ClearHistoryReservations)
 
@@ -143,6 +146,7 @@ func newRouter(api *handlers.API) *gin.Engine {
 				staff.POST("/waiter-calls/:id/complete", api.StaffCompleteWaiterCall)
 				staff.GET("/orders", api.StaffListOrders)
 				staff.PATCH("/orders/:id", api.StaffUpdateOrderStatus)
+				staff.POST("/orders/:id/age-check", api.StaffPreorderAgeCheck)
 				staff.GET("/reservations", api.StaffListReservations)
 				staff.POST("/reservations/:id/adult-verification", api.StaffGrantAdultPreorder)
 				staff.POST("/venues/:venueId/guests/:userId/adult-verification/revoke", api.StaffRevokeAdultPreorder)

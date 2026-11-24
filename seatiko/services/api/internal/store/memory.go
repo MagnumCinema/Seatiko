@@ -1185,6 +1185,7 @@ func (s *MemoryStore) CancelReservation(userID, reservationID string) (models.Re
 	r.Status = models.ReservationCancelled
 	r.UpdatedAt = time.Now().UTC()
 	s.reservations[reservationID] = r
+	s.cancelPreorderForReservationLocked(reservationID, r.UpdatedAt)
 
 	if t, ok := s.tables[r.TableID]; ok {
 		if t.ReservationID != nil && *t.ReservationID == reservationID {
@@ -1305,6 +1306,10 @@ func (s *MemoryStore) ListReservations(userID string) []models.Reservation {
 		}
 		if len(nums) > 0 {
 			r.TableNumbers = nums
+		}
+		if o, ok := s.activePreorderLocked(r.ID); ok {
+			po := s.decorateOrderLocked(o, time.Now().UTC())
+			r.Preorder = &po
 		}
 		out = append(out, r)
 	}
@@ -1474,6 +1479,9 @@ func (s *MemoryStore) ScanQR(userID, venueID, tableID, token string) (models.Ses
 		StartedAt:     now,
 	}
 	s.sessions[sess.ID] = sess
+	if reservationID != nil {
+		s.linkPreorderToSessionLocked(*reservationID, sess.ID)
+	}
 
 	t.Status = models.TableOccupied
 	t.OccupiedSince = &now
@@ -1625,10 +1633,7 @@ func (s *MemoryStore) ListOrders(userID string) []models.Order {
 		if o.UserID != userID {
 			continue
 		}
-		if venue, ok := s.venues[o.VenueID]; ok {
-			o.VenueName = venue.Name
-		}
-		out = append(out, o)
+		out = append(out, s.decorateOrderLocked(o, time.Now().UTC()))
 	}
 	sort.Slice(out, func(i, j int) bool {
 		return out[i].CreatedAt.After(out[j].CreatedAt)
@@ -1643,7 +1648,7 @@ func (s *MemoryStore) GetOrder(id string) (models.Order, error) {
 	if !ok {
 		return models.Order{}, ErrNotFound
 	}
-	return o, nil
+	return s.decorateOrderLocked(o, time.Now().UTC()), nil
 }
 
 func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, error) {
@@ -1664,6 +1669,10 @@ func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, er
 	if o.Status == models.OrderPaid {
 		return o, nil
 	}
+	// 18+ items of a preorder are sold only after the in-person ID check (APP_LOGIC §8.4).
+	if hasPendingAgeCheck(o) {
+		return models.Order{}, ErrAgeCheckPending
+	}
 
 	now := time.Now().UTC()
 	method = strings.ToLower(strings.TrimSpace(method))
@@ -1674,7 +1683,8 @@ func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, er
 		o.PaidAt = &now
 	case "venue", "cash", "at_venue":
 		o.PaymentMethod = "venue"
-		if o.Status == models.OrderSubmitted || o.Status == models.OrderPreparing || o.Status == models.OrderReady {
+		// A preorder is served when the guest arrives, not when they choose to pay there.
+		if !o.Preorder && (o.Status == models.OrderSubmitted || o.Status == models.OrderPreparing || o.Status == models.OrderReady) {
 			o.Status = models.OrderServed
 		}
 	default:
@@ -1702,6 +1712,9 @@ func (s *MemoryStore) UpdateOrderStatus(orderID string, status models.OrderStatu
 		models.OrderReady, models.OrderServed, models.OrderPaid, models.OrderCancelled:
 	default:
 		return models.Order{}, ErrInvalidStatus
+	}
+	if (status == models.OrderServed || status == models.OrderPaid) && hasPendingAgeCheck(o) {
+		return models.Order{}, ErrAgeCheckPending
 	}
 	o.Status = status
 	now := time.Now().UTC()
@@ -2085,6 +2098,7 @@ func (s *MemoryStore) ListRestaurantReservations(ownerID string) ([]models.Resta
 			Status:             reservation.Status,
 			ArrivalConfirmedAt: reservation.ArrivalConfirmedAt,
 			CreatedAt:          reservation.CreatedAt,
+			Preorder:           s.preorderViewLocked(reservation.ID),
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ReservedFor.After(out[j].ReservedFor) })
