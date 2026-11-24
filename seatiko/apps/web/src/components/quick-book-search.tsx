@@ -82,7 +82,9 @@ export function QuickBookSearch() {
     let alive = true;
     fetchVenues("city-balti")
       .then((list) => {
-        if (alive) setVenues(list);
+        if (!alive) return;
+        setVenues(list);
+        setNow(new Date());
       })
       .catch(() => {
         if (alive) setFailed(true);
@@ -110,12 +112,15 @@ export function QuickBookSearch() {
     return new Date(searchDay.getFullYear(), searchDay.getMonth(), searchDay.getDate(), h, m);
   }, [searchDay, query.time]);
 
+  const date = `${searchDay.getFullYear()}-${String(searchDay.getMonth() + 1).padStart(2, "0")}-${String(searchDay.getDate()).padStart(2, "0")}`;
+  const targetMs = target ? target.getTime() : null;
+
   // One server call answers the whole search (GET /availability); refetched when the query changes.
   useEffect(() => {
     const controller = new AbortController();
-    const date = `${searchDay.getFullYear()}-${String(searchDay.getMonth() + 1).padStart(2, "0")}-${String(searchDay.getDate()).padStart(2, "0")}`;
+    const at = targetMs === null ? null : new Date(targetMs);
     fetchAvailability(
-      { cityId: "city-balti", at: target, date, guests: query.guests, durationMin: query.duration },
+      { cityId: "city-balti", at, date, guests: query.guests, durationMin: query.duration },
       controller.signal,
     )
       .then((list) => {
@@ -132,7 +137,7 @@ export function QuickBookSearch() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [searchDay, target, query.guests, query.duration, reloadKey]);
+  }, [date, targetMs, query.guests, query.duration, reloadKey]);
 
   const results = useMemo(() => {
     const byId = new Map(venues.map((venue) => [venue.id, venue]));
@@ -144,7 +149,7 @@ export function QuickBookSearch() {
   }, [venues, found, target]);
 
   function openPopup(next: Omit<PopupState, "nonce">) {
-    setPopup({ ...next, nonce: Date.now() });
+    setPopup((prev) => ({ ...next, nonce: (prev?.nonce ?? 0) + 1 }));
     if (tablesByVenue[next.venue.id]) return;
     fetchTables(next.venue.id)
       .catch(() => [] as Table[])
