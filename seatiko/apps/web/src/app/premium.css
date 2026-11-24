@@ -7211,6 +7211,55 @@ html[data-theme="light"] .cabinet-wave-btn.active {
   background: #e4efe8;
 }
 
+.cabinet-recurring-explain-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--site-accent, #e9b96e) 30%, var(--site-border));
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 9%, var(--site-surface));
+  font-size: 0.77rem;
+  line-height: 1.45;
+  color: var(--site-muted);
+}
+.cabinet-recurring-explain-box strong {
+  color: var(--site-fg);
+}
+.cabinet-recurring-explain-box .explain-icon {
+  font-size: 0.95rem;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+html[data-theme="light"] .cabinet-recurring-explain-box {
+  background: #f4f7f5;
+  border-color: rgba(36, 96, 70, 0.28);
+}
+.cabinet-wave-chip {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.cabinet-wave-chip.wave-a {
+  background: rgba(52, 211, 153, 0.18);
+  color: #34d399;
+}
+.cabinet-wave-chip.wave-b {
+  background: rgba(233, 185, 110, 0.22);
+  color: #e9b96e;
+}
+html[data-theme="light"] .cabinet-wave-chip.wave-a {
+  background: #dcfce7;
+  color: #166534;
+}
+html[data-theme="light"] .cabinet-wave-chip.wave-b {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 /* Quick Assign Conflict Warning & Copy Icon */
 .cabinet-quick-conflict-warning {
   padding: 9px 12px;

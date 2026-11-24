@@ -1716,6 +1716,70 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                 )}
 
+                {/* Live explanation of selected distribution mode */}
+                <div className="cabinet-recurring-explain-box" role="note">
+                  <span className="explain-icon" aria-hidden="true">ℹ️</span>
+                  <div>
+                    {recurringPattern === "2/2" ? (
+                      recurringWaveMode === "alternate" ? (
+                        locale === "ro" ? (
+                          <>
+                            <strong>Cum funcționează:</strong> ospătarii și bucătarii selectați se împart automat în jumătate (Echipa A și Echipa B). A lucrează 2 zile de la start, apoi se odihnește 2 zile; B intră în zilele libere ale lui A. Localul are acoperire în fiecare zi.
+                          </>
+                        ) : locale === "en" ? (
+                          <>
+                            <strong>How it works:</strong> selected waiters and cooks are split 50/50 per role into Team A and Team B. Team A works days 1–2 and rests 3–4; Team B covers days 3–4, giving full daily coverage.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Как работает:</strong> выбранные официанты и повара автоматически делятся пополам (по ролям) на команды А и Б. Команда А выходит 2 дня с даты старта, затем 2 дня отдыхает; в это время работает команда Б — зал и кухня закрыты каждый день.
+                          </>
+                        )
+                      ) : recurringWaveMode === "team_a" ? (
+                        locale === "ro" ? (
+                          <>
+                            <strong>Cum funcționează:</strong> toți angajații selectați lucrează împreună după același ritm: 2 zile de la data aleasă, apoi 2 zile libere.
+                          </>
+                        ) : locale === "en" ? (
+                          <>
+                            <strong>How it works:</strong> all selected staff follow the same rhythm together: 2 days on starting from your chosen date, then 2 days off.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Как работает:</strong> все выбранные сотрудники выходят по единому ритму: 2 рабочих дня подряд начиная с выбранной даты, затем 2 выходных, и цикл повторяется.
+                          </>
+                        )
+                      ) : (
+                        locale === "ro" ? (
+                          <>
+                            <strong>Cum funcționează:</strong> primele 2 zile de la start sunt libere, apoi angajații selectați lucrează zilele 3–4 și se odihnesc 2 zile. Ideal pentru completarea Echipei A.
+                          </>
+                        ) : locale === "en" ? (
+                          <>
+                            <strong>How it works:</strong> first 2 days from start are off, then selected staff work days 3–4 followed by 2 days off. Ideal for scheduling the second shift opposite Team A.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Как работает:</strong> первые 2 дня от выбранной даты — выходные, затем 2 дня рабочих (дни 3–4), потом снова 2 выходных. Удобно, чтобы добрать вторую смену к Волне А.
+                          </>
+                        )
+                      )
+                    ) : locale === "ro" ? (
+                      <>
+                        <strong>Cum funcționează:</strong> angajații selectați vor fi programați exact în zilele săptămânii bifate mai sus pe toată perioada aleasă (ex. doar Luni–Vineri).
+                      </>
+                    ) : locale === "en" ? (
+                      <>
+                        <strong>How it works:</strong> selected staff will be scheduled only on the weekdays checked above across the chosen period (e.g., Mon–Fri).
+                      </>
+                    ) : (
+                      <>
+                        <strong>Как работает:</strong> все выбранные сотрудники получат смены только в отмеченные выше дни недели (например, Пн–Пт или только выходные Сб–Вс) на весь выбранный период.
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 <div className="cabinet-shift-time-row">
                   <div className="cabinet-shift-field-group">
                     <label htmlFor="rec-start-date">
@@ -1744,6 +1808,33 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                 </div>
 
+                <div className="cabinet-shift-field-group">
+                  <label>{copy.opsSchedulePresetsTitle}</label>
+                  <div className="cabinet-shift-preset-buttons">
+                    <button
+                      type="button"
+                      className={`cabinet-shift-preset-pill ${recurringStart === "08:00" && recurringEnd === "16:00" ? "active" : ""}`}
+                      onClick={() => { setRecurringStart("08:00"); setRecurringEnd("16:00"); }}
+                    >
+                      {copy.opsSchedulePresetMorning}
+                    </button>
+                    <button
+                      type="button"
+                      className={`cabinet-shift-preset-pill ${recurringStart === "10:00" && recurringEnd === "22:00" ? "active" : ""}`}
+                      onClick={() => { setRecurringStart("10:00"); setRecurringEnd("22:00"); }}
+                    >
+                      {copy.opsSchedulePresetDay}
+                    </button>
+                    <button
+                      type="button"
+                      className={`cabinet-shift-preset-pill ${recurringStart === "14:00" && recurringEnd === "23:00" ? "active" : ""}`}
+                      onClick={() => { setRecurringStart("14:00"); setRecurringEnd("23:00"); }}
+                    >
+                      {copy.opsSchedulePresetEvening}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="cabinet-shift-time-row">
                   <div className="cabinet-shift-field-group">
                     <label htmlFor="rec-start">{copy.opsScheduleTimeStart}</label>
@@ -1769,56 +1860,155 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                 </div>
 
-                <div className="cabinet-shift-field-group">
-                  <div className="cabinet-shift-staff-header">
-                    <label>{copy.opsScheduleStaffSelect} ({recurringStaffIds.length})</label>
-                    <div className="cabinet-shift-staff-bulk-actions">
-                      <button
-                        type="button"
-                        className="cabinet-shift-bulk-btn"
-                        onClick={() => setRecurringStaffIds(staff.map((s) => s.id))}
-                      >
-                        {copy.opsScheduleSelectAll}
-                      </button>
-                      <button
-                        type="button"
-                        className="cabinet-shift-bulk-btn"
-                        onClick={() => setRecurringStaffIds([])}
-                      >
-                        {copy.opsScheduleDeselectAll}
-                      </button>
-                    </div>
-                  </div>
+                {/* Separate Waiters Section */}
+                {(() => {
+                  const selectedWaiterCount = waiters.filter((w) => recurringStaffIds.includes(w.id)).length;
+                  const teamASet = new Set(recurringAssignments.teamAStaff);
+                  const teamBSet = new Set(recurringAssignments.teamBStaff);
+                  const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
+                  return (
+                    <div className="cabinet-shift-field-group">
+                      <div className="cabinet-shift-staff-header">
+                        <label>👤 {copy.plannerSelectWaiters} ({selectedWaiterCount})</label>
+                        {waiters.length > 0 && (
+                          <div className="cabinet-shift-staff-bulk-actions">
+                            <button
+                              type="button"
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() =>
+                                setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...waiters.map((w) => w.id)])))
+                              }
+                            >
+                              {copy.opsScheduleSelectAll}
+                            </button>
+                            <button
+                              type="button"
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() => {
+                                const waiterIds = new Set(waiters.map((w) => w.id));
+                                setRecurringStaffIds((prev) => prev.filter((id) => !waiterIds.has(id)));
+                              }}
+                            >
+                              {copy.opsScheduleDeselectAll}
+                            </button>
+                          </div>
+                        )}
+                      </div>
 
-                  <div className="cabinet-shift-staff-grid">
-                    {staff.map((m) => {
-                      const isSelected = recurringStaffIds.includes(m.id);
-                      const name = m.name?.trim() || m.email.split("@")[0];
-                      const isCook = m.role === "cook";
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
-                          onClick={() => {
-                            setRecurringStaffIds((prev) =>
-                              isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                      {waiters.length === 0 ? (
+                        <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
+                          {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
+                        </p>
+                      ) : (
+                        <div className="cabinet-shift-staff-grid">
+                          {waiters.map((m) => {
+                            const isSelected = recurringStaffIds.includes(m.id);
+                            const name = m.name?.trim() || m.email.split("@")[0];
+                            const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                                onClick={() => {
+                                  setRecurringStaffIds((prev) =>
+                                    isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                                  );
+                                }}
+                              >
+                                <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                                <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                  {name.slice(0, 2).toUpperCase()}
+                                </span>
+                                <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                {waveTag && (
+                                  <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
+                                    {waveTag}
+                                  </span>
+                                )}
+                              </button>
                             );
-                          }}
-                        >
-                          <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
-                          <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                            {name.slice(0, 2).toUpperCase()}
-                          </span>
-                          <span className="cabinet-shift-staff-pill-name">{name}</span>
-                          <small className="cabinet-planner-role-tiny">
-                            {isCook ? "👨‍🍳" : "👤"}
-                          </small>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Separate Cooks Section */}
+                {(() => {
+                  const selectedCookCount = cooks.filter((c) => recurringStaffIds.includes(c.id)).length;
+                  const teamASet = new Set(recurringAssignments.teamAStaff);
+                  const teamBSet = new Set(recurringAssignments.teamBStaff);
+                  const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
+                  return (
+                    <div className="cabinet-shift-field-group">
+                      <div className="cabinet-shift-staff-header">
+                        <label>👨‍🍳 {copy.plannerSelectCooks} ({selectedCookCount})</label>
+                        {cooks.length > 0 && (
+                          <div className="cabinet-shift-staff-bulk-actions">
+                            <button
+                              type="button"
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() =>
+                                setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...cooks.map((c) => c.id)])))
+                              }
+                            >
+                              {copy.opsScheduleSelectAll}
+                            </button>
+                            <button
+                              type="button"
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() => {
+                                const cookIds = new Set(cooks.map((c) => c.id));
+                                setRecurringStaffIds((prev) => prev.filter((id) => !cookIds.has(id)));
+                              }}
+                            >
+                              {copy.opsScheduleDeselectAll}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {cooks.length === 0 ? (
+                        <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
+                          {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
+                        </p>
+                      ) : (
+                        <div className="cabinet-shift-staff-grid">
+                          {cooks.map((m) => {
+                            const isSelected = recurringStaffIds.includes(m.id);
+                            const name = m.name?.trim() || m.email.split("@")[0];
+                            const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                                onClick={() => {
+                                  setRecurringStaffIds((prev) =>
+                                    isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                                  );
+                                }}
+                              >
+                                <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                                <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                  {name.slice(0, 2).toUpperCase()}
+                                </span>
+                                <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                {waveTag && (
+                                  <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
+                                    {waveTag}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div className="cabinet-shift-field-group">
                   <label htmlFor="rec-note">{copy.opsScheduleNoteLabel}</label>
