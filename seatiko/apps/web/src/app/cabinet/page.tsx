@@ -405,7 +405,7 @@ function OpenLocationPicker({
     const placeMarker = (nextLng: number, nextLat: number, report: boolean) => {
       if (!markerRef.current) {
         markerRef.current = new maplibregl.Marker({
-          color: "#d77b48",
+          color: "#e9b96e",
           draggable: !disabled,
         })
           .setLngLat([nextLng, nextLat])
@@ -447,7 +447,7 @@ function OpenLocationPicker({
     if (!map || !parsedLat || !parsedLng) return;
     if (!markerRef.current) {
       markerRef.current = new maplibregl.Marker({
-        color: "#d77b48",
+        color: "#e9b96e",
         draggable: !disabled,
       })
         .setLngLat([parsedLng, parsedLat])
@@ -1146,7 +1146,7 @@ export default function CabinetPage() {
                     <div
                       className="owner-progress-ring"
                       style={{
-                        background: `conic-gradient(var(--site-accent, #d77b48) ${completion * 3.6}deg, rgba(255,255,255,.16) 0deg)`,
+                        background: `conic-gradient(var(--site-accent, #e9b96e) ${completion * 3.6}deg, rgba(255,255,255,.16) 0deg)`,
                       }}
                     >
                       <span>

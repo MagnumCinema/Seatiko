@@ -698,7 +698,7 @@ function VenueMapArea({
           "circle-color": [
             "case",
             ["boolean", ["get", "selected"], false],
-            "#d77b48",
+            "#e9b96e",
             ["boolean", ["get", "inDatabase"], false],
             "#175f43",
             "#8a8f8c",

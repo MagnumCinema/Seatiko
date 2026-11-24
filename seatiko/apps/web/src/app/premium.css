@@ -1187,7 +1187,7 @@ html[data-theme="light"] .site-nav-primary:hover {
   width: 32px;
   height: 32px;
   border: 3px solid rgba(36, 96, 70, .16);
-  border-top-color: #d77b48;
+  border-top-color: var(--site-accent, #e9b96e);
   border-radius: 50%;
   animation: owner-spin .75s linear infinite;
 }
@@ -1267,7 +1267,7 @@ html[data-theme="light"] .site-nav-primary:hover {
   box-shadow: 0 22px 54px color-mix(in srgb, var(--site-fg) 16%, transparent);
   backdrop-filter: blur(12px);
 }
-.open-map-brand-mark { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; border-radius: 13px 13px 13px 5px; background: linear-gradient(135deg,#1f6848,#d77b48); font-size: 1rem; font-weight: 900; }
+.open-map-brand-mark { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; border-radius: 13px 13px 13px 5px; background: linear-gradient(135deg, #1f6848, #e9b96e); font-size: 1rem; font-weight: 900; }
 .live-map-fallback-card strong { font-size: .8rem; }
 .live-map-fallback-card p { margin: 5px 0 9px; color: var(--site-muted); font-size: .64rem; line-height: 1.5; }
 .live-map-fallback-card a { color: var(--site-accent); font-size: .61rem; font-weight: 800; }
@@ -1373,10 +1373,10 @@ html[data-theme="light"] .site-nav-primary:hover {
 }
 
 .venue-num.active {
-  color: #fff;
-  background: #d77b48;
+  color: #0d241c;
+  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
   font-weight: 800;
-  box-shadow: 0 2px 6px rgba(215, 123, 72, 0.35);
+  box-shadow: 0 2px 6px rgba(212, 154, 70, 0.35);
 }
 
 .venue-name {
@@ -3293,8 +3293,8 @@ html[data-theme="light"] .venue-map-popup {
   --fa-border: rgba(33, 63, 52, 0.09);
   --fa-text: #18382d;
   --fa-muted: #748078;
-  --fa-gold: #d77b48;
-  --fa-gold-soft: #e9b671;
+  --fa-gold: #e9b96e;
+  --fa-gold-soft: #f2c784;
   --fa-green: #1f6848;
   color: var(--fa-text);
   background: var(--fa-bg);
@@ -3348,7 +3348,7 @@ html[data-theme="light"] .venue-map-popup {
 .fa-map-city-word { position: absolute; z-index: 1; left: 36%; top: 38%; color: rgba(27,64,50,.13); font-size: 1.25rem; font-weight: 850; letter-spacing: .2em; }
 .fa-map-pin-live { position: absolute; z-index: 4; width: 34px; height: 34px; display: grid; place-items: center; transform: translate(-50%,-50%); border: 3px solid #fffaf2; border-radius: 50%; color: #fff; background: #1f6848; box-shadow: 0 7px 18px rgba(26,67,51,.25); cursor: pointer; transition: transform .18s ease, background .18s ease; }
 .fa-map-pin-live span { font-size: .62rem; font-weight: 850; }
-.fa-map-pin-live.active { transform: translate(-50%,-50%) scale(1.2); background: #d77b48; }
+.fa-map-pin-live.active { transform: translate(-50%,-50%) scale(1.2); background: #e9b96e; color: #0d241c; }
 .fa-map-venue-popover { position: absolute; z-index: 6; left: 10px; right: 10px; bottom: 10px; display: grid; grid-template-columns: 38px 1fr 20px; align-items: center; gap: 10px; padding: 9px; border: 0; border-radius: 14px; color: #18382d; background: rgba(255,253,248,.94); box-shadow: 0 12px 28px rgba(26,62,49,.18); backdrop-filter: blur(12px); text-align: left; cursor: pointer; }
 .fa-map-venue-popover > span:nth-child(2) { display: grid; gap: 3px; }
 .fa-map-venue-popover strong { font-size: .71rem; }
@@ -3372,7 +3372,7 @@ html[data-theme="light"] .venue-map-popup {
 .fa-bottom-nav button { color: #7c897f; }
 .fa-bottom-nav button.active { color: #1f6848; }
 .fa-qr-row { color: #18382d; background: #fffdf8; }
-.fa-qr-icon { color: #fff; background: #d77b48; border-color: #d77b48; }
+.fa-qr-icon { color: #0d241c; background: #e9b96e; border-color: #e9b96e; }
 
 /* Restaurant owner experience */
 .owner-kicker {
@@ -3417,15 +3417,15 @@ html[data-theme="light"] .venue-map-popup {
 .panel-page:has(.owner-dashboard) > .site-header .site-brand { color: var(--site-fg); }
 .owner-register-page .site-nav,
 .panel-page:has(.owner-dashboard) > .site-header .site-nav { color: var(--site-fg); }
-.owner-register-page .site-nav a,
-.panel-page:has(.owner-dashboard) > .site-header .site-nav a { color: var(--site-fg); }
-.owner-register-page .site-nav a:hover,
-.panel-page:has(.owner-dashboard) > .site-header .site-nav a:hover {
+.owner-register-page .site-nav a:not(.site-nav-primary),
+.panel-page:has(.owner-dashboard) > .site-header .site-nav a:not(.site-nav-primary) { color: var(--site-fg); }
+.owner-register-page .site-nav a:not(.site-nav-primary):hover,
+.panel-page:has(.owner-dashboard) > .site-header .site-nav a:not(.site-nav-primary):hover {
   color: var(--site-fg);
   background: color-mix(in srgb, var(--site-fg) 10%, transparent);
 }
-.owner-register-page .site-nav-login,
-.panel-page:has(.owner-dashboard) > .site-header .site-nav-login { color: var(--site-accent) !important; }
+.owner-register-page .site-nav-login:not(.site-nav-primary),
+.panel-page:has(.owner-dashboard) > .site-header .site-nav-login:not(.site-nav-primary) { color: var(--site-accent) !important; }
 .owner-register-page .site-nav-cta,
 .panel-page:has(.owner-dashboard) > .site-header .site-nav-cta {
   color: var(--site-accent) !important;
@@ -3812,7 +3812,7 @@ html[data-theme="light"] .venue-map-popup {
 html[data-theme="light"] .owner-register-page {
   background:
     radial-gradient(ellipse at 50% 0%, rgba(36, 96, 70, 0.08), transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(215, 123, 72, 0.06), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(233, 185, 110, 0.06), transparent 35%),
     var(--site-bg);
 }
 html[data-theme="light"] .owner-register-page .site-header {
@@ -3897,7 +3897,7 @@ html[data-theme="light"] .panel-page:has(.owner-dashboard) .panel-btn.ghost {
 }
 
 .owner-loading { display: grid; place-content: center; justify-items: center; gap: 14px; color: var(--site-muted); background: var(--site-bg); min-height: 50vh; }
-.owner-loading span { width: 30px; height: 30px; border: 3px solid var(--site-border); border-top-color: #d77b48; border-radius: 50%; animation: owner-spin .7s linear infinite; }
+.owner-loading span { width: 30px; height: 30px; border: 3px solid var(--site-border); border-top-color: var(--site-accent, #e9b96e); border-radius: 50%; animation: owner-spin .7s linear infinite; }
 @keyframes owner-spin { to { transform: rotate(360deg); } }
 
 .owner-dashboard {
@@ -4410,7 +4410,7 @@ html[data-theme="light"] .owner-card {
 }
 .owner-checklist-card,
 .owner-launch-card { padding: 24px; }
-.owner-checklist-card .owner-card-head > strong { color: #d77b48; font-size: .95rem; }
+.owner-checklist-card .owner-card-head > strong { color: var(--site-accent, #e9b96e); font-size: .95rem; }
 .owner-progress-bar {
   height: 6px;
   margin: 18px 0;
@@ -4422,7 +4422,7 @@ html[data-theme="light"] .owner-card {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #2d7552, #d77b48);
+  background: linear-gradient(90deg, #2d7552, #e9b96e);
   transition: width .25s ease;
 }
 .owner-checklist-card ul { margin: 0; padding: 0; list-style: none; }
@@ -4549,7 +4549,7 @@ html[data-theme="light"] .owner-card {
   margin-bottom: 24px;
   color: #fff;
   border-radius: 22px;
-  background: linear-gradient(145deg,#234f3d,#d77b48);
+  background: linear-gradient(145deg, #234f3d, #e9b96e);
   font-family: var(--font-display), Georgia, serif;
   font-size: 1.5rem;
   font-weight: 700;
@@ -4763,7 +4763,7 @@ html[data-theme="light"] .owner-pending-badge-icon {
   border-top: 1px solid var(--site-border);
 }
 .owner-form-title { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: flex-start; }
-.owner-form-title > span { color: #d77b48; font-size: .65rem; font-weight: 850; letter-spacing: .08em; }
+.owner-form-title > span { color: var(--site-accent, #e9b96e); font-size: .65rem; font-weight: 850; letter-spacing: .08em; }
 .owner-form-title h3 { margin: 0; color: var(--site-fg); font-size: .88rem; }
 .owner-form-title p { margin: 5px 0 0; color: var(--site-muted); font-size: .68rem; line-height: 1.45; }
 .owner-form-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -4830,8 +4830,8 @@ select:focus,
 .cabinet-menu-form select:focus,
 .floor-editor-side select:focus {
   outline: none;
-  border-color: var(--site-accent, #d77b48);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-accent, #d77b48) 22%, transparent);
+  border-color: var(--site-accent, #e9b96e);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-accent, #e9b96e) 22%, transparent);
 }
 
 select:disabled,
@@ -4866,8 +4866,8 @@ html[data-theme="light"] select option {
 .owner-profile .field textarea:focus,
 .owner-profile .field select:focus {
   outline: none;
-  border-color: #d77b48;
-  box-shadow: 0 0 0 3px rgba(215, 123, 72, .2);
+  border-color: var(--site-accent, #e9b96e);
+  box-shadow: 0 0 0 3px rgba(233, 185, 110, 0.22);
 }
 .owner-profile .field input:disabled,
 .owner-profile .field textarea:disabled,
@@ -4895,7 +4895,7 @@ html[data-theme="light"] select option {
   font-size: .68rem;
   line-height: 1.45;
 }
-.owner-location-picker > p a { color: var(--site-accent, #d77b48); font-weight: 700; }
+.owner-location-picker > p a { color: var(--site-accent, #e9b96e); font-weight: 700; }
 
 .owner-photo-area { min-width: 0; }
 .owner-photo-grid { display: grid; grid-template-columns: repeat(3, minmax(115px, 1fr)); gap: 12px; }
@@ -4949,9 +4949,9 @@ html[data-theme="light"] select option {
   cursor: pointer;
   transition: all .15s ease;
 }
-.owner-photo-upload:hover { border-color: #d77b48; color: var(--site-fg); }
+.owner-photo-upload:hover { border-color: var(--site-accent, #e9b96e); color: var(--site-fg); }
 .owner-photo-upload input { display: none; }
-.owner-photo-upload > span { color: #d77b48; font-size: 1.5rem; line-height: 1; }
+.owner-photo-upload > span { color: var(--site-accent, #e9b96e); font-size: 1.5rem; line-height: 1; }
 .owner-photo-upload strong { margin: 8px 0 4px; font-size: .72rem; }
 .owner-photo-upload small { color: var(--site-muted); font-size: .58rem; }
 
@@ -5136,9 +5136,9 @@ html[data-theme="light"] .owner-filters button.active { background: #fff; color:
 .owner-timeline-content blockquote {
   margin: 10px 0 0;
   padding: 10px 14px;
-  color: #d2786a;
-  border-left: 3px solid #d77b48;
-  background: rgba(189, 91, 73, .12);
+  color: #f2c784;
+  border-left: 3px solid #e9b96e;
+  background: rgba(233, 185, 110, .12);
   border-radius: 0 8px 8px 0;
   font-size: .68rem;
 }
@@ -6020,15 +6020,36 @@ html[data-theme="light"] .cabinet-delete-card {
   color: var(--site-fg, #f3efe6) !important;
 }
 
-.site-nav a,
 .site-nav a.site-nav-link,
 .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
-.site-header .site-nav a,
-.panel-page > .site-header .site-nav a,
-.panel-page:has(.owner-dashboard) > .site-header .site-nav a {
+.site-header .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
+.panel-page > .site-header .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
+.panel-page:has(.owner-dashboard) > .site-header .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary) {
   color: var(--site-fg, #f3efe6) !important;
   opacity: 0.95;
   font-weight: 550;
+}
+
+/* Ensure navbar profile name button text & icon is ALWAYS dark/black (#0d241c) in dark mode on every page */
+html[data-theme="dark"] .site-header .site-nav-primary,
+html[data-theme="dark"] .site-header .site-nav a.site-nav-primary,
+html[data-theme="dark"] .site-header .site-nav a.site-nav-login.site-nav-primary,
+html[data-theme="dark"] .site-header .site-nav-primary .site-nav-user-name,
+html[data-theme="dark"] .site-header .site-nav-primary svg,
+html[data-theme="dark"] .panel-page > .site-header .site-nav a.site-nav-primary,
+html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-nav a.site-nav-primary,
+html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-nav a.site-nav-login.site-nav-primary,
+html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-nav-primary .site-nav-user-name,
+html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-nav-primary svg {
+  color: #0d241c !important;
+  fill: none;
+}
+html[data-theme="dark"] .site-header .site-nav-primary:hover,
+html[data-theme="dark"] .site-header .site-nav a.site-nav-primary:hover,
+html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-nav a.site-nav-primary:hover,
+html[data-theme="dark"] .site-header .site-nav-primary:hover .site-nav-user-name,
+html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-nav a.site-nav-primary:hover .site-nav-user-name {
+  color: #061610 !important;
 }
 
 .site-nav a:hover,
@@ -7465,7 +7486,7 @@ html[data-theme="light"] .owner-nav button.active {
   color: var(--site-fg);
   background:
     radial-gradient(ellipse 90% 55% at 50% -10%, rgba(36, 96, 70, 0.28), transparent 70%),
-    radial-gradient(circle 600px at 85% 15%, rgba(215, 123, 72, 0.12), transparent 60%),
+    radial-gradient(circle 600px at 85% 15%, rgba(233, 185, 110, 0.12), transparent 60%),
     radial-gradient(circle 500px at 15% 45%, rgba(233, 185, 110, 0.08), transparent 50%),
     var(--site-bg);
 }
@@ -7582,7 +7603,7 @@ html[data-theme="light"] .owner-nav button.active {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #d77b48 0%, #e9b96e 50%, #246046 100%);
+  background: linear-gradient(90deg, #e9b96e 0%, #d49a46 50%, #246046 100%);
 }
 
 .guest-welcome-avatar {
@@ -7677,7 +7698,7 @@ html[data-theme="light"] .owner-nav button.active {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #d77b48 0%, #e9b96e 50%, #246046 100%);
+  background: linear-gradient(90deg, #e9b96e 0%, #d49a46 50%, #246046 100%);
 }
 
 .guest-hero-top {
@@ -7695,15 +7716,15 @@ html[data-theme="light"] .owner-nav button.active {
   width: 68px;
   height: 68px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #d77b48 0%, #e9b96e 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
+  color: #0d241c;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.4rem;
   font-weight: 750;
   letter-spacing: -0.02em;
-  box-shadow: 0 8px 24px rgba(215, 123, 72, 0.35);
+  box-shadow: 0 8px 24px rgba(212, 154, 70, 0.35);
   border: 2px solid rgba(255, 255, 255, 0.15);
   overflow: hidden;
   position: relative;
@@ -9265,7 +9286,7 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .guest-role-banner-owner {
-  background: linear-gradient(135deg, rgba(215, 123, 72, 0.12) 0%, rgba(233, 185, 110, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(233, 185, 110, 0.12) 0%, rgba(233, 185, 110, 0.08) 100%);
   border-color: rgba(233, 185, 110, 0.35);
 }
 
@@ -9825,8 +9846,8 @@ html[data-theme="light"] .owner-nav button.active {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #d77b48 0%, #e9b96e 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
+  color: #0d241c;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10081,7 +10102,7 @@ html[data-theme="light"] .owner-nav button.active {
 html[data-theme="light"] .account-page {
   background:
     radial-gradient(ellipse at 80% 0%, rgba(36, 96, 70, 0.08), transparent 45%),
-    radial-gradient(circle at 15% 45%, rgba(215, 123, 72, 0.05), transparent 35%),
+    radial-gradient(circle at 15% 45%, rgba(233, 185, 110, 0.05), transparent 35%),
     var(--site-bg);
 }
 
@@ -10839,7 +10860,7 @@ html[data-theme="light"] .btn-view-toggle.active {
   position: relative;
   background:
     radial-gradient(circle at 18% 15%, rgba(36, 96, 70, 0.22), transparent 45%),
-    radial-gradient(circle at 82% 25%, rgba(215, 123, 72, 0.16), transparent 40%),
+    radial-gradient(circle at 82% 25%, rgba(233, 185, 110, 0.16), transparent 40%),
     radial-gradient(circle at 50% 85%, rgba(233, 185, 110, 0.1), transparent 50%),
     var(--site-bg);
 }
@@ -10874,7 +10895,7 @@ html[data-theme="light"] .btn-view-toggle.active {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #d77b48 0%, #e9b96e 50%, #246046 100%);
+  background: linear-gradient(90deg, #e9b96e 0%, #d49a46 50%, #246046 100%);
 }
 
 /* Role Segmented Switch */
@@ -11657,7 +11678,7 @@ html[data-theme="light"] .btn-sub-action:hover {
 html[data-theme="light"] .login-page {
   background:
     radial-gradient(ellipse at 50% 0%, rgba(36, 96, 70, 0.08), transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(215, 123, 72, 0.06), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgba(233, 185, 110, 0.06), transparent 35%),
     var(--site-bg);
 }
 
@@ -11770,8 +11791,8 @@ html[data-theme="light"] .btn-switch-account:hover {
 }
 
 html[data-theme="light"] .login-forgot-hint {
-  background: rgba(215, 123, 72, 0.08);
-  border-color: rgba(215, 123, 72, 0.22);
+  background: rgba(233, 185, 110, 0.08);
+  border-color: rgba(233, 185, 110, 0.22);
   color: #9c4b1e;
 }
 
@@ -12550,7 +12571,7 @@ html[data-theme="light"] .catalog-card-img-fallback span {
 html[data-theme="light"] .catalog-page {
   background:
     radial-gradient(ellipse at 80% 0%, rgba(36, 96, 70, 0.08), transparent 45%),
-    radial-gradient(circle at 10% 40%, rgba(215, 123, 72, 0.05), transparent 35%),
+    radial-gradient(circle at 10% 40%, rgba(233, 185, 110, 0.05), transparent 35%),
     var(--site-bg);
 }
 
@@ -12733,7 +12754,7 @@ html[data-theme="light"] .catalog-view-btn.active {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #d77b48 0%, #e9b96e 50%, #246046 100%);
+  background: linear-gradient(90deg, #e9b96e 0%, #d49a46 50%, #246046 100%);
 }
 
 .guest-event-header {
@@ -13210,7 +13231,7 @@ html[data-theme="light"] .guest-event-metric-icon {
 
 html[data-theme="light"] .guest-event-wishes-card {
   background: #fcf9f4;
-  border-color: rgba(215, 123, 72, 0.25);
+  border-color: rgba(233, 185, 110, 0.25);
 }
 
 html[data-theme="light"] .guest-event-footer {
@@ -14644,8 +14665,8 @@ html[data-theme="light"] .booking-rules-error {
   color: #1f4034;
 }
 .booking-rules-form .booking-rules-field input[type="number"]:focus-visible {
-  outline: 2px solid rgba(215, 123, 72, 0.25);
-  border-color: #d77b48;
+  outline: 2px solid rgba(233, 185, 110, 0.3);
+  border-color: #e9b96e;
 }
 .booking-rules-form .booking-rules-hint {
   color: #6f7d76;
@@ -14657,9 +14678,9 @@ html[data-theme="light"] .booking-rules-error {
   accent-color: #25463a;
 }
 .booking-rules-form .booking-rules-preview {
-  border-left-color: #d77b48;
-  background: #fbf3e6;
-  color: #3d4f47;
+  border-left-color: #e9b96e;
+  background: color-mix(in srgb, var(--site-surface, #1e2823) 90%, #e9b96e 10%);
+  color: var(--site-fg, #e6eee8);
 }
 .booking-rules-form .booking-rules-status {
   color: #2f6b4f;
@@ -14668,12 +14689,30 @@ html[data-theme="light"] .booking-rules-error {
   justify-self: start;
   width: auto;
   margin-top: 0;
-  padding: 12px 24px;
-  background: #25463a;
-  color: #ffffff;
+  padding: 10px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
+  color: #0d241c !important;
+  border: 1px solid rgba(255, 230, 160, 0.45);
+  box-shadow: 0 3px 12px rgba(212, 154, 70, 0.28);
+  transition: all 0.15s ease;
 }
 .booking-rules-form .fa-btn:hover:not(:disabled) {
-  background: #2f5a4a;
+  background: linear-gradient(135deg, #f2c784 0%, #dba14e 100%);
+  box-shadow: 0 6px 18px rgba(212, 154, 70, 0.42);
+  transform: translateY(-1px);
+}
+html[data-theme="light"] .booking-rules-form .fa-btn {
+  background: linear-gradient(135deg, #246046 0%, #1a4835 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(26, 36, 32, 0.2);
+  box-shadow: 0 3px 12px rgba(36, 96, 70, 0.22);
+}
+html[data-theme="light"] .booking-rules-form .fa-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2c7555 0%, #215941 100%);
+  box-shadow: 0 6px 18px rgba(36, 96, 70, 0.35);
 }
 
 /* Rules block sits between the hero and the floor plan */
