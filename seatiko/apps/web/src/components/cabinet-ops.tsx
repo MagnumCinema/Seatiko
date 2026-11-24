@@ -98,6 +98,18 @@ export function CabinetFloorPanel({ venueId }: Props) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
+  const removeModalRef = useRef<HTMLElement>(null);
+  useDialogFocus(!!removingMember, removeModalRef, () => setRemovingMember(null));
+
+  useEffect(() => {
+    if (!removingMember) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [removingMember]);
 
   async function reload() {
     const qr = await listVenueQR(venueId);
@@ -311,6 +323,18 @@ export function CabinetStaffPanel({ venueId }: Props) {
   const [inviteRole, setInviteRole] = useState<"waiter" | "cook">("waiter");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
+  const removeModalRef = useRef<HTMLElement>(null);
+  useDialogFocus(!!removingMember, removeModalRef, () => setRemovingMember(null));
+
+  useEffect(() => {
+    if (!removingMember) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [removingMember]);
 
   async function reload() {
     const [members, stats] = await Promise.all([
@@ -556,20 +580,7 @@ export function CabinetStaffPanel({ venueId }: Props) {
                       className="panel-btn ghost sm danger cabinet-staff-delete-btn"
                       disabled={busy}
                       title={locale === "ro" ? "Elimină personalul" : locale === "en" ? "Remove staff member" : "Удалить сотрудника"}
-                      onClick={() => {
-                        const confirmMsg =
-                          locale === "ro"
-                            ? `Sigur doriți să eliminați ${displayName}?`
-                            : locale === "en"
-                            ? `Are you sure you want to remove ${displayName}?`
-                            : `Удалить сотрудника ${displayName}?`;
-                        if (!window.confirm(confirmMsg)) return;
-
-                        void run(async () => {
-                          await removeVenueStaff(venueId, member.id);
-                          setStaff((prev) => prev.filter((s) => s.id !== member.id));
-                        }, locale === "ro" ? "Personalul a fost eliminat" : locale === "en" ? "Staff member removed" : "Сотрудник удалён");
-                      }}
+                      onClick={() => setRemovingMember(member)}
                     >
                       {locale === "ro" ? "Elimină" : locale === "en" ? "Remove" : "Удалить"}
                     </button>
@@ -580,6 +591,84 @@ export function CabinetStaffPanel({ venueId }: Props) {
           )}
         </ul>
       </section>
+
+      {removingMember && typeof document !== "undefined" && createPortal(
+        <div className="booking-popup-root cabinet-delete-modal-root" role="presentation">
+          <button
+            type="button"
+            className="booking-popup-backdrop"
+            aria-label={copy.opsMenuCancel}
+            onClick={() => setRemovingMember(null)}
+          />
+          <section
+            ref={removeModalRef}
+            className="booking-popup cabinet-delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cabinet-staff-delete-title"
+          >
+            <div className="booking-popup-card cabinet-delete-card">
+              <button
+                type="button"
+                className="booking-popup-x"
+                onClick={() => setRemovingMember(null)}
+                aria-label={copy.opsMenuCancel}
+              >
+                ×
+              </button>
+              <div className="cabinet-delete-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <h3 id="cabinet-staff-delete-title">
+                {locale === "ro"
+                  ? "Eliminați angajatul?"
+                  : locale === "en"
+                  ? "Remove staff member?"
+                  : "Удалить сотрудника?"}
+              </h3>
+              <p className="cabinet-delete-text">
+                {locale === "ro"
+                  ? `Sigur doriți să îl eliminați pe ${removingMember.name?.trim() || removingMember.email} din echipa localului?`
+                  : locale === "en"
+                  ? `Are you sure you want to remove ${removingMember.name?.trim() || removingMember.email} from the venue staff?`
+                  : `Вы уверены, что хотите удалить ${removingMember.name?.trim() || removingMember.email} из списка персонала заведения?`}
+              </p>
+              <div className="cabinet-delete-actions">
+                <button
+                  type="button"
+                  className="panel-btn danger"
+                  disabled={busy}
+                  onClick={() => {
+                    const target = removingMember;
+                    void run(async () => {
+                      await removeVenueStaff(venueId, target.id);
+                      setStaff((prev) => prev.filter((s) => s.id !== target.id));
+                      setRemovingMember(null);
+                    }, locale === "ro" ? "Personalul a fost eliminat" : locale === "en" ? "Staff member removed" : "Сотрудник удалён");
+                  }}
+                >
+                  {locale === "ro" ? "Elimină" : locale === "en" ? "Remove" : "Удалить"}
+                </button>
+                <button
+                  type="button"
+                  className="panel-btn ghost"
+                  data-autofocus
+                  disabled={busy}
+                  onClick={() => setRemovingMember(null)}
+                >
+                  {copy.opsMenuCancel}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
@@ -598,6 +687,18 @@ export function CabinetMenuPanel({ venueId }: Props) {
   const [deletingDish, setDeletingDish] = useState<MenuItem | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
+  const removeModalRef = useRef<HTMLElement>(null);
+  useDialogFocus(!!removingMember, removeModalRef, () => setRemovingMember(null));
+
+  useEffect(() => {
+    if (!removingMember) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [removingMember]);
 
   const modalRef = useRef<HTMLElement>(null);
   const deleteModalRef = useRef<HTMLElement>(null);

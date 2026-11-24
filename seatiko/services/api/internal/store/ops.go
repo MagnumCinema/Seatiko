@@ -2,6 +2,7 @@ package store
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -638,6 +639,54 @@ type BatchWorkShiftsInput struct {
 	Note      string   `json:"note"`
 }
 
+func parseShiftTimeMinutes(hhmm string) (int, bool) {
+	parts := strings.Split(strings.TrimSpace(hhmm), ":")
+	if len(parts) != 2 {
+		return 0, false
+	}
+	h, err1 := strconv.Atoi(parts[0])
+	m, err2 := strconv.Atoi(parts[1])
+	if err1 != nil || err2 != nil || h < 0 || h > 23 || m < 0 || m > 59 {
+		return 0, false
+	}
+	return h*60 + m, true
+}
+
+func shiftsTimeOverlap(startA, endA, startB, endB string) bool {
+	s1, ok1 := parseShiftTimeMinutes(startA)
+	e1, ok2 := parseShiftTimeMinutes(endA)
+	s2, ok3 := parseShiftTimeMinutes(startB)
+	e2, ok4 := parseShiftTimeMinutes(endB)
+	if !ok1 || !ok2 || !ok3 || !ok4 {
+		return true
+	}
+	if e1 <= s1 {
+		e1 += 24 * 60
+	}
+	if e2 <= s2 {
+		e2 += 24 * 60
+	}
+	return s1 < e2 && s2 < e1
+}
+
+func (s *MemoryStore) hasShiftConflictLocked(venueID, staffID, date, startTime, endTime, excludeShiftID string) bool {
+	for _, existing := range s.shifts {
+		if existing.ID == excludeShiftID {
+			continue
+		}
+		if existing.VenueID != venueID || existing.StaffID != staffID || existing.Date != date {
+			continue
+		}
+		if existing.Status != models.ShiftStatusConfirmed && existing.Status != models.ShiftStatusPending {
+			continue
+		}
+		if shiftsTimeOverlap(startTime, endTime, existing.StartTime, existing.EndTime) {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *MemoryStore) BatchCreateWorkShifts(ownerID, venueID string, input BatchWorkShiftsInput) ([]models.WorkShift, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -654,6 +703,7 @@ func (s *MemoryStore) BatchCreateWorkShifts(ownerID, venueID string, input Batch
 	}
 
 	created := make([]models.WorkShift, 0, len(input.StaffIDs)*len(input.Dates))
+	skippedConflicts := 0
 	for _, staffID := range input.StaffIDs {
 		member, ok := s.staffMembers[strings.TrimSpace(staffID)]
 		if !ok || member.VenueID != venueID {
@@ -670,6 +720,10 @@ func (s *MemoryStore) BatchCreateWorkShifts(ownerID, venueID string, input Batch
 		for _, date := range input.Dates {
 			d := strings.TrimSpace(date)
 			if d == "" {
+				continue
+			}
+			if s.hasShiftConflictLocked(venueID, member.ID, d, startTime, endTime, "") {
+				skippedConflicts++
 				continue
 			}
 			shift := models.WorkShift{
@@ -689,6 +743,9 @@ func (s *MemoryStore) BatchCreateWorkShifts(ownerID, venueID string, input Batch
 			s.shifts[shift.ID] = shift
 			created = append(created, shift)
 		}
+	}
+	if len(created) == 0 && skippedConflicts > 0 {
+		return nil, ErrConflict
 	}
 	return created, nil
 }
@@ -715,6 +772,9 @@ func (s *MemoryStore) CreateWorkShift(ownerID, venueID string, input WorkShiftIn
 	endTime := strings.TrimSpace(input.EndTime)
 	if startTime == "" || endTime == "" {
 		return models.WorkShift{}, ErrBadRequest
+	}
+	if s.hasShiftConflictLocked(venueID, member.ID, date, startTime, endTime, "") {
+		return models.WorkShift{}, ErrConflict
 	}
 	displayName := member.Name
 	if displayName == "" {
@@ -872,6 +932,12 @@ func (s *MemoryStore) SwapWorkShift(ownerID, venueID, shiftID, newStaffID string
 	newMember, ok := s.staffMembers[newStaffID]
 	if !ok || newMember.VenueID != venueID {
 		return models.WorkShift{}, ErrBadRequest
+	}
+	if newMember.ID == shift.StaffID {
+		return models.WorkShift{}, ErrBadRequest
+	}
+	if s.hasShiftConflictLocked(venueID, newMember.ID, shift.Date, shift.StartTime, shift.EndTime, shift.ID) {
+		return models.WorkShift{}, ErrConflict
 	}
 	displayName := newMember.Name
 	if displayName == "" {

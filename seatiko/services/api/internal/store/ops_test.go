@@ -467,21 +467,52 @@ func TestWorkShiftsAndSchedule(t *testing.T) {
 		t.Fatalf("swap request shift: %v, %#v", err, declinedShift)
 	}
 
-	// Owner swaps cook with another staff member (e.g. waiter)
-	swappedShift, err := mem.SwapWorkShift(owner.ID, venueID, cookShift.ID, waiter.ID)
-	if err != nil || swappedShift.StaffID != waiter.ID || swappedShift.Status != models.ShiftStatusPending {
+	// Trying to assign duplicate/overlapping shift for confirmed waiter must fail with ErrConflict
+	if _, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   waiter.ID,
+		Date:      "2026-11-25",
+		StartTime: "12:00",
+		EndTime:   "18:00",
+	}); err != ErrConflict {
+		t.Fatalf("expected ErrConflict for overlapping waiter shift, got %v", err)
+	}
+
+	// Non-overlapping shift later or earlier is allowed; overlapping swap must fail with ErrConflict
+	if _, err := mem.SwapWorkShift(owner.ID, venueID, cookShift.ID, waiter.ID); err != ErrConflict {
+		t.Fatalf("expected ErrConflict when swapping onto busy waiter, got %v", err)
+	}
+
+	// Invite a free second cook and swap cookShift to them
+	cook2User := registerTestUser(t, mem, "cook2-schedule@example.com", models.RoleGuest)
+	cook2, err := mem.InviteStaff(owner.ID, venueID, cook2User.Email, "Ion Bucatar", models.StaffRoleCook)
+	if err != nil {
+		t.Fatalf("invite cook2: %v", err)
+	}
+
+	swappedShift, err := mem.SwapWorkShift(owner.ID, venueID, cookShift.ID, cook2.ID)
+	if err != nil || swappedShift.StaffID != cook2.ID || swappedShift.Status != models.ShiftStatusPending {
 		t.Fatalf("swap shift staff: %v, %#v", err, swappedShift)
 	}
 
-	// Batch create shifts
+	// Trying to assign another overlapping shift to cook2 (now PENDING) must also fail with ErrConflict
+	if _, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   cook2.ID,
+		Date:      "2026-11-25",
+		StartTime: "10:00",
+		EndTime:   "15:00",
+	}); err != ErrConflict {
+		t.Fatalf("expected ErrConflict for overlapping pending shift, got %v", err)
+	}
+
+	// Batch create shifts (skips any conflicting slots on 2026-11-25 and creates on 2026-11-26, 2026-11-27)
 	batchShifts, err := mem.BatchCreateWorkShifts(owner.ID, venueID, BatchWorkShiftsInput{
 		StaffIDs:  []string{waiter.ID, cook.ID},
-		Dates:     []string{"2026-11-26", "2026-11-27"},
+		Dates:     []string{"2026-11-25", "2026-11-26", "2026-11-27"},
 		StartTime: "10:00",
 		EndTime:   "22:00",
 		Note:      "Общая смена",
 	})
-	if err != nil || len(batchShifts) != 4 {
+	if err != nil || len(batchShifts) != 5 {
 		t.Fatalf("batch create shifts: %v, count=%d", err, len(batchShifts))
 	}
 
@@ -491,7 +522,7 @@ func TestWorkShiftsAndSchedule(t *testing.T) {
 	}
 
 	afterDelete, err := mem.ListWorkShifts(owner.ID, venueID)
-	if err != nil || len(afterDelete) != 5 {
+	if err != nil || len(afterDelete) != 6 {
 		t.Fatalf("after delete count = %d", len(afterDelete))
 	}
 }

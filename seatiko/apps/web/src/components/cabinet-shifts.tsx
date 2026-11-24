@@ -6,6 +6,7 @@ import { useLocale } from "@/components/locale-provider";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
+  ApiError,
   batchCreateVenueWorkShifts,
   deleteVenueWorkShift,
   listVenueStaff,
@@ -47,13 +48,67 @@ function calcShiftDuration(start: string, end: string, locale: "ru" | "ro" | "en
   return `${hrs} ${hUnit} ${remMin} ${mUnit}`;
 }
 
+function parseTimeMinutes(hhmm: string): number | null {
+  const parts = (hhmm || "").trim().split(":");
+  if (parts.length !== 2) return null;
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+function shiftsOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+  const s1 = parseTimeMinutes(startA);
+  let e1 = parseTimeMinutes(endA);
+  const s2 = parseTimeMinutes(startB);
+  let e2 = parseTimeMinutes(endB);
+  if (s1 === null || e1 === null || s2 === null || e2 === null) return true;
+  if (e1 <= s1) e1 += 24 * 60;
+  if (e2 <= s2) e2 += 24 * 60;
+  return s1 < e2 && s2 < e1;
+}
+
+function findShiftConflict(
+  shifts: WorkShift[],
+  staffId: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+  excludeShiftId?: string,
+): WorkShift | undefined {
+  return shifts.find(
+    (s) =>
+      s.id !== excludeShiftId &&
+      s.staff_id === staffId &&
+      s.date === date &&
+      (s.status === "CONFIRMED" || s.status === "PENDING") &&
+      shiftsOverlap(startTime, endTime, s.start_time, s.end_time),
+  );
+}
+
+function formatConflictLabel(conflict: WorkShift, locale: "ru" | "ro" | "en"): string {
+  const time = `${conflict.start_time}–${conflict.end_time}`;
+  if (conflict.status === "CONFIRMED") {
+    return locale === "ro"
+      ? `Programat (${time})`
+      : locale === "en"
+      ? `Assigned (${time})`
+      : `Назначен (${time})`;
+  }
+  return locale === "ro"
+    ? `În așteptare (${time})`
+    : locale === "en"
+    ? `Pending (${time})`
+    : `В ожидании (${time})`;
+}
+
 export function CabinetShiftsPlanner({ venueId }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).cabinet;
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [shifts, setShifts] = useState<WorkShift[]>([]);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Calendar navigation state
   const todayStr = useMemo(() => toDateString(new Date()), []);
@@ -64,14 +119,26 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [swappingShift, setSwappingShift] = useState<WorkShift | null>(null);
+  const [deletingShift, setDeletingShift] = useState<WorkShift | null>(null);
 
   const batchModalRef = useRef<HTMLElement>(null);
   const recurringModalRef = useRef<HTMLElement>(null);
   const swapModalRef = useRef<HTMLElement>(null);
+  const deleteModalRef = useRef<HTMLElement>(null);
 
   useDialogFocus(isBatchModalOpen, batchModalRef, () => setIsBatchModalOpen(false));
   useDialogFocus(isRecurringModalOpen, recurringModalRef, () => setIsRecurringModalOpen(false));
   useDialogFocus(!!swappingShift, swapModalRef, () => setSwappingShift(null));
+  useDialogFocus(!!deletingShift, deleteModalRef, () => setDeletingShift(null));
+
+  useEffect(() => {
+    if (!isBatchModalOpen && !isRecurringModalOpen && !swappingShift && !deletingShift) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isBatchModalOpen, isRecurringModalOpen, swappingShift, deletingShift]);
 
   // Batch Form State
   const [batchDate, setBatchDate] = useState(selectedDate);
@@ -110,7 +177,7 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
       setBusy(true);
       reload()
         .catch(() => {
-          if (!cancelled) setMessage(locale === "ro" ? "Eroare la încărcare" : "Ошибка загрузки");
+          if (!cancelled) setMessage({ type: "error", text: locale === "ro" ? "Eroare la încărcare" : "Ошибка загрузки" });
         })
         .finally(() => {
           if (!cancelled) setBusy(false);
@@ -128,9 +195,24 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
     try {
       await action();
       await reload();
-      setMessage(ok);
-    } catch {
-      setMessage(locale === "ro" ? "Eroare de operare" : locale === "en" ? "Operation error" : "Ошибка операции");
+      setMessage({ type: "success", text: ok });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setMessage({
+          type: "error",
+          text:
+            locale === "ro"
+              ? "Conflict de program: angajatul este deja programat la această oră"
+              : locale === "en"
+              ? "Schedule conflict: staff member already has a shift at this time"
+              : "Конфликт расписания: сотрудник уже назначен или ожидает подтверждения на это время",
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: locale === "ro" ? "Eroare de operare" : locale === "en" ? "Operation error" : "Ошибка операции",
+        });
+      }
     } finally {
       setBusy(false);
     }
@@ -180,11 +262,90 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
   const waiters = useMemo(() => staff.filter((m) => (m.role || "waiter") === "waiter"), [staff]);
   const cooks = useMemo(() => staff.filter((m) => m.role === "cook"), [staff]);
 
+  // Valid (non-conflicting) selections for Batch Modal
+  const validBatchWaiters = useMemo(
+    () => batchWaiters.filter((id) => !findShiftConflict(shifts, id, batchDate, batchStart, batchEnd)),
+    [batchWaiters, shifts, batchDate, batchStart, batchEnd],
+  );
+  const validBatchCooks = useMemo(
+    () => batchCooks.filter((id) => !findShiftConflict(shifts, id, batchDate, batchStart, batchEnd)),
+    [batchCooks, shifts, batchDate, batchStart, batchEnd],
+  );
+
+  // Recurring preview dates & conflict counts
+  const recurringDates = useMemo(() => {
+    const dates: string[] = [];
+    if (!recurringStartDate) return dates;
+    const start = new Date(recurringStartDate + "T00:00:00");
+    if (isNaN(start.getTime())) return dates;
+    const totalDays = recurringPeriodWeeks * 7;
+
+    for (let i = 0; i < totalDays; i++) {
+      const cur = new Date(start);
+      cur.setDate(start.getDate() + i);
+      const curStr = toDateString(cur);
+      if (recurringPattern === "2/2") {
+        if (i % 4 === 0 || i % 4 === 1) {
+          dates.push(curStr);
+        }
+      } else {
+        const dayOfWeek = cur.getDay() === 0 ? 7 : cur.getDay();
+        if (recurringWeekdays.includes(dayOfWeek)) {
+          dates.push(curStr);
+        }
+      }
+    }
+    return dates;
+  }, [recurringStartDate, recurringPeriodWeeks, recurringPattern, recurringWeekdays]);
+
+  const recurringSummary = useMemo(() => {
+    let availableSlots = 0;
+    let conflictSlots = 0;
+    for (const staffId of recurringStaffIds) {
+      for (const d of recurringDates) {
+        if (findShiftConflict(shifts, staffId, d, recurringStart, recurringEnd)) {
+          conflictSlots++;
+        } else {
+          availableSlots++;
+        }
+      }
+    }
+    return { availableSlots, conflictSlots };
+  }, [recurringStaffIds, recurringDates, shifts, recurringStart, recurringEnd]);
+
+  // Candidates for Swap Modal (sorted: free first, busy disabled below)
+  const swapCandidates = useMemo(() => {
+    if (!swappingShift) return [];
+    const role = swappingShift.role || "waiter";
+    return staff
+      .filter((m) => (m.role || "waiter") === role && m.id !== swappingShift.staff_id)
+      .map((m) => ({
+        member: m,
+        conflict: findShiftConflict(
+          shifts,
+          m.id,
+          swappingShift.date,
+          swappingShift.start_time,
+          swappingShift.end_time,
+          swappingShift.id,
+        ),
+      }))
+      .sort((a, b) => Number(Boolean(a.conflict)) - Number(Boolean(b.conflict)));
+  }, [swappingShift, staff, shifts]);
+
   // Helper to open Batch Modal for current day
   function openBatchModal() {
     setBatchDate(selectedDate);
-    setBatchWaiters(waiters.map((w) => w.id));
-    setBatchCooks(cooks.map((c) => c.id));
+    setBatchWaiters(
+      waiters
+        .filter((w) => !findShiftConflict(shifts, w.id, selectedDate, batchStart, batchEnd))
+        .map((w) => w.id),
+    );
+    setBatchCooks(
+      cooks
+        .filter((c) => !findShiftConflict(shifts, c.id, selectedDate, batchStart, batchEnd))
+        .map((c) => c.id),
+    );
     setBatchNote("");
     setIsBatchModalOpen(true);
   }
@@ -200,17 +361,20 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
   // Helper to open Swap Modal
   function openSwapModal(shift: WorkShift) {
     setSwappingShift(shift);
-    // Find available staff of same role who are not this shift's staff
-    const candidates = staff.filter(
-      (m) => (m.role || "waiter") === (shift.role || "waiter") && m.id !== shift.staff_id
+    const role = shift.role || "waiter";
+    const freeCandidate = staff.find(
+      (m) =>
+        (m.role || "waiter") === role &&
+        m.id !== shift.staff_id &&
+        !findShiftConflict(shifts, m.id, shift.date, shift.start_time, shift.end_time, shift.id),
     );
-    setReplacementStaffId(candidates[0]?.id || "");
+    setReplacementStaffId(freeCandidate?.id || "");
   }
 
   // Submit Batch Modal
   async function handleBatchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const allSelectedStaff = [...batchWaiters, ...batchCooks];
+    const allSelectedStaff = [...validBatchWaiters, ...validBatchCooks];
     if (allSelectedStaff.length === 0) return;
 
     await run(async () => {
@@ -232,48 +396,23 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
   // Submit Recurring Modal
   async function handleRecurringSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (recurringStaffIds.length === 0) return;
-
-    // Generate dates based on pattern
-    const generatedDates: string[] = [];
-    const start = new Date(recurringStartDate + "T00:00:00");
-    const totalDays = recurringPeriodWeeks * 7;
-
-    for (let i = 0; i < totalDays; i++) {
-      const cur = new Date(start);
-      cur.setDate(start.getDate() + i);
-      const curStr = toDateString(cur);
-
-      if (recurringPattern === "2/2") {
-        // 2 days on, 2 days off (cycle of 4)
-        if (i % 4 === 0 || i % 4 === 1) {
-          generatedDates.push(curStr);
-        }
-      } else {
-        // Weekdays pattern
-        const dayOfWeek = cur.getDay() === 0 ? 7 : cur.getDay(); // 1=Mon .. 7=Sun
-        if (recurringWeekdays.includes(dayOfWeek)) {
-          generatedDates.push(curStr);
-        }
-      }
-    }
-
-    if (generatedDates.length === 0) return;
+    if (recurringStaffIds.length === 0 || recurringDates.length === 0 || recurringSummary.availableSlots === 0) return;
 
     await run(async () => {
-      await batchCreateVenueWorkShifts(venueId, {
+      const created = await batchCreateVenueWorkShifts(venueId, {
         staff_ids: recurringStaffIds,
-        dates: generatedDates,
+        dates: recurringDates,
         start_time: recurringStart,
         end_time: recurringEnd,
         note: recurringNote.trim() || undefined,
       });
       setIsRecurringModalOpen(false);
+      void created;
     }, locale === "ro"
-      ? `Program stabil generat: ${generatedDates.length * recurringStaffIds.length} ture`
+      ? `Program stabil generat: ${recurringSummary.availableSlots} ture`
       : locale === "en"
-      ? `Recurring schedule generated: ${generatedDates.length * recurringStaffIds.length} shifts`
-      : `Сгенерирован стабильный график: ${generatedDates.length * recurringStaffIds.length} смен`);
+      ? `Recurring schedule generated: ${recurringSummary.availableSlots} shifts`
+      : `Сгенерирован стабильный график: ${recurringSummary.availableSlots} смен`);
   }
 
   // Submit Swap Modal
@@ -285,6 +424,15 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
       await swapVenueWorkShiftStaff(venueId, swappingShift.id, replacementStaffId);
       setSwappingShift(null);
     }, locale === "ro" ? "Înlocuirea a fost confirmată" : locale === "en" ? "Replacement confirmed" : "Сотрудник на смене успешно заменён");
+  }
+
+  async function handleConfirmDeleteShift() {
+    if (!deletingShift) return;
+    const shiftToDelete = deletingShift;
+    await run(async () => {
+      await deleteVenueWorkShift(venueId, shiftToDelete.id);
+      setDeletingShift(null);
+    }, locale === "ro" ? "Tura a fost ștearsă" : locale === "en" ? "Shift deleted" : "Смена удалена");
   }
 
   // Format selected day label
@@ -301,9 +449,9 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
   return (
     <div className="cabinet-ops cabinet-shifts-planner">
       {message && (
-        <div className="owner-notice success" role="alert">
-          <span>✓</span>
-          <p>{message}</p>
+        <div className={`owner-notice ${message.type}`} role="alert">
+          <span>{message.type === "error" ? "!" : "✓"}</span>
+          <p>{message.text}</p>
         </div>
       )}
       {busy && (
@@ -553,12 +701,8 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                         <button
                           type="button"
                           className="panel-btn ghost sm danger"
-                          onClick={() => {
-                            if (!window.confirm(locale === "ro" ? "Ștergeți această tură?" : "Удалить эту смену?")) return;
-                            void run(async () => {
-                              await deleteVenueWorkShift(venueId, shift.id);
-                            }, locale === "ro" ? "Tura a fost ștearsă" : "Смена удалена");
-                          }}
+                          onClick={() => setDeletingShift(shift)}
+                          title={copy.opsScheduleDeleteBtn}
                         >
                           ✕
                         </button>
@@ -649,12 +793,8 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                         <button
                           type="button"
                           className="panel-btn ghost sm danger"
-                          onClick={() => {
-                            if (!window.confirm(locale === "ro" ? "Ștergeți această tură?" : "Удалить эту смену?")) return;
-                            void run(async () => {
-                              await deleteVenueWorkShift(venueId, shift.id);
-                            }, locale === "ro" ? "Tura a fost ștearsă" : "Смена удалена");
-                          }}
+                          onClick={() => setDeletingShift(shift)}
+                          title={copy.opsScheduleDeleteBtn}
                         >
                           ✕
                         </button>
@@ -779,13 +919,19 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                 {/* Multi Waiters Selection */}
                 <div className="cabinet-shift-field-group">
                   <div className="cabinet-shift-staff-header">
-                    <label>{copy.plannerSelectWaiters} ({batchWaiters.length})</label>
+                    <label>{copy.plannerSelectWaiters} ({validBatchWaiters.length})</label>
                     {waiters.length > 0 && (
                       <div className="cabinet-shift-staff-bulk-actions">
                         <button
                           type="button"
                           className="cabinet-shift-bulk-btn"
-                          onClick={() => setBatchWaiters(waiters.map((w) => w.id))}
+                          onClick={() =>
+                            setBatchWaiters(
+                              waiters
+                                .filter((w) => !findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd))
+                                .map((w) => w.id),
+                            )
+                          }
                         >
                           {copy.opsScheduleSelectAll}
                         </button>
@@ -807,24 +953,35 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                   ) : (
                     <div className="cabinet-shift-staff-grid">
                       {waiters.map((w) => {
-                        const isSelected = batchWaiters.includes(w.id);
+                        const conflict = findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd);
+                        const isSelected = !conflict && validBatchWaiters.includes(w.id);
                         const name = w.name?.trim() || w.email.split("@")[0];
                         return (
                           <button
                             key={w.id}
                             type="button"
-                            className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                            disabled={!!conflict}
+                            title={conflict ? formatConflictLabel(conflict, locale) : undefined}
+                            className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
                             onClick={() => {
+                              if (conflict) return;
                               setBatchWaiters((prev) =>
                                 isSelected ? prev.filter((id) => id !== w.id) : [...prev, w.id]
                               );
                             }}
                           >
-                            <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                            <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
                             <span className="cabinet-staff-avatar xs" aria-hidden="true">
                               {name.slice(0, 2).toUpperCase()}
                             </span>
-                            <span className="cabinet-shift-staff-pill-name">{name}</span>
+                            <span className="cabinet-shift-staff-pill-meta">
+                              <span className="cabinet-shift-staff-pill-name">{name}</span>
+                              {conflict && (
+                                <small className="cabinet-shift-pill-conflict">
+                                  {formatConflictLabel(conflict, locale)}
+                                </small>
+                              )}
+                            </span>
                           </button>
                         );
                       })}
@@ -835,13 +992,19 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                 {/* Multi Cooks Selection */}
                 <div className="cabinet-shift-field-group">
                   <div className="cabinet-shift-staff-header">
-                    <label>{copy.plannerSelectCooks} ({batchCooks.length})</label>
+                    <label>{copy.plannerSelectCooks} ({validBatchCooks.length})</label>
                     {cooks.length > 0 && (
                       <div className="cabinet-shift-staff-bulk-actions">
                         <button
                           type="button"
                           className="cabinet-shift-bulk-btn"
-                          onClick={() => setBatchCooks(cooks.map((c) => c.id))}
+                          onClick={() =>
+                            setBatchCooks(
+                              cooks
+                                .filter((c) => !findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd))
+                                .map((c) => c.id),
+                            )
+                          }
                         >
                           {copy.opsScheduleSelectAll}
                         </button>
@@ -863,24 +1026,35 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                   ) : (
                     <div className="cabinet-shift-staff-grid">
                       {cooks.map((c) => {
-                        const isSelected = batchCooks.includes(c.id);
+                        const conflict = findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd);
+                        const isSelected = !conflict && validBatchCooks.includes(c.id);
                         const name = c.name?.trim() || c.email.split("@")[0];
                         return (
                           <button
                             key={c.id}
                             type="button"
-                            className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
+                            disabled={!!conflict}
+                            title={conflict ? formatConflictLabel(conflict, locale) : undefined}
+                            className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
                             onClick={() => {
+                              if (conflict) return;
                               setBatchCooks((prev) =>
                                 isSelected ? prev.filter((id) => id !== c.id) : [...prev, c.id]
                               );
                             }}
                           >
-                            <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                            <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
                             <span className="cabinet-staff-avatar xs" aria-hidden="true">
                               {name.slice(0, 2).toUpperCase()}
                             </span>
-                            <span className="cabinet-shift-staff-pill-name">{name}</span>
+                            <span className="cabinet-shift-staff-pill-meta">
+                              <span className="cabinet-shift-staff-pill-name">{name}</span>
+                              {conflict && (
+                                <small className="cabinet-shift-pill-conflict">
+                                  {formatConflictLabel(conflict, locale)}
+                                </small>
+                              )}
+                            </span>
                           </button>
                         );
                       })}
@@ -906,9 +1080,9 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                   <button
                     type="submit"
                     className="panel-btn primary"
-                    disabled={busy || (batchWaiters.length === 0 && batchCooks.length === 0)}
+                    disabled={busy || (validBatchWaiters.length === 0 && validBatchCooks.length === 0)}
                   >
-                    {copy.opsScheduleSubmitBtn} ({batchWaiters.length + batchCooks.length})
+                    {copy.opsScheduleSubmitBtn} ({validBatchWaiters.length + validBatchCooks.length})
                   </button>
                   <button
                     type="button"
@@ -1135,14 +1309,36 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                   />
                 </div>
 
+                {/* Recurring generation conflict preview */}
+                {recurringStaffIds.length > 0 && recurringDates.length > 0 && (
+                  <div className="cabinet-recurring-preview">
+                    <span>
+                      {locale === "ro"
+                        ? `Vor fi create: ${recurringSummary.availableSlots} ture`
+                        : locale === "en"
+                        ? `Shifts to create: ${recurringSummary.availableSlots}`
+                        : `Будет создано смен: ${recurringSummary.availableSlots}`}
+                    </span>
+                    {recurringSummary.conflictSlots > 0 && (
+                      <small className="cabinet-recurring-skipped">
+                        {locale === "ro"
+                          ? ` (${recurringSummary.conflictSlots} omise din cauza suprapunerilor)`
+                          : locale === "en"
+                          ? ` (${recurringSummary.conflictSlots} skipped due to existing shifts)`
+                          : ` (${recurringSummary.conflictSlots} пропущено — уже назначены/ожидают)`}
+                      </small>
+                    )}
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="cabinet-shift-actions">
                   <button
                     type="submit"
                     className="panel-btn primary"
-                    disabled={busy || recurringStaffIds.length === 0}
+                    disabled={busy || recurringStaffIds.length === 0 || recurringSummary.availableSlots === 0}
                   >
-                    ⚡ {copy.plannerGenerateBtn}
+                    ⚡ {copy.plannerGenerateBtn} ({recurringSummary.availableSlots})
                   </button>
                   <button
                     type="button"
@@ -1160,7 +1356,7 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
         document.body,
       )}
 
-      {/* Modal 3: Swap Staff Member on Shift */}
+      {/* Modal 3: Swap Staff Member on Shift (Direct list of free candidates, no dropdown) */}
       {swappingShift && typeof document !== "undefined" && createPortal(
         <div className="booking-popup-root cabinet-shift-modal-root" role="presentation">
           <button
@@ -1201,33 +1397,61 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                 </div>
                 {swappingShift.reason && (
                   <p className="cabinet-planner-swap-target-reason">
-                    ⚠️ {locale === "ro" ? "Motiv:" : "Причина:"} {swappingShift.reason}
+                    ⚠️ {locale === "ro" ? "Motiv:" : locale === "en" ? "Reason:" : "Причина:"} {swappingShift.reason}
                   </p>
                 )}
               </div>
 
               <form className="cabinet-shift-form" onSubmit={handleSwapSubmit}>
                 <div className="cabinet-shift-field-group">
-                  <label htmlFor="replacement-staff-select">{copy.plannerSelectReplacement}</label>
-                  <select
-                    id="replacement-staff-select"
-                    value={replacementStaffId}
-                    onChange={(e) => setReplacementStaffId(e.target.value)}
-                    required
-                    className="cabinet-shift-input"
-                  >
-                    {staff
-                      .filter(
-                        (m) =>
-                          (m.role || "waiter") === (swappingShift.role || "waiter") &&
-                          m.id !== swappingShift.staff_id
-                      )
-                      .map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name || m.email} ({m.email})
-                        </option>
-                      ))}
-                  </select>
+                  <label>{copy.plannerSelectReplacement}</label>
+                  {swapCandidates.length === 0 ? (
+                    <p className="cabinet-swap-empty-note">
+                      {locale === "ro"
+                        ? "Nu există alți angajați cu acest rol"
+                        : locale === "en"
+                        ? "No other staff members with this role"
+                        : "Нет других сотрудников с этой ролью"}
+                    </p>
+                  ) : (
+                    <div className="cabinet-swap-candidates-list" role="radiogroup" aria-label={copy.plannerSelectReplacement}>
+                      {swapCandidates.map(({ member, conflict }) => {
+                        const displayName = member.name?.trim() || member.email.split("@")[0];
+                        const isSelected = !conflict && replacementStaffId === member.id;
+                        return (
+                          <button
+                            key={member.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            disabled={!!conflict}
+                            className={`cabinet-swap-candidate-card ${isSelected ? "selected" : ""} ${conflict ? "busy" : "free"}`}
+                            onClick={() => {
+                              if (!conflict) setReplacementStaffId(member.id);
+                            }}
+                          >
+                            <div className="cabinet-swap-candidate-left">
+                              <span className="cabinet-shift-checkbox">
+                                {conflict ? "✕" : isSelected ? "✓" : ""}
+                              </span>
+                              <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                {displayName.slice(0, 2).toUpperCase()}
+                              </span>
+                              <div className="cabinet-swap-candidate-info">
+                                <strong>{displayName}</strong>
+                                <small>{member.email}</small>
+                              </div>
+                            </div>
+                            <span className={`cabinet-swap-availability-pill ${conflict ? "busy" : "free"}`}>
+                              {conflict
+                                ? formatConflictLabel(conflict, locale)
+                                : (locale === "ro" ? "✓ Disponibil" : locale === "en" ? "✓ Available" : "✓ Свободен")}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="cabinet-shift-actions">
@@ -1248,6 +1472,78 @@ export function CabinetShiftsPlanner({ venueId }: Props) {
                   </button>
                 </div>
               </form>
+            </div>
+          </section>
+        </div>,
+        document.body,
+      )}
+
+      {/* Modal 4: Custom Delete Shift Confirmation Popup */}
+      {deletingShift && typeof document !== "undefined" && createPortal(
+        <div className="booking-popup-root cabinet-delete-modal-root" role="presentation">
+          <button
+            type="button"
+            className="booking-popup-backdrop"
+            aria-label={copy.opsMenuCancel}
+            onClick={() => setDeletingShift(null)}
+          />
+          <section
+            ref={deleteModalRef}
+            className="booking-popup cabinet-delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cabinet-shift-delete-title"
+          >
+            <div className="booking-popup-card cabinet-delete-card">
+              <button
+                type="button"
+                className="booking-popup-x"
+                onClick={() => setDeletingShift(null)}
+                aria-label={copy.opsMenuCancel}
+              >
+                ×
+              </button>
+              <div className="cabinet-delete-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  <line x1="10" y1="11" x2="10" y2="17" />
+                  <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+              </div>
+              <h3 id="cabinet-shift-delete-title">
+                {locale === "ro"
+                  ? "Eliminați angajatul din tură?"
+                  : locale === "en"
+                  ? "Remove staff member from shift?"
+                  : "Снять сотрудника со смены?"}
+              </h3>
+              <p className="cabinet-delete-text">
+                {locale === "ro"
+                  ? `Sigur doriți să îl eliminați pe ${deletingShift.staff_name} din tura de pe ${deletingShift.date} (${deletingShift.start_time} – ${deletingShift.end_time})?`
+                  : locale === "en"
+                  ? `Are you sure you want to remove ${deletingShift.staff_name} from the shift on ${deletingShift.date} (${deletingShift.start_time} – ${deletingShift.end_time})?`
+                  : `Вы уверены, что хотите удалить смену сотрудника ${deletingShift.staff_name} на ${deletingShift.date} (${deletingShift.start_time} – ${deletingShift.end_time})?`}
+              </p>
+              <div className="cabinet-delete-actions">
+                <button
+                  type="button"
+                  className="panel-btn danger"
+                  disabled={busy}
+                  onClick={() => void handleConfirmDeleteShift()}
+                >
+                  {locale === "ro" ? "Șterge tura" : locale === "en" ? "Delete shift" : "Удалить смену"}
+                </button>
+                <button
+                  type="button"
+                  className="panel-btn ghost"
+                  data-autofocus
+                  disabled={busy}
+                  onClick={() => setDeletingShift(null)}
+                >
+                  {copy.opsMenuCancel}
+                </button>
+              </div>
             </div>
           </section>
         </div>,
