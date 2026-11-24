@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SeatingMarks, seatingClass, tableStatusClass } from "@/components/table-floor-plan";
+import { useLocale } from "@/components/locale-provider";
 import type { Table } from "@/lib/api";
 import {
   FLOOR_ZONE_PRESETS,
@@ -39,6 +40,7 @@ function nextNumber(tables: FloorDraftTable[]) {
 }
 
 export function FloorPlanEditor({ tables, onChange, busy }: Props) {
+  const { locale } = useLocale();
   const roomRef = useRef<HTMLDivElement | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
@@ -194,24 +196,85 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
           ))}
         </div>
         <div className="floor-editor-actions">
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => addTable(2)}>
-            + 2 места
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => addTable(4)}>
-            + 4 места
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => addTable(6)}>
-            + 6 мест
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => applyTemplate("small")}>
-            Шаблон S
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => applyTemplate("cafe")}>
-            Кафе
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => applyTemplate("hall")}>
-            Зал+улица
-          </button>
+          <div className="floor-actions-group">
+            <span className="floor-actions-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              {locale === "ro" ? "Adaugă masă:" : locale === "en" ? "Add table:" : "Добавить стол:"}
+            </span>
+            <div className="floor-actions-pills">
+              <button
+                type="button"
+                className="floor-add-pill"
+                disabled={busy}
+                onClick={() => addTable(2)}
+                title={locale === "ro" ? "Adaugă masă pentru 2 persoane" : locale === "en" ? "Add table for 2" : "Добавить двухместный стол"}
+              >
+                <span className="floor-pill-seats-icon" aria-hidden="true">2</span>
+                <span>{locale === "ro" ? "+ 2 locuri" : locale === "en" ? "+ 2 seats" : "+ 2 места"}</span>
+              </button>
+              <button
+                type="button"
+                className="floor-add-pill"
+                disabled={busy}
+                onClick={() => addTable(4)}
+                title={locale === "ro" ? "Adaugă masă pentru 4 persoane" : locale === "en" ? "Add table for 4" : "Добавить четырёхместный стол"}
+              >
+                <span className="floor-pill-seats-icon" aria-hidden="true">4</span>
+                <span>{locale === "ro" ? "+ 4 locuri" : locale === "en" ? "+ 4 seats" : "+ 4 места"}</span>
+              </button>
+              <button
+                type="button"
+                className="floor-add-pill"
+                disabled={busy}
+                onClick={() => addTable(6)}
+                title={locale === "ro" ? "Adaugă masă pentru 6 persoane" : locale === "en" ? "Add table for 6" : "Добавить шестиместный стол"}
+              >
+                <span className="floor-pill-seats-icon" aria-hidden="true">6</span>
+                <span>{locale === "ro" ? "+ 6 locuri" : locale === "en" ? "+ 6 seats" : "+ 6 мест"}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="floor-actions-group templates">
+            <span className="floor-actions-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+              {locale === "ro" ? "Șabloane:" : locale === "en" ? "Presets:" : "Шаблоны:"}
+            </span>
+            <div className="floor-actions-pills">
+              <button
+                type="button"
+                className="floor-template-pill"
+                disabled={busy}
+                onClick={() => applyTemplate("small")}
+              >
+                {locale === "ro" ? "Compact S" : locale === "en" ? "Compact S" : "Компактный S"}
+              </button>
+              <button
+                type="button"
+                className="floor-template-pill"
+                disabled={busy}
+                onClick={() => applyTemplate("cafe")}
+              >
+                {locale === "ro" ? "Cafenea" : locale === "en" ? "Cafe" : "Кафе"}
+              </button>
+              <button
+                type="button"
+                className="floor-template-pill"
+                disabled={busy}
+                onClick={() => applyTemplate("hall")}
+              >
+                {locale === "ro" ? "Sală + stradă" : locale === "en" ? "Hall + street" : "Зал + улица"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -318,8 +381,13 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
               {selected.locked ? (
                 <p className="fa-muted">Стол занят/в брони — позицию можно менять, удаление недоступно</p>
               ) : (
-                <button type="button" className="floor-editor-danger" disabled={busy} onClick={removeSelected}>
-                  Удалить стол
+                <button
+                  type="button"
+                  className="panel-btn ghost sm danger floor-editor-danger"
+                  disabled={busy}
+                  onClick={removeSelected}
+                >
+                  {locale === "ro" ? "Elimină masa" : locale === "en" ? "Delete table" : "Удалить стол"}
                 </button>
               )}
             </>
