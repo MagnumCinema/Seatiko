@@ -50,7 +50,7 @@ func IsDemoGuestID(id string) bool {
 }
 
 func IsDemoUserID(id string) bool {
-	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID || id == demoStaffID
+	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID || id == demoStaffID || strings.HasPrefix(id, "user-demo-")
 }
 
 func IsDemoApplicationID(id string) bool {
@@ -571,21 +571,54 @@ func (s *MemoryStore) seed() {
 
 	staffHash, err := bcrypt.GenerateFromPassword([]byte("staff123"), bcrypt.DefaultCost)
 	if err == nil {
+		now := time.Now().UTC()
+
 		staff := models.User{
 			ID:           demoStaffID,
 			Email:        "staff@seatiko.local",
 			PasswordHash: string(staffHash),
 			FirstName:    "Анна",
-			LastName:     "Официант",
-			DisplayName:  "Анна (Персонал)",
+			LastName:     "Коваленко",
+			DisplayName:  "Анна Коваленко",
 			Phone:        "+373 68 555 444",
 			Locale:       "ru",
 			Role:         models.RoleStaff,
-			CreatedAt:    time.Now().UTC(),
-			UpdatedAt:    time.Now().UTC(),
+			CreatedAt:    now,
+			UpdatedAt:    now,
 		}
 		s.users[staff.ID] = staff
 
+		waiter2User := models.User{
+			ID:           "user-demo-waiter-2",
+			Email:        "alex.rusu@seatiko.local",
+			PasswordHash: string(staffHash),
+			FirstName:    "Alexandru",
+			LastName:     "Rusu",
+			DisplayName:  "Alexandru Rusu",
+			Phone:        "+373 69 210 345",
+			Locale:       "ro",
+			Role:         models.RoleStaff,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		s.users[waiter2User.ID] = waiter2User
+
+		cook1User := models.User{
+			ID:           "user-demo-cook-1",
+			Email:        "elena.moraru@seatiko.local",
+			PasswordHash: string(staffHash),
+			FirstName:    "Elena",
+			LastName:     "Moraru",
+			DisplayName:  "Elena Moraru",
+			Phone:        "+373 68 777 888",
+			Locale:       "ru",
+			Role:         models.RoleStaff,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		s.users[cook1User.ID] = cook1User
+
+		// 5 test waiters
 		s.staffMembers[demoStaffMemberID] = models.StaffMember{
 			ID:        demoStaffMemberID,
 			VenueID:   "venue-1",
@@ -595,31 +628,70 @@ func (s *MemoryStore) seed() {
 			Role:      models.StaffRoleWaiter,
 			Status:    models.StaffStatusActive,
 			OnShift:   true,
-			CreatedAt: time.Now().UTC(),
+			CreatedAt: now,
 		}
 
 		demoStaffMemberID2 := "staff-member-demo-2"
 		s.staffMembers[demoStaffMemberID2] = models.StaffMember{
 			ID:        demoStaffMemberID2,
 			VenueID:   "venue-1",
+			UserID:    waiter2User.ID,
 			Name:      "Alexandru Rusu",
-			Email:     "alex.rusu@seatiko.local",
+			Email:     waiter2User.Email,
 			Role:      models.StaffRoleWaiter,
 			Status:    models.StaffStatusActive,
 			OnShift:   false,
-			CreatedAt: time.Now().UTC().Add(-24 * time.Hour),
+			CreatedAt: now.Add(-24 * time.Hour),
 		}
 
+		demoStaffMemberID5 := "staff-member-demo-5"
+		s.staffMembers[demoStaffMemberID5] = models.StaffMember{
+			ID:        demoStaffMemberID5,
+			VenueID:   "venue-1",
+			Name:      "Мария Иванова",
+			Email:     "maria.ivanova@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   true,
+			CreatedAt: now.Add(-36 * time.Hour),
+		}
+
+		demoStaffMemberID6 := "staff-member-demo-6"
+		s.staffMembers[demoStaffMemberID6] = models.StaffMember{
+			ID:        demoStaffMemberID6,
+			VenueID:   "venue-1",
+			Name:      "Дмитрий Орлов",
+			Email:     "dmitry.orlov@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-40 * time.Hour),
+		}
+
+		demoStaffMemberID7 := "staff-member-demo-7"
+		s.staffMembers[demoStaffMemberID7] = models.StaffMember{
+			ID:        demoStaffMemberID7,
+			VenueID:   "venue-1",
+			Name:      "София Мельник",
+			Email:     "sofia.melnik@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-44 * time.Hour),
+		}
+
+		// 4 test cooks
 		demoStaffMemberID3 := "staff-member-demo-3"
 		s.staffMembers[demoStaffMemberID3] = models.StaffMember{
 			ID:        demoStaffMemberID3,
 			VenueID:   "venue-1",
+			UserID:    cook1User.ID,
 			Name:      "Elena Moraru",
-			Email:     "elena.moraru@seatiko.local",
+			Email:     cook1User.Email,
 			Role:      models.StaffRoleCook,
 			Status:    models.StaffStatusActive,
 			OnShift:   true,
-			CreatedAt: time.Now().UTC().Add(-48 * time.Hour),
+			CreatedAt: now.Add(-48 * time.Hour),
 		}
 
 		demoStaffMemberID4 := "staff-member-demo-4"
@@ -631,11 +703,37 @@ func (s *MemoryStore) seed() {
 			Role:      models.StaffRoleCook,
 			Status:    models.StaffStatusActive,
 			OnShift:   false,
-			CreatedAt: time.Now().UTC().Add(-72 * time.Hour),
+			CreatedAt: now.Add(-72 * time.Hour),
 		}
 
-		todayStr := time.Now().UTC().Format("2006-01-02")
-		tomorrowStr := time.Now().UTC().Add(24 * time.Hour).Format("2006-01-02")
+		demoStaffMemberID8 := "staff-member-demo-8"
+		s.staffMembers[demoStaffMemberID8] = models.StaffMember{
+			ID:        demoStaffMemberID8,
+			VenueID:   "venue-1",
+			Name:      "Артём Гроссу",
+			Email:     "artem.grossu@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   true,
+			CreatedAt: now.Add(-84 * time.Hour),
+		}
+
+		demoStaffMemberID9 := "staff-member-demo-9"
+		s.staffMembers[demoStaffMemberID9] = models.StaffMember{
+			ID:        demoStaffMemberID9,
+			VenueID:   "venue-1",
+			Name:      "Наталья Сырбу",
+			Email:     "natalia.sirbu@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-96 * time.Hour),
+		}
+
+		todayStr := now.Format("2006-01-02")
+		tomorrowStr := now.Add(24 * time.Hour).Format("2006-01-02")
+		day2Str := now.Add(48 * time.Hour).Format("2006-01-02")
+		day3Str := now.Add(72 * time.Hour).Format("2006-01-02")
 
 		s.shifts["shift-demo-1"] = models.WorkShift{
 			ID:        "shift-demo-1",
@@ -648,8 +746,8 @@ func (s *MemoryStore) seed() {
 			EndTime:   "22:00",
 			Status:    models.ShiftStatusConfirmed,
 			Note:      "Основной зал",
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		s.shifts["shift-demo-2"] = models.WorkShift{
@@ -663,8 +761,8 @@ func (s *MemoryStore) seed() {
 			EndTime:   "23:00",
 			Status:    models.ShiftStatusPending,
 			Note:      "Вечерняя смена / терраса",
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		s.shifts["shift-demo-3"] = models.WorkShift{
@@ -678,8 +776,8 @@ func (s *MemoryStore) seed() {
 			EndTime:   "18:00",
 			Status:    models.ShiftStatusConfirmed,
 			Note:      "Шеф / горячий цех",
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		s.shifts["shift-demo-4"] = models.WorkShift{
@@ -693,8 +791,219 @@ func (s *MemoryStore) seed() {
 			EndTime:   "23:00",
 			Status:    models.ShiftStatusPending,
 			Note:      "Холодный цех / заготовки",
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-5"] = models.WorkShift{
+			ID:        "shift-demo-5",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID,
+			StaffName: staff.DisplayName,
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-6"] = models.WorkShift{
+			ID:        "shift-demo-6",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID5,
+			StaffName: "Мария Иванова",
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "08:00",
+			EndTime:   "16:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Утренний сервис",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-7"] = models.WorkShift{
+			ID:        "shift-demo-7",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID6,
+			StaffName: "Дмитрий Орлов",
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusSwapRequested,
+			Reason:    "Заболел, высокая температура — прошу найти замену",
+			Note:      "Терраса и бар",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-8"] = models.WorkShift{
+			ID:        "shift-demo-8",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID3,
+			StaffName: "Elena Moraru",
+			Role:      models.StaffRoleCook,
+			Date:      tomorrowStr,
+			StartTime: "09:00",
+			EndTime:   "18:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Шеф / горячий цех",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-9"] = models.WorkShift{
+			ID:        "shift-demo-9",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID8,
+			StaffName: "Артём Гроссу",
+			Role:      models.StaffRoleCook,
+			Date:      tomorrowStr,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Гриль и мангал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-10"] = models.WorkShift{
+			ID:        "shift-demo-10",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID,
+			StaffName: staff.DisplayName,
+			Role:      models.StaffRoleWaiter,
+			Date:      day2Str,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-11"] = models.WorkShift{
+			ID:        "shift-demo-11",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID7,
+			StaffName: "София Мельник",
+			Role:      models.StaffRoleWaiter,
+			Date:      day2Str,
+			StartTime: "08:00",
+			EndTime:   "16:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Завтраки и бизнес-ланчи",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-12"] = models.WorkShift{
+			ID:        "shift-demo-12",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID5,
+			StaffName: "Мария Иванова",
+			Role:      models.StaffRoleWaiter,
+			Date:      day2Str,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Вечерний сервис",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-13"] = models.WorkShift{
+			ID:        "shift-demo-13",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID9,
+			StaffName: "Наталья Сырбу",
+			Role:      models.StaffRoleCook,
+			Date:      day2Str,
+			StartTime: "08:00",
+			EndTime:   "16:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Кондитерский цех и выпечка",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-14"] = models.WorkShift{
+			ID:        "shift-demo-14",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID8,
+			StaffName: "Артём Гроссу",
+			Role:      models.StaffRoleCook,
+			Date:      day2Str,
+			StartTime: "12:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusDeclined,
+			Note:      "Горячий цех",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-15"] = models.WorkShift{
+			ID:        "shift-demo-15",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID2,
+			StaffName: "Alexandru Rusu",
+			Role:      models.StaffRoleWaiter,
+			Date:      day3Str,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-16"] = models.WorkShift{
+			ID:        "shift-demo-16",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID7,
+			StaffName: "София Мельник",
+			Role:      models.StaffRoleWaiter,
+			Date:      day3Str,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Терраса",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-17"] = models.WorkShift{
+			ID:        "shift-demo-17",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID3,
+			StaffName: "Elena Moraru",
+			Role:      models.StaffRoleCook,
+			Date:      day3Str,
+			StartTime: "09:00",
+			EndTime:   "18:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Шеф-повар",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-18"] = models.WorkShift{
+			ID:        "shift-demo-18",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID4,
+			StaffName: "Mihail Ceban",
+			Role:      models.StaffRoleCook,
+			Date:      day3Str,
+			StartTime: "12:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Холодный цех",
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 	}
 }

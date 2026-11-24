@@ -229,10 +229,25 @@ func (s *MemoryStore) ensureDemoUsersLocked() {
 	}
 
 	for staffID, member := range demo.staffMembers {
-		if _, exists := s.staffMembers[staffID]; !exists {
+		if existing, exists := s.staffMembers[staffID]; !exists {
 			s.staffMembers[staffID] = member
 			changed = true
 			log.Printf("seeded missing demo staff member %s for venue %s", staffID, member.VenueID)
+		} else {
+			updated := false
+			if existing.Name == "" && member.Name != "" {
+				existing.Name = member.Name
+				updated = true
+			}
+			if existing.UserID == "" && member.UserID != "" {
+				existing.UserID = member.UserID
+				updated = true
+			}
+			if updated {
+				s.staffMembers[staffID] = existing
+				changed = true
+				log.Printf("backfilled profile for demo staff member %s", staffID)
+			}
 		}
 	}
 

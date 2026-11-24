@@ -582,6 +582,15 @@ func (s *MemoryStore) ListStaff(ownerID, venueID string) ([]models.StaffMember, 
 			out = append(out, member)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Role != out[j].Role {
+			return out[i].Role < out[j].Role
+		}
+		if out[i].Name != out[j].Name {
+			return out[i].Name < out[j].Name
+		}
+		return out[i].ID < out[j].ID
+	})
 	return out, nil
 }
 
