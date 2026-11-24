@@ -1095,9 +1095,11 @@ export type StaffMember = {
   id: string;
   venue_id: string;
   user_id?: string;
+  name?: string;
   email: string;
   role: string;
   status: string;
+  on_shift?: boolean;
   created_at: string;
 };
 
@@ -1211,10 +1213,11 @@ export async function fetchVenueAnalytics(
 export async function inviteVenueStaff(
   venueId: string,
   email: string,
+  name?: string,
 ): Promise<StaffMember> {
   const data = await apiFetch<{ staff: StaffMember }>(
     `/api/v1/restaurant/venues/${venueId}/staff/invite`,
-    { method: "POST", body: { email } },
+    { method: "POST", body: { email, name } },
   );
   return data.staff;
 }
@@ -1224,6 +1227,28 @@ export async function listVenueStaff(venueId: string): Promise<StaffMember[]> {
     `/api/v1/restaurant/venues/${venueId}/staff`,
   );
   return data.staff ?? [];
+}
+
+export async function removeVenueStaff(
+  venueId: string,
+  staffId: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(
+    `/api/v1/restaurant/venues/${venueId}/staff/${staffId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function toggleVenueStaffShift(
+  venueId: string,
+  staffId: string,
+  onShift?: boolean,
+): Promise<StaffMember> {
+  const data = await apiFetch<{ staff: StaffMember }>(
+    `/api/v1/restaurant/venues/${venueId}/staff/${staffId}/shift`,
+    { method: "POST", body: { on_shift: onShift } },
+  );
+  return data.staff;
 }
 
 export async function staffListWaiterCalls(venueId: string) {

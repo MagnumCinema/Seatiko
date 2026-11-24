@@ -176,6 +176,8 @@ func newRouter(api *handlers.API) *gin.Engine {
 				restaurant.GET("/venues/:venueId/analytics", api.GetVenueAnalytics)
 				restaurant.POST("/venues/:venueId/staff/invite", api.InviteVenueStaff)
 				restaurant.GET("/venues/:venueId/staff", api.ListVenueStaff)
+				restaurant.DELETE("/venues/:venueId/staff/:staffId", api.RemoveVenueStaff)
+				restaurant.POST("/venues/:venueId/staff/:staffId/shift", api.ToggleStaffShift)
 			}
 
 			admin := authed.Group("/admin")

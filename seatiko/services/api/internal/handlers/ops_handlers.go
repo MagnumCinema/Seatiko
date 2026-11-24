@@ -95,19 +95,34 @@ func (a *API) GetVenueAnalytics(c *gin.Context) {
 
 func (a *API) InviteVenueStaff(c *gin.Context) {
 	var req struct {
+		Name  string `json:"name"`
 		Email string `json:"email" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
 		return
 	}
-	member, err := a.Store.InviteStaff(a.userID(c), c.Param("venueId"), req.Email)
+	member, err := a.Store.InviteStaff(a.userID(c), c.Param("venueId"), req.Email, req.Name)
 	writeOpsResult(c, err, gin.H{"staff": member}, http.StatusCreated)
 }
 
 func (a *API) ListVenueStaff(c *gin.Context) {
 	members, err := a.Store.ListStaff(a.userID(c), c.Param("venueId"))
 	writeOpsResult(c, err, gin.H{"staff": members}, http.StatusOK)
+}
+
+func (a *API) RemoveVenueStaff(c *gin.Context) {
+	err := a.Store.RemoveStaff(a.userID(c), c.Param("venueId"), c.Param("staffId"))
+	writeOpsResult(c, err, gin.H{"ok": true}, http.StatusOK)
+}
+
+func (a *API) ToggleStaffShift(c *gin.Context) {
+	var req struct {
+		OnShift *bool `json:"on_shift"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	member, err := a.Store.ToggleStaffShift(a.userID(c), c.Param("venueId"), c.Param("staffId"), req.OnShift)
+	writeOpsResult(c, err, gin.H{"staff": member}, http.StatusOK)
 }
 
 func (a *API) AcceptStaffInvite(c *gin.Context) {

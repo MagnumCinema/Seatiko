@@ -417,7 +417,7 @@ func (s *MemoryStore) VenueAnalytics(ownerID, venueID string) (models.VenueAnaly
 	return analytics, nil
 }
 
-func (s *MemoryStore) InviteStaff(ownerID, venueID, email string) (models.StaffMember, error) {
+func (s *MemoryStore) InviteStaff(ownerID, venueID, email string, name ...string) (models.StaffMember, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	defer s.persistBestEffortLocked()
@@ -429,17 +429,26 @@ func (s *MemoryStore) InviteStaff(ownerID, venueID, email string) (models.StaffM
 	if email == "" {
 		return models.StaffMember{}, ErrBadRequest
 	}
+	staffName := ""
+	if len(name) > 0 && strings.TrimSpace(name[0]) != "" {
+		staffName = strings.TrimSpace(name[0])
+	}
 	member := models.StaffMember{
 		ID:        uuid.NewString(),
 		VenueID:   venueID,
+		Name:      staffName,
 		Email:     email,
 		Role:      models.StaffRoleWaiter,
 		Status:    models.StaffStatusInvited,
+		OnShift:   false,
 		CreatedAt: time.Now().UTC(),
 	}
 	for _, user := range s.users {
 		if strings.EqualFold(user.Email, email) {
 			member.UserID = user.ID
+			if member.Name == "" && user.DisplayName != "" {
+				member.Name = user.DisplayName
+			}
 			member.Status = models.StaffStatusActive
 			user.Role = models.RoleStaff
 			user.UpdatedAt = time.Now().UTC()
@@ -448,6 +457,43 @@ func (s *MemoryStore) InviteStaff(ownerID, venueID, email string) (models.StaffM
 		}
 	}
 	s.staffMembers[member.ID] = member
+	return member, nil
+}
+
+func (s *MemoryStore) RemoveStaff(ownerID, venueID, staffID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
+		return ErrForbidden
+	}
+	member, ok := s.staffMembers[staffID]
+	if !ok || member.VenueID != venueID {
+		return ErrNotFound
+	}
+	delete(s.staffMembers, staffID)
+	return nil
+}
+
+func (s *MemoryStore) ToggleStaffShift(ownerID, venueID, staffID string, onShift *bool) (models.StaffMember, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
+		return models.StaffMember{}, ErrForbidden
+	}
+	member, ok := s.staffMembers[staffID]
+	if !ok || member.VenueID != venueID {
+		return models.StaffMember{}, ErrNotFound
+	}
+	if onShift != nil {
+		member.OnShift = *onShift
+	} else {
+		member.OnShift = !member.OnShift
+	}
+	s.staffMembers[staffID] = member
 	return member, nil
 }
 
@@ -460,6 +506,11 @@ func (s *MemoryStore) ListStaff(ownerID, venueID string) ([]models.StaffMember, 
 	out := make([]models.StaffMember, 0)
 	for _, member := range s.staffMembers {
 		if member.VenueID == venueID {
+			if member.Name == "" && member.UserID != "" {
+				if u, ok := s.users[member.UserID]; ok && u.DisplayName != "" {
+					member.Name = u.DisplayName
+				}
+			}
 			out = append(out, member)
 		}
 	}

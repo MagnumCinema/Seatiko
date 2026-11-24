@@ -104,9 +104,11 @@ type StaffMember struct {
 	ID        string    `json:"id"`
 	VenueID   string    `json:"venue_id"`
 	UserID    string    `json:"user_id,omitempty"`
+	Name      string    `json:"name,omitempty"`
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
 	Status    string    `json:"status"`
+	OnShift   bool      `json:"on_shift"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

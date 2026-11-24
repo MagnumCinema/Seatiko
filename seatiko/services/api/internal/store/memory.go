@@ -588,10 +588,24 @@ func (s *MemoryStore) seed() {
 			ID:        demoStaffMemberID,
 			VenueID:   "venue-1",
 			UserID:    staff.ID,
+			Name:      staff.DisplayName,
 			Email:     staff.Email,
 			Role:      models.StaffRoleWaiter,
 			Status:    models.StaffStatusActive,
+			OnShift:   true,
 			CreatedAt: time.Now().UTC(),
+		}
+
+		demoStaffMemberID2 := "staff-member-demo-2"
+		s.staffMembers[demoStaffMemberID2] = models.StaffMember{
+			ID:        demoStaffMemberID2,
+			VenueID:   "venue-1",
+			Name:      "Alexandru Rusu",
+			Email:     "alex.rusu@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: time.Now().UTC().Add(-24 * time.Hour),
 		}
 	}
 }

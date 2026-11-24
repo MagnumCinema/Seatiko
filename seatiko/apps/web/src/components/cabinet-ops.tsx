@@ -24,8 +24,10 @@ import {
   mediaUrl,
   pickLocale,
   regenerateVenueQR,
+  removeVenueStaff,
   replaceVenueTables,
   stopOwnerMenuItem,
+  toggleVenueStaffShift,
   updateOwnerMenuItem,
   upsertOwnerMenuItem,
   type MenuItem,
@@ -304,6 +306,7 @@ export function CabinetStaffPanel({ venueId }: Props) {
   const copy = getSiteCopy(locale).cabinet;
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [analytics, setAnalytics] = useState<VenueAnalytics | null>(null);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -394,7 +397,7 @@ export function CabinetStaffPanel({ venueId }: Props) {
               </p>
             </div>
           </div>
-          <div className="owner-metrics" style={{ margin: 0 }}>
+          <div className="owner-metrics">
             <article>
               <span>{locale === "ro" ? "Total mese" : locale === "en" ? "Total tables" : "Всего столов"}</span>
               <strong>{analytics.total_tables}</strong>
@@ -426,41 +429,141 @@ export function CabinetStaffPanel({ venueId }: Props) {
             </p>
           </div>
         </div>
-        <div className="cabinet-ops-row">
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={copy.opsStaffPlaceholder}
-            type="email"
-            inputMode="email"
-            className="cabinet-staff-input"
-          />
-          <button
-            type="button"
-            className="panel-btn"
-            disabled={busy || !email.trim()}
-            onClick={() =>
-              run(async () => {
-                await inviteVenueStaff(venueId, email.trim());
-                setEmail("");
-              }, locale === "ro" ? "Invitația a fost expediată" : locale === "en" ? "Invitation sent" : "Приглашение отправлено")
-            }
-          >
-            {copy.opsStaffInvite}
-          </button>
-        </div>
-        <ul className="cabinet-staff-list">
+
+        <form
+          className="cabinet-staff-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!email.trim()) return;
+            void run(async () => {
+              const created = await inviteVenueStaff(venueId, email.trim(), name.trim());
+              setStaff((prev) => [...prev, created]);
+              setEmail("");
+              setName("");
+            }, locale === "ro" ? "Invitația a fost expediată" : locale === "en" ? "Invitation sent" : "Приглашение отправлено");
+          }}
+        >
+          <div className="cabinet-ops-inputs-grid">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={locale === "ro" ? "Nume și prenume chelner" : locale === "en" ? "Waiter full name" : "Имя и фамилия официанта"}
+              type="text"
+              className="cabinet-staff-input"
+            />
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={copy.opsStaffPlaceholder}
+              type="email"
+              inputMode="email"
+              required
+              className="cabinet-staff-input"
+            />
+            <button
+              type="submit"
+              className="panel-btn"
+              disabled={busy || !email.trim()}
+            >
+              {copy.opsStaffInvite}
+            </button>
+          </div>
+        </form>
+
+        <ul className="cabinet-staff-cards-list">
           {staff.length === 0 ? (
-            <li className="fa-muted" style={{ padding: "12px 14px", border: "1px dashed var(--site-border)", borderRadius: 9 }}>
-              {locale === "ro" ? "Niciun membru al personalului adăugat încă" : locale === "en" ? "No staff members added yet" : "Сотрудники пока не добавлены"}
+            <li className="cabinet-staff-empty fa-muted">
+              {locale === "ro"
+                ? "Niciun membru al personalului adăugat încă"
+                : locale === "en"
+                ? "No staff members added yet"
+                : "Сотрудники пока не добавлены"}
             </li>
           ) : (
-            staff.map((member) => (
-              <li key={member.id}>
-                <strong>{member.email}</strong>
-                <span>· {member.role} · {member.status}</span>
-              </li>
-            ))
+            staff.map((member) => {
+              const displayName = member.name?.trim() || member.email.split("@")[0];
+              const isOnShift = member.on_shift ?? (member.status === "ACTIVE");
+              return (
+                <li key={member.id} className="cabinet-staff-card">
+                  <div className="cabinet-staff-card-left">
+                    <span className="cabinet-staff-avatar" aria-hidden="true">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </span>
+                    <div className="cabinet-staff-info">
+                      <div className="cabinet-staff-name-row">
+                        <strong className="cabinet-staff-name">{displayName}</strong>
+                        <span className={`cabinet-staff-shift-pill ${isOnShift ? "on-shift" : "off-shift"}`}>
+                          <span className="cabinet-staff-shift-dot" />
+                          {isOnShift
+                            ? (locale === "ro" ? "În tură" : locale === "en" ? "On shift" : "На смене")
+                            : (locale === "ro" ? "În afara turei" : locale === "en" ? "Off shift" : "Не на смене")}
+                        </span>
+                      </div>
+                      <span className="cabinet-staff-email">{member.email}</span>
+                      <small className="cabinet-staff-meta">
+                        {member.role === "admin"
+                          ? (locale === "ro" ? "Administrator" : locale === "en" ? "Manager" : "Администратор")
+                          : (locale === "ro" ? "Ospătar" : locale === "en" ? "Waiter" : "Официант")}
+                        {" · "}
+                        {member.status === "ACTIVE"
+                          ? (locale === "ro" ? "Activ" : locale === "en" ? "Active" : "Активен")
+                          : (locale === "ro" ? "Invitație trimisă" : locale === "en" ? "Invited" : "Приглашён")}
+                      </small>
+                    </div>
+                  </div>
+
+                  <div className="cabinet-staff-card-actions">
+                    <button
+                      type="button"
+                      className={`panel-btn ghost sm ${isOnShift ? "shift-active" : ""}`}
+                      disabled={busy}
+                      title={
+                        isOnShift
+                          ? (locale === "ro" ? "Încheie tura" : locale === "en" ? "End shift" : "Завершить смену")
+                          : (locale === "ro" ? "Deschide tura" : locale === "en" ? "Start shift" : "Выйти на смену")
+                      }
+                      onClick={() =>
+                        run(async () => {
+                          const updated = await toggleVenueStaffShift(venueId, member.id, !isOnShift);
+                          setStaff((prev) =>
+                            prev.map((s) => (s.id === member.id ? { ...s, on_shift: updated.on_shift } : s)),
+                          );
+                        }, !isOnShift
+                          ? (locale === "ro" ? "Chelnerul a intrat în tură" : locale === "en" ? "Waiter entered shift" : "Официант вышел на смену")
+                          : (locale === "ro" ? "Tura a fost încheiată" : locale === "en" ? "Shift ended" : "Смена завершена"))
+                      }
+                    >
+                      {isOnShift
+                        ? (locale === "ro" ? "Încheie tura" : locale === "en" ? "End shift" : "Завершить смену")
+                        : (locale === "ro" ? "Deschide tura" : locale === "en" ? "Start shift" : "Выйти на смену")}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="panel-btn ghost sm danger cabinet-staff-delete-btn"
+                      disabled={busy}
+                      title={locale === "ro" ? "Elimină personalul" : locale === "en" ? "Remove staff member" : "Удалить сотрудника"}
+                      onClick={() => {
+                        const confirmMsg =
+                          locale === "ro"
+                            ? `Sigur doriți să eliminați ${displayName}?`
+                            : locale === "en"
+                            ? `Are you sure you want to remove ${displayName}?`
+                            : `Удалить сотрудника ${displayName}?`;
+                        if (!window.confirm(confirmMsg)) return;
+
+                        void run(async () => {
+                          await removeVenueStaff(venueId, member.id);
+                          setStaff((prev) => prev.filter((s) => s.id !== member.id));
+                        }, locale === "ro" ? "Personalul a fost eliminat" : locale === "en" ? "Staff member removed" : "Сотрудник удалён");
+                      }}
+                    >
+                      {locale === "ro" ? "Elimină" : locale === "en" ? "Remove" : "Удалить"}
+                    </button>
+                  </div>
+                </li>
+              );
+            })
           )}
         </ul>
       </section>
