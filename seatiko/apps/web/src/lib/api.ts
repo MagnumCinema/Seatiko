@@ -548,6 +548,47 @@ export async function fetchVenueSchedule(
   return data.slots ?? [];
 }
 
+export type ApiAvailabilitySlot = { starts_at: string; table_id: string; table_number: number };
+
+/** One venue's answer from GET /availability (server-side free table search). */
+export type ApiVenueAvailability = {
+  venue_id: string;
+  duration_min: number;
+  fits: boolean;
+  exact: boolean;
+  slots: ApiAvailabilitySlot[];
+  later_today?: ApiAvailabilitySlot[];
+};
+
+/** Venues with a free table for `guests` around `at` (or the earliest that `date`), best match first. */
+export async function fetchAvailability(
+  params: {
+    cityId?: string;
+    /** Wanted start; omit for "as soon as possible". */
+    at?: Date | null;
+    /** Local day YYYY-MM-DD, used when `at` is omitted. */
+    date?: string;
+    guests: number;
+    durationMin: number;
+    limit?: number;
+  },
+  signal?: AbortSignal,
+): Promise<ApiVenueAvailability[]> {
+  const data = await apiFetch<{ venues: ApiVenueAvailability[] }>("/api/v1/availability", {
+    auth: false,
+    signal,
+    query: {
+      city_id: params.cityId ?? "city-balti",
+      at: params.at ? params.at.toISOString() : undefined,
+      date: params.at ? undefined : params.date,
+      guests: params.guests,
+      duration_min: params.durationMin,
+      limit: params.limit,
+    },
+  });
+  return data.venues ?? [];
+}
+
 export async function fetchMenu(venueId: string): Promise<MenuItem[]> {
   const data = await apiFetch<{ items?: MenuItem[]; menu?: MenuItem[] }>(
     `/api/v1/venues/${venueId}/menu`,

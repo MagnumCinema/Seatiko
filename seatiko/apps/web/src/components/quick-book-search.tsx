@@ -4,21 +4,19 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  fetchAvailability,
   fetchTables,
-  fetchVenueSchedule,
   fetchVenues,
   pickLocale,
+  type ApiVenueAvailability,
   type Table,
   type Venue,
-  type VenueScheduleSlot,
 } from "@/lib/api";
-import { addLocalDays, parseOpeningHours, startOfLocalDay } from "@/lib/booking-slots";
+import { addLocalDays, startOfLocalDay } from "@/lib/booking-slots";
 import { venueBookingHref } from "@/lib/booking-link";
 import { matchesVenueQuery } from "@/lib/venue-filters";
 import { emptyKind, partitionQuickBookResults } from "@/lib/quick-book-partition";
-import { getVenueHours } from "@/lib/venue-hours";
-import { resolveBookingRules } from "@/lib/venue-rules";
-import { availabilityRank, venueAvailability, type VenueAvailability } from "@/lib/venue-availability";
+import { fromApiAvailability } from "@/lib/venue-availability";
 import { getSiteCopy } from "@/lib/site-copy";
 import { BookingPopup } from "@/components/booking-popup";
 import { QuickBookEmpty } from "@/components/quick-book-empty";
@@ -36,7 +34,6 @@ const TIME_OPTIONS = Array.from({ length: 27 }, (_, i) => {
 });
 const REFRESH_MS = 60_000;
 
-type VenueData = { tables: Table[]; schedule: VenueScheduleSlot[] };
 type Query = { guests: number; day: number; time: string; duration: number; text: string };
 type PopupState = { venue: Venue; time: string | null; durationMin: number; nonce: number };
 
@@ -74,7 +71,8 @@ export function QuickBookSearch() {
   const [query, setQuery] = useState<Query>(() => readQuery(searchParams));
   const [now, setNow] = useState(() => new Date());
   const [venues, setVenues] = useState<Venue[]>([]);
-  const [data, setData] = useState<Record<string, VenueData>>({});
+  const [found, setFound] = useState<ApiVenueAvailability[]>([]);
+  const [tablesByVenue, setTablesByVenue] = useState<Record<string, Table[]>>({});
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -83,27 +81,11 @@ export function QuickBookSearch() {
   useEffect(() => {
     let alive = true;
     fetchVenues("city-balti")
-      .then(async (list) => {
-        const entries = await Promise.all(
-          list.map(async (venue) => {
-            const [tables, schedule] = await Promise.all([
-              fetchTables(venue.id).catch(() => [] as Table[]),
-              fetchVenueSchedule(venue.id).catch(() => [] as VenueScheduleSlot[]),
-            ]);
-            return [venue.id, { tables, schedule }] as const;
-          }),
-        );
-        if (!alive) return;
-        setVenues(list);
-        setData(Object.fromEntries(entries));
-        setFailed(false);
-        setNow(new Date());
+      .then((list) => {
+        if (alive) setVenues(list);
       })
       .catch(() => {
         if (alive) setFailed(true);
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
       });
     return () => {
       alive = false;
@@ -128,26 +110,46 @@ export function QuickBookSearch() {
     return new Date(searchDay.getFullYear(), searchDay.getMonth(), searchDay.getDate(), h, m);
   }, [searchDay, query.time]);
 
-  const results = useMemo(() => {
-    return venues
-      .map((venue) => {
-        const venueData = data[venue.id] ?? { tables: [], schedule: [] };
-        const input = {
-          rules: resolveBookingRules(venue),
-          hours: parseOpeningHours(getVenueHours(venue.id, "ru")),
-          tables: venueData.tables,
-          schedule: venueData.schedule,
-        };
-        const base = { day: searchDay, now, guests: query.guests, durationMin: query.duration };
-        const availability: VenueAvailability = venueAvailability({ ...input, query: { ...base, target } });
-        const laterToday =
-          target && availability.fits && availability.slots.length === 0
-            ? venueAvailability({ ...input, query: { ...base, target: null } })
-            : null;
-        return { venue, availability, laterToday, rank: availabilityRank(availability, target) };
+  // One server call answers the whole search (GET /availability); refetched when the query changes.
+  useEffect(() => {
+    const controller = new AbortController();
+    const date = `${searchDay.getFullYear()}-${String(searchDay.getMonth() + 1).padStart(2, "0")}-${String(searchDay.getDate()).padStart(2, "0")}`;
+    fetchAvailability(
+      { cityId: "city-balti", at: target, date, guests: query.guests, durationMin: query.duration },
+      controller.signal,
+    )
+      .then((list) => {
+        setFound(list);
+        setFailed(false);
       })
-      .sort((a, b) => a.rank - b.rank || b.venue.rating - a.venue.rating);
-  }, [venues, data, searchDay, now, query.guests, query.duration, target]);
+      .catch((err: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error(err);
+          setFailed(true);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [searchDay, target, query.guests, query.duration, reloadKey]);
+
+  const results = useMemo(() => {
+    const byId = new Map(venues.map((venue) => [venue.id, venue]));
+    return found.flatMap((api, index) => {
+      const venue = byId.get(api.venue_id);
+      if (!venue) return [];
+      return [{ venue, ...fromApiAvailability(api, target), rank: index }];
+    });
+  }, [venues, found, target]);
+
+  function openPopup(next: Omit<PopupState, "nonce">) {
+    setPopup({ ...next, nonce: Date.now() });
+    if (tablesByVenue[next.venue.id]) return;
+    fetchTables(next.venue.id)
+      .catch(() => [] as Table[])
+      .then((tables) => setTablesByVenue((prev) => ({ ...prev, [next.venue.id]: tables })));
+  }
 
   const searching = query.text.trim().length > 0;
   const textMatchIds = searching
@@ -269,12 +271,8 @@ export function QuickBookSearch() {
                 dayLabel={dayLabel(query.day)}
                 target={target}
                 cuisineLabels={cuisineLabels}
-                onPickSlot={(time, durationMin) =>
-                  setPopup({ venue: row.venue, time, durationMin, nonce: Date.now() })
-                }
-                onPickOtherDay={(durationMin) =>
-                  setPopup({ venue: row.venue, time: null, durationMin, nonce: Date.now() })
-                }
+                onPickSlot={(time, durationMin) => openPopup({ venue: row.venue, time, durationMin })}
+                onPickOtherDay={(durationMin) => openPopup({ venue: row.venue, time: null, durationMin })}
               />
             ))}
           </div>
@@ -304,12 +302,12 @@ export function QuickBookSearch() {
         </>
       )}
 
-      {popup ? (
+      {popup && tablesByVenue[popup.venue.id] ? (
         <BookingPopup
           key={`${popup.venue.id}-${popup.nonce}`}
           venue={popup.venue}
           table={null}
-          tables={data[popup.venue.id]?.tables ?? []}
+          tables={tablesByVenue[popup.venue.id]}
           open
           onClose={() => setPopup(null)}
           onBooked={() => setReloadKey((key) => key + 1)}

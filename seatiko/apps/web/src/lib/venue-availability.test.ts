@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availabilityRank, venueAvailability, venueDuration } from "./venue-availability";
+import { availabilityRank, fromApiAvailability, venueAvailability, venueDuration } from "./venue-availability";
 import { DEFAULT_BOOKING_RULES } from "./venue-rules";
 
 const day = new Date(2026, 10, 12);
@@ -125,5 +125,39 @@ describe("availabilityRank", () => {
     const none = { durationMin: 90, fits: true, exact: null, slots: [] };
     expect(availabilityRank(exact, target)).toBe(0);
     expect(availabilityRank(none, target)).toBe(Number.POSITIVE_INFINITY);
+  });
+});
+
+describe("fromApiAvailability", () => {
+  const slot = (d: Date, table = "t2") => ({ starts_at: d.toISOString(), table_id: table, table_number: 1 });
+
+  it("maps slots and marks the exact match", () => {
+    const { availability, laterToday } = fromApiAvailability(
+      { venue_id: "v", duration_min: 90, fits: true, exact: true, slots: [slot(at(18, 30)), slot(at(19), "t4")] },
+      at(19),
+    );
+    expect(availability.durationMin).toBe(90);
+    expect(availability.slots.map((s) => s.tableId)).toEqual(["t2", "t4"]);
+    expect(availability.exact?.start.getTime()).toBe(at(19).getTime());
+    expect(laterToday).toBeNull();
+  });
+
+  it("offers later_today only when nothing is near the wanted time", () => {
+    const { availability, laterToday } = fromApiAvailability(
+      { venue_id: "v", duration_min: 90, fits: true, exact: false, slots: [], later_today: [slot(at(21))] },
+      at(12),
+    );
+    expect(availability.slots).toEqual([]);
+    expect(availability.exact).toBeNull();
+    expect(laterToday?.slots[0].start.getTime()).toBe(at(21).getTime());
+  });
+
+  it("keeps too-small venues as not fitting", () => {
+    const { availability, laterToday } = fromApiAvailability(
+      { venue_id: "v", duration_min: 90, fits: false, exact: false, slots: [] },
+      null,
+    );
+    expect(availability.fits).toBe(false);
+    expect(laterToday).toBeNull();
   });
 });

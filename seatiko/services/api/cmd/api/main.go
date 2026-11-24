@@ -81,6 +81,7 @@ func newRouter(api *handlers.API) *gin.Engine {
 		v1.POST("/integrations/twenty/webhook", api.TwentyWebhook)
 		v1.GET("/cities", api.ListCities)
 		v1.GET("/venues", api.ListVenues)
+		v1.GET("/availability", auth.RateLimitMiddleware(60, time.Minute), api.SearchAvailability)
 		v1.GET("/map/config", api.GetMapConfig)
 		v1.GET("/map/places", auth.RateLimitMiddleware(30, time.Minute), api.ListMapPlaces)
 		v1.GET("/places/photo", api.PlacePhoto)
