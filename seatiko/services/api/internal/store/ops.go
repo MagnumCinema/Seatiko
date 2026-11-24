@@ -47,8 +47,10 @@ type BookingRulesInput struct {
 
 func (s *MemoryStore) ownerCanManageVenueLocked(ownerID, venueID string) bool {
 	for _, app := range s.applications {
-		if app.OwnerUserID == ownerID && app.VenueID != nil && *app.VenueID == venueID && app.Status == models.AppPublished {
-			return true
+		if app.OwnerUserID == ownerID {
+			if (app.VenueID != nil && *app.VenueID == venueID) || app.ID == venueID {
+				return true
+			}
 		}
 	}
 	return false
@@ -84,7 +86,10 @@ func (s *MemoryStore) ReplaceTablesLayout(ownerID, venueID string, layout []Tabl
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return nil, ErrForbidden
 	}
-	if _, ok := s.venues[venueID]; !ok {
+	venueID = s.resolveVenueIDLocked(venueID)
+	_, hasVenue := s.venues[venueID]
+	_, hasApp := s.applications[venueID]
+	if !hasVenue && !hasApp {
 		return nil, ErrNotFound
 	}
 	if len(layout) == 0 {
@@ -177,6 +182,7 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return models.MenuItem{}, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	if strings.TrimSpace(input.Name.RU) == "" && strings.TrimSpace(input.Name.EN) == "" && strings.TrimSpace(input.Name.RO) == "" {
 		return models.MenuItem{}, ErrBadRequest
 	}
@@ -237,6 +243,7 @@ func (s *MemoryStore) DeleteMenuItem(ownerID, venueID, itemID string) error {
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	item, ok := s.menuItems[itemID]
 	if !ok || item.VenueID != venueID {
 		return ErrNotFound
@@ -253,6 +260,7 @@ func (s *MemoryStore) SetMenuStopped(ownerID, venueID, itemID string, stopped bo
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return models.MenuItem{}, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	item, ok := s.menuItems[itemID]
 	if !ok || item.VenueID != venueID {
 		return models.MenuItem{}, ErrNotFound
@@ -270,6 +278,7 @@ func (s *MemoryStore) EnsureTableQRTokens(ownerID, venueID string) ([]models.Tab
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return nil, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	out := make([]models.Table, 0)
 	for id, table := range s.tables {
 		if table.VenueID != venueID {
@@ -295,6 +304,7 @@ func (s *MemoryStore) ListMenuForOwner(ownerID, venueID string) ([]models.MenuIt
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return nil, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	out := make([]models.MenuItem, 0)
 	for _, m := range s.menuItems {
 		if m.VenueID == venueID {
@@ -312,6 +322,7 @@ func (s *MemoryStore) RegenerateTableQRTokens(ownerID, venueID string) ([]models
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return nil, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	out := make([]models.Table, 0)
 	for id, table := range s.tables {
 		if table.VenueID != venueID {
@@ -337,39 +348,82 @@ func (s *MemoryStore) UpdateVenueBookingRules(ownerID, venueID string, input Boo
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return models.Venue{}, ErrForbidden
 	}
-	venue, ok := s.venues[venueID]
+	targetID := s.resolveVenueIDLocked(venueID)
+	venue, ok := s.venues[targetID]
+	if ok {
+		if input.BookingIntervalMin != nil {
+			venue.BookingIntervalMin = *input.BookingIntervalMin
+		}
+		if input.HoldMinutes != nil {
+			venue.HoldMinutes = *input.HoldMinutes
+		}
+		if input.AllowPreorder != nil {
+			venue.AllowPreorder = *input.AllowPreorder
+		}
+		if input.SessionStartBeforeMin != nil {
+			venue.SessionStartBeforeMin = *input.SessionStartBeforeMin
+		}
+		if input.ReleaseBeforeMin != nil {
+			venue.ReleaseBeforeMin = *input.ReleaseBeforeMin
+		}
+		if input.MaxLateArrivalMin != nil {
+			venue.MaxLateArrivalMin = *input.MaxLateArrivalMin
+		}
+		if input.VisitDurationMin != nil {
+			venue.VisitDurationMin = *input.VisitDurationMin
+		}
+		if input.MaxVisitDurationMin != nil {
+			venue.MaxVisitDurationMin = *input.MaxVisitDurationMin
+		}
+		if err := validateBookingRules(venue); err != nil {
+			return models.Venue{}, err
+		}
+		s.venues[targetID] = venue
+		return venue, nil
+	}
+
+	app, ok := s.applications[targetID]
 	if !ok {
 		return models.Venue{}, ErrNotFound
 	}
+	draftVenue := s.venueFromApplicationLocked(app)
 	if input.BookingIntervalMin != nil {
-		venue.BookingIntervalMin = *input.BookingIntervalMin
+		draftVenue.BookingIntervalMin = *input.BookingIntervalMin
+		app.BookingIntervalMin = *input.BookingIntervalMin
 	}
 	if input.HoldMinutes != nil {
-		venue.HoldMinutes = *input.HoldMinutes
+		draftVenue.HoldMinutes = *input.HoldMinutes
+		app.HoldMinutes = *input.HoldMinutes
 	}
 	if input.AllowPreorder != nil {
-		venue.AllowPreorder = *input.AllowPreorder
+		draftVenue.AllowPreorder = *input.AllowPreorder
+		app.AllowPreorder = *input.AllowPreorder
 	}
 	if input.SessionStartBeforeMin != nil {
-		venue.SessionStartBeforeMin = *input.SessionStartBeforeMin
+		draftVenue.SessionStartBeforeMin = *input.SessionStartBeforeMin
+		app.SessionStartBeforeMin = *input.SessionStartBeforeMin
 	}
 	if input.ReleaseBeforeMin != nil {
-		venue.ReleaseBeforeMin = *input.ReleaseBeforeMin
+		draftVenue.ReleaseBeforeMin = *input.ReleaseBeforeMin
+		app.ReleaseBeforeMin = *input.ReleaseBeforeMin
 	}
 	if input.MaxLateArrivalMin != nil {
-		venue.MaxLateArrivalMin = *input.MaxLateArrivalMin
+		draftVenue.MaxLateArrivalMin = *input.MaxLateArrivalMin
+		app.MaxLateArrivalMin = *input.MaxLateArrivalMin
 	}
 	if input.VisitDurationMin != nil {
-		venue.VisitDurationMin = *input.VisitDurationMin
+		draftVenue.VisitDurationMin = *input.VisitDurationMin
+		app.VisitDurationMin = *input.VisitDurationMin
 	}
 	if input.MaxVisitDurationMin != nil {
-		venue.MaxVisitDurationMin = *input.MaxVisitDurationMin
+		draftVenue.MaxVisitDurationMin = *input.MaxVisitDurationMin
+		app.MaxVisitDurationMin = *input.MaxVisitDurationMin
 	}
-	if err := validateBookingRules(venue); err != nil {
+	if err := validateBookingRules(draftVenue); err != nil {
 		return models.Venue{}, err
 	}
-	s.venues[venueID] = venue
-	return venue, nil
+	s.applications[targetID] = app
+	return draftVenue, nil
 }
 
 func (s *MemoryStore) VenueAnalytics(ownerID, venueID string) (models.VenueAnalytics, error) {
@@ -382,16 +436,19 @@ func (s *MemoryStore) VenueAnalytics(ownerID, venueID string) (models.VenueAnaly
 			return models.VenueAnalytics{}, ErrForbidden
 		}
 	}
-	if _, ok := s.venues[venueID]; !ok {
+	targetID := s.resolveVenueIDLocked(venueID)
+	_, hasVenue := s.venues[targetID]
+	_, hasApp := s.applications[targetID]
+	if !hasVenue && !hasApp {
 		return models.VenueAnalytics{}, ErrNotFound
 	}
 	analytics := models.VenueAnalytics{
-		VenueID:              venueID,
+		VenueID:              targetID,
 		ReservationsByStatus: map[string]int{},
 		OrdersByStatus:       map[string]int{},
 	}
 	for _, table := range s.tables {
-		if table.VenueID != venueID {
+		if table.VenueID != targetID {
 			continue
 		}
 		analytics.TotalTables++
@@ -400,17 +457,17 @@ func (s *MemoryStore) VenueAnalytics(ownerID, venueID string) (models.VenueAnaly
 		}
 	}
 	for _, reservation := range s.reservations {
-		if reservation.VenueID == venueID {
+		if reservation.VenueID == targetID {
 			analytics.ReservationsByStatus[string(reservation.Status)]++
 		}
 	}
 	for _, order := range s.orders {
-		if order.VenueID == venueID {
+		if order.VenueID == targetID {
 			analytics.OrdersByStatus[string(order.Status)]++
 		}
 	}
 	for _, call := range s.waiterCalls {
-		if call.VenueID == venueID && call.Status == models.WaiterPending {
+		if call.VenueID == targetID && call.Status == models.WaiterPending {
 			analytics.WaiterCallsPending++
 		}
 	}
@@ -425,6 +482,7 @@ func (s *MemoryStore) InviteStaff(ownerID, venueID, email string, name ...string
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return models.StaffMember{}, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	email = strings.ToLower(strings.TrimSpace(email))
 	if email == "" {
 		return models.StaffMember{}, ErrBadRequest
@@ -468,6 +526,7 @@ func (s *MemoryStore) RemoveStaff(ownerID, venueID, staffID string) error {
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	member, ok := s.staffMembers[staffID]
 	if !ok || member.VenueID != venueID {
 		return ErrNotFound
@@ -484,6 +543,7 @@ func (s *MemoryStore) ToggleStaffShift(ownerID, venueID, staffID string, onShift
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return models.StaffMember{}, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	member, ok := s.staffMembers[staffID]
 	if !ok || member.VenueID != venueID {
 		return models.StaffMember{}, ErrNotFound
@@ -503,6 +563,7 @@ func (s *MemoryStore) ListStaff(ownerID, venueID string) ([]models.StaffMember, 
 	if !s.ownerCanManageVenueLocked(ownerID, venueID) {
 		return nil, ErrForbidden
 	}
+	venueID = s.resolveVenueIDLocked(venueID)
 	out := make([]models.StaffMember, 0)
 	for _, member := range s.staffMembers {
 		if member.VenueID == venueID {

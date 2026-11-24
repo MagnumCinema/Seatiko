@@ -666,14 +666,99 @@ func (s *MemoryStore) listVenuesLocked(cityID string) []models.Venue {
 	return out
 }
 
+func (s *MemoryStore) venueFromApplicationLocked(app models.VenueApplication) models.Venue {
+	imageURL := ""
+	if len(app.PhotoURLs) > 0 {
+		imageURL = app.PhotoURLs[0]
+	}
+	cityID := app.CityID
+	if cityID == "" {
+		cityID = DefaultCityID
+	}
+	cuisine := app.Cuisine
+	if cuisine == nil {
+		cuisine = []string{}
+	}
+	interval := app.BookingIntervalMin
+	if interval == 0 {
+		interval = DefaultBookingIntervalMin
+	}
+	hold := app.HoldMinutes
+	if hold == 0 {
+		hold = DefaultHoldMinutes
+	}
+	startBefore := app.SessionStartBeforeMin
+	if startBefore == 0 {
+		startBefore = DefaultSessionStartBeforeMin
+	}
+	relBefore := app.ReleaseBeforeMin
+	if relBefore == 0 {
+		relBefore = DefaultReleaseBeforeMin
+	}
+	visitDur := app.VisitDurationMin
+	if visitDur == 0 {
+		visitDur = DefaultVisitDurationMin
+	}
+	maxVisitDur := app.MaxVisitDurationMin
+	if maxVisitDur == 0 {
+		maxVisitDur = DefaultMaxVisitDurationMin
+	}
+	lateArrival := app.MaxLateArrivalMin
+	if lateArrival == 0 {
+		lateArrival = DefaultMaxLateArrivalMin
+	}
+	return models.Venue{
+		ID:                    app.ID,
+		CityID:                cityID,
+		Name:                  app.Name,
+		Description:           app.Description,
+		Cuisine:               cuisine,
+		Rating:                0,
+		ReviewCount:           0,
+		PriceLevel:            app.PriceLevel,
+		Address:               app.Address,
+		Lat:                   app.Lat,
+		Lng:                   app.Lng,
+		AverageCheck:          app.AverageCheck,
+		OpenNow:               true,
+		ImageURL:              imageURL,
+		PhotoURLs:             app.PhotoURLs,
+		Website:               app.Website,
+		AlcoholLicense:        false,
+		SessionStartBeforeMin: startBefore,
+		ReleaseBeforeMin:      relBefore,
+		BookingIntervalMin:    interval,
+		HoldMinutes:           hold,
+		MaxLateArrivalMin:     lateArrival,
+		VisitDurationMin:      visitDur,
+		MaxVisitDurationMin:   maxVisitDur,
+		AllowPreorder:         app.AllowPreorder,
+	}
+}
+
+func (s *MemoryStore) resolveVenueIDLocked(venueID string) string {
+	if app, ok := s.applications[venueID]; ok && app.VenueID != nil && *app.VenueID != "" {
+		return *app.VenueID
+	}
+	return venueID
+}
+
 func (s *MemoryStore) GetVenue(id string) (models.Venue, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.venues[id]
-	if !ok {
-		return models.Venue{}, ErrNotFound
+	if ok {
+		return v, nil
 	}
-	return v, nil
+	if app, ok := s.applications[id]; ok {
+		if app.VenueID != nil && *app.VenueID != "" {
+			if pv, ok := s.venues[*app.VenueID]; ok {
+				return pv, nil
+			}
+		}
+		return s.venueFromApplicationLocked(app), nil
+	}
+	return models.Venue{}, ErrNotFound
 }
 
 func (s *MemoryStore) ApplyVenuePlaces(
@@ -2412,6 +2497,34 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 	}
 
 	venueID := "venue-" + uuid.NewString()
+	bookingInterval := app.BookingIntervalMin
+	if bookingInterval == 0 {
+		bookingInterval = DefaultBookingIntervalMin
+	}
+	holdMinutes := app.HoldMinutes
+	if holdMinutes == 0 {
+		holdMinutes = DefaultHoldMinutes
+	}
+	sessionStartBefore := app.SessionStartBeforeMin
+	if sessionStartBefore == 0 {
+		sessionStartBefore = DefaultSessionStartBeforeMin
+	}
+	releaseBefore := app.ReleaseBeforeMin
+	if releaseBefore == 0 {
+		releaseBefore = DefaultReleaseBeforeMin
+	}
+	visitDuration := app.VisitDurationMin
+	if visitDuration == 0 {
+		visitDuration = DefaultVisitDurationMin
+	}
+	maxVisitDuration := app.MaxVisitDurationMin
+	if maxVisitDuration == 0 {
+		maxVisitDuration = DefaultMaxVisitDurationMin
+	}
+	maxLateArrival := app.MaxLateArrivalMin
+	if maxLateArrival == 0 {
+		maxLateArrival = DefaultMaxLateArrivalMin
+	}
 	venue := models.Venue{
 		ID:                    venueID,
 		CityID:                cityID,
@@ -2430,47 +2543,83 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		PhotoURLs:             photos,
 		Website:               app.Website,
 		AlcoholLicense:        false,
-		SessionStartBeforeMin: 15,
-		ReleaseBeforeMin:      10,
-		BookingIntervalMin:    30,
-		HoldMinutes:           15,
-		AllowPreorder:         true,
+		SessionStartBeforeMin: sessionStartBefore,
+		ReleaseBeforeMin:      releaseBefore,
+		BookingIntervalMin:    bookingInterval,
+		HoldMinutes:           holdMinutes,
+		MaxLateArrivalMin:     maxLateArrival,
+		VisitDurationMin:      visitDuration,
+		MaxVisitDurationMin:   maxVisitDuration,
+		AllowPreorder:         app.AllowPreorder,
 	}
 	s.venues[venueID] = venue
 
-	// Start every published restaurant with an editable, booking-ready floor
-	// layout. Positions are normalized so web and mobile render the same room.
-	defaultLayout := []struct {
-		x, y  float64
-		seats int
-		zone  string
-	}{
-		{x: 0.18, y: 0.22, seats: 2, zone: "hall"},
-		{x: 0.43, y: 0.22, seats: 4, zone: "hall"},
-		{x: 0.72, y: 0.22, seats: 4, zone: "hall"},
-		{x: 0.22, y: 0.5, seats: 4, zone: "hall"},
-		{x: 0.52, y: 0.5, seats: 6, zone: "hall"},
-		{x: 0.28, y: 0.35, seats: 2, zone: "terrace"},
-		{x: 0.55, y: 0.4, seats: 4, zone: "terrace"},
-		{x: 0.78, y: 0.55, seats: 4, zone: "street"},
-		{x: 0.42, y: 0.7, seats: 6, zone: "street"},
-	}
-	for index, position := range defaultLayout {
-		tID := uuid.NewString()
-		t := models.Table{
-			ID:      tID,
-			VenueID: venueID,
-			Number:  index + 1,
-			Seats:   position.seats,
-			Status:  models.TableFree,
-			X:       position.x,
-			Y:       position.y,
-			Zone:    position.zone,
-			QRToken: qr.Sign(s.qrSecret, venueID, tID),
+	// If the owner configured tables for this application during onboarding, migrate them
+	hasExistingTables := false
+	for _, t := range s.tables {
+		if t.VenueID == id {
+			hasExistingTables = true
+			break
 		}
-		s.tables[t.ID] = t
+	}
+	if hasExistingTables {
+		for tID, t := range s.tables {
+			if t.VenueID == id {
+				t.VenueID = venueID
+				t.QRToken = qr.Sign(s.qrSecret, venueID, t.ID)
+				s.tables[tID] = t
+			}
+		}
+	} else {
+		// Start every published restaurant without pre-set tables with an editable, booking-ready layout
+		defaultLayout := []struct {
+			x, y  float64
+			seats int
+			zone  string
+		}{
+			{x: 0.18, y: 0.22, seats: 2, zone: "hall"},
+			{x: 0.43, y: 0.22, seats: 4, zone: "hall"},
+			{x: 0.72, y: 0.22, seats: 4, zone: "hall"},
+			{x: 0.22, y: 0.5, seats: 4, zone: "hall"},
+			{x: 0.52, y: 0.5, seats: 6, zone: "hall"},
+			{x: 0.28, y: 0.35, seats: 2, zone: "terrace"},
+			{x: 0.55, y: 0.4, seats: 4, zone: "terrace"},
+			{x: 0.78, y: 0.55, seats: 4, zone: "street"},
+			{x: 0.42, y: 0.7, seats: 6, zone: "street"},
+		}
+		for index, position := range defaultLayout {
+			tID := uuid.NewString()
+			t := models.Table{
+				ID:      tID,
+				VenueID: venueID,
+				Number:  index + 1,
+				Seats:   position.seats,
+				Status:  models.TableFree,
+				X:       position.x,
+				Y:       position.y,
+				Zone:    position.zone,
+				QRToken: qr.Sign(s.qrSecret, venueID, tID),
+			}
+			s.tables[t.ID] = t
+		}
 	}
 	s.refreshFreeTablesLocked(venueID)
+
+	// Migrate any menu items created under this application during onboarding
+	for mID, item := range s.menuItems {
+		if item.VenueID == id {
+			item.VenueID = venueID
+			s.menuItems[mID] = item
+		}
+	}
+
+	// Migrate any staff members invited under this application during onboarding
+	for sID, member := range s.staffMembers {
+		if member.VenueID == id {
+			member.VenueID = venueID
+			s.staffMembers[sID] = member
+		}
+	}
 
 	now := time.Now().UTC()
 	app.Status = models.AppPublished

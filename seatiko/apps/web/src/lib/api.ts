@@ -173,6 +173,14 @@ export type VenueApplication = {
   hours_text: string;
   reject_reason?: string;
   venue_id?: string | null;
+  booking_interval_min?: number;
+  hold_minutes?: number;
+  allow_preorder?: boolean;
+  session_start_before_min?: number;
+  release_before_min?: number;
+  max_late_arrival_min?: number;
+  visit_duration_min?: number;
+  max_visit_duration_min?: number;
   created_at: string;
   updated_at: string;
   submitted_at?: string | null;

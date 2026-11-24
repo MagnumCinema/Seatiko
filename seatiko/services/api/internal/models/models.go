@@ -201,6 +201,14 @@ type VenueApplication struct {
 	HoursText    string            `json:"hours_text"`
 	RejectReason string            `json:"reject_reason,omitempty"`
 	VenueID      *string           `json:"venue_id,omitempty"`
+	BookingIntervalMin    int      `json:"booking_interval_min,omitempty"`
+	HoldMinutes           int      `json:"hold_minutes,omitempty"`
+	AllowPreorder         bool     `json:"allow_preorder,omitempty"`
+	SessionStartBeforeMin int      `json:"session_start_before_min,omitempty"`
+	ReleaseBeforeMin      int      `json:"release_before_min,omitempty"`
+	MaxLateArrivalMin     int      `json:"max_late_arrival_min,omitempty"`
+	VisitDurationMin      int      `json:"visit_duration_min,omitempty"`
+	MaxVisitDurationMin   int      `json:"max_visit_duration_min,omitempty"`
 	CreatedAt    time.Time         `json:"created_at"`
 	UpdatedAt    time.Time         `json:"updated_at"`
 	SubmittedAt  *time.Time        `json:"submitted_at,omitempty"`

@@ -2231,6 +2231,76 @@ paths:
                       $ref: '#/components/schemas/StaffMember'
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/staff/{staffId}:
+    delete:
+      operationId: RemoveVenueStaff
+      summary: Remove Venue Staff
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/staff/{staffId}/shift:
+    post:
+      operationId: ToggleStaffShift
+      summary: Toggle Staff Shift Status
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                on_shift:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/admin/overview:
     get:
       operationId: AdminOverview

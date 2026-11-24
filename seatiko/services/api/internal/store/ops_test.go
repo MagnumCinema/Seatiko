@@ -283,3 +283,110 @@ func TestProfileChangeRequest(t *testing.T) {
 		t.Fatalf("venue name = %#v, %v", venue.Name, err)
 	}
 }
+
+func TestDraftVenueOnboardingAndPublishMigration(t *testing.T) {
+	mem := NewMemory()
+	owner := registerTestUser(t, mem, "draft-owner@example.com", models.RoleRestaurant)
+	app, err := mem.CreateApplication(owner.ID)
+	if err != nil {
+		t.Fatalf("create app: %v", err)
+	}
+
+	// 1. Verify owner can configure tables on draft app before publishing
+	tables, err := mem.ReplaceTablesLayout(owner.ID, app.ID, []TableLayoutInput{
+		{Number: 1, Seats: 4, X: 0.2, Y: 0.3, Zone: "hall"},
+		{Number: 2, Seats: 2, X: 0.5, Y: 0.6, Zone: "terrace"},
+	})
+	if err != nil || len(tables) != 2 {
+		t.Fatalf("replace tables on draft failed: %v, tables: %#v", err, tables)
+	}
+
+	// 2. Verify owner can configure menu item on draft app
+	menuItem, err := mem.UpsertMenuItem(owner.ID, app.ID, MenuItemInput{
+		Name:     models.LocalizedString{RU: "Борщ", EN: "Borscht", RO: "Borș"},
+		Price:    120,
+		Category: models.LocalizedString{RU: "Супы", EN: "Soups", RO: "Supe"},
+	})
+	if err != nil || menuItem.ID == "" {
+		t.Fatalf("upsert menu on draft failed: %v", err)
+	}
+
+	// 3. Verify owner can configure booking rules on draft app
+	interval := 45
+	hold := 20
+	allow := false
+	rulesVenue, err := mem.UpdateVenueBookingRules(owner.ID, app.ID, BookingRulesInput{
+		BookingIntervalMin: &interval,
+		HoldMinutes:        &hold,
+		AllowPreorder:      &allow,
+	})
+	if err != nil || rulesVenue.BookingIntervalMin != 45 || rulesVenue.HoldMinutes != 20 || rulesVenue.AllowPreorder {
+		t.Fatalf("update rules on draft failed: %v, venue: %#v", err, rulesVenue)
+	}
+
+	// 4. Verify owner can invite staff on draft app
+	staffMember, err := mem.InviteStaff(owner.ID, app.ID, "waiter-draft@example.com", "Ion Popescu")
+	if err != nil || staffMember.Name != "Ion Popescu" {
+		t.Fatalf("invite staff on draft failed: %v", err)
+	}
+
+	// 5. Verify analytics on draft app returns zeroed metrics without 404
+	analytics, err := mem.VenueAnalytics(owner.ID, app.ID)
+	if err != nil || analytics.TotalTables != 2 {
+		t.Fatalf("analytics on draft failed: %v, analytics: %#v", err, analytics)
+	}
+
+	// 6. Fill required profile data, submit, approve and publish
+	name := models.LocalizedString{RU: "Draft Rest", EN: "Draft Rest", RO: "Draft Rest"}
+	desc := models.LocalizedString{RU: "Desc", EN: "Desc", RO: "Desc"}
+	addr := models.LocalizedString{RU: "Addr", EN: "Addr", RO: "Addr"}
+	cuisine := []string{"european"}
+	phone := "+37360000002"
+	email := "draft@example.com"
+	hours := "10-23"
+	lat, lng := 47.76, 27.92
+	priceLevel, averageCheck := 2, 250
+	app, err = mem.UpdateApplication(owner.ID, app.ID, ApplicationUpdate{
+		Name: &name, Description: &desc, Address: &addr, Cuisine: &cuisine,
+		Phone: &phone, Email: &email, HoursText: &hours, Lat: &lat, Lng: &lng,
+		PriceLevel: &priceLevel, AverageCheck: &averageCheck,
+	})
+	if err != nil {
+		t.Fatalf("update app: %v", err)
+	}
+	if _, err = mem.AddPhoto(owner.ID, app.ID, "/uploads/test.jpg"); err != nil {
+		t.Fatalf("add photo: %v", err)
+	}
+	if _, err = mem.SubmitApplication(owner.ID, app.ID); err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	if _, err = mem.AdminSetStatus("user-admin", app.ID, models.AppApproved, ""); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	publishedApp, err := mem.PublishApplication("user-admin", app.ID)
+	if err != nil || publishedApp.VenueID == nil {
+		t.Fatalf("publish failed: %v", err)
+	}
+	publishedVenueID := *publishedApp.VenueID
+
+	// 7. Verify tables, menu, rules, and staff were migrated to publishedVenueID
+	publishedTables := mem.ListTables(publishedVenueID)
+	if len(publishedTables) != 2 || publishedTables[0].Number != 1 || publishedTables[1].Number != 2 {
+		t.Fatalf("published tables not migrated properly: %#v", publishedTables)
+	}
+
+	publishedMenu, err := mem.ListMenuForOwner(owner.ID, publishedVenueID)
+	if err != nil || len(publishedMenu) != 1 || publishedMenu[0].Name.RU != "Борщ" {
+		t.Fatalf("published menu not migrated properly: %v, %#v", err, publishedMenu)
+	}
+
+	publishedStaff, err := mem.ListStaff(owner.ID, publishedVenueID)
+	if err != nil || len(publishedStaff) != 1 || publishedStaff[0].Name != "Ion Popescu" {
+		t.Fatalf("published staff not migrated properly: %v, %#v", err, publishedStaff)
+	}
+
+	publishedVenue, err := mem.GetVenue(publishedVenueID)
+	if err != nil || publishedVenue.BookingIntervalMin != 45 || publishedVenue.HoldMinutes != 20 || publishedVenue.AllowPreorder {
+		t.Fatalf("published rules not migrated properly: %v, %#v", err, publishedVenue)
+	}
+}

@@ -938,6 +938,7 @@ export default function CabinetPage() {
   const completion = checks.length ? Math.round((completedChecks / checks.length) * 100) : 0;
   const isDraftStatus = selected ? editable(selected.status) : false;
   const canEdit = isDraftStatus || isEditingApproved;
+  const effectiveVenueId = selected ? selected.venue_id || selected.id : "";
   const futureBookings = selectedReservations.filter(
     (reservation) =>
       new Date(reservation.reserved_for).getTime() >= cabinetReferenceTime &&
@@ -1703,75 +1704,19 @@ export default function CabinetPage() {
               )}
 
               {section === "floor" && (
-                selected.venue_id ? (
-                  <CabinetFloorPanel venueId={selected.venue_id} />
-                ) : (
-                  <div className="owner-section-empty">
-                    <span aria-hidden="true"><FloorIcon /></span>
-                    <h3>{cabinetCopy.floor}</h3>
-                    <p>
-                      {locale === "ro"
-                        ? "Gestionarea sălii și a codurilor QR devine disponibilă după publicarea restaurantului pe hartă."
-                        : locale === "en"
-                        ? "Floor plan and table QR code management unlock once your restaurant is published on the map."
-                        : "Схема зала и QR-коды столов доступны после публикации ресторана на карте."}
-                    </p>
-                  </div>
-                )
+                <CabinetFloorPanel venueId={effectiveVenueId} />
               )}
 
               {section === "menu" && (
-                selected.venue_id ? (
-                  <CabinetMenuPanel venueId={selected.venue_id} />
-                ) : (
-                  <div className="owner-section-empty">
-                    <span aria-hidden="true"><MenuIcon /></span>
-                    <h3>{cabinetCopy.menu}</h3>
-                    <p>
-                      {locale === "ro"
-                        ? "Gestionarea meniului devine disponibilă după publicarea restaurantului pe hartă."
-                        : locale === "en"
-                        ? "Menu management unlocks once your restaurant is published on the map."
-                        : "Управление меню доступно после публикации ресторана на карте."}
-                    </p>
-                  </div>
-                )
+                <CabinetMenuPanel venueId={effectiveVenueId} />
               )}
 
               {section === "rules" && (
-                selected.venue_id ? (
-                  <CabinetRulesPanel venueId={selected.venue_id} />
-                ) : (
-                  <div className="owner-section-empty">
-                    <span aria-hidden="true"><RulesIcon /></span>
-                    <h3>{cabinetCopy.rules}</h3>
-                    <p>
-                      {locale === "ro"
-                        ? "Configurarea regulilor de rezervare devine disponibilă după publicarea restaurantului pe hartă."
-                        : locale === "en"
-                        ? "Booking rules configuration unlocks once your restaurant is published on the map."
-                        : "Настройка правил бронирования доступна после публикации ресторана на карте."}
-                    </p>
-                  </div>
-                )
+                <CabinetRulesPanel venueId={effectiveVenueId} />
               )}
 
               {section === "staff" && (
-                selected.venue_id ? (
-                  <CabinetStaffPanel venueId={selected.venue_id} />
-                ) : (
-                  <div className="owner-section-empty">
-                    <span aria-hidden="true"><StaffIcon /></span>
-                    <h3>{cabinetCopy.staff}</h3>
-                    <p>
-                      {locale === "ro"
-                        ? "Gestionarea personalului și analitica de tură devin disponibile după publicarea restaurantului pe hartă."
-                        : locale === "en"
-                        ? "Staff management and shift analytics unlock once your restaurant is published on the map."
-                        : "Управление персоналом и аналитика смены доступны после публикации ресторана на карте."}
-                    </p>
-                  </div>
-                )
+                <CabinetStaffPanel venueId={effectiveVenueId} />
               )}
 
               {section === "reservations" && (
