@@ -481,8 +481,41 @@ function formatDateTime(value: string, locale: string) {
   }).format(new Date(value));
 }
 
+function formatOwnerName(user: User): string {
+  if (user.display_name) {
+    const cleaned = user.display_name
+      .replace(/\s*\((?:владелец|owner|proprietar|администратор|admin)[^)]*\)/gi, "")
+      .trim();
+    if (cleaned && !/^(?:владелец|owner|proprietar)$/i.test(cleaned)) {
+      return cleaned;
+    }
+  }
+  const first = user.first_name?.trim() || "";
+  const last = user.last_name?.trim() || "";
+  if (/^(?:владелец|owner|proprietar)$/i.test(last)) {
+    return first || user.email;
+  }
+  return `${first} ${last}`.trim() || user.email;
+}
+
 function initials(user: User) {
-  return `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() || "VR";
+  const first = user.first_name?.trim() || "";
+  const last = user.last_name?.trim() || "";
+  if (first && last && !/^(?:владелец|owner|proprietar)$/i.test(last)) {
+    return `${first[0]}${last[0]}`.toUpperCase();
+  }
+  if (first && last) {
+    return `${first[0]}${last[0]}`.toUpperCase();
+  }
+  if (first) {
+    return first.slice(0, 2).toUpperCase();
+  }
+  const cleanName = formatOwnerName(user);
+  const parts = cleanName.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return (cleanName.slice(0, 2) || "VR").toUpperCase();
 }
 
 export default function CabinetPage() {
@@ -850,9 +883,12 @@ export default function CabinetPage() {
         <aside className="owner-sidebar" aria-label={cabinetCopy.title}>
           <div className="owner-person">
             <span className="owner-avatar">{initials(user)}</span>
-            <div>
-              <strong>{user.display_name || `${user.first_name} ${user.last_name}`}</strong>
-              <span>{cabinetCopy.owner}</span>
+            <div className="owner-person-info">
+              <strong>{formatOwnerName(user)}</strong>
+              <span className="owner-role-badge">
+                <i className="owner-role-dot" aria-hidden="true" />
+                {cabinetCopy.owner}
+              </span>
             </div>
           </div>
 
