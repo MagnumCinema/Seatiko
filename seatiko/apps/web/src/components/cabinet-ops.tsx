@@ -86,7 +86,7 @@ const emptyForm = (defaultCategory = "Основное"): MenuForm => ({
 });
 
 /**
- * Floor & Hall Management Panel (Floor plan, QR codes, Booking rules, Staff, Shift analytics)
+ * Floor & Hall Management Panel (Floor plan, QR codes)
  */
 export function CabinetFloorPanel({ venueId }: Props) {
   const { locale } = useLocale();
@@ -94,23 +94,14 @@ export function CabinetFloorPanel({ venueId }: Props) {
   const [tables, setTables] = useState<Table[]>([]);
   const [draft, setDraft] = useState<FloorDraftTable[]>([]);
   const [dirty, setDirty] = useState(false);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [analytics, setAnalytics] = useState<VenueAnalytics | null>(null);
-  const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function reload() {
-    const [qr, members, stats] = await Promise.all([
-      listVenueQR(venueId),
-      listVenueStaff(venueId),
-      fetchVenueAnalytics(venueId),
-    ]);
+    const qr = await listVenueQR(venueId);
     setTables(qr);
     setDraft(tablesToDraft(qr));
     setDirty(false);
-    setStaff(members);
-    setAnalytics(stats);
   }
 
   useEffect(() => {
@@ -278,24 +269,161 @@ export function CabinetFloorPanel({ venueId }: Props) {
           </details>
         )}
       </section>
+    </div>
+  );
+}
 
-      {/* Booking Rules Section */}
+/**
+ * Booking Rules Management Panel
+ */
+export function CabinetRulesPanel({ venueId }: Props) {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).cabinet;
+
+  return (
+    <div className="cabinet-ops">
       <section className="owner-card cabinet-ops-card">
         <div className="owner-card-head">
           <div>
-            <span className="owner-kicker">{copy.floor}</span>
+            <span className="owner-kicker">{copy.rules}</span>
             <h3>{copy.opsRulesTitle}</h3>
+            <p className="cabinet-ops-sub">{copy.rulesSubtitle}</p>
           </div>
         </div>
         <BookingRulesForm venueId={venueId} />
       </section>
+    </div>
+  );
+}
+
+/**
+ * Staff & Shift Analytics Panel
+ */
+export function CabinetStaffPanel({ venueId }: Props) {
+  const { locale } = useLocale();
+  const copy = getSiteCopy(locale).cabinet;
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [analytics, setAnalytics] = useState<VenueAnalytics | null>(null);
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function reload() {
+    const [members, stats] = await Promise.all([
+      listVenueStaff(venueId),
+      fetchVenueAnalytics(venueId),
+    ]);
+    setStaff(members);
+    setAnalytics(stats);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setBusy(true);
+      reload()
+        .catch(() => {
+          if (!cancelled) {
+            setMessage(
+              locale === "ro"
+                ? "Eroare la încărcarea datelor personalului"
+                : locale === "en"
+                ? "Failed to load staff data"
+                : "Не удалось загрузить данные персонала",
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setBusy(false);
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueId]);
+
+  async function run(action: () => Promise<void>, ok: string) {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await action();
+      await reload();
+      setMessage(ok);
+    } catch {
+      setMessage(
+        locale === "ro"
+          ? "Eroare la executarea operațiunii"
+          : locale === "en"
+          ? "Operation error"
+          : "Ошибка операции",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="cabinet-ops">
+      {message && (
+        <div className="owner-notice success" role="alert">
+          <span>✓</span>
+          <p>{message}</p>
+        </div>
+      )}
+      {busy && (
+        <p className="fa-muted">
+          {locale === "ro" ? "Se încarcă…" : locale === "en" ? "Loading…" : "Загрузка…"}
+        </p>
+      )}
+
+      {/* Shift Analytics Section */}
+      {analytics && (
+        <section className="owner-card cabinet-ops-card">
+          <div className="owner-card-head">
+            <div>
+              <span className="owner-kicker">{copy.staff}</span>
+              <h3>{copy.opsAnalyticsTitle}</h3>
+              <p className="cabinet-ops-sub">
+                {locale === "ro"
+                  ? "Indicatori operaționali în timp real pentru tura curentă"
+                  : locale === "en"
+                  ? "Real-time operational indicators for current shift"
+                  : "Оперативные показатели текущей смены в реальном времени"}
+              </p>
+            </div>
+          </div>
+          <div className="owner-metrics" style={{ margin: 0 }}>
+            <article>
+              <span>{locale === "ro" ? "Total mese" : locale === "en" ? "Total tables" : "Всего столов"}</span>
+              <strong>{analytics.total_tables}</strong>
+            </article>
+            <article>
+              <span>{locale === "ro" ? "Mese libere" : locale === "en" ? "Free tables" : "Свободно столов"}</span>
+              <strong>{analytics.free_tables}</strong>
+            </article>
+            <article>
+              <span>{locale === "ro" ? "Chemări chelner" : locale === "en" ? "Waiter calls" : "Вызовы официанта"}</span>
+              <strong>{analytics.waiter_calls_pending}</strong>
+            </article>
+          </div>
+        </section>
+      )}
 
       {/* Staff Management Section */}
       <section className="owner-card cabinet-ops-card">
         <div className="owner-card-head">
           <div>
-            <span className="owner-kicker">{copy.floor}</span>
+            <span className="owner-kicker">{copy.staff}</span>
             <h3>{copy.opsStaffTitle}</h3>
+            <p className="cabinet-ops-sub">
+              {locale === "ro"
+                ? "Invitați chelneri și administratori pentru acces la comenzile din sală"
+                : locale === "en"
+                ? "Invite waitstaff and managers for access to hall orders"
+                : "Приглашайте официантов и администраторов для работы с заказами в зале"}
+            </p>
           </div>
         </div>
         <div className="cabinet-ops-row">
@@ -322,40 +450,20 @@ export function CabinetFloorPanel({ venueId }: Props) {
           </button>
         </div>
         <ul className="cabinet-staff-list">
-          {staff.map((member) => (
-            <li key={member.id}>
-              <strong>{member.email}</strong>
-              <span>· {member.role} · {member.status}</span>
+          {staff.length === 0 ? (
+            <li className="fa-muted" style={{ padding: "12px 14px", border: "1px dashed var(--site-border)", borderRadius: 9 }}>
+              {locale === "ro" ? "Niciun membru al personalului adăugat încă" : locale === "en" ? "No staff members added yet" : "Сотрудники пока не добавлены"}
             </li>
-          ))}
+          ) : (
+            staff.map((member) => (
+              <li key={member.id}>
+                <strong>{member.email}</strong>
+                <span>· {member.role} · {member.status}</span>
+              </li>
+            ))
+          )}
         </ul>
       </section>
-
-      {/* Shift Analytics Section */}
-      {analytics && (
-        <section className="owner-card cabinet-ops-card">
-          <div className="owner-card-head">
-            <div>
-              <span className="owner-kicker">{copy.floor}</span>
-              <h3>{copy.opsAnalyticsTitle}</h3>
-            </div>
-          </div>
-          <div className="owner-metrics" style={{ margin: 0 }}>
-            <article>
-              <span>{locale === "ro" ? "Total mese" : locale === "en" ? "Total tables" : "Всего столов"}</span>
-              <strong>{analytics.total_tables}</strong>
-            </article>
-            <article>
-              <span>{locale === "ro" ? "Mese libere" : locale === "en" ? "Free tables" : "Свободно столов"}</span>
-              <strong>{analytics.free_tables}</strong>
-            </article>
-            <article>
-              <span>{locale === "ro" ? "Chemări chelner" : locale === "en" ? "Waiter calls" : "Вызовы официанта"}</span>
-              <strong>{analytics.waiter_calls_pending}</strong>
-            </article>
-          </div>
-        </section>
-      )}
     </div>
   );
 }

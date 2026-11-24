@@ -7,7 +7,12 @@ import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
 import { GoogleLocationPicker } from "@/components/google-location-picker";
 import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
-import { CabinetFloorPanel, CabinetMenuPanel } from "@/components/cabinet-ops";
+import {
+  CabinetFloorPanel,
+  CabinetMenuPanel,
+  CabinetRulesPanel,
+  CabinetStaffPanel,
+} from "@/components/cabinet-ops";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -37,7 +42,15 @@ import {
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 
-type Section = "overview" | "profile" | "floor" | "menu" | "reservations" | "activity";
+type Section =
+  | "overview"
+  | "profile"
+  | "floor"
+  | "menu"
+  | "rules"
+  | "staff"
+  | "reservations"
+  | "activity";
 type ReservationFilter = "upcoming" | "history" | "all";
 
 const DRAFT_STORAGE_PREFIX = "seatiko:restaurant-draft:";
@@ -98,6 +111,29 @@ function MenuIcon() {
       <path d="M6 6h10" />
       <path d="M6 10h10" />
       <path d="M6 14h6" />
+    </svg>
+  );
+}
+
+function RulesIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" x2="8" y1="13" y2="13" />
+      <line x1="16" x2="8" y1="17" y2="17" />
+      <line x1="10" x2="8" y1="9" y2="9" />
+    </svg>
+  );
+}
+
+function StaffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -485,6 +521,8 @@ export default function CabinetPage() {
       { id: "profile", label: cabinetCopy.profile, icon: <ProfileIcon /> },
       { id: "floor", label: cabinetCopy.floor, icon: <FloorIcon /> },
       { id: "menu", label: cabinetCopy.menu, icon: <MenuIcon /> },
+      { id: "rules", label: cabinetCopy.rules, icon: <RulesIcon /> },
+      { id: "staff", label: cabinetCopy.staff, icon: <StaffIcon /> },
       { id: "reservations", label: cabinetCopy.reservations, icon: <ReservationsIcon /> },
       { id: "activity", label: cabinetCopy.activity, icon: <ActivityIcon /> },
     ],
@@ -942,6 +980,8 @@ export default function CabinetPage() {
                     {section === "profile" && cabinetCopy.dataForGuests}
                     {section === "floor" && cabinetCopy.floorTitle}
                     {section === "menu" && cabinetCopy.menuSectionTitle}
+                    {section === "rules" && cabinetCopy.rulesSubtitle}
+                    {section === "staff" && cabinetCopy.staffSubtitle}
                     {section === "reservations" && (locale === "ro" ? "Activitate operațională" : locale === "en" ? "Operations" : "Операционная работа")}
                     {section === "activity" && (locale === "ro" ? "Jurnal de transparență" : locale === "en" ? "Audit & Transparency" : "Прозрачность аккаунта")}
                   </span>
@@ -950,6 +990,8 @@ export default function CabinetPage() {
                     {section === "profile" && cabinetCopy.profile}
                     {section === "floor" && cabinetCopy.floor}
                     {section === "menu" && cabinetCopy.menu}
+                    {section === "rules" && cabinetCopy.rules}
+                    {section === "staff" && cabinetCopy.staff}
                     {section === "reservations" && cabinetCopy.reservations}
                     {section === "activity" && cabinetCopy.activity}
                   </h2>
@@ -1490,6 +1532,42 @@ export default function CabinetPage() {
                         : locale === "en"
                         ? "Menu management unlocks once your restaurant is published on the map."
                         : "Управление меню доступно после публикации ресторана на карте."}
+                    </p>
+                  </div>
+                )
+              )}
+
+              {section === "rules" && (
+                selected.venue_id ? (
+                  <CabinetRulesPanel venueId={selected.venue_id} />
+                ) : (
+                  <div className="owner-section-empty">
+                    <span aria-hidden="true"><RulesIcon /></span>
+                    <h3>{cabinetCopy.rules}</h3>
+                    <p>
+                      {locale === "ro"
+                        ? "Configurarea regulilor de rezervare devine disponibilă după publicarea restaurantului pe hartă."
+                        : locale === "en"
+                        ? "Booking rules configuration unlocks once your restaurant is published on the map."
+                        : "Настройка правил бронирования доступна после публикации ресторана на карте."}
+                    </p>
+                  </div>
+                )
+              )}
+
+              {section === "staff" && (
+                selected.venue_id ? (
+                  <CabinetStaffPanel venueId={selected.venue_id} />
+                ) : (
+                  <div className="owner-section-empty">
+                    <span aria-hidden="true"><StaffIcon /></span>
+                    <h3>{cabinetCopy.staff}</h3>
+                    <p>
+                      {locale === "ro"
+                        ? "Gestionarea personalului și analitica de tură devin disponibile după publicarea restaurantului pe hartă."
+                        : locale === "en"
+                        ? "Staff management and shift analytics unlock once your restaurant is published on the map."
+                        : "Управление персоналом и аналитика смены доступны после публикации ресторана на карте."}
                     </p>
                   </div>
                 )
