@@ -549,7 +549,21 @@ html[data-theme="light"] .site-nav-primary:hover {
 
 .site-header.transparent .site-pref-menu {
   background: rgba(18, 28, 22, 0.96);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.site-header.transparent .site-pref-menu button {
+  color: rgba(243, 238, 226, 0.82);
+}
+
+.site-header.transparent .site-pref-menu button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.site-header.transparent .site-pref-menu button.on {
+  color: #e9b96e;
+  background: rgba(233, 185, 110, 0.16);
 }
 
 .site-header.transparent .site-lang button {
@@ -8154,19 +8168,17 @@ html[data-theme="light"] .cabinet-delete-card {
 }
 
 /* Navbar text contrast & clarity fix across dark and light themes */
-.site-nav,
-.site-header .site-nav,
-.panel-page > .site-header .site-nav,
-.panel-page:has(.owner-dashboard) > .site-header .site-nav {
-  color: var(--site-fg, #f3efe6) !important;
+.site-header:not(.transparent) .site-nav,
+.panel-page > .site-header:not(.transparent) .site-nav,
+.panel-page:has(.owner-dashboard) > .site-header:not(.transparent) .site-nav {
+  color: var(--site-fg, #f3efe6);
 }
 
-.site-nav a.site-nav-link,
-.site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
-.site-header .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
-.panel-page > .site-header .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
-.panel-page:has(.owner-dashboard) > .site-header .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary) {
-  color: var(--site-fg, #f3efe6) !important;
+.site-header:not(.transparent) .site-nav a.site-nav-link,
+.site-header:not(.transparent) .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
+.panel-page > .site-header:not(.transparent) .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
+.panel-page:has(.owner-dashboard) > .site-header:not(.transparent) .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary) {
+  color: var(--site-fg, #f3efe6);
   opacity: 0.95;
   font-weight: 550;
 }
@@ -8193,57 +8205,91 @@ html[data-theme="dark"] .panel-page:has(.owner-dashboard) > .site-header .site-n
   color: #061610 !important;
 }
 
-.site-nav a:hover,
-.site-nav a.site-nav-link:hover,
-.site-header .site-nav a:hover,
-.site-header .site-nav a.site-nav-link:hover {
-  color: var(--site-fg, #f3efe6) !important;
+.site-header:not(.transparent) .site-nav a:hover,
+.site-header:not(.transparent) .site-nav a.site-nav-link:hover {
+  color: var(--site-fg, #f3efe6);
   opacity: 1;
   background: color-mix(in srgb, var(--site-fg) 10%, transparent);
 }
 
-.site-nav-secondary,
-.site-header .site-nav-secondary,
-.panel-page > .site-header .site-nav-secondary {
+.site-header:not(.transparent) .site-nav-secondary,
+.panel-page > .site-header:not(.transparent) .site-nav-secondary {
   color: var(--site-fg, #f3efe6) !important;
   border-color: color-mix(in srgb, var(--site-fg) 25%, transparent) !important;
   font-weight: 600;
   opacity: 0.95;
 }
 
-.site-nav-secondary:hover,
-.site-header .site-nav-secondary:hover {
+.site-header:not(.transparent) .site-nav-secondary:hover {
   color: var(--site-fg, #f3efe6) !important;
   border-color: var(--site-accent, #e9b96e) !important;
   opacity: 1;
 }
 
-.site-pref-trigger,
-.site-header .site-pref-trigger,
-.panel-page > .site-header .site-pref-trigger {
-  color: var(--site-fg, #f3efe6) !important;
+.site-header:not(.transparent) .site-pref-trigger,
+.panel-page > .site-header:not(.transparent) .site-pref-trigger {
+  color: var(--site-fg, #f3efe6);
   font-weight: 600;
   opacity: 0.9;
 }
 
-.site-theme-toggle,
-.site-header .site-theme-toggle {
-  color: var(--site-fg, #f3efe6) !important;
+.site-header:not(.transparent) .site-theme-toggle {
+  color: var(--site-fg, #f3efe6);
   border-color: color-mix(in srgb, var(--site-fg) 22%, transparent);
 }
 
-/* Light mode high contrast for navbar */
-html[data-theme="light"] .site-nav,
-html[data-theme="light"] .site-header .site-nav,
-html[data-theme="light"] .site-nav a.site-nav-link,
-html[data-theme="light"] .site-nav-secondary,
-html[data-theme="light"] .site-pref-trigger,
-html[data-theme="light"] .site-theme-toggle {
+/* Light mode high contrast ONLY for solid navbar (not over the always-dark hero transparent header) */
+html[data-theme="light"] .site-header:not(.transparent) .site-brand,
+html[data-theme="light"] .site-header:not(.transparent) .site-nav,
+html[data-theme="light"] .site-header:not(.transparent) .site-nav a.site-nav-link,
+html[data-theme="light"] .site-header:not(.transparent) .site-nav-secondary,
+html[data-theme="light"] .site-header:not(.transparent) .site-pref-trigger,
+html[data-theme="light"] .site-header:not(.transparent) .site-theme-toggle {
   color: #1a2420 !important;
   opacity: 1;
 }
-html[data-theme="light"] .site-nav-secondary {
+html[data-theme="light"] .site-header:not(.transparent) .site-nav-secondary {
   border-color: rgba(26, 36, 32, 0.25) !important;
+}
+
+/* Transparent navbar over always-dark emerald hero stays crisp light in BOTH dark and light themes */
+.site-header.transparent .site-brand,
+html[data-theme="light"] .site-header.transparent .site-brand {
+  color: #f5ead8 !important;
+}
+.site-header.transparent .site-nav,
+html[data-theme="light"] .site-header.transparent .site-nav,
+.site-header.transparent .site-nav a.site-nav-link,
+html[data-theme="light"] .site-header.transparent .site-nav a.site-nav-link,
+.site-header.transparent .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary),
+html[data-theme="light"] .site-header.transparent .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary) {
+  color: rgba(245, 240, 230, 0.9) !important;
+  opacity: 1;
+}
+.site-header.transparent .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary):hover,
+html[data-theme="light"] .site-header.transparent .site-nav a:not(.site-brand):not(.site-nav-primary):not(.site-nav-secondary):hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+.site-header.transparent .site-nav-secondary,
+html[data-theme="light"] .site-header.transparent .site-nav-secondary {
+  color: rgba(245, 240, 230, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.06);
+}
+.site-header.transparent .site-nav-secondary:hover,
+html[data-theme="light"] .site-header.transparent .site-nav-secondary:hover {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  background: rgba(255, 255, 255, 0.12);
+}
+.site-header.transparent .site-pref-trigger,
+html[data-theme="light"] .site-header.transparent .site-pref-trigger,
+.site-header.transparent .site-theme-toggle,
+html[data-theme="light"] .site-header.transparent .site-theme-toggle {
+  color: #f8f2e7 !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Owner navigation sidebar tabs */

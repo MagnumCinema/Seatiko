@@ -362,6 +362,12 @@ func (s *MemoryStore) UpdateVenueBookingRules(ownerID, venueID string, input Boo
 		if input.HoldMinutes != nil {
 			venue.HoldMinutes = *input.HoldMinutes
 		}
+		if input.PreorderLeadMin != nil {
+			if !preorderLeadLimit.ok(*input.PreorderLeadMin) {
+				return models.Venue{}, ErrBadRequest
+			}
+			venue.PreorderLeadMin = *input.PreorderLeadMin
+		}
 		if input.AllowPreorder != nil {
 			venue.AllowPreorder = *input.AllowPreorder
 		}
@@ -404,7 +410,7 @@ func (s *MemoryStore) UpdateVenueBookingRules(ownerID, venueID string, input Boo
 		if !preorderLeadLimit.ok(*input.PreorderLeadMin) {
 			return models.Venue{}, ErrBadRequest
 		}
-		venue.PreorderLeadMin = *input.PreorderLeadMin
+		draftVenue.PreorderLeadMin = *input.PreorderLeadMin
 	}
 	if input.AllowPreorder != nil {
 		draftVenue.AllowPreorder = *input.AllowPreorder
