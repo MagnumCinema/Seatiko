@@ -15,7 +15,14 @@ export type Database = NodePgDatabase<typeof schema>;
     DrizzleModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => ({
-        db: drizzle({ connection: { connectionString: config.get('DATABASE_URL', { infer: true }), max: 10 }, schema, casing: 'snake_case' }),
+        db: drizzle({
+          connection: {
+            connectionString: config.get('DATABASE_URL', { infer: true }),
+            max: process.env.VERCEL ? 3 : 10,
+          },
+          schema,
+          casing: 'snake_case',
+        }),
       }),
     }),
   ],

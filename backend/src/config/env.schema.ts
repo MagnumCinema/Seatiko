@@ -11,7 +11,7 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().positive().optional(),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   DATABASE_URL: z.url(),
-  UPLOAD_DIR: z.string().default('./data/uploads'),
+  UPLOAD_DIR: z.string().default(process.env.VERCEL ? '/tmp/uploads' : './data/uploads'),
   /** HMAC key of table QR codes; the Go API's default keeps printed codes valid. */
   QR_SECRET: z.string().default('seatiko-qr-dev-secret'),
 
@@ -38,9 +38,11 @@ export const envSchema = z.object({
 
   /** Apply pending database migrations when the app starts. */
   DB_MIGRATE_ON_START: z.stringbool().default(true),
+  /** Seed demo-state.json automatically on startup only when the users table is empty. */
+  SEED_DEMO_ON_EMPTY_DB: z.stringbool().default(false),
 
   /** Import cafes and restaurants from open data (OSM + Overture) at start and on schedule. */
-  OPEN_PLACES_IMPORT: z.stringbool().default(true),
+  OPEN_PLACES_IMPORT: z.stringbool().default(!process.env.VERCEL),
   /** City slugs to import, comma separated (balti,chisinau). */
   OPEN_PLACES_CITIES: z.string().default('balti'),
   /** Re-import when the last successful import is older than this. */
@@ -85,7 +87,11 @@ export type Env = z.infer<typeof envSchema>;
 
 /** Validates process.env at startup; a missing or bad variable stops the app with a clear message. */
 export function validateEnv(raw: Record<string, unknown>): Env {
-  const result = envSchema.safeParse(raw);
+  const normalized = {
+    ...raw,
+    DATABASE_URL: raw.DATABASE_URL || raw.POSTGRES_URL || raw.POSTGRES_PRISMA_URL,
+  };
+  const result = envSchema.safeParse(normalized);
   if (!result.success) {
     const lines = result.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`);
     throw new Error(`Invalid environment:\n${lines.join('\n')}`);

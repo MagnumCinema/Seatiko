@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule } from '@nestjs/swagger';
@@ -24,7 +25,15 @@ async function bootstrap() {
   app.enableShutdownHooks();
   // Local media (no S3_BUCKET): avatars and photos under /uploads, as the Go API.
   const media = app.get(ConfigService<Env, true>);
-  if (!media.get('S3_BUCKET', { infer: true })) app.useStaticAssets(media.get('UPLOAD_DIR', { infer: true }), { prefix: '/uploads/' });
+  if (!media.get('S3_BUCKET', { infer: true })) {
+    const uploadDir = media.get('UPLOAD_DIR', { infer: true });
+    try {
+      mkdirSync(uploadDir, { recursive: true });
+      app.useStaticAssets(uploadDir, { prefix: '/uploads/' });
+    } catch {
+      // Read-only filesystem (e.g. serverless without S3_BUCKET): skip local static serving.
+    }
+  }
   SwaggerModule.setup('api/docs', app, openApiDocument() as never, { swaggerOptions: { url: '/api/openapi.yaml' } });
 
   const config = app.get(ConfigService<Env, true>);

@@ -17,4 +17,14 @@ describe('env', () => {
     expect(listenAddress({ ADDR: '127.0.0.1:18090' })).toEqual({ host: '127.0.0.1', port: 18090 });
     expect(listenAddress({ ADDR: ':8080', PORT: 3000 })).toEqual({ port: 3000 });
   });
+
+  it('falls back to POSTGRES_URL and parses SEED_DEMO_ON_EMPTY_DB', () => {
+    const env = validateEnv({
+      JWT_SECRET: 'x'.repeat(32),
+      POSTGRES_URL: 'postgres://u:p@ep-demo.neon.tech/neondb?sslmode=require',
+      SEED_DEMO_ON_EMPTY_DB: 'true',
+    });
+    expect(env.DATABASE_URL).toBe('postgres://u:p@ep-demo.neon.tech/neondb?sslmode=require');
+    expect(env.SEED_DEMO_ON_EMPTY_DB).toBe(true);
+  });
 });

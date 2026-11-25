@@ -1,4 +1,3 @@
-import { DuckDBInstance } from '@duckdb/node-api';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../../config/env.schema.js';
@@ -40,6 +39,7 @@ export class OvertureClient extends OverturePlacesSource {
     const release = await this.release();
     const minConfidence = this.config.get('OVERTURE_MIN_CONFIDENCE', { infer: true });
     const categories = Object.keys(OVERTURE_CATEGORIES).map((c) => `'${c}'`).join(',');
+    const { DuckDBInstance } = await import('@duckdb/node-api');
     const db = await DuckDBInstance.create(':memory:');
     const conn = await db.connect();
     try {
