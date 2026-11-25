@@ -2,7 +2,7 @@
 
 Цель: переписать весь API Seatiko (сейчас Go, `seatiko/services/api`) на NestJS в папке `backend/`, без изменений для сайта, Android-приложения и Twenty CRM. `twenty/` не трогаем.
 
-Статус: план, код не начат. Анализ сделан по `main` @ `2516de34`.
+Статус: **этап 0 готов** (контрактные тесты: 45 тестов, 105/105 операций, зелёные на Go). Анализ — по `main` @ `2516de34`.
 
 ---
 
@@ -77,53 +77,67 @@ Twenty (REST + GraphQL + метаданные, вебхук с подписью)
 | Что | Выбор | Почему |
 |---|---|---|
 | Рантайм | Node.js 24 LTS | как у сайта (Node 22) — обновим и его позже |
-| Фреймворк | NestJS (актуальная стабильная), адаптер Express | модули, DI, guards, pipes, SSE из коробки |
+| Фреймворк | NestJS 12 (ESM), адаптер Express | модули, DI, guards, pipes, SSE из коробки |
 | База | **PostgreSQL 16, отдельный контейнер `seatiko-db`** | транзакции, ограничения; базу Twenty не используем |
-| ORM | **Prisma** (рекомендация) | схема как код, миграции, типы; альтернатива — Drizzle |
+| ORM | **Drizzle через `@nestjs/drizzle`** | официальный модуль Nest 12 (у Prisma официального модуля нет, её `latest` сейчас — release candidate 8.0); схема в TypeScript, миграции `drizzle-kit` |
 | Кэш / очереди | Redis (отдельный `seatiko-redis`) + BullMQ | планировщик кухни, CRM-синк, rate limit, SSE между репликами |
-| Валидация | class-validator + class-transformer | DTO на каждый запрос |
+| Валидация | Zod + `StandardSchemaValidationPipe` (Nest 12) | схемы без декораторов, тип запроса выводится из схемы |
 | Документация | существующий `openapi.yaml` = источник правды | + `@nestjs/swagger` только для сверки |
-| Тесты | Jest (unit) + общий e2e-набор на `fetch` | один и тот же набор гоняем против Go и Nest |
+| Тесты | Vitest (стандарт Nest 12) + контрактный набор на `fetch` | один и тот же набор гоняем против Go и Nest |
 | Пароли / JWT | `bcrypt`, `@nestjs/jwt` с тем же `JWT_SECRET` и claims | старые токены и пароли работают без сброса |
 
-### Структура `backend/`
+### Архитектура и структура `backend/`
+
+Модульный монолит: один процесс, внутри — независимые доменные модули с чёткими слоями. Так проще деплоить сейчас и можно вынести модуль в сервис позже.
 
 ```text
 backend/
-  PLAN.md                ← этот файл
-  package.json  tsconfig.json  nest-cli.json  Dockerfile
-  prisma/
-    schema.prisma        ← таблицы вместо JSON-коллекций
-    migrations/
-    seed.ts              ← демо-данные (города, 10 ресторанов, меню, демо-аккаунты)
+  PLAN.md  AGENTS.md  package.json  nest-cli.json  drizzle.config.ts  Dockerfile
   src/
-    main.ts  app.module.ts
-    common/              ← формат ошибок {"error": "code"}, guards ролей, rate limit, pipes, время/JSON
-    config/              ← env (те же имена переменных, что у Go)
-    auth/                ← register, login, JWT, RequireActiveAccount
-    account/             ← /me, email, пароль, удаление (GDPR), аватар
-    media/               ← S3 / локальная папка, обработка изображений (sharp)
-    catalog/             ← cities, venues, tables, schedule, menu (публичное), collections
-    map/                 ← map/config, map/places, places/photo, Google Places
-    discover/            ← фильтры, счётчик, AI (Groq + правила)
-    availability/        ← поиск свободных столов
-    reservations/        ← брони, «Я приду», отмена, история, наблюдение за столом
-    preorders/           ← предзаказ, планировщик кухни
-    adult/               ← 18+: grant / revoke / журнал / меню предзаказа
-    sessions/            ← QR-сессии, заказы, вызовы официанта, оплата
-    waitlist/            ← лист ожидания (гость + персонал)
-    events/              ← заявки на банкеты (теперь сохраняются)
-    notifications/       ← лента, прочтение, SSE (Redis pub/sub)
-    restaurant/          ← анкеты, модерация изменений, меню, столы, QR, правила, аналитика, персонал
-    staff/               ← панель персонала
-    admin/               ← обзор, люди, компании, модерация
-    crm/                 ← Twenty: синк, вебхук, схема, воронка, дашборд, задачи
-    health/  docs/       ← /healthz, /api/docs, /api/openapi.yaml
-  scripts/
-    import-go-state.ts   ← перенос seatiko-state.json → Postgres с сохранением id
+    main.ts                    ← запуск: адаптер, глобальные pipes/filters, порт
+    app.module.ts              ← собирает модули, ничего не делает сам
+    config/                    ← схема env на Zod, типизированный доступ к настройкам
+    core/                      ← сквозное, без бизнес-логики
+      http/                    ← фильтр ошибок {"error": "code"}, сериализация времени как в Go
+      auth/                    ← JWT (совместим с Go), guards: auth, роли, активный аккаунт; @CurrentUser, @Roles, @Public
+      errors/                  ← доменные ошибки (NotFound, Forbidden, Conflict…) → HTTP-коды
+      time/                    ← часовой пояс Europe/Chisinau, «сейчас» (подменяется в тестах)
+    database/                  ← Drizzle: подключение, транзакции
+      schema/                  ← таблицы по доменам (users.ts, venues.ts, reservations.ts…)
+      migrations/              ← генерирует drizzle-kit
+      seed/                    ← демо-данные пилота
+    integrations/              ← адаптеры внешних систем за интерфейсами
+      storage/  google-places/  groq/  twenty/
+    modules/                   ← бизнес-домены
+      auth/  account/  catalog/  map/  availability/  reservations/  preorders/  adult/
+      floor/  waitlist/  events/  notifications/  restaurant/  staff/  admin/  discover/  crm/
   test/
-    contract/            ← e2e-набор, общий для Go и Nest
+    contract/                  ← чёрный ящик по HTTP, общий для Go и Nest (готово)
+    e2e/                       ← сценарии через приложение Nest (@nestjs/testing)
 ```
+
+Внутри каждого модуля одинаково:
+
+```text
+modules/reservations/
+  reservations.module.ts       ← что импортирует и что отдаёт наружу
+  reservations.controller.ts   ← только HTTP: маршрут, схема запроса, вызов сервиса, форма ответа
+  reservations.service.ts      ← бизнес-правила (пересечения, «Я приду», отмена)
+  reservations.repository.ts   ← только запросы Drizzle, без правил
+  reservations.schemas.ts      ← Zod-схемы запросов + выведенные типы
+  reservations.events.ts       ← события домена (ReservationCancelled…)
+  reservations.service.spec.ts ← unit-тесты правил (перенос Go-тестов)
+```
+
+Правила, которые держим:
+
+1. **Слои идут сверху вниз**: controller → service → repository. Контроллер не ходит в базу, сервис не знает про `Request`/`Response`, репозиторий не принимает решений.
+2. **Модули не лезут в чужие репозитории.** Нужны данные соседа — через его экспортированный сервис. Реакции на события (уведомления, CRM-синк, кухня) — через `@nestjs/event-emitter`, без прямых вызовов.
+3. **Внешние системы — только через `integrations/`** и интерфейс; в тестах подставляем фейк.
+4. **Ошибки домена — классы из `core/errors`**, один фильтр превращает их в `{"error": "code"}` с нужным HTTP-кодом, как в Go.
+5. **Время и id** берём из `core/time` и одного генератора — тесты управляют «сейчас».
+6. **Конфиг читается только через `config/`**, `process.env` в коде модулей не используется.
+7. Один модуль = одна папка; файл больше ~400 строк — сигнал разделить.
 
 ### Как сохраняем совместимость
 
@@ -149,25 +163,25 @@ backend/
 |---|---|---|
 | Конфиг и проверка env | свой `config.go` | `@nestjs/config` + схема `zod` (падаем при старте, если переменной нет) |
 | JWT, роли | свой middleware | `@nestjs/jwt` + `@nestjs/passport` / `passport-jwt`, guard ролей на декораторе `@Roles()` |
-| Валидация запросов | ручные проверки в хендлерах | `class-validator` + `class-transformer` + глобальный `ValidationPipe` |
+| Валидация запросов | ручные проверки в хендлерах | Zod-схемы + `StandardSchemaValidationPipe` |
 | Rate limit | свой счётчик в памяти | `@nestjs/throttler` + хранилище в Redis (`@nest-lab/throttler-storage-redis`) — работает на нескольких репликах |
-| Планировщик кухни, CRM-синк | тикеры-горутины | `@nestjs/bullmq` (повторные попытки, задержки, видно в очереди) или `@nestjs/schedule` для простого cron |
+| Планировщик кухни, CRM-синк | тикеры-горутины | `@nestjs/schedule` + `@nestjs/locks` (задача идёт на одной реплике); тяжёлое — `@nestjs/bullmq` |
 | События домена (бронь, предзаказ → уведомления, CRM) | прямые вызовы | `@nestjs/event-emitter`: сервисы публикуют событие, уведомления и CRM подписаны |
 | SSE | свой хаб с каналами | встроенный `@Sse()` в Nest + RxJS, рассылка между репликами через Redis pub/sub (`ioredis`) |
-| S3 / MinIO | своя подпись SigV4 | `@aws-sdk/client-s3` (официальный, работает с MinIO и R2) |
+| S3 / MinIO | своя подпись SigV4 | `@nestjs/storage` (диски local / S3 / R2, публичные URL) |
 | Загрузка файлов | свой разбор multipart | `FileInterceptor` (multer) + `ParseFilePipe` с `MaxFileSizeValidator`; тип — по magic bytes через `file-type` |
 | Обработка картинок | `x/image` + своя обрезка | `sharp` (обрезка, ресайз, удаление EXIF, WebP) |
 | Groq (AI) | свой HTTP-клиент | официальный `groq-sdk` (или `openai` SDK с `baseURL` Groq) |
 | Google Places | свой HTTP-клиент | официальный `@googlemaps/places` |
-| Twenty CRM | свой REST/GraphQL-клиент | `@nestjs/axios` (HttpModule) + `graphql-request`; официального SDK у Twenty для этого нет — проверим на этапе 9 |
+| Twenty CRM | свой REST/GraphQL-клиент + проверка подписи вебхука | `@nestjs/webhooks` (приём и подпись), `@nestjs/resilience` (повторы, таймауты), HTTP — встроенный `fetch` |
 | Часовой пояс Europe/Chisinau | встроенная tzdata Go | `date-fns-tz` (или Luxon) |
 | Пароли | `bcrypt` (Go) | `bcrypt` (Node) — хэши совместимы |
 | Здоровье сервиса | свой `/healthz` | `@nestjs/terminus` (проверка БД, Redis, S3) |
 | Логи | `log.Printf` | `nestjs-pino` (JSON-логи, request id) |
 | Безопасность HTTP | — | `helmet`, встроенный CORS |
 | OpenAPI | ручной yaml | `@nestjs/swagger` для сверки; контракт по-прежнему `openapi.yaml`, ответы проверяем валидатором OpenAPI в e2e (например `jest-openapi`) |
-| БД | JSON-файл | `@prisma/client` + модуль `PrismaService` (или готовый `nestjs-prisma`) |
-| Тесты | `go test` | `@nestjs/testing` + Jest, `supertest` для HTTP |
+| БД | JSON-файл | `@nestjs/drizzle` + `drizzle-orm` (`node-postgres`), миграции `drizzle-kit` |
+| Тесты | `go test` | `@nestjs/testing` + Vitest, `supertest` для HTTP |
 | QR-подпись | HMAC в `internal/qr` | встроенный `node:crypto` (тот же алгоритм, старые QR остаются валидными) |
 
 Что остаётся своим кодом: правила брони и пересечений, расчёт свободных слотов, предзаказ и 18+, фильтры `/discover`, логика синхронизации с CRM, сид демо-данных.
@@ -183,8 +197,8 @@ backend/
 | # | Этап | Что входит | Готово, когда | Оценка |
 |---|---|---|---|---|
 | 0 | Контрактный набор | e2e-тесты на `fetch` по всем 105 маршрутам (happy path + главные ошибки), гоняются против Go через `BASE_URL`; сверка с `openapi.yaml` | набор зелёный на Go | 4–5 дн |
-| 1 | Каркас | Nest-проект, конфиг, Prisma, `seatiko-db` + `seatiko-redis` в compose (профиль `nest`), формат ошибок, JWT-совместимость, роли, rate limit, `/healthz`, `/api/docs`, Dockerfile, CI | `/healthz` и `/api/openapi.yaml` проходят контрактные тесты | 3 дн |
-| 2 | Схема и сид | `schema.prisma` для всех 19 коллекций + `event_inquiries`, миграции, ограничение на пересечения, сид демо-данных (как `seed()` в Go) | `prisma migrate` + сид поднимают те же данные, что Go | 3–4 дн |
+| 1 | Каркас | Nest-проект, конфиг, Drizzle, `seatiko-db` + `seatiko-redis` в compose (профиль `nest`), формат ошибок, JWT-совместимость, роли, rate limit, `/healthz`, `/api/docs`, Dockerfile, CI | `/healthz` и `/api/openapi.yaml` проходят контрактные тесты | 3 дн |
+| 2 | Схема и сид | схема Drizzle для всех 19 коллекций + `event_inquiries`, миграции, ограничение на пересечения, сид демо-данных (как `seed()` в Go) | `drizzle-kit migrate` + сид поднимают те же данные, что Go | 3–4 дн |
 | 3 | Каталог и карта | cities, venues, tables, schedule, menu, collections, map/config, map/places + Google Places, places/photo, availability | контракт по этим маршрутам зелёный на Nest | 4 дн |
 | 4 | Аккаунт | register/login, /me, email, пароль, удаление (GDPR), аватар (S3/MinIO, `sharp`) | вход старыми паролями и токенами работает | 3 дн |
 | 5 | Бронирование | reservations, confirm-arrival, cancel, history, watch, waitlist, event-inquiries | двойная бронь невозможна; тесты конфликтов из Go перенесены | 5 дн |
@@ -214,7 +228,7 @@ Go хранит всё в одном JSON в памяти. Если часть �
 | Двойные брони под нагрузкой | `EXCLUDE`-ограничение в Postgres + транзакции |
 | CRM получит дубли | идемпотентный upsert по внешним id, первый прогон на тестовом Twenty |
 | Потеря данных при переключении | короткое окно только для чтения, импорт, сверка счётчиков; откат = вернуть nginx на Go и импорт обратно (скрипт `export-to-go-state.ts`) |
-| Регресс бизнес-логики | все 100 Go-тестов переносим в Jest как unit-тесты сервисов |
+| Регресс бизнес-логики | все 100 Go-тестов переносим в Vitest как unit-тесты сервисов |
 
 ---
 
@@ -229,7 +243,7 @@ Go хранит всё в одном JSON в памяти. Если часть �
 
 ## 6. Нужно решить до старта
 
-1. **ORM**: Prisma (рекомендую) или Drizzle / TypeORM?
+1. ~~ORM~~ — решено: Drizzle через `@nestjs/drizzle` (официальный модуль Nest 12).
 2. **База**: отдельный контейнер `seatiko-db` (рекомендую) или отдельная база на сервере Postgres от Twenty?
 3. **Redis**: свой `seatiko-redis` (рекомендую) или отдельная база (индекс) в Redis Twenty?
 4. **Новые фичи на время переноса**: замораживаем API на Go (рекомендую, только багфиксы) или делаем фичи сразу в двух местах?
