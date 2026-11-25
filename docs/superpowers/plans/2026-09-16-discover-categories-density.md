@@ -1128,14 +1128,14 @@ Expected: all PASS
 
 ```bash
 cd /path/to/.worktrees/discover-preference-box-polish && \
-docker build --no-cache -t virtual-restaurant-web:latest --build-arg NEXT_PUBLIC_API_URL= seatiko/apps/web && \
+docker build --no-cache -t seatiko-web:latest --build-arg NEXT_PUBLIC_API_URL= seatiko/apps/web && \
 cd /path/to/repo-root && docker compose up -d --force-recreate web
 ```
 
 Verify markers:
 
 ```bash
-docker exec virtual-restaurant-web-1 sh -c \
+docker exec seatiko-web-1 sh -c \
   'grep -Roh "discover-stepper-panel\|budgetReadout\|discover-budget-range\|discover-chip-icon" /app/.next/static 2>/dev/null | sort | uniq -c'
 ```
 
