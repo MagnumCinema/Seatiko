@@ -47,6 +47,11 @@ const MOLDOVA_BOUNDS: MapBounds = { south: 45.45, west: 26.60, north: 48.55, eas
 const OPEN_FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const SOURCE_ID = "seatiko-venues";
 const VENUE_LAYER_ID = "seatiko-venue-pins";
+const DOT_LAYER_ID = "seatiko-venue-dots";
+/** Below this zoom (whole city) places are dots, so they don't pile up; closer they become pins. */
+const PIN_MIN_ZOOM = 14;
+/** Site palette: partners deep green, other places sage, the selected one gold. */
+const PIN_COLORS = { partner: "#175f43", other: "#7fa792", selected: "#d99a3e" };
 
 const mapCopy = {
   ru: {
@@ -691,14 +696,36 @@ function VenueMapArea({
         data,
       });
 
-      // Location pins (teardrops) instead of dots: green partners, grey others, gold selected.
-      addPinImage(map, "seatiko-pin-partner", "#175f43");
-      addPinImage(map, "seatiko-pin-other", "#7d8380");
-      addPinImage(map, "seatiko-pin-selected", "#d99a3e");
+      // City view: small dots. Zoomed in: location pins (teardrops).
+      const sortKey = ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0];
+      map.addLayer({
+        id: DOT_LAYER_ID,
+        type: "circle",
+        source: SOURCE_ID,
+        maxzoom: PIN_MIN_ZOOM,
+        layout: { "circle-sort-key": sortKey as maplibregl.ExpressionSpecification },
+        paint: {
+          "circle-color": [
+            "case",
+            ["boolean", ["get", "selected"], false],
+            PIN_COLORS.selected,
+            ["boolean", ["get", "inDatabase"], false],
+            PIN_COLORS.partner,
+            PIN_COLORS.other,
+          ],
+          "circle-radius": ["case", ["boolean", ["get", "selected"], false], 8, ["boolean", ["get", "inDatabase"], false], 6.5, 5],
+          "circle-stroke-width": 1.5,
+          "circle-stroke-color": "#fffdf8",
+        },
+      });
+      addPinImage(map, "seatiko-pin-partner", PIN_COLORS.partner);
+      addPinImage(map, "seatiko-pin-other", PIN_COLORS.other);
+      addPinImage(map, "seatiko-pin-selected", PIN_COLORS.selected);
       map.addLayer({
         id: VENUE_LAYER_ID,
         type: "symbol",
         source: SOURCE_ID,
+        minzoom: PIN_MIN_ZOOM,
         layout: {
           "icon-image": [
             "case",
@@ -713,14 +740,14 @@ function VenueMapArea({
           "icon-allow-overlap": true,
           "icon-ignore-placement": true,
           // Partners and the selected place are drawn above the other pins.
-          "symbol-sort-key": ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0],
+          "symbol-sort-key": sortKey as maplibregl.ExpressionSpecification,
         },
       });
       map.addLayer({
         id: "seatiko-venue-name",
         type: "symbol",
         source: SOURCE_ID,
-        minzoom: 13.4,
+        minzoom: PIN_MIN_ZOOM,
         layout: {
           "text-field": ["get", "name"],
           "text-size": 11,
@@ -739,7 +766,7 @@ function VenueMapArea({
         },
       });
 
-      map.on("click", VENUE_LAYER_ID, (event) => {
+      const onPlaceClick = (event: maplibregl.MapLayerMouseEvent) => {
         const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
         const placeId = String(feature?.properties?.placeId ?? "");
         const place = placesRef.current.find((item) => item.id === placeId);
@@ -747,8 +774,10 @@ function VenueMapArea({
         setSelectedId(place.id);
         map.easeTo({ center: [place.lng, place.lat], zoom: 15.2, duration: 520 });
         showVenuePopup(place, map);
-      });
-      [VENUE_LAYER_ID].forEach((layerId) => {
+      };
+      map.on("click", VENUE_LAYER_ID, onPlaceClick);
+      map.on("click", DOT_LAYER_ID, onPlaceClick);
+      [VENUE_LAYER_ID, DOT_LAYER_ID].forEach((layerId) => {
         map.on("mouseenter", layerId, () => {
           map.getCanvas().style.cursor = "pointer";
         });

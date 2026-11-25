@@ -1270,7 +1270,7 @@ html[data-theme="light"] .site-nav-primary:hover {
 .venue-map-legend span { display: flex; align-items: center; gap: 6px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .legend-dot-ours { background: #175f43; }
-.legend-dot-other { background: #8a8f8c; }
+.legend-dot-other { background: #7fa792; }
 
 .live-map-fallback {
   position: absolute;
@@ -1415,7 +1415,7 @@ html[data-theme="light"] .site-nav-primary:hover {
   margin: 0 7px;
   border-radius: 50%;
   border: 2px solid #fffdf8;
-  background: #8a8f8c;
+  background: #7fa792;
   box-shadow: 0 0 0 1px rgba(31, 80, 60, .12);
 }
 .venue-num.venue-dot.is-partner { background: #175f43; }
