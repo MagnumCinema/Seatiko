@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/screens/discover_screen.dart';
 import 'package:mobile/screens/map_screen.dart';
@@ -20,6 +21,7 @@ class HomeShell extends StatefulWidget {
 
 class HomeShellState extends State<HomeShell> {
   late int tab;
+  late final Set<int> _mountedTabs;
   String cityId = 'city-balti';
   String cityName = '';
   final mapKey = GlobalKey<MapTabState>();
@@ -30,6 +32,7 @@ class HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     tab = widget.initialTab;
+    _mountedTabs = {widget.initialTab};
     _loadCity();
   }
 
@@ -61,22 +64,69 @@ class HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _onTab(int i) async {
+    HapticFeedback.selectionClick();
     if (i == 2 || i == 3) {
       final ok = await ensureAuth(context);
       if (!ok) return;
-      if (i == 2) ordersKey.currentState?.reload();
-      if (i == 3) profileKey.currentState?.reload();
     }
-    if (mounted) setState(() => tab = i);
+    if (!mounted) return;
+    setState(() {
+      _mountedTabs.add(i);
+      tab = i;
+    });
+    if (i == 2) ordersKey.currentState?.reload();
+    if (i == 3) profileKey.currentState?.reload();
   }
 
   void openQr() {
+    HapticFeedback.mediumImpact();
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const QrScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
+    final children = <Widget>[
+      _TabSlideFade(
+        active: tab == 0,
+        child: _mountedTabs.contains(0)
+            ? MapTab(
+                key: mapKey,
+                cityId: cityId,
+                cityName: cityName.isEmpty ? 'map.city'.tr() : cityName,
+                onCityChanged: _loadCity,
+              )
+            : const SizedBox.shrink(),
+      ),
+      _TabSlideFade(
+        active: tab == 1,
+        child: _mountedTabs.contains(1)
+            ? DiscoverTab(cityId: cityId)
+            : const SizedBox.shrink(),
+      ),
+      _TabSlideFade(
+        active: tab == 2,
+        child: _mountedTabs.contains(2)
+            ? OrdersTab(key: ordersKey)
+            : const SizedBox.shrink(),
+      ),
+      _TabSlideFade(
+        active: tab == 3,
+        child: _mountedTabs.contains(3)
+            ? ProfileTab(
+                key: profileKey,
+                onOpenOrders: () {
+                  setState(() {
+                    _mountedTabs.add(2);
+                    tab = 2;
+                  });
+                  ordersKey.currentState?.reload();
+                },
+              )
+            : const SizedBox.shrink(),
+      ),
+    ];
+
     return PopScope(
       canPop: tab == 0,
       onPopInvokedWithResult: (didPop, _) {
@@ -86,26 +136,7 @@ class HomeShellState extends State<HomeShell> {
       },
       child: Scaffold(
         extendBody: true,
-        body: IndexedStack(
-          index: tab,
-          children: [
-            MapTab(
-              key: mapKey,
-              cityId: cityId,
-              cityName: cityName.isEmpty ? 'map.city'.tr() : cityName,
-              onCityChanged: _loadCity,
-            ),
-            DiscoverTab(cityId: cityId),
-            OrdersTab(key: ordersKey),
-            ProfileTab(
-              key: profileKey,
-              onOpenOrders: () {
-                setState(() => tab = 2);
-                ordersKey.currentState?.reload();
-              },
-            ),
-          ],
-        ),
+        body: IndexedStack(index: tab, children: children),
         bottomNavigationBar: SafeArea(
           minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
           child: Container(
@@ -160,7 +191,7 @@ class HomeShellState extends State<HomeShell> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0x42D77B48),
+                                color: Color(0x42C8683B),
                                 blurRadius: 18,
                                 offset: Offset(0, 7),
                               ),
@@ -198,6 +229,22 @@ class HomeShellState extends State<HomeShell> {
   }
 }
 
+class _TabSlideFade extends StatelessWidget {
+  const _TabSlideFade({required this.active, required this.child});
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      opacity: active ? 1.0 : 0.0,
+      child: IgnorePointer(ignoring: !active, child: child),
+    );
+  }
+}
+
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
@@ -222,10 +269,14 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              active ? activeIcon : icon,
-              color: active ? FaColors.green : FaColors.muted,
-              size: 22,
+            AnimatedScale(
+              scale: active ? 1.08 : 1.0,
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
+                active ? activeIcon : icon,
+                color: active ? FaColors.green : FaColors.muted,
+                size: 22,
+              ),
             ),
             const SizedBox(height: 4),
             Text(

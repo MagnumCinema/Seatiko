@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/menu_screen.dart';
 import 'package:mobile/screens/payment_screen.dart';
 import 'package:mobile/screens/waiter_screens.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/widgets/shimmer.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({
@@ -118,6 +120,7 @@ class _SessionScreenState extends State<SessionScreen> {
     try {
       await ApiClient.instance.closeSession(widget.session.id);
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('session.released'.tr())),
       );
@@ -212,9 +215,7 @@ class _SessionScreenState extends State<SessionScreen> {
               const SizedBox(height: 10),
               Expanded(
                 child: loading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: FaColors.gold),
-                      )
+                    ? const CardListShimmer()
                     : error != null
                     ? Center(
                         child: Column(

@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:mobile/api.dart';
@@ -14,6 +15,7 @@ import 'package:mobile/screens/notifications_sheet.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/seatiko_logo.dart';
+import 'package:mobile/widgets/shimmer.dart';
 import 'package:mobile/widgets/venue_thumb.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -48,8 +50,15 @@ class MapTab extends StatefulWidget {
 }
 
 class MapTabState extends State<MapTab> {
-  Future<_MapBundle>? _future;
+  _MapBundle? _bundle;
+  bool _loading = true;
+  Object? _error;
+
+  List<Venue> _filteredVenues = const [];
+  List<MapPlace> _filteredOpenPlaces = const [];
+
   String _query = '';
+  Timer? _searchDebounce;
   String _cityId = 'city-balti';
   String? _selectedVenueId;
   bool _openOnly = false;
@@ -75,6 +84,7 @@ class MapTabState extends State<MapTab> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     ApiClient.instance.authVersion.removeListener(_refreshUnread);
     super.dispose();
   }
@@ -93,12 +103,29 @@ class MapTabState extends State<MapTab> {
     } catch (_) {}
   }
 
-  void reload(String cityId) {
+  Future<void> reload(String cityId) async {
     _cityId = cityId;
     final locale = mounted ? context.locale.languageCode : 'ru';
     setState(() {
-      _future = _fetchBundle(cityId, locale);
+      _loading = true;
+      _error = null;
     });
+    try {
+      final bundle = await _fetchBundle(cityId, locale);
+      if (!mounted) return;
+      _bundle = bundle;
+      _recomputeFilters(locale);
+      setState(() {
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e;
+      });
+    }
   }
 
   Future<_MapBundle> _fetchBundle(String cityId, String locale) async {
@@ -126,11 +153,19 @@ class MapTabState extends State<MapTab> {
             attribution: '',
           ),
         );
-    // Warm up map/config as well.
-    unawaited(ApiClient.instance.fetchMapConfig().catchError((_) => MapConfig(
-      cities: const [],
-      countryBounds: const MapBounds(south: 45, west: 26, north: 49, east: 30),
-    )));
+    unawaited(
+      ApiClient.instance.fetchMapConfig().catchError(
+        (_) => MapConfig(
+          cities: const [],
+          countryBounds: const MapBounds(
+            south: 45,
+            west: 26,
+            north: 49,
+            east: 30,
+          ),
+        ),
+      ),
+    );
 
     final results = await Future.wait([venuesFuture, placesFuture]);
     final venues = results[0] as List<Venue>;
@@ -141,6 +176,73 @@ class MapTabState extends State<MapTab> {
       attribution: placesResp.attribution,
       center: placesResp.center,
     );
+  }
+
+  void _recomputeFilters([String? localeOverride]) {
+    final bundle = _bundle;
+    if (bundle == null) return;
+    final locale = localeOverride ?? (mounted ? context.locale.languageCode : 'ru');
+    final q = _query;
+
+    _filteredVenues = bundle.venues.where((venue) {
+      if (_openOnly && !venue.openNow) return false;
+      if (_freeTablesOnly && venue.freeTables <= 0) return false;
+      if (_rating45Only && venue.rating < 4.5) return false;
+      if (_maxBudget != null && venue.averageCheck > _maxBudget!) return false;
+      if (_nearbyOnly && _userLat != null && _userLng != null) {
+        if (_distanceKm(_userLat!, _userLng!, venue.lat, venue.lng) > 3.0) {
+          return false;
+        }
+      }
+      if (_selectedCuisines.isNotEmpty) {
+        final hay = [
+          venue.name.pick(locale),
+          ...venue.cuisine,
+        ].join(' ').toLowerCase();
+        if (!_selectedCuisines.any((c) => hay.contains(c.replaceAll('_', ' ')))) {
+          return false;
+        }
+      }
+      if (q.isEmpty) return true;
+      final haystack = [
+        venue.name.pick(locale),
+        venue.address.pick(locale),
+        ...venue.cuisine,
+      ].join(' ').toLowerCase();
+      return haystack.contains(q);
+    }).toList();
+
+    _filteredOpenPlaces = _partnersOnly
+        ? const <MapPlace>[]
+        : bundle.places.where((p) {
+            if (p.inDatabase) return false;
+            if (_openOnly && p.openNow == false) return false;
+            if (_freeTablesOnly) return false;
+            if (_rating45Only && (p.rating ?? 0) < 4.5) return false;
+            if (_nearbyOnly && _userLat != null && _userLng != null) {
+              if (_distanceKm(_userLat!, _userLng!, p.lat, p.lng) > 3.0) {
+                return false;
+              }
+            }
+            if (q.isEmpty) return true;
+            final h = [
+              p.name.pick(locale),
+              p.address.pick(locale),
+              ...p.cuisine,
+            ].join(' ').toLowerCase();
+            return h.contains(q);
+          }).toList();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 260), () {
+      if (!mounted) return;
+      _query = value.trim().toLowerCase();
+      setState(() {
+        _recomputeFilters();
+      });
+    });
   }
 
   Future<bool> _ensureLocation() async {
@@ -185,6 +287,7 @@ class MapTabState extends State<MapTab> {
         setState(() {
           _userLat = pos.latitude;
           _userLng = pos.longitude;
+          _recomputeFilters();
         });
       }
       return true;
@@ -194,13 +297,20 @@ class MapTabState extends State<MapTab> {
   }
 
   Future<void> _toggleNearby() async {
+    HapticFeedback.selectionClick();
     if (_nearbyOnly) {
-      setState(() => _nearbyOnly = false);
+      setState(() {
+        _nearbyOnly = false;
+        _recomputeFilters();
+      });
       return;
     }
     final ok = await _ensureLocation();
     if (ok && mounted) {
-      setState(() => _nearbyOnly = true);
+      setState(() {
+        _nearbyOnly = true;
+        _recomputeFilters();
+      });
     }
   }
 
@@ -217,6 +327,7 @@ class MapTabState extends State<MapTab> {
   }
 
   Future<void> _changeCity() async {
+    HapticFeedback.selectionClick();
     final id = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => const CitySelectScreen(replaceHome: false),
@@ -226,21 +337,24 @@ class MapTabState extends State<MapTab> {
   }
 
   void _openVenue(Venue venue) {
+    HapticFeedback.selectionClick();
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => VenueDetailScreen(venueId: venue.id)),
     );
   }
 
   void _openPlaceSheet(MapPlace place, String locale) {
+    HapticFeedback.selectionClick();
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: FaColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) => SafeArea(
         top: false,
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -269,10 +383,7 @@ class MapTabState extends State<MapTab> {
               if (place.openingHours != null &&
                   place.openingHours!.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(
-                  place.openingHours!,
-                  style: const TextStyle(fontSize: 13),
-                ),
+                Text(place.openingHours!, style: const TextStyle(fontSize: 13)),
               ],
               if (place.phone != null && place.phone!.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -306,6 +417,7 @@ class MapTabState extends State<MapTab> {
   }
 
   void _openFiltersSheet() {
+    HapticFeedback.selectionClick();
     var openOnly = _openOnly;
     var freeTables = _freeTablesOnly;
     var rating45 = _rating45Only;
@@ -363,6 +475,7 @@ class MapTabState extends State<MapTab> {
                     ),
                     TextButton(
                       onPressed: () {
+                        HapticFeedback.selectionClick();
                         setModalState(() {
                           openOnly = false;
                           freeTables = false;
@@ -455,6 +568,7 @@ class MapTabState extends State<MapTab> {
                       if (!ok) nearby = false;
                     }
                     if (!ctx.mounted) return;
+                    HapticFeedback.selectionClick();
                     setState(() {
                       _openOnly = openOnly;
                       _freeTablesOnly = freeTables;
@@ -466,6 +580,7 @@ class MapTabState extends State<MapTab> {
                       _selectedCuisines
                         ..clear()
                         ..addAll(cuisines);
+                      _recomputeFilters();
                     });
                     Navigator.pop(ctx);
                   },
@@ -483,6 +598,11 @@ class MapTabState extends State<MapTab> {
   Widget build(BuildContext context) {
     final locale = context.locale.languageCode;
     final bottomPad = MediaQuery.paddingOf(context).bottom + 96;
+    final selected = _filteredVenues
+            .where((v) => v.id == _selectedVenueId)
+            .firstOrNull ??
+        _filteredVenues.firstOrNull;
+
     return SafeArea(
       bottom: false,
       child: Column(
@@ -492,7 +612,7 @@ class MapTabState extends State<MapTab> {
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
             child: Row(
               children: [
-                const SeatikoLogo(size: 42),
+                const SeatikoLogo(size: 40),
                 const SizedBox(width: 12),
                 Expanded(
                   child: InkWell(
@@ -542,10 +662,13 @@ class MapTabState extends State<MapTab> {
                   clipBehavior: Clip.none,
                   children: [
                     IconButton.filledTonal(
-                      onPressed: () => showNotificationsSheet(
-                        context,
-                        onUnreadChanged: _refreshUnread,
-                      ),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        showNotificationsSheet(
+                          context,
+                          onUnreadChanged: _refreshUnread,
+                        );
+                      },
                       icon: const Icon(Icons.notifications_none_rounded),
                       tooltip: 'notifications.title'.tr(),
                     ),
@@ -582,8 +705,7 @@ class MapTabState extends State<MapTab> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextField(
-              onChanged: (value) =>
-                  setState(() => _query = value.toLowerCase()),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'map.search'.tr(),
                 prefixIcon: const Icon(Icons.search_rounded),
@@ -605,26 +727,47 @@ class MapTabState extends State<MapTab> {
                 _FilterChip(
                   label: 'map.chip_open_now'.tr(),
                   selected: _openOnly,
-                  onTap: () => setState(() => _openOnly = !_openOnly),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _openOnly = !_openOnly;
+                      _recomputeFilters();
+                    });
+                  },
                 ),
                 _FilterChip(
                   label: 'map.chip_free_tables'.tr(),
                   selected: _freeTablesOnly,
-                  onTap: () =>
-                      setState(() => _freeTablesOnly = !_freeTablesOnly),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _freeTablesOnly = !_freeTablesOnly;
+                      _recomputeFilters();
+                    });
+                  },
                 ),
                 _FilterChip(
                   label: 'map.chip_rating_45'.tr(),
                   selected: _rating45Only,
-                  onTap: () => setState(() => _rating45Only = !_rating45Only),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _rating45Only = !_rating45Only;
+                      _recomputeFilters();
+                    });
+                  },
                 ),
                 _FilterChip(
                   label: 'map.chip_budget_300'.tr(),
                   selected: _budget300Only,
-                  onTap: () => setState(() {
-                    _budget300Only = !_budget300Only;
-                    _maxBudget = _budget300Only ? 300 : null;
-                  }),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _budget300Only = !_budget300Only;
+                      _maxBudget = _budget300Only ? 300 : null;
+                      _recomputeFilters();
+                    });
+                  },
                 ),
                 _FilterChip(
                   label: 'map.chip_nearby'.tr(),
@@ -634,155 +777,114 @@ class MapTabState extends State<MapTab> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: FutureBuilder<_MapBundle>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return const _MapLoading();
-                }
-                if (snapshot.hasError) {
-                  return _MapError(
-                    message: apiErrorText(snapshot.error!),
-                    onRetry: () => reload(_cityId),
-                  );
-                }
-
-                final bundle = snapshot.data!;
-                final venues = bundle.venues.where((venue) {
-                  if (_openOnly && !venue.openNow) return false;
-                  if (_freeTablesOnly && venue.freeTables <= 0) return false;
-                  if (_rating45Only && venue.rating < 4.5) return false;
-                  if (_maxBudget != null && venue.averageCheck > _maxBudget!) {
-                    return false;
-                  }
-                  if (_nearbyOnly && _userLat != null && _userLng != null) {
-                    if (_distanceKm(_userLat!, _userLng!, venue.lat, venue.lng) >
-                        3.0) {
-                      return false;
-                    }
-                  }
-                  if (_selectedCuisines.isNotEmpty) {
-                    final hay = [
-                      venue.name.pick(locale),
-                      ...venue.cuisine,
-                    ].join(' ').toLowerCase();
-                    if (!_selectedCuisines.any(
-                      (c) => hay.contains(c.replaceAll('_', ' ')),
-                    )) {
-                      return false;
-                    }
-                  }
-                  if (_query.isEmpty) return true;
-                  final haystack = [
-                    venue.name.pick(locale),
-                    venue.address.pick(locale),
-                    ...venue.cuisine,
-                  ].join(' ').toLowerCase();
-                  return haystack.contains(_query);
-                }).toList();
-
-                final openPlaces = _partnersOnly
-                    ? const <MapPlace>[]
-                    : bundle.places.where((p) {
-                        if (p.inDatabase) return false;
-                        if (_openOnly && p.openNow == false) return false;
-                        if (_freeTablesOnly) return false;
-                        if (_rating45Only && (p.rating ?? 0) < 4.5) return false;
-                        if (_nearbyOnly && _userLat != null && _userLng != null) {
-                          if (_distanceKm(_userLat!, _userLng!, p.lat, p.lng) >
-                              3.0) {
-                            return false;
-                          }
-                        }
-                        if (_query.isEmpty) return true;
-                        final h = [
-                          p.name.pick(locale),
-                          p.address.pick(locale),
-                          ...p.cuisine,
-                        ].join(' ').toLowerCase();
-                        return h.contains(_query);
-                      }).toList();
-
-                final selected =
-                    venues.where((v) => v.id == _selectedVenueId).firstOrNull ??
-                    venues.firstOrNull;
-
-                return RefreshIndicator(
-                  color: FaColors.green,
-                  onRefresh: () async {
-                    reload(_cityId);
-                    await _refreshUnread();
-                  },
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
-                    children: [
-                      _RestaurantMap(
-                        venues: venues,
-                        openPlaces: openPlaces,
-                        selected: selected,
-                        locale: locale,
-                        initialCenter: bundle.center,
-                        userLat: _userLat,
-                        userLng: _userLng,
-                        onLocateMe: _ensureLocation,
-                        onSelect: (venue) =>
-                            setState(() => _selectedVenueId = venue.id),
-                        onOpen: _openVenue,
-                        onOpenPlace: (p) => _openPlaceSheet(p, locale),
-                      ),
-                      if (bundle.attribution.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          bundle.attribution,
-                          style: const TextStyle(
-                            color: FaColors.muted,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'map.nearby_title'.tr(),
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'map.places_count'.tr(args: ['${venues.length}']),
-                            style: const TextStyle(
-                              color: FaColors.muted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (venues.isEmpty)
-                        const _EmptyMap()
-                      else
-                        ...venues.map(
-                          (venue) => _VenueCard(
-                            venue: venue,
-                            locale: locale,
-                            selected: venue.id == selected?.id,
-                            onTap: () => _openVenue(venue),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
+          const SizedBox(height: 10),
+          if (_loading && _bundle != null)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              color: FaColors.green,
+              backgroundColor: Colors.transparent,
             ),
+          Expanded(
+            child: _bundle == null && _loading
+                ? const VenueListShimmer()
+                : _bundle == null && _error != null
+                ? _MapError(
+                    message: apiErrorText(_error!),
+                    onRetry: () => reload(_cityId),
+                  )
+                : RefreshIndicator(
+                    color: FaColors.green,
+                    onRefresh: () async {
+                      await reload(_cityId);
+                      await _refreshUnread();
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _RestaurantMap(
+                                  venues: _filteredVenues,
+                                  openPlaces: _filteredOpenPlaces,
+                                  selected: selected,
+                                  locale: locale,
+                                  initialCenter: _bundle?.center,
+                                  userLat: _userLat,
+                                  userLng: _userLng,
+                                  onLocateMe: _ensureLocation,
+                                  onSelect: (venue) {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _selectedVenueId = venue.id);
+                                  },
+                                  onOpen: _openVenue,
+                                  onOpenPlace: (p) => _openPlaceSheet(p, locale),
+                                ),
+                                if (_bundle != null &&
+                                    _bundle!.attribution.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _bundle!.attribution,
+                                    style: const TextStyle(
+                                      color: FaColors.muted,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 18),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'map.nearby_title'.tr(),
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      'map.places_count'.tr(
+                                        args: ['${_filteredVenues.length}'],
+                                      ),
+                                      style: const TextStyle(
+                                        color: FaColors.muted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_filteredVenues.isEmpty)
+                          const SliverToBoxAdapter(child: _EmptyMap())
+                        else
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPad),
+                            sliver: SliverList.builder(
+                              itemCount: _filteredVenues.length,
+                              itemBuilder: (context, index) {
+                                final venue = _filteredVenues[index];
+                                return _VenueCard(
+                                  venue: venue,
+                                  locale: locale,
+                                  selected: venue.id == selected?.id,
+                                  onTap: () => _openVenue(venue),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),
@@ -954,9 +1056,9 @@ class _RestaurantMapState extends State<_RestaurantMap> {
         CircleOptions(
           geometry: LatLng(p.lat, p.lng),
           circleRadius: 7,
-          circleColor: '#748078',
+          circleColor: '#5C6B63',
           circleStrokeWidth: 2,
-          circleStrokeColor: '#FFF7E9',
+          circleStrokeColor: '#FFFDF8',
           circleOpacity: 0.78,
         ),
       );
@@ -969,9 +1071,9 @@ class _RestaurantMapState extends State<_RestaurantMap> {
         CircleOptions(
           geometry: LatLng(venue.lat, venue.lng),
           circleRadius: active ? 19 : 16,
-          circleColor: active ? '#D77B48' : '#1F6848',
+          circleColor: active ? '#C8683B' : '#246046',
           circleStrokeWidth: 3,
-          circleStrokeColor: '#FFF7E9',
+          circleStrokeColor: '#FFFDF8',
           circleOpacity: .98,
         ),
       );
@@ -1014,7 +1116,7 @@ class _RestaurantMapState extends State<_RestaurantMap> {
               textField: '${index + 1}',
               textSize: 10,
               textColor: '#FFFFFF',
-              textHaloColor: '#1F6848',
+              textHaloColor: '#246046',
               textHaloWidth: .3,
             ),
         ],
@@ -1035,13 +1137,13 @@ class _RestaurantMapState extends State<_RestaurantMap> {
     if (oldId != null && _circles.containsKey(oldId)) {
       await controller.updateCircle(
         _circles[oldId]!,
-        const CircleOptions(circleRadius: 16, circleColor: '#1F6848'),
+        const CircleOptions(circleRadius: 16, circleColor: '#246046'),
       );
     }
     if (newId != null && _circles.containsKey(newId)) {
       await controller.updateCircle(
         _circles[newId]!,
-        const CircleOptions(circleRadius: 19, circleColor: '#D77B48'),
+        const CircleOptions(circleRadius: 19, circleColor: '#C8683B'),
       );
     }
   }
@@ -1095,6 +1197,7 @@ class _RestaurantMapState extends State<_RestaurantMap> {
   void _zoomOut() => _controller?.animateCamera(CameraUpdate.zoomOut());
 
   Future<void> _centerOnUser() async {
+    HapticFeedback.selectionClick();
     final ok = await widget.onLocateMe();
     if (!ok || widget.userLat == null || widget.userLng == null) return;
     await _controller?.animateCamera(
@@ -1182,67 +1285,85 @@ class _RestaurantMapState extends State<_RestaurantMap> {
               ],
             ),
           ),
-          if (widget.selected != null)
-            Positioned(
-              left: 14,
-              right: 14,
-              bottom: 14,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => widget.onOpen(widget.selected!),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(13),
-                    decoration: BoxDecoration(
-                      color: FaColors.surface.withValues(alpha: .94),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x1A1D392F),
-                          blurRadius: 20,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        VenueThumb(
-                          imageUrl: widget.selected!.imageUrl,
-                          size: 42,
-                          radius: 12,
-                          priceLevel: widget.selected!.priceLevel,
-                        ),
-                        const SizedBox(width: 11),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.selected!.name.pick(widget.locale),
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                '${'map.free_tables'.tr(args: ['${widget.selected!.freeTables}'])} · ~${widget.selected!.averageCheck} MDL',
-                                style: const TextStyle(
-                                  color: FaColors.muted,
-                                  fontSize: 10,
-                                ),
+          Positioned(
+            left: 14,
+            right: 14,
+            bottom: 14,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.14),
+                    end: Offset.zero,
+                  ).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: widget.selected == null
+                  ? const SizedBox.shrink()
+                  : Material(
+                      key: ValueKey(widget.selected!.id),
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => widget.onOpen(widget.selected!),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: FaColors.surface.withValues(alpha: .95),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: FaColors.border),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x1A1D392F),
+                                blurRadius: 20,
+                                offset: Offset(0, 8),
                               ),
                             ],
                           ),
+                          child: Row(
+                            children: [
+                              VenueThumb(
+                                imageUrl: widget.selected!.imageUrl,
+                                size: 42,
+                                radius: 12,
+                                priceLevel: widget.selected!.priceLevel,
+                              ),
+                              const SizedBox(width: 11),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.selected!.name.pick(widget.locale),
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${'map.free_tables'.tr(args: ['${widget.selected!.freeTables}'])} · ~${widget.selected!.averageCheck} MDL',
+                                      style: const TextStyle(
+                                        color: FaColors.muted,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_rounded, size: 18),
+                            ],
+                          ),
                         ),
-                        const Icon(Icons.arrow_forward_rounded, size: 18),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
             ),
+          ),
         ],
       ),
     );
@@ -1286,18 +1407,18 @@ class _VenueCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: FaColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected
-                    ? FaColors.clay.withValues(alpha: .42)
+                    ? FaColors.clay.withValues(alpha: .5)
                     : FaColors.border,
               ),
             ),
@@ -1306,6 +1427,7 @@ class _VenueCard extends StatelessWidget {
                 VenueThumb(
                   imageUrl: venue.imageUrl,
                   priceLevel: venue.priceLevel,
+                  heroTag: 'venue-cover-${venue.id}',
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1319,17 +1441,29 @@ class _VenueCard extends StatelessWidget {
                               venue.name.pick(locale),
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
                               ),
                             ),
                           ),
-                          Text(
-                            '★ ${venue.rating}',
-                            style: const TextStyle(
-                              color: FaColors.clay,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: FaColors.ratingBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '★ ${venue.rating}',
+                              style: const TextStyle(
+                                color: FaColors.ratingFg,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ],
@@ -1339,40 +1473,41 @@ class _VenueCard extends StatelessWidget {
                         venue.cuisine.take(2).join(' · '),
                         style: const TextStyle(
                           color: FaColors.muted,
-                          fontSize: 10,
+                          fontSize: 11,
                         ),
                       ),
-                      const SizedBox(height: 9),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Container(
-                            width: 7,
-                            height: 7,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: venue.freeTables > 0
-                                  ? FaColors.free
-                                  : FaColors.occupied,
-                              shape: BoxShape.circle,
+                                  ? const Color(0xFF175F43)
+                                  : FaColors.occupied.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
                             child: Text(
                               'map.free_tables'.tr(args: ['${venue.freeTables}']),
                               style: TextStyle(
                                 color: venue.freeTables > 0
-                                    ? FaColors.green
+                                    ? FaColors.cream
                                     : FaColors.occupied,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
+                          const Spacer(),
                           Text(
                             '~${venue.averageCheck} MDL',
                             style: const TextStyle(
                               color: FaColors.muted,
-                              fontSize: 10,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -1387,13 +1522,6 @@ class _VenueCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MapLoading extends StatelessWidget {
-  const _MapLoading();
-  @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator());
 }
 
 class _MapError extends StatelessWidget {

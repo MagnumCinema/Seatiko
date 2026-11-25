@@ -1472,6 +1472,11 @@ class ApiClient {
   ApiClient._();
   static final ApiClient instance = ApiClient._();
 
+  @visibleForTesting
+  static http.Client? testHttpClient;
+
+  static http.Client get _client => testHttpClient ?? http.Client();
+
   static const _secureStorage = FlutterSecureStorage(
     aOptions: AndroidOptions(),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -1613,27 +1618,34 @@ class ApiClient {
 
     late http.Response response;
     final encoded = body == null ? null : jsonEncode(body);
-    switch (method) {
-      case 'POST':
-        response = await http
-            .post(uri, headers: headers, body: encoded)
-            .timeout(const Duration(seconds: 12));
-      case 'PUT':
-        response = await http
-            .put(uri, headers: headers, body: encoded)
-            .timeout(const Duration(seconds: 12));
-      case 'PATCH':
-        response = await http
-            .patch(uri, headers: headers, body: encoded)
-            .timeout(const Duration(seconds: 12));
-      case 'DELETE':
-        response = await http
-            .delete(uri, headers: headers, body: encoded)
-            .timeout(const Duration(seconds: 12));
-      default:
-        response = await http
-            .get(uri, headers: headers)
-            .timeout(const Duration(seconds: 12));
+    final client = _client;
+    try {
+      switch (method) {
+        case 'POST':
+          response = await client
+              .post(uri, headers: headers, body: encoded)
+              .timeout(const Duration(seconds: 12));
+        case 'PUT':
+          response = await client
+              .put(uri, headers: headers, body: encoded)
+              .timeout(const Duration(seconds: 12));
+        case 'PATCH':
+          response = await client
+              .patch(uri, headers: headers, body: encoded)
+              .timeout(const Duration(seconds: 12));
+        case 'DELETE':
+          response = await client
+              .delete(uri, headers: headers, body: encoded)
+              .timeout(const Duration(seconds: 12));
+        default:
+          response = await client
+              .get(uri, headers: headers)
+              .timeout(const Duration(seconds: 12));
+      }
+    } finally {
+      if (testHttpClient == null) {
+        client.close();
+      }
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -2360,7 +2372,13 @@ class ApiClient {
           token: qToken.isEmpty ? 'demo' : qToken,
         );
       }
-      final segs = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+      final segs = [
+        if (uri.scheme != 'http' &&
+            uri.scheme != 'https' &&
+            (uri.host == 'qr' || uri.host == 'table' || uri.host == 's'))
+          uri.host,
+        ...uri.pathSegments.where((s) => s.isNotEmpty),
+      ];
       if (segs.length >= 2) {
         final idx = segs.indexOf('table');
         if (idx != -1 && segs.length >= idx + 3) {

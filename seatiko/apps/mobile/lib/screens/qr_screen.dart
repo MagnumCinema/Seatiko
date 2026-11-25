@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
@@ -78,6 +79,7 @@ class _QrScreenState extends State<QrScreen> with WidgetsBindingObserver {
         table = tables.where((t) => t.id == session.tableId).firstOrNull;
       } catch (_) {}
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => OrderChoiceScreen(
@@ -89,6 +91,7 @@ class _QrScreenState extends State<QrScreen> with WidgetsBindingObserver {
       );
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorText(e))),
         );

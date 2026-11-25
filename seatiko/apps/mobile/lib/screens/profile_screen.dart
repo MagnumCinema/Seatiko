@@ -1,11 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
+import 'package:mobile/widgets/shimmer.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key, this.onOpenOrders});
@@ -154,6 +156,7 @@ class ProfileTabState extends State<ProfileTab> {
         dietPreferences: selectedDiets.toList(),
       );
       if (mounted) {
+        HapticFeedback.mediumImpact();
         setState(() => user = u);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('profile.saved'.tr())),
@@ -161,6 +164,7 @@ class ProfileTabState extends State<ProfileTab> {
       }
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorText(e))),
         );
@@ -212,10 +216,12 @@ class ProfileTabState extends State<ProfileTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('profile.change_email'.tr()),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(labelText: 'auth.email'.tr()),
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: ctrl,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(labelText: 'auth.email'.tr()),
+          ),
         ),
         actions: [
           TextButton(
@@ -256,27 +262,29 @@ class ProfileTabState extends State<ProfileTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('profile.change_password'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (needsOld) ...[
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (needsOld) ...[
+                TextField(
+                  controller: oldCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'profile.old_password'.tr(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               TextField(
-                controller: oldCtrl,
+                controller: newCtrl,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'profile.old_password'.tr(),
+                  labelText: 'profile.new_password'.tr(),
                 ),
               ),
-              const SizedBox(height: 10),
             ],
-            TextField(
-              controller: newCtrl,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'profile.new_password'.tr(),
-              ),
-            ),
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -321,20 +329,22 @@ class ProfileTabState extends State<ProfileTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('profile.delete_account'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('profile.delete_account_warn'.tr()),
-            if (needsPassword) ...[
-              const SizedBox(height: 12),
-              TextField(
-                controller: pwdCtrl,
-                obscureText: true,
-                decoration: InputDecoration(labelText: 'auth.password'.tr()),
-              ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('profile.delete_account_warn'.tr()),
+              if (needsPassword) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: pwdCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(labelText: 'auth.password'.tr()),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -374,9 +384,7 @@ class ProfileTabState extends State<ProfileTab> {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 96;
 
     if (loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: FaColors.gold),
-      );
+      return const SafeArea(child: CardListShimmer());
     }
 
     if (error != null) {
@@ -642,6 +650,7 @@ class ProfileTabState extends State<ProfileTab> {
                 label: Text('profile.diet_$d'.tr()),
                 selected: on,
                 onSelected: (v) {
+                  HapticFeedback.selectionClick();
                   setState(() {
                     if (v) {
                       selectedDiets.add(d);
@@ -667,6 +676,7 @@ class ProfileTabState extends State<ProfileTab> {
                 label: Text(code.toUpperCase()),
                 selected: selected,
                 onSelected: (_) async {
+                  HapticFeedback.selectionClick();
                   await context.setLocale(Locale(code));
                   try {
                     await ApiClient.instance.updateMe(locale: code);

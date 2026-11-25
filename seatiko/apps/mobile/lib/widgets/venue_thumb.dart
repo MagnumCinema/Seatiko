@@ -1,8 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/theme.dart';
 
-/// Restaurant photo thumb with gradient/cutlery fallback and relative URL resolution.
+/// Restaurant photo thumb with disk caching, memory cap and optional Hero transition.
 class VenueThumb extends StatelessWidget {
   const VenueThumb({
     super.key,
@@ -10,56 +11,45 @@ class VenueThumb extends StatelessWidget {
     this.size = 72,
     this.radius = 15,
     this.priceLevel = 2,
+    this.heroTag,
   });
 
   final String imageUrl;
   final double size;
   final double radius;
   final int priceLevel;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
     final fallback = _Fallback(size: size, radius: radius, priceLevel: priceLevel);
     final url = mediaUrl(imageUrl);
-    if (url.isEmpty) return fallback;
-
     final cachePx = (size * 2.5).round();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: Image.network(
-        url,
-        width: size,
-        height: size,
-        cacheWidth: cachePx,
-        cacheHeight: cachePx,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-        errorBuilder: (_, error, stackTrace) => fallback,
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) return child;
-          return SizedBox(
-            width: size,
-            height: size,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                fallback,
-                const Center(
-                  child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+
+    Widget child;
+    if (url.isEmpty) {
+      child = fallback;
+    } else {
+      child = ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          width: size,
+          height: size,
+          memCacheWidth: cachePx,
+          memCacheHeight: cachePx,
+          fit: BoxFit.cover,
+          fadeInDuration: const Duration(milliseconds: 160),
+          placeholder: (_, _) => fallback,
+          errorWidget: (_, _, _) => fallback,
+        ),
+      );
+    }
+
+    if (heroTag != null && heroTag!.isNotEmpty) {
+      return Hero(tag: heroTag!, child: child);
+    }
+    return child;
   }
 }
 
@@ -86,7 +76,7 @@ class _Fallback extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: priceLevel >= 3
               ? const [Color(0xFF7D4C37), Color(0xFF2E493C)]
-              : const [Color(0xFFE6B17E), Color(0xFF43735D)],
+              : const [Color(0xFFE9B96E), Color(0xFF246046)],
         ),
       ),
       child: Icon(
@@ -102,43 +92,47 @@ class VenueHeroImage extends StatelessWidget {
   const VenueHeroImage({
     super.key,
     required this.imageUrl,
-    this.height = 200,
+    this.height = 220,
+    this.heroTag,
   });
 
   final String imageUrl;
   final double height;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {
     final url = mediaUrl(imageUrl);
-    if (url.isEmpty) {
-      return Container(
-        height: height,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF2D5A3D), Color(0xFF1A2218), Color(0xFF3A3020)],
-          ),
-        ),
-        child: const Center(
-          child: Icon(Icons.restaurant, size: 64, color: FaColors.gold),
-        ),
-      );
-    }
-    return Image.network(
-      url,
+    final placeholder = Container(
       height: height,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      gaplessPlayback: true,
-      errorBuilder: (_, error, stackTrace) => Container(
-        height: height,
-        color: const Color(0xFF1A2218),
-        child: const Center(
-          child: Icon(Icons.restaurant, size: 64, color: FaColors.gold),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF246046), Color(0xFF153E2E), Color(0xFF1A2420)],
         ),
       ),
+      child: const Center(
+        child: Icon(Icons.restaurant, size: 64, color: FaColors.gold),
+      ),
     );
+
+    final Widget content = url.isEmpty
+        ? placeholder
+        : CachedNetworkImage(
+            imageUrl: url,
+            height: height,
+            width: double.infinity,
+            memCacheWidth: 1080,
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 180),
+            placeholder: (_, _) => placeholder,
+            errorWidget: (_, _, _) => placeholder,
+          );
+
+    if (heroTag != null && heroTag!.isNotEmpty) {
+      return Hero(tag: heroTag!, child: content);
+    }
+    return content;
   }
 }

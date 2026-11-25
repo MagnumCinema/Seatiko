@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/reservation_screen.dart';
@@ -9,6 +10,7 @@ import 'package:mobile/screens/session_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
 import 'package:mobile/widgets/restaurant_floor_plan.dart';
+import 'package:mobile/widgets/shimmer.dart';
 
 class FloorMapScreen extends StatefulWidget {
   const FloorMapScreen({
@@ -175,9 +177,7 @@ class _FloorMapScreenState extends State<FloorMapScreen> {
                 future: _future,
                 builder: (context, snap) {
                   if (snap.connectionState != ConnectionState.done) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: FaColors.gold),
-                    );
+                    return const CardListShimmer();
                   }
                   if (snap.hasError || !snap.hasData) {
                     return Center(
@@ -387,6 +387,7 @@ class _TableSheetState extends State<_TableSheet> {
         expectedArrival: chosen,
       );
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       widget.onChanged();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -400,6 +401,7 @@ class _TableSheetState extends State<_TableSheet> {
       Navigator.pop(context);
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorText(e))),
         );
@@ -436,8 +438,13 @@ class _TableSheetState extends State<_TableSheet> {
 
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          14,
+          20,
+          24 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -549,6 +556,7 @@ class _TableSheetState extends State<_TableSheet> {
                             tableId: t.id,
                           );
                           if (context.mounted) {
+                            HapticFeedback.mediumImpact();
                             widget.onChanged();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('table.notify_set'.tr())),
@@ -557,6 +565,7 @@ class _TableSheetState extends State<_TableSheet> {
                           }
                         } catch (e) {
                           if (context.mounted) {
+                            HapticFeedback.heavyImpact();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(apiErrorText(e))),
                             );

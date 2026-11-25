@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/theme.dart';
 
-/// Brand emblem for Seatiko headers and splash screens.
+/// Brand emblem matching `.site-brand-mark` in seatiko/apps/web (`#E9B96E` + `#18392D` "S").
 class SeatikoLogo extends StatelessWidget {
   const SeatikoLogo({super.key, this.size = 42});
 
@@ -9,39 +9,39 @@ class SeatikoLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = size * 0.30;
+    final smallRadius = size * 0.11;
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1B3B2B),
+      decoration: BoxDecoration(
+        color: FaColors.gold,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(14),
-          topRight: Radius.circular(14),
-          bottomRight: Radius.circular(14),
-          bottomLeft: Radius.circular(5),
+          topLeft: Radius.circular(radius),
+          topRight: Radius.circular(radius),
+          bottomRight: Radius.circular(radius),
+          bottomLeft: Radius.circular(smallRadius),
         ),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Icon(
-            Icons.table_restaurant_rounded,
-            color: FaColors.cream,
-            size: size * 0.52,
-          ),
-          Positioned(
-            top: size * 0.16,
-            right: size * 0.2,
-            child: Container(
-              width: size * 0.17,
-              height: size * 0.17,
-              decoration: const BoxDecoration(
-                color: FaColors.clay,
-                shape: BoxShape.circle,
-              ),
-            ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x38E9B96E),
+            blurRadius: 16,
+            offset: Offset(0, 6),
           ),
         ],
+      ),
+      child: Center(
+        child: Text(
+          'S',
+          style: TextStyle(
+            fontFamily: 'Georgia',
+            fontFamilyFallback: const ['serif'],
+            color: const Color(0xFF18392D),
+            fontSize: size * 0.56,
+            fontWeight: FontWeight.w800,
+            height: 1.0,
+          ),
+        ),
       ),
     );
   }

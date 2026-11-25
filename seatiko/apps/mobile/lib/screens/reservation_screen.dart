@@ -1,11 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/floor_map_screen.dart';
 import 'package:mobile/screens/menu_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/restaurant_floor_plan.dart';
+import 'package:mobile/widgets/shimmer.dart';
 
 class ReservationScreen extends StatefulWidget {
   const ReservationScreen({
@@ -178,6 +180,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
         );
       }
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('reservation.success'.tr())),
       );
@@ -198,6 +201,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
       }
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorText(e))),
         );
@@ -234,9 +238,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
           future: _loadFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(
-                child: CircularProgressIndicator(color: FaColors.clay),
-              );
+              return const CardListShimmer();
             }
             if (snapshot.hasError || !snapshot.hasData) {
               return Center(
@@ -326,8 +328,10 @@ class _ReservationScreenState extends State<ReservationScreen> {
                           (isEditing &&
                               candidate.id ==
                                   widget.existingReservation!.tableId)) {
+                        HapticFeedback.selectionClick();
                         setState(() => table = candidate);
                       } else {
+                        HapticFeedback.heavyImpact();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -402,7 +406,10 @@ class _ReservationScreenState extends State<ReservationScreen> {
                         child: ChoiceChip(
                           label: Text(label),
                           selected: active,
-                          onSelected: (_) => setState(() => durationMin = d),
+                          onSelected: (_) {
+                            HapticFeedback.selectionClick();
+                            setState(() => durationMin = d);
+                          },
                         ),
                       );
                     }).toList(),
@@ -430,7 +437,10 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       return ChoiceChip(
                         label: Text(formatClock(s)),
                         selected: active,
-                        onSelected: (_) => setState(() => selectedSlot = s),
+                        onSelected: (_) {
+                          HapticFeedback.selectionClick();
+                          setState(() => selectedSlot = s);
+                        },
                       );
                     }).toList(),
                   ),

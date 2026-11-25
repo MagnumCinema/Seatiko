@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/floor_map_screen.dart';
@@ -7,6 +8,7 @@ import 'package:mobile/screens/menu_screen.dart';
 import 'package:mobile/screens/reservation_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
+import 'package:mobile/widgets/shimmer.dart';
 import 'package:mobile/widgets/venue_thumb.dart';
 import 'package:mobile/widgets/waitlist_card.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -60,6 +62,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   }
 
   Future<void> _toggleFavorite() async {
+    HapticFeedback.selectionClick();
     final ok = await ensureAuth(context);
     if (!ok || !mounted) return;
     try {
@@ -152,6 +155,17 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: FaColors.muted.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
                 Text(
                   'venue.event_inquiry_title'.tr(),
                   style: const TextStyle(
@@ -292,12 +306,14 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               notes: notesCtrl.text.trim(),
                             );
                             if (!ctx.mounted) return;
+                            HapticFeedback.mediumImpact();
                             Navigator.pop(ctx);
                             messenger.showSnackBar(
                               SnackBar(content: Text('venue.event_sent'.tr())),
                             );
                           } catch (e) {
                             if (ctx.mounted) {
+                              HapticFeedback.heavyImpact();
                               setModalState(() => submitting = false);
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 SnackBar(content: Text(apiErrorText(e))),
@@ -326,9 +342,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(
-              child: CircularProgressIndicator(color: FaColors.gold),
-            );
+            return const SafeArea(child: CardListShimmer());
           }
           if (snap.hasError || !snap.hasData) {
             return Center(
@@ -395,8 +409,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               itemCount: photos.length,
                               onPageChanged: (i) =>
                                   setState(() => _galleryIndex = i),
-                              itemBuilder: (_, i) =>
-                                  VenueHeroImage(imageUrl: photos[i], height: 220),
+                              itemBuilder: (_, i) => VenueHeroImage(
+                                imageUrl: photos[i],
+                                height: 220,
+                                heroTag: i == 0 ? 'venue-cover-${v.id}' : null,
+                              ),
                             ),
                             Positioned(
                               bottom: 12,
@@ -422,7 +439,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                             ),
                           ],
                         )
-                      : VenueHeroImage(imageUrl: v.imageUrl, height: 220),
+                      : VenueHeroImage(
+                          imageUrl: v.imageUrl,
+                          height: 220,
+                          heroTag: 'venue-cover-${v.id}',
+                        ),
                 ),
               ),
               SliverToBoxAdapter(

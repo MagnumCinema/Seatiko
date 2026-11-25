@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/menu_screen.dart';
@@ -7,6 +8,7 @@ import 'package:mobile/screens/reservation_screen.dart';
 import 'package:mobile/screens/session_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
+import 'package:mobile/widgets/shimmer.dart';
 
 class OrdersTab extends StatefulWidget {
   const OrdersTab({super.key});
@@ -135,12 +137,14 @@ class OrdersTabState extends State<OrdersTab>
     try {
       final cleared = await ApiClient.instance.clearHistoryReservations();
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('orders.history_cleared'.tr(args: ['$cleared']))),
       );
       reload();
     } catch (e) {
       if (mounted) {
+        HapticFeedback.heavyImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(apiErrorText(e))),
         );
@@ -228,9 +232,7 @@ class OrdersTabState extends State<OrdersTab>
                     ),
                   )
                 : loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: FaColors.gold),
-                  )
+                ? const CardListShimmer()
                 : error != null
                 ? Center(
                     child: Padding(
@@ -306,170 +308,209 @@ class OrdersTabState extends State<OrdersTab>
       );
     }
 
+    final items = <Widget>[];
+    if (hasSession) {
+      items.add(
+        Card(
+          color: FaColors.green.withValues(alpha: 0.1),
+          margin: const EdgeInsets.only(bottom: 14),
+          child: ListTile(
+            leading: const Icon(Icons.qr_code_2_rounded, color: FaColors.green),
+            title: Text('orders.session'.tr()),
+            subtitle: Text(
+              '${sessionVenue?.name.pick(locale) ?? activeSession!.venueId}'
+              '${sessionTable != null ? ' · ${'orders.table'.tr()} ${sessionTable!.number}' : ''}',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              HapticFeedback.selectionClick();
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SessionScreen(
+                    session: activeSession!,
+                    venue: sessionVenue,
+                    table: sessionTable,
+                  ),
+                ),
+              );
+              reload();
+            },
+          ),
+        ),
+      );
+    }
+    if (!active && res.isNotEmpty) {
+      items.add(
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _clearHistory,
+            icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+            label: Text('orders.clear_history'.tr()),
+          ),
+        ),
+      );
+    }
+    if (wList.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'waitlist.live_queue'.tr(),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: FaColors.muted,
+            ),
+          ),
+        ),
+      );
+      for (final w in wList) {
+        items.add(
+          Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              leading: const Icon(Icons.groups_outlined),
+              title: Text(w.venueName?.pick(locale) ?? w.venueId),
+              subtitle: Text('${w.guests} ${'orders.guests'.tr()} · ${w.status}'),
+              trailing: w.isActive
+                  ? TextButton(
+                      onPressed: () async {
+                        try {
+                          await ApiClient.instance.leaveWaitlist(w.id);
+                          HapticFeedback.mediumImpact();
+                          reload();
+                        } catch (e) {
+                          if (mounted) {
+                            HapticFeedback.heavyImpact();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(apiErrorText(e))),
+                            );
+                          }
+                        }
+                      },
+                      child: Text('waitlist.leave'.tr()),
+                    )
+                  : null,
+            ),
+          ),
+        );
+      }
+      items.add(const SizedBox(height: 8));
+    }
+    if (res.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'orders.bookings'.tr(),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: FaColors.muted,
+            ),
+          ),
+        ),
+      );
+      for (final r in res) {
+        final venue = r.venueName?.pick(locale).isNotEmpty == true
+            ? r.venueName!.pick(locale)
+            : r.venueId;
+        final table = r.tableNumber > 0
+            ? ' · ${'orders.table'.tr()} ${r.tableNumber}'
+            : '';
+        items.add(
+          Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              leading: const Icon(Icons.event_seat_outlined),
+              title: Text(venue),
+              subtitle: Text(
+                '${formatDateTime(r.reservedFor)} · ${r.guests} ${'orders.guests'.tr()} · ${r.status}$table',
+              ),
+              trailing: r.preorder != null
+                  ? const Icon(Icons.restaurant_menu, size: 18, color: FaColors.gold)
+                  : const Icon(Icons.chevron_right),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _showReservation(r, locale);
+              },
+            ),
+          ),
+        );
+      }
+      items.add(const SizedBox(height: 8));
+    }
+    if (ords.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'orders.checks'.tr(),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: FaColors.muted,
+            ),
+          ),
+        ),
+      );
+      for (final o in ords) {
+        final venue = o.venueName?.pick(locale).isNotEmpty == true
+            ? o.venueName!.pick(locale)
+            : o.venueId;
+        items.add(
+          Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: Text('$venue · ${o.total} MDL'),
+              subtitle: Text(
+                '${o.checkNumber ?? safeShortId(o.id)} · ${o.status}',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _showReceipt(o, locale);
+              },
+            ),
+          ),
+        );
+      }
+    }
+    if (inqList.isNotEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          child: Text(
+            'orders.events'.tr(),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: FaColors.muted,
+            ),
+          ),
+        ),
+      );
+      for (final inq in inqList) {
+        items.add(
+          Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              leading: const Icon(Icons.celebration_outlined),
+              title: Text(inq.venueName?.pick(locale) ?? inq.venueId),
+              subtitle: Text(
+                '${formatDateTime(inq.preferredDate)} · ${inq.guestCount} ${'orders.guests'.tr()} · ${inq.status}',
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
     return RefreshIndicator(
       color: FaColors.gold,
       onRefresh: reload,
-      child: ListView(
+      child: ListView.builder(
         padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
-        children: [
-          if (hasSession) ...[
-            Card(
-              color: FaColors.green.withValues(alpha: 0.1),
-              margin: const EdgeInsets.only(bottom: 14),
-              child: ListTile(
-                leading: const Icon(Icons.qr_code_2_rounded, color: FaColors.green),
-                title: Text('orders.session'.tr()),
-                subtitle: Text(
-                  '${sessionVenue?.name.pick(locale) ?? activeSession!.venueId}'
-                  '${sessionTable != null ? ' · ${'orders.table'.tr()} ${sessionTable!.number}' : ''}',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => SessionScreen(
-                        session: activeSession!,
-                        venue: sessionVenue,
-                        table: sessionTable,
-                      ),
-                    ),
-                  );
-                  reload();
-                },
-              ),
-            ),
-          ],
-          if (!active && res.isNotEmpty)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _clearHistory,
-                icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                label: Text('orders.clear_history'.tr()),
-              ),
-            ),
-          if (wList.isNotEmpty) ...[
-            Text(
-              'waitlist.live_queue'.tr(),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: FaColors.muted,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...wList.map(
-              (w) => Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.groups_outlined),
-                  title: Text(w.venueName?.pick(locale) ?? w.venueId),
-                  subtitle: Text('${w.guests} ${'orders.guests'.tr()} · ${w.status}'),
-                  trailing: w.isActive
-                      ? TextButton(
-                          onPressed: () async {
-                            try {
-                              await ApiClient.instance.leaveWaitlist(w.id);
-                              reload();
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(apiErrorText(e))),
-                                );
-                              }
-                            }
-                          },
-                          child: Text('waitlist.leave'.tr()),
-                        )
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (res.isNotEmpty) ...[
-            Text(
-              'orders.bookings'.tr(),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: FaColors.muted,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...res.map((r) {
-              final venue = r.venueName?.pick(locale).isNotEmpty == true
-                  ? r.venueName!.pick(locale)
-                  : r.venueId;
-              final table = r.tableNumber > 0
-                  ? ' · ${'orders.table'.tr()} ${r.tableNumber}'
-                  : '';
-              return Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.event_seat_outlined),
-                  title: Text(venue),
-                  subtitle: Text(
-                    '${formatDateTime(r.reservedFor)} · ${r.guests} ${'orders.guests'.tr()} · ${r.status}$table',
-                  ),
-                  trailing: r.preorder != null
-                      ? const Icon(Icons.restaurant_menu, size: 18, color: FaColors.gold)
-                      : const Icon(Icons.chevron_right),
-                  onTap: () => _showReservation(r, locale),
-                ),
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
-          if (ords.isNotEmpty) ...[
-            Text(
-              'orders.checks'.tr(),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: FaColors.muted,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...ords.map((o) {
-              final venue = o.venueName?.pick(locale).isNotEmpty == true
-                  ? o.venueName!.pick(locale)
-                  : o.venueId;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.receipt_long_outlined),
-                  title: Text('$venue · ${o.total} MDL'),
-                  subtitle: Text(
-                    '${o.checkNumber ?? safeShortId(o.id)} · ${o.status}',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showReceipt(o, locale),
-                ),
-              );
-            }),
-          ],
-          if (inqList.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'orders.events'.tr(),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: FaColors.muted,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...inqList.map(
-              (inq) => Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: const Icon(Icons.celebration_outlined),
-                  title: Text(inq.venueName?.pick(locale) ?? inq.venueId),
-                  subtitle: Text(
-                    '${formatDateTime(inq.preferredDate)} · ${inq.guestCount} ${'orders.guests'.tr()} · ${inq.status}',
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
+        itemCount: items.length,
+        itemBuilder: (_, i) => items[i],
       ),
     );
   }

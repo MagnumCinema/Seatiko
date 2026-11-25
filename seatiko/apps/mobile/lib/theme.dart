@@ -2,18 +2,22 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class FaColors {
-  static const bg = Color(0xFFF4F1E9);
-  static const surface = Color(0xFFFFFCF7);
-  static const surface2 = Color(0xFFECE9DF);
-  static const border = Color(0x14213F34);
-  static const text = Color(0xFF18382D);
-  static const muted = Color(0xFF748078);
-  static const cream = Color(0xFFFFF7E9);
-  static const gold = Color(0xFFD77B48);
-  static const goldSoft = Color(0xFFE9B671);
-  static const clay = Color(0xFFD77B48);
-  static const claySoft = Color(0xFFF6E2D4);
-  static const green = Color(0xFF1F6848);
+  // Aligned with seatiko/apps/web/src/app/premium.css (light theme tokens)
+  static const bg = Color(0xFFF6F2EA);
+  static const surface = Color(0xFFFFFAF2);
+  static const surface2 = Color(0xFFEDE8DC);
+  static const border = Color(0x1F1A2420);
+  static const text = Color(0xFF1A2420);
+  static const muted = Color(0xFF5C6B63);
+  static const cream = Color(0xFFFFFDF8);
+  static const gold = Color(0xFFE9B96E);
+  static const goldSoft = Color(0xFFF2C784);
+  static const clay = Color(0xFFC8683B);
+  static const claySoft = Color(0xFFFAE8C8);
+  static const ratingBg = Color(0xFFFAE8C8);
+  static const ratingFg = Color(0xFF9B602E);
+  static const green = Color(0xFF246046);
+  static const greenDark = Color(0xFF153E2E);
   static const free = Color(0xFF2F9A62);
   static const occupied = Color(0xFFC95D52);
   static const reserved = Color(0xFFD09A35);
@@ -40,26 +44,36 @@ ThemeData buildFaTheme() {
     colorScheme: base.copyWith(
       primary: FaColors.green,
       secondary: FaColors.clay,
+      tertiary: FaColors.gold,
       surface: FaColors.surface,
       onSurface: FaColors.text,
+      outline: FaColors.border,
     ),
     appBarTheme: const AppBarTheme(
       backgroundColor: FaColors.bg,
       foregroundColor: FaColors.text,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
+      titleTextStyle: TextStyle(
+        color: FaColors.text,
+        fontSize: 19,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.4,
+      ),
     ),
     cardTheme: CardThemeData(
-      color: FaColors.surface2,
+      color: FaColors.surface,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: FaColors.border),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: FaColors.surface,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: FaColors.border),
@@ -77,8 +91,14 @@ ThemeData buildFaTheme() {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: FaColors.green,
-        foregroundColor: FaColors.cream,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        foregroundColor: Colors.white,
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        textStyle: const TextStyle(
+          fontSize: 14.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
@@ -86,8 +106,21 @@ ThemeData buildFaTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: FaColors.green,
         side: const BorderSide(color: FaColors.border),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        minimumSize: const Size(0, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        textStyle: const TextStyle(
+          fontSize: 14.5,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.2,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: FaColors.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
@@ -105,9 +138,11 @@ ThemeData buildFaTheme() {
         return IconThemeData(color: selected ? FaColors.green : FaColors.muted);
       }),
     ),
-    snackBarTheme: const SnackBarThemeData(
-      backgroundColor: FaColors.green,
-      contentTextStyle: TextStyle(color: FaColors.cream),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: FaColors.greenDark,
+      contentTextStyle: const TextStyle(color: FaColors.cream),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     dividerColor: FaColors.border,
   );

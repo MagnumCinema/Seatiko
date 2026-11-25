@@ -1,10 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/errors.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
+import 'package:mobile/widgets/shimmer.dart';
 import 'package:mobile/widgets/venue_thumb.dart';
 
 class DiscoverTab extends StatefulWidget {
@@ -384,195 +386,236 @@ class _DiscoverTabState extends State<DiscoverTab> {
     final bottomPad = MediaQuery.paddingOf(context).bottom + 96;
     return SafeArea(
       bottom: false,
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPad),
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'discover.title'.tr(),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'discover.title'.tr(),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          _openPreferencesWizard();
+                        },
+                        icon: const Icon(Icons.tune_rounded, size: 18),
+                        label: Text(
+                          _hasWizardPrefs
+                              ? 'discover.wizard.filters_edit'.tr()
+                              : 'discover.wizard.preferences_btn'.tr(),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _openPreferencesWizard,
-                icon: const Icon(Icons.tune_rounded, size: 18),
-                label: Text(
-                  _hasWizardPrefs
-                      ? 'discover.wizard.filters_edit'.tr()
-                      : 'discover.wizard.preferences_btn'.tr(),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: queryCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'discover.placeholder'.tr(),
+                      suffixIcon: IconButton(
+                        icon: busy
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.send, color: FaColors.gold),
+                        onPressed: busy ? null : () => _askAi(),
+                      ),
+                    ),
+                    onSubmitted: (_) => _askAi(),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: queryCtrl,
-            decoration: InputDecoration(
-              hintText: 'discover.placeholder'.tr(),
-              suffixIcon: IconButton(
-                icon: busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send, color: FaColors.gold),
-                onPressed: busy ? null : () => _askAi(),
-              ),
-            ),
-            onSubmitted: (_) => _askAi(),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: chips.map((c) {
-              final label = 'discover.chip_$c'.tr();
-              final on = selected.contains(c);
-              return FilterChip(
-                label: Text(label),
-                selected: on,
-                onSelected: (v) {
-                  setState(() {
-                    if (v) {
-                      selected.add(c);
-                    } else {
-                      selected.remove(c);
-                    }
-                  });
-                  _askAi(label);
-                },
-                selectedColor: FaColors.gold.withValues(alpha: 0.25),
-                checkmarkColor: FaColors.gold,
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'discover.holiday'.tr(),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 88,
-            child: collections.isEmpty
-                ? Center(
-                    child: Text(
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: chips.map((c) {
+                      final label = 'discover.chip_$c'.tr();
+                      final on = selected.contains(c);
+                      return FilterChip(
+                        label: Text(label),
+                        selected: on,
+                        onSelected: (v) {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            if (v) {
+                              selected.add(c);
+                            } else {
+                              selected.remove(c);
+                            }
+                          });
+                          _askAi(label);
+                        },
+                        selectedColor: FaColors.gold.withValues(alpha: 0.25),
+                        checkmarkColor: FaColors.gold,
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'discover.holiday'.tr(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 88,
+                    child: collections.isEmpty
+                        ? Center(
+                            child: Text(
+                              'discover.empty'.tr(),
+                              style: const TextStyle(color: FaColors.muted),
+                            ),
+                          )
+                        : ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: collections.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 10),
+                            itemBuilder: (_, i) {
+                              final col = collections[i];
+                              return InkWell(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  _openCollection(col, locale);
+                                },
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  width: 150,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        FaColors.green.withValues(alpha: 0.35),
+                                        FaColors.gold.withValues(alpha: 0.2),
+                                      ],
+                                    ),
+                                    border: Border.all(color: FaColors.border),
+                                  ),
+                                  child: Align(
+                                    alignment: Alignment.bottomLeft,
+                                    child: Text(
+                                      col.title.pick(locale),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (activeCollectionTitle != null) ...[
+                    Text(
+                      activeCollectionTitle!,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (explanation.isNotEmpty) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: FaColors.green.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: FaColors.green.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Text(
+                        explanation,
+                        style: const TextStyle(fontSize: 13, height: 1.35),
+                      ),
+                    ),
+                  ],
+                  if (!exactMatch && results.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        'discover.wizard.approximate_hint'.tr(),
+                        style: const TextStyle(
+                          color: FaColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  if (busy && results.isEmpty)
+                    const CardListShimmer(count: 3)
+                  else if (results.isEmpty && !busy)
+                    Text(
                       'discover.empty'.tr(),
                       style: const TextStyle(color: FaColors.muted),
                     ),
-                  )
-                : ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: collections.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (_, i) {
-                      final col = collections[i];
-                      return InkWell(
-                        onTap: () => _openCollection(col, locale),
-                        borderRadius: BorderRadius.circular(14),
-                        child: Container(
-                          width: 150,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            gradient: LinearGradient(
-                              colors: [
-                                FaColors.green.withValues(alpha: 0.35),
-                                FaColors.gold.withValues(alpha: 0.2),
-                              ],
-                            ),
-                            border: Border.all(color: FaColors.border),
-                          ),
-                          child: Align(
-                            alignment: Alignment.bottomLeft,
-                            child: Text(
-                              col.title.pick(locale),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 20),
-          if (activeCollectionTitle != null) ...[
-            Text(
-              activeCollectionTitle!,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-          ],
-          if (explanation.isNotEmpty) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: FaColors.green.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: FaColors.green.withValues(alpha: 0.22),
-                ),
+          if (results.isNotEmpty)
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPad),
+              sliver: SliverList.builder(
+                itemCount: results.length,
+                itemBuilder: (_, i) {
+                  final v = results[i];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      leading: VenueThumb(
+                        imageUrl: v.imageUrl,
+                        size: 48,
+                        radius: 12,
+                        priceLevel: v.priceLevel,
+                        heroTag: 'venue-cover-${v.id}',
+                      ),
+                      title: Text(v.name.pick(locale)),
+                      subtitle: Text(
+                        'map.free_tables'.tr(args: ['${v.freeTables}']),
+                      ),
+                      trailing: Text('★ ${v.rating}'),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => VenueDetailScreen(venueId: v.id),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-              child: Text(
-                explanation,
-                style: const TextStyle(fontSize: 13, height: 1.35),
-              ),
-            ),
-          ],
-          if (!exactMatch && results.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Text(
-                'discover.wizard.approximate_hint'.tr(),
-                style: const TextStyle(color: FaColors.muted, fontSize: 12),
-              ),
-            ),
-          if (results.isEmpty && !busy)
-            Text(
-              'discover.empty'.tr(),
-              style: const TextStyle(color: FaColors.muted),
             )
           else
-            ...results.map(
-              (v) => Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: VenueThumb(
-                    imageUrl: v.imageUrl,
-                    size: 48,
-                    radius: 12,
-                    priceLevel: v.priceLevel,
-                  ),
-                  title: Text(v.name.pick(locale)),
-                  subtitle: Text(
-                    'map.free_tables'.tr(args: ['${v.freeTables}']),
-                  ),
-                  trailing: Text('★ ${v.rating}'),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => VenueDetailScreen(venueId: v.id),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
+            SliverToBoxAdapter(child: SizedBox(height: bottomPad)),
         ],
       ),
     );
