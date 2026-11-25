@@ -15,6 +15,7 @@ import { MapModule } from './modules/map/map.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
+import { FloorModule } from './modules/floor/floor.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { VenueAccessModule } from './modules/venue-access/venue-access.service.js';
 import { HealthModule } from './modules/health/health.module.js';
@@ -47,6 +48,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     MapModule,
     ReservationsModule,
     WaitlistModule,
+    FloorModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },

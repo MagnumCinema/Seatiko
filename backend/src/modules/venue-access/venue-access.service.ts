@@ -1,6 +1,7 @@
 import { Global, Injectable, Module } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
 import { and, eq, or, sql } from 'drizzle-orm';
+import { badRequest, forbidden } from '../../core/errors/domain-error.js';
 import type { Database } from '../../database/database.module.js';
 import { applications, staffMembers, users } from '../../database/schema/index.js';
 
@@ -39,6 +40,14 @@ export class VenueAccessService {
       )
       .limit(1);
     return Boolean(row);
+  }
+
+  /** Staff routes: 400 venue_id_required without a venue, 403 when the user may not work it (gateStaffVenue). */
+  async requireStaff(userId: string, venueId?: string): Promise<StaffActor> {
+    if (!venueId) throw badRequest('venue_id_required');
+    const actor = await this.staffActor(userId, venueId);
+    if (!actor) throw forbidden();
+    return actor;
   }
 
   /** The user and their role at the venue, or undefined when they may not act there. */

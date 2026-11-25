@@ -90,9 +90,8 @@ export class WaitlistService {
 
   /** Staff, owner or admin of the venue, else 400 / 403 like gateStaffVenue. */
   async gate(userId: string, venueId?: string): Promise<string> {
-    if (!venueId) throw badRequest('venue_id_required');
-    if (!(await this.access.staffActor(userId, venueId))) throw forbidden();
-    return venueId;
+    await this.access.requireStaff(userId, venueId);
+    return venueId!;
   }
 
   /** A guest joins (userId set), or a host adds a walk-in (userId empty, source HOST). */

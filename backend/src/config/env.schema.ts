@@ -12,6 +12,8 @@ export const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   DATABASE_URL: z.url(),
   UPLOAD_DIR: z.string().default('./data/uploads'),
+  /** HMAC key of table QR codes; the Go API's default keeps printed codes valid. */
+  QR_SECRET: z.string().default('seatiko-qr-dev-secret'),
 
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default('us-east-1'),

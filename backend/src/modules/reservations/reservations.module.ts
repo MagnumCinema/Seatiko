@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { GuestRequestsService } from './guest-requests.service.js';
+import { PreorderKitchenJob } from './preorder-kitchen.job.js';
 import { PreordersService } from './preorders.service.js';
 import { ReservationsController } from './reservations.controller.js';
 import { ReservationsRepository } from './reservations.repository.js';
@@ -10,7 +11,7 @@ import { ReservationsService } from './reservations.service.js';
 @Module({
   imports: [CatalogModule],
   controllers: [ReservationsController],
-  providers: [ReservationsRepository, ReservationsService, PreordersService, GuestRequestsService],
+  providers: [ReservationsRepository, ReservationsService, PreordersService, GuestRequestsService, PreorderKitchenJob],
   exports: [ReservationsService],
 })
 export class ReservationsModule {}
