@@ -1,15 +1,18 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module.js';
 import { AuthCoreModule } from './core/auth/auth-core.module.js';
 import { HttpErrorFilter } from './core/http/http-error.filter.js';
 import { TimeModule } from './core/time/time.module.js';
 import { DatabaseModule } from './database/database.module.js';
+import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DocsModule } from './modules/docs/docs.module.js';
 import { MapModule } from './modules/map/map.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -25,16 +28,21 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     }),
     ConfigModule,
     ScheduleModule.forRoot(),
+    // Per-route limits (@Throttle) as in the Go API; the default is effectively unlimited.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100_000 }]),
     TimeModule,
     DatabaseModule,
     AuthCoreModule,
     HealthModule,
     DocsModule,
+    NotificationsModule,
+    AccountsModule,
     CatalogModule,
     MapModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
