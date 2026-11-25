@@ -1,13 +1,8 @@
-import { useQuery } from '@apollo/client/react';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { useMemo } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 
-import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
-import { useFindOneRecord } from '@/object-record/hooks/useFindOneRecord';
+import { useCoreWorkflowVersion } from '@/object-core/workflows/versions/hooks/useCoreWorkflowVersion';
 import { type WorkflowVersion } from '@/workflow/types/Workflow';
-import { GET_WORKFLOW_VERSION_CONTENT } from '@/workflow/workflow-version/graphql/queries/getWorkflowVersionContent';
-import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
-import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 export type WorkflowVersionContent = {
   workflowVersionId: string;
@@ -16,56 +11,26 @@ export type WorkflowVersionContent = {
 };
 
 export const useWorkflowVersionContent = (workflowVersionId?: string) => {
-  const apolloCoreClient = useApolloCoreClient();
-  const isWorkflowVersionInCoreEnabled = useIsFeatureEnabled(
-    FeatureFlagKey.IS_WORKFLOW_VERSION_IN_CORE_ENABLED,
-  );
+  const { coreWorkflowVersion, loading, error, refetchCoreWorkflowVersion } =
+    useCoreWorkflowVersion(workflowVersionId);
 
-  const {
-    data: coreData,
-    loading: coreLoading,
-    refetch: refetchCore,
-  } = useQuery<{
-    workflowVersionContent: WorkflowVersionContent;
-  }>(GET_WORKFLOW_VERSION_CONTENT, {
-    client: apolloCoreClient,
-    variables: { workflowVersionId },
-    skip: !isWorkflowVersionInCoreEnabled || !isDefined(workflowVersionId),
-  });
-
-  const {
-    record: workflowVersionRecord,
-    loading: recordLoading,
-    refetch: refetchRecord,
-  } = useFindOneRecord<WorkflowVersion>({
-    objectNameSingular: CoreObjectNameSingular.WorkflowVersion,
-    objectRecordId: workflowVersionId,
-    recordGqlFields: {
-      id: true,
-      trigger: true,
-      steps: true,
-    },
-    skip: isWorkflowVersionInCoreEnabled || !isDefined(workflowVersionId),
-  });
-
-  const content: WorkflowVersionContent | undefined =
-    isWorkflowVersionInCoreEnabled
-      ? coreData?.workflowVersionContent
-      : isDefined(workflowVersionRecord)
+  const content = useMemo<WorkflowVersionContent | undefined>(
+    () =>
+      isDefined(coreWorkflowVersion)
         ? {
-            workflowVersionId: workflowVersionRecord.id,
-            trigger: workflowVersionRecord.trigger,
-            steps: workflowVersionRecord.steps,
+            workflowVersionId: coreWorkflowVersion.id,
+            trigger: coreWorkflowVersion.trigger,
+            steps: coreWorkflowVersion.steps,
           }
-        : undefined;
-
-  const refetchContent = isWorkflowVersionInCoreEnabled
-    ? refetchCore
-    : refetchRecord;
+        : undefined,
+    [coreWorkflowVersion],
+  );
 
   return {
     content,
-    loading: isWorkflowVersionInCoreEnabled ? coreLoading : recordLoading,
-    refetchContent,
+    loading,
+    refetchContent: refetchCoreWorkflowVersion,
+    contentUpdatedAt: coreWorkflowVersion?.updatedAt,
+    error,
   };
 };

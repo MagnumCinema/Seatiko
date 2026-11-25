@@ -1,15 +1,11 @@
-import { MessageParticipantRole } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import { isWorkEmail } from 'twenty-shared/utils';
 
-import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message';
+import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message.type';
 import { filterOutBlocklistedMessages } from 'src/modules/messaging/message-import-manager/utils/filter-out-blocklisted-messages.util';
 import { filterOutIcsAttachments } from 'src/modules/messaging/message-import-manager/utils/filter-out-ics-attachments.util';
 import { filterOutInternals } from 'src/modules/messaging/message-import-manager/utils/filter-out-internals.util';
 import { filterOutUnsubscribeRequests } from 'src/modules/messaging/message-import-manager/utils/filter-out-unsubscribe-requests.util';
-import { isBulkMail } from 'src/modules/messaging/message-import-manager/utils/is-bulk-mail.util';
-import { isGroupEmail } from 'src/modules/messaging/message-import-manager/utils/is-group-email';
-import { isMessageSenderMatchingHandles } from 'src/modules/messaging/message-import-manager/utils/is-message-sender-matching-handles.util';
-import { isWorkEmail } from 'src/utils/is-work-email';
+import { isExcludedGroupEmailMessage } from 'src/modules/messaging/message-import-manager/utils/is-excluded-group-email-message.util';
 
 export const filterEmails = (
   primaryHandle: string,
@@ -36,7 +32,7 @@ export const filterEmails = (
     isWorkEmail(primaryHandle) && !isInternalMessagesImportEnabled;
 
   const messagesWithoutInternals = shouldFilterOutInternals
-    ? filterOutInternals(primaryHandle, messagesWithoutBlocklisted)
+    ? filterOutInternals({ primaryHandle, items: messagesWithoutBlocklisted })
     : messagesWithoutBlocklisted;
 
   if (!excludeGroupEmails) {
@@ -45,31 +41,7 @@ export const filterEmails = (
 
   const userHandles = [primaryHandle, ...handleAliases];
 
-  return messagesWithoutInternals.filter((message) => {
-    const isSentByUser = isMessageSenderMatchingHandles(message, userHandles);
-
-    if (isSentByUser) {
-      return true;
-    }
-
-    if (isBulkMail(message.messageHeaders ?? [])) {
-      return false;
-    }
-
-    const senderHandle = message.participants?.find(
-      (participant) => participant.role === MessageParticipantRole.FROM,
-    )?.handle;
-
-    if (!isDefined(senderHandle)) {
-      return true;
-    }
-
-    const isSenderGroupEmail = isGroupEmail(senderHandle);
-
-    if (!isSenderGroupEmail) {
-      return true;
-    }
-
-    return false;
-  });
+  return messagesWithoutInternals.filter(
+    (message) => !isExcludedGroupEmailMessage(message, userHandles),
+  );
 };

@@ -1,7 +1,11 @@
-import { type RecordGqlFields } from '@/object-record/graphql/record-gql-fields/types/RecordGqlFields';
+import { type RecordGqlFields } from 'twenty-shared/types';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { isObject } from '@sniptt/guards';
-import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
+import {
+  isDefined,
+  isNonEmptyArray,
+  isRecordGqlFieldsRelationWithArguments,
+} from 'twenty-shared/utils';
 export const filterRecordOnGqlFields = ({
   record,
   recordGqlFields,
@@ -14,7 +18,7 @@ export const filterRecordOnGqlFields = ({
       .map(([key, value]) => {
         const gqlFieldValue = recordGqlFields[key];
 
-        if (!isDefined(gqlFieldValue) || gqlFieldValue === false) {
+        if (!isDefined(gqlFieldValue)) {
           return undefined;
         }
 
@@ -22,17 +26,23 @@ export const filterRecordOnGqlFields = ({
           return [key, value];
         }
 
+        const nestedRecordGqlFields = isRecordGqlFieldsRelationWithArguments(
+          gqlFieldValue,
+        )
+          ? gqlFieldValue.recordGqlFields
+          : gqlFieldValue;
+
         if (isNonEmptyArray(value)) {
           return [
             key,
-            value.map((item) => {
+            value.map((item: unknown) => {
               if (!isDefined(item) || typeof item !== 'object') {
                 return item;
               }
 
               return filterRecordOnGqlFields({
                 record: item as ObjectRecord,
-                recordGqlFields: gqlFieldValue,
+                recordGqlFields: nestedRecordGqlFields,
               });
             }),
           ];
@@ -43,7 +53,7 @@ export const filterRecordOnGqlFields = ({
             key,
             filterRecordOnGqlFields({
               record: value as ObjectRecord,
-              recordGqlFields: gqlFieldValue,
+              recordGqlFields: nestedRecordGqlFields,
             }),
           ];
         }

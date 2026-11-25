@@ -245,6 +245,19 @@ export class ReservationsService {
     });
   }
 
+  /** Staff view of a venue's bookings, with their preorders. */
+  async forVenue(venueId: string) {
+    if (!(await this.catalog.publishedVenue(venueId))) throw notFound('not_found');
+    const rows = await this.repo.byVenue(venueId);
+    const ids = rows.map((r) => r.id);
+    const [held, preorders] = await Promise.all([this.repo.heldTables(ids), this.orders.activePreorders(ids)]);
+    const now = this.clock.now();
+    return rows.map((r) => {
+      const po = preorders.find((o) => o.reservationId === r.id);
+      return presentReservation(r, held, { preorder: po ? presentOrder(po, now) : undefined });
+    });
+  }
+
   async byId(id: string): Promise<ReservationRow | undefined> {
     return this.repo.byId(id);
   }

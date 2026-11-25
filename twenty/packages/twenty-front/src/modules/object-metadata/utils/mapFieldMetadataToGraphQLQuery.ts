@@ -3,18 +3,20 @@ import { mapObjectMetadataToGraphQLQuery } from '@/object-metadata/utils/mapObje
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { getObjectPermissionsForObject } from '@/object-metadata/utils/getObjectPermissionsForObject';
-import { type RecordGqlFields } from '@/object-record/graphql/record-gql-fields/types/RecordGqlFields';
-import { isNonCompositeField } from '@/object-record/object-filter-dropdown/utils/isNonCompositeField';
 import {
   FieldMetadataType,
-  type ObjectPermissions,
+  type ObjectRecordsPermissions,
+  type RecordGqlFields,
   RelationType,
 } from 'twenty-shared/types';
+import { isNonCompositeField } from '@/object-record/object-filter-dropdown/utils/isNonCompositeField';
 import {
+  canAccessThroughAllRecordsOrRlsPermission,
   computeMorphRelationGqlFieldName,
   computeRelationGqlFieldJoinColumnName,
   isDefined,
 } from 'twenty-shared/utils';
+import { doNotTranslate } from 'twenty-shared/i18n';
 
 type MapFieldMetadataToGraphQLQueryArgs = {
   objectMetadataItems: EnrichedObjectMetadataItem[];
@@ -24,11 +26,9 @@ type MapFieldMetadataToGraphQLQueryArgs = {
     'name' | 'type' | 'relation' | 'morphRelations' | 'settings'
   >;
   relationRecordGqlFields?: RecordGqlFields;
+  relationConnectionGqlFieldNames?: string[];
   computeReferences?: boolean;
-  objectPermissionsByObjectMetadataId: Record<
-    string,
-    ObjectPermissions & { objectMetadataId: string }
-  >;
+  objectPermissionsByObjectMetadataId: Record<string, ObjectRecordsPermissions>;
 };
 // TODO: change ObjectMetadataItems mock before refactoring with relation computed field
 export const mapFieldMetadataToGraphQLQuery = ({
@@ -36,6 +36,7 @@ export const mapFieldMetadataToGraphQLQuery = ({
   gqlField,
   fieldMetadata,
   relationRecordGqlFields,
+  relationConnectionGqlFieldNames = [],
   computeReferences = false,
   objectPermissionsByObjectMetadataId,
 }: MapFieldMetadataToGraphQLQueryArgs): string => {
@@ -79,7 +80,9 @@ export const mapFieldMetadataToGraphQLQuery = ({
       ) {
         if (!isDefined(morphRelation.targetObjectMetadata.id)) {
           throw new Error(
-            `Target object metadata id not found with field metadata ${fieldMetadata.name}`,
+            doNotTranslate(
+              `Target object metadata id not found with field metadata ${fieldMetadata.name}`,
+            ),
           );
         }
 
@@ -88,7 +91,12 @@ export const mapFieldMetadataToGraphQLQuery = ({
           morphRelation.targetObjectMetadata.id,
         );
 
-        if (!objectPermission.canReadObjectRecords) {
+        if (
+          !canAccessThroughAllRecordsOrRlsPermission({
+            objectRecordsPermissions: objectPermission,
+            operationType: 'read',
+          })
+        ) {
           continue;
         }
       }
@@ -98,7 +106,7 @@ export const mapFieldMetadataToGraphQLQuery = ({
           continue;
         }
 
-        gqlMorphField += `${relationFieldName}
+        gqlMorphField += doNotTranslate(`${relationFieldName}
 {
   edges {
     node ${mapObjectMetadataToGraphQLQuery({
@@ -110,7 +118,7 @@ export const mapFieldMetadataToGraphQLQuery = ({
       objectPermissionsByObjectMetadataId,
     })}
   }
-}`;
+}`);
       }
 
       if (fieldMetadata.settings?.relationType === RelationType.MANY_TO_ONE) {
@@ -158,7 +166,9 @@ ${mapObjectMetadataToGraphQLQuery({
     ) {
       if (!isDefined(fieldMetadata.relation?.targetObjectMetadata.id)) {
         throw new Error(
-          `Target object metadata id not found with field metadata ${fieldMetadata.name}`,
+          doNotTranslate(
+            `Target object metadata id not found with field metadata ${fieldMetadata.name}`,
+          ),
         );
       }
 
@@ -167,7 +177,12 @@ ${mapObjectMetadataToGraphQLQuery({
         fieldMetadata.relation?.targetObjectMetadata.id,
       );
 
-      if (!objectPermission.canReadObjectRecords) {
+      if (
+        !canAccessThroughAllRecordsOrRlsPermission({
+          objectRecordsPermissions: objectPermission,
+          operationType: 'read',
+        })
+      ) {
         return '';
       }
     }
@@ -210,7 +225,9 @@ ${mapObjectMetadataToGraphQLQuery({
     ) {
       if (!isDefined(fieldMetadata.relation?.targetObjectMetadata.id)) {
         throw new Error(
-          `Target object metadata id not found with field metadata ${fieldMetadata.name}`,
+          doNotTranslate(
+            `Target object metadata id not found with field metadata ${fieldMetadata.name}`,
+          ),
         );
       }
 
@@ -219,14 +236,23 @@ ${mapObjectMetadataToGraphQLQuery({
         fieldMetadata.relation?.targetObjectMetadata.id,
       );
 
-      if (!objectPermission.canReadObjectRecords) {
+      if (
+        !canAccessThroughAllRecordsOrRlsPermission({
+          objectRecordsPermissions: objectPermission,
+          operationType: 'read',
+        })
+      ) {
         return '';
       }
     }
 
-    return `${gqlField}
+    const connectionFieldsSelection = relationConnectionGqlFieldNames
+      .map((connectionGqlFieldName) => `${connectionGqlFieldName}\n  `)
+      .join('');
+
+    return doNotTranslate(`${gqlField}
 {
-  edges {
+  ${connectionFieldsSelection}edges {
     node ${mapObjectMetadataToGraphQLQuery({
       objectMetadataItems,
       objectMetadataItem: relationMetadataItem,
@@ -236,37 +262,40 @@ ${mapObjectMetadataToGraphQLQuery({
       objectPermissionsByObjectMetadataId,
     })}
   }
-}`;
+}`);
   }
 
   if (fieldType === FieldMetadataType.LINKS) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
   primaryLinkUrl
   primaryLinkLabel
-  secondaryLinks
-}`;
+  secondaryLinks {
+    label
+    url
+  }
+}`);
   }
 
   if (fieldType === FieldMetadataType.CURRENCY) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
   amountMicros
   currencyCode
 }
-    `;
+    `);
   }
 
   if (fieldType === FieldMetadataType.FULL_NAME) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
   firstName
   lastName
-}`;
+}`);
   }
 
   if (fieldType === FieldMetadataType.ADDRESS) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
   addressStreet1
   addressStreet2
@@ -276,53 +305,61 @@ ${mapObjectMetadataToGraphQLQuery({
   addressPostcode
   addressLat
   addressLng
-}`;
+}`);
   }
 
   if (fieldType === FieldMetadataType.ACTOR) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
     source
     workspaceMemberId
     name
-    context
-}`;
+    context {
+      provider
+      applicationId
+    }
+}`);
   }
 
   if (fieldType === FieldMetadataType.EMAILS) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
   primaryEmail
   additionalEmails
-}`;
+}`);
   }
 
   if (fieldType === FieldMetadataType.PHONES) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
     {
       primaryPhoneNumber
       primaryPhoneCountryCode
       primaryPhoneCallingCode
-      additionalPhones
-    }`;
+      additionalPhones {
+        number
+        callingCode
+        countryCode
+      }
+    }`);
   }
 
   if (fieldType === FieldMetadataType.FILES) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
     {
       fileId
       label
       extension
       url
-    }`;
+    }`);
   }
 
   if (fieldType === FieldMetadataType.RICH_TEXT) {
-    return `${gqlField}
+    return doNotTranslate(`${gqlField}
 {
   blocknote
   markdown
-}`;
+  tiptap
+}`);
   }
 
   return '';

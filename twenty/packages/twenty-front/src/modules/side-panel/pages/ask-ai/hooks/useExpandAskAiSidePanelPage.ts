@@ -1,42 +1,43 @@
 import { useLingui } from '@lingui/react/macro';
-import { useLocation } from 'react-router-dom';
-import { AppPath } from 'twenty-shared/types';
-import { isDefined, isValidUuid } from 'twenty-shared/utils';
+import { useStore } from 'jotai';
+import { isDefined } from 'twenty-shared/utils';
 
-import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
-import { useSidePanelMenu } from '@/side-panel/hooks/useSidePanelMenu';
+import { useNavigateToAiChatPage } from '@/ai-chat/hooks/useNavigateToAiChatPage';
+import { newAiChatThreadIdState } from '@/ai-chat/states/newAiChatThreadIdState';
+import { isLayoutCustomizationModeEnabledState } from '@/layout-customization/states/isLayoutCustomizationModeEnabledState';
+import { askAiSidePanelThreadIdComponentState } from '@/side-panel/states/askAiSidePanelThreadIdComponentState';
+import { SidePanelPageComponentInstanceContext } from '@/side-panel/states/contexts/SidePanelPageComponentInstanceContext';
 import { type SidePanelExpandTarget } from '@/side-panel/types/SidePanelExpandTarget';
+import { useComponentInstanceStateContext } from '@/ui/utilities/state/component-state/hooks/useComponentInstanceStateContext';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { useNavigateApp } from '~/hooks/useNavigateApp';
 
 export const useExpandAskAiSidePanelPage = (): SidePanelExpandTarget => {
   const { t } = useLingui();
-  const navigate = useNavigateApp();
-  const location = useLocation();
-  const currentAiChatThread = useAtomStateValue(currentAiChatThreadState);
-  const { closeSidePanelMenu } = useSidePanelMenu();
+  const store = useStore();
+  const isLayoutCustomizationModeEnabled = useAtomStateValue(
+    isLayoutCustomizationModeEnabledState,
+  );
+  const sidePanelPageInstanceId = useComponentInstanceStateContext(
+    SidePanelPageComponentInstanceContext,
+  )?.instanceId;
+  const { navigateToAiChatPage } = useNavigateToAiChatPage();
 
   return {
     label: t`Expand chat`,
+    disabledReason: isLayoutCustomizationModeEnabled
+      ? t`Finish editing the layout to expand chat`
+      : undefined,
     hasExpandShortcut: false,
     expand: () => {
-      void closeSidePanelMenu();
+      const askAiSidePanelThreadId = isDefined(sidePanelPageInstanceId)
+        ? store.get(
+            askAiSidePanelThreadIdComponentState.atomFamily({
+              instanceId: sidePanelPageInstanceId,
+            }),
+          )
+        : null;
 
-      navigate(
-        AppPath.AiChat,
-        {
-          threadId:
-            isDefined(currentAiChatThread) && isValidUuid(currentAiChatThread)
-              ? currentAiChatThread
-              : null,
-        },
-        undefined,
-        {
-          state: {
-            returnLocation: `${location.pathname}${location.search}${location.hash}`,
-          },
-        },
-      );
+      navigateToAiChatPage({ threadId: askAiSidePanelThreadId });
     },
   };
 };

@@ -122,6 +122,44 @@ describe('profile', () => {
     const ok = await api('PATCH', '/api/v1/me/password', { token: guest.token, body: { old_password: 'secret123', new_password: 'secret456' } });
     expect(ok.status).toBe(200);
     expect(await login(newEmail, 'secret456')).toEqual(expect.any(String));
+    const missingOld = await api('PATCH', '/api/v1/me/password', { token: guest.token, body: { new_password: 'secret789' } });
+    expect(missingOld.status).toBe(400);
+    expect(missingOld.body).toEqual({ error: 'invalid_old_password' });
+  });
+});
+
+describe('Sign in with Google', () => {
+  it('GET /auth/providers says whether the Google button is on', async () => {
+    const res = await api('GET', '/api/v1/auth/providers');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ google: { enabled: expect.any(Boolean), client_id: expect.any(String) } });
+    expect(Boolean(res.body.google.client_id)).toBe(res.body.google.enabled);
+  });
+
+  it('POST /auth/google refuses anything but a Google ID token for our client', async () => {
+    const enabled = (await api('GET', '/api/v1/auth/providers')).body.google.enabled;
+    const bad = await api('POST', '/api/v1/auth/google', { body: { credential: 'not-a-google-token' } });
+    expect(bad.status).toBe(enabled ? 401 : 503);
+    expect(bad.body).toEqual({ error: enabled ? 'invalid_google_token' : 'google_signin_disabled' });
+    const empty = await api('POST', '/api/v1/auth/google', { body: {} });
+    expect(empty.status).toBe(400);
+  });
+
+  it('a password account has no identities, cannot drop Google and must confirm its password to connect', async () => {
+    const guest = await newGuest('ident');
+    expect((await api('GET', '/api/v1/me', { token: guest.token })).body.user.has_password).toBe(true);
+    const list = await api('GET', '/api/v1/me/identities', { token: guest.token });
+    expect(list.status).toBe(200);
+    expect(list.body).toEqual({ identities: [] });
+    const drop = await api('DELETE', '/api/v1/me/identities/google', { token: guest.token });
+    expect(drop.status).toBe(404);
+    expect(drop.body).toEqual({ error: 'google_not_connected' });
+    const noPassword = await api('POST', '/api/v1/me/identities/google', { token: guest.token, body: { credential: 'x' } });
+    expect(noPassword.status).toBe(400);
+    expect(noPassword.body).toEqual({ error: 'password_required' });
+    const wrong = await api('POST', '/api/v1/me/identities/google', { token: guest.token, body: { credential: 'x', password: 'nope' } });
+    expect(wrong.status).toBe(403);
+    expect(wrong.body).toEqual({ error: 'wrong_password' });
   });
 });
 
@@ -175,6 +213,9 @@ describe('notifications', () => {
 describe('GDPR deletion', () => {
   it('DELETE /me needs the password, then old tokens and sign-in stop working', async () => {
     const guest = await newGuest('gdpr');
+    const missing = await api('DELETE', '/api/v1/me', { token: guest.token, body: {} });
+    expect(missing.status).toBe(400);
+    expect(missing.body).toEqual({ error: 'password_required' });
     const wrong = await api('DELETE', '/api/v1/me', { token: guest.token, body: { password: 'nope' } });
     expect(wrong.status).toBe(403);
     expect(wrong.body).toEqual({ error: 'wrong_password' });

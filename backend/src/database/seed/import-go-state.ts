@@ -51,10 +51,13 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
   await db.transaction(async (tx) => {
     const run = tx as unknown as Db;
     if (opts.replace) {
+      // Not TRUNCATE … CASCADE on venues: it would also empty open_places (real map data).
+      await run.execute(sql`UPDATE open_places SET venue_id = NULL`);
       await run.execute(sql`TRUNCATE notifications, adult_permission_log, order_items, orders, waiter_calls, sessions,
         reservation_tables, reservations, table_watches, waitlist_entries, event_inquiries, work_shifts, staff_members,
-        profile_change_requests, application_activities, applications, menu_items, tables, collections, venues, cities,
-        users, app_meta CASCADE`);
+        profile_change_requests, application_activities, applications, menu_items, tables, collections, user_identities, users, app_meta`);
+      await run.execute(sql`DELETE FROM venues`);
+      await run.execute(sql`DELETE FROM cities`);
     }
     const ins = (name: string, table: any, rows: any[]) => {
       report[name] = rows.length;
@@ -181,7 +184,11 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
       id: n.id, userId: n.user_id, kind: n.kind, venueId: n.venue_id ?? '', reservationId: n.reservation_id ?? '', orderId: n.order_id ?? '',
       at: t(n.at), createdAt: tReq(n.created_at), readAt: t(n.read_at),
     })));
-    await ins('app_meta', schema.appMeta, [{ key: 'demo_menu_version', value: String(state.demo_menu_version ?? 0) }]);
+    // Demo versions only for a demo snapshot (a real-data import has none).
+    await ins('app_meta', schema.appMeta, state.demo_menu_version === undefined ? [] : [
+      { key: 'demo_menu_version', value: String(state.demo_menu_version ?? 0) },
+      { key: 'demo_seed_version', value: String(state.demo_seed_version ?? 0) },
+    ]);
   });
   return report;
 }

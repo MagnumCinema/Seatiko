@@ -1,47 +1,47 @@
 import { useNumberFormat } from '@/localization/hooks/useNumberFormat';
-import { widgetCardHoveredComponentFamilyState } from '@/page-layout/widgets/states/widgetCardHoveredComponentFamilyState';
-import { widgetHeaderCountComponentFamilyState } from '@/page-layout/widgets/states/widgetHeaderCountComponentFamilyState';
-import { WidgetCardHeaderActionsRenderer } from '@/page-layout/widgets/widget-card/components/WidgetCardHeaderActionsRenderer';
-import { useAtomComponentFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentFamilyStateValue';
 import { styled } from '@linaria/react';
-import { t } from '@lingui/core/macro';
-import { type ReactNode, useContext } from 'react';
+import { type ReactNode } from 'react';
+import { IconButton } from 'twenty-ui/components/input';
+import { OverflowingTextWithTooltip } from 'twenty-ui/primitives/typography';
 import { IconTrash } from 'twenty-ui/icon';
-import { OverflowingTextWithTooltip } from 'twenty-ui/surfaces';
-import { IconButton } from 'twenty-ui/input';
 
 import { type WidgetCardVariant } from '@/page-layout/widgets/types/WidgetCardVariant';
 import { WidgetGrip } from '@/page-layout/widgets/widget-card/components/WidgetGrip';
 import { AnimatePresence, motion } from 'framer-motion';
 import { isDefined } from 'twenty-shared/utils';
-import { themeCssVariables, ThemeContext } from 'twenty-ui/theme-constants';
+import { useTheme, themeCssVariables } from 'twenty-ui/theme';
+import { useLingui } from '@lingui/react/macro';
+
 export type WidgetCardHeaderProps = {
   variant: WidgetCardVariant;
-  widgetId: string;
   isInEditMode: boolean;
   isEmpty?: boolean;
-  hasAccess?: boolean;
+  isHovered?: boolean;
+  count?: number | null;
+  actions?: ReactNode;
   title: string;
   onRemove?: (e?: React.MouseEvent) => void;
   forbiddenDisplay?: ReactNode;
   className?: string;
   isResizing?: boolean;
-  isReorderEnabled?: boolean;
-  isDeletingWidgetEnabled?: boolean;
 };
 
-const StyledWidgetCardHeader = styled.div<{ variant: WidgetCardVariant }>`
+const StyledWidgetCardHeader = styled.div<{ shouldInset: boolean }>`
   align-items: center;
+  box-sizing: border-box;
   display: flex;
   flex-shrink: 0;
-  height: ${themeCssVariables.spacing[6]};
-  padding: ${({ variant }) =>
-    variant === 'solo'
-      ? `${themeCssVariables.spacing[4]} ${themeCssVariables.spacing[6]} 0`
+  height: ${({ shouldInset }) =>
+    shouldInset
+      ? `calc(${themeCssVariables.spacing[6]} + var(--widget-card-title-padding-top))`
+      : themeCssVariables.spacing[6]};
+  padding: ${({ shouldInset }) =>
+    shouldInset
+      ? `var(--widget-card-title-padding-top) var(--widget-card-padding-inline) 0`
       : '0'};
 `;
 
-const StyledTitleContainer = styled.div<{ variant: WidgetCardVariant }>`
+const StyledTitleContainer = styled.div`
   align-items: center;
   color: ${themeCssVariables.font.color.primary};
   display: flex;
@@ -50,11 +50,6 @@ const StyledTitleContainer = styled.div<{ variant: WidgetCardVariant }>`
   font-weight: ${themeCssVariables.font.weight.medium};
   gap: ${themeCssVariables.spacing[1]};
   overflow: hidden;
-  padding-inline: ${({ variant }) =>
-    variant === 'side-column' || variant === 'solo'
-      ? '0'
-      : themeCssVariables.spacing[1]};
-
   user-select: none;
 `;
 
@@ -78,74 +73,56 @@ const StyledIconButtonContainerBase = styled.div`
 const StyledIconButtonContainer = motion.create(StyledIconButtonContainerBase);
 
 export const WidgetCardHeader = ({
-  widgetId,
   variant,
   isEmpty = false,
   isInEditMode = false,
-  hasAccess = true,
+  isHovered = false,
+  count,
+  actions,
   isResizing = false,
-  isReorderEnabled = true,
-  isDeletingWidgetEnabled = true,
   title,
   onRemove,
   forbiddenDisplay,
   className,
 }: WidgetCardHeaderProps) => {
-  const { theme } = useContext(ThemeContext);
+  const { t } = useLingui();
+  const theme = useTheme();
   const { formatNumber } = useNumberFormat();
-  const widgetCardHovered = useAtomComponentFamilyStateValue(
-    widgetCardHoveredComponentFamilyState,
-    widgetId,
-  );
 
-  const widgetHeaderCount = useAtomComponentFamilyStateValue(
-    widgetHeaderCountComponentFamilyState,
-    widgetId,
-  );
-
+  const shouldInset = variant === 'flush';
   return (
-    <StyledWidgetCardHeader variant={variant} className={className}>
+    <StyledWidgetCardHeader className={className} shouldInset={shouldInset}>
       <AnimatePresence initial={false}>
-        {!isEmpty && isInEditMode && isReorderEnabled && (
-          <WidgetGrip
-            className="drag-handle"
-            onClick={(e) => e.stopPropagation()}
-          />
-        )}
+        {!isEmpty && isInEditMode && <WidgetGrip className="drag-handle" />}
       </AnimatePresence>
-      <StyledTitleContainer variant={variant}>
+      <StyledTitleContainer>
         <OverflowingTextWithTooltip text={isEmpty ? t`Add Widget` : title} />
-        {isDefined(widgetHeaderCount) && (
-          <StyledCount>{formatNumber(widgetHeaderCount)}</StyledCount>
-        )}
+        {isDefined(count) && <StyledCount>{formatNumber(count)}</StyledCount>}
       </StyledTitleContainer>
       <StyledRightContainer>
-        {hasAccess && <WidgetCardHeaderActionsRenderer />}
+        {actions}
         {isDefined(forbiddenDisplay) && forbiddenDisplay}
         <AnimatePresence initial={false}>
-          {!isResizing &&
-            !isEmpty &&
-            isInEditMode &&
-            isDeletingWidgetEnabled &&
-            onRemove &&
-            widgetCardHovered && (
-              <StyledIconButtonContainer
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 'auto', opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{
-                  duration: theme.animation.duration.fast,
-                  ease: 'easeInOut',
-                }}
+          {!isResizing && !isEmpty && isInEditMode && onRemove && isHovered && (
+            <StyledIconButtonContainer
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{
+                duration: theme.animation.duration.fast,
+                ease: 'easeInOut',
+              }}
+            >
+              <IconButton
+                aria-label={t`Remove widget`}
+                onClick={onRemove}
+                variant="ghost"
+                size="sm"
               >
-                <IconButton
-                  onClick={onRemove}
-                  Icon={IconTrash}
-                  variant="tertiary"
-                  size="small"
-                />
-              </StyledIconButtonContainer>
-            )}
+                <IconTrash />
+              </IconButton>
+            </StyledIconButtonContainer>
+          )}
         </AnimatePresence>
       </StyledRightContainer>
     </StyledWidgetCardHeader>

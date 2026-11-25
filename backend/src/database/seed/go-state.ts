@@ -23,6 +23,7 @@ export type GoState = {
   adult_permission_log?: any[];
   notifications?: any[];
   demo_menu_version?: number;
+  demo_seed_version?: number;
 };
 
 export const EMPTY_TEXT: LocalizedString = { ru: '', en: '', ro: '' };

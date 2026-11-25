@@ -1,19 +1,18 @@
 import { styled } from '@linaria/react';
-import { type ComponentType, useContext } from 'react';
+import { type ComponentType } from 'react';
 
 import { SettingsListSkeletonCard } from '@/settings/components/SettingsListSkeletonCard';
+import { isDefined } from 'twenty-shared/utils';
 
 import { type IconComponent, IconPlus } from 'twenty-ui/icon';
-import { Card, CardFooter } from 'twenty-ui/surfaces';
-import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
+import { Card } from 'twenty-ui/primitives/surfaces';
+import { useTheme, themeCssVariables } from 'twenty-ui/theme';
 import { SettingsListItemCardContent } from './SettingsListItemCardContent';
 
-const StyledFooterContainer = styled.div`
-  > * {
-    align-items: center;
-    display: flex;
-    padding: ${themeCssVariables.spacing[1]};
-  }
+const StyledFooter = styled(Card.Footer)`
+  align-items: center;
+  display: flex;
+  padding: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledButton = styled.button`
@@ -44,13 +43,13 @@ type SettingsListCardProps<ListItem extends { id: string }> = {
   isLoading?: boolean;
   onRowClick?: (item: ListItem) => void;
   RowIcon?: IconComponent;
-  RowIconFn?: (item: ListItem) => IconComponent;
+  RowIconFn?: (item: ListItem) => IconComponent | undefined;
   RowIconColor?: string;
+  RowLeftComponent?: ComponentType<{ item: ListItem }>;
   RowRightComponent: ComponentType<{ item: ListItem }>;
   footerButtonLabel?: string;
   onFooterButtonClick?: () => void;
   to?: (item: ListItem) => string;
-  rounded?: boolean;
 };
 
 export const SettingsListCard = <
@@ -67,23 +66,30 @@ export const SettingsListCard = <
   RowIcon,
   RowIconFn,
   RowIconColor,
+  RowLeftComponent,
   RowRightComponent,
   onFooterButtonClick,
   footerButtonLabel,
   to,
-  rounded,
 }: SettingsListCardProps<ListItem>) => {
-  const { theme } = useContext(ThemeContext);
+  const theme = useTheme();
 
-  if (isLoading === true) return <SettingsListSkeletonCard />;
+  if (isLoading) {
+    return <SettingsListSkeletonCard />;
+  }
 
   return (
-    <Card rounded={rounded}>
+    <Card.Root>
       {items.map((item, index) => (
         <SettingsListItemCardContent
           key={item.id}
           LeftIcon={RowIconFn ? RowIconFn(item) : RowIcon}
           LeftIconColor={RowIconColor}
+          leftComponent={
+            isDefined(RowLeftComponent) ? (
+              <RowLeftComponent item={item} />
+            ) : undefined
+          }
           label={getItemLabel(item)}
           description={getItemDescription?.(item)}
           rightComponent={<RowRightComponent item={item} />}
@@ -93,15 +99,13 @@ export const SettingsListCard = <
         />
       ))}
       {hasFooter && (
-        <StyledFooterContainer>
-          <CardFooter divider={!!items.length}>
-            <StyledButton onClick={onFooterButtonClick}>
-              <IconPlus size={theme.icon.size.md} />
-              {footerButtonLabel}
-            </StyledButton>
-          </CardFooter>
-        </StyledFooterContainer>
+        <StyledFooter divider={!!items.length}>
+          <StyledButton onClick={onFooterButtonClick}>
+            <IconPlus size={theme.icon.size.md} />
+            {footerButtonLabel}
+          </StyledButton>
+        </StyledFooter>
       )}
-    </Card>
+    </Card.Root>
   );
 };

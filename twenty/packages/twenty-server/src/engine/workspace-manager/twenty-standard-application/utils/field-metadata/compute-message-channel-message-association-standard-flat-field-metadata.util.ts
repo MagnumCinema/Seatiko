@@ -41,10 +41,10 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         fieldName: 'id',
         type: FieldMetadataType.UUID,
         label: i18nLabel(
-          msg({ message: `Id`, context: 'fieldMetadata.label' }),
+          msg({ message: `ID`, context: 'fieldMetadata.label' }),
         ),
         description: i18nLabel(
-          msg({ message: `Id`, context: 'fieldMetadata.description' }),
+          msg({ message: `ID`, context: 'fieldMetadata.description' }),
         ),
         icon: 'Icon123',
         isSystem: true,
@@ -254,7 +254,7 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         type: FieldMetadataType.TEXT,
         label: i18nLabel(
           msg({
-            message: `Message External Id`,
+            message: `Message External ID`,
             context: 'fieldMetadata.label',
           }),
         ),
@@ -281,7 +281,7 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         type: FieldMetadataType.TEXT,
         label: i18nLabel(
           msg({
-            message: `Thread External Id`,
+            message: `Thread External ID`,
             context: 'fieldMetadata.label',
           }),
         ),
@@ -353,13 +353,13 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         type: FieldMetadataType.UUID,
         label: i18nLabel(
           msg({
-            message: `Message Channel Id`,
+            message: `Message Channel ID`,
             context: 'fieldMetadata.label',
           }),
         ),
         description: i18nLabel(
           msg({
-            message: `Message Channel Id`,
+            message: `Message Channel ID`,
             context: 'fieldMetadata.description',
           }),
         ),
@@ -380,11 +380,11 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         morphId: null,
         fieldName: 'messageThread',
         label: i18nLabel(
-          msg({ message: `Message Thread Id`, context: 'fieldMetadata.label' }),
+          msg({ message: `Message Thread ID`, context: 'fieldMetadata.label' }),
         ),
         description: i18nLabel(
           msg({
-            message: `Message Thread Id`,
+            message: `Message Thread ID`,
             context: 'fieldMetadata.description',
           }),
         ),
@@ -412,10 +412,10 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         morphId: null,
         fieldName: 'message',
         label: i18nLabel(
-          msg({ message: `Message Id`, context: 'fieldMetadata.label' }),
+          msg({ message: `Message ID`, context: 'fieldMetadata.label' }),
         ),
         description: i18nLabel(
-          msg({ message: `Message Id`, context: 'fieldMetadata.description' }),
+          msg({ message: `Message ID`, context: 'fieldMetadata.description' }),
         ),
         icon: 'IconHash',
         isNullable: true,
@@ -456,6 +456,62 @@ export const buildMessageChannelMessageAssociationStandardFlatFieldMetadatas =
         targetFieldName: 'messageChannelMessageAssociation',
         settings: {
           relationType: RelationType.ONE_TO_MANY,
+        },
+      },
+      standardObjectMetadataRelatedEntityIds,
+      dependencyFlatEntityMaps,
+      twentyStandardApplicationId,
+      now,
+    }),
+    handle: createStandardFieldFlatMetadata({
+      objectName,
+      workspaceId,
+      context: {
+        fieldName: 'handle',
+        type: FieldMetadataType.TEXT,
+        label: i18nLabel(
+          msg({ message: `Handle`, context: 'fieldMetadata.label' }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `Handle of the mailbox this message was synced from`,
+            context: 'fieldMetadata.description',
+          }),
+        ),
+        icon: 'IconAt',
+        isNullable: true,
+        isUIEditable: false,
+      },
+      standardObjectMetadataRelatedEntityIds,
+      dependencyFlatEntityMaps,
+      twentyStandardApplicationId,
+      now,
+    }),
+    accountOwner: createStandardRelationFieldFlatMetadata({
+      objectName,
+      workspaceId,
+      context: {
+        type: FieldMetadataType.RELATION,
+        morphId: null,
+        fieldName: 'accountOwner',
+        label: i18nLabel(
+          msg({ message: `Account Owner`, context: 'fieldMetadata.label' }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `Workspace member whose mailbox this message was synced from`,
+            context: 'fieldMetadata.description',
+          }),
+        ),
+        icon: 'IconUserCircle',
+        isNullable: true,
+        isUIEditable: false,
+        targetObjectName: 'workspaceMember',
+        targetFieldName: 'accountOwnerForMessageChannelMessageAssociations',
+        settings: {
+          relationType: RelationType.MANY_TO_ONE,
+          onDelete: RelationOnDeleteAction.SET_NULL,
+          joinColumnName: 'accountOwnerId',
         },
       },
       standardObjectMetadataRelatedEntityIds,

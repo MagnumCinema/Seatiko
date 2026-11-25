@@ -1,23 +1,22 @@
 import { Field, InputType } from '@nestjs/graphql';
 
-import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
-  ValidateNested,
 } from 'class-validator';
 import { GraphQLJSON } from 'graphql-type-json';
+import { ConditionalAvailabilityNode } from 'twenty-shared/conditional-availability';
 import {
   PageLayoutWidgetConditionalDisplay,
   PageLayoutWidgetPosition,
+  WidgetType,
 } from 'twenty-shared/types';
 
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { GridPositionInput } from 'src/engine/metadata-modules/page-layout-widget/dtos/inputs/grid-position.input';
-import { WidgetType } from 'src/engine/metadata-modules/page-layout-widget/enums/widget-type.enum';
 import { AllPageLayoutWidgetConfiguration } from 'src/engine/metadata-modules/page-layout-widget/types/all-page-layout-widget-configuration.type';
 
 @InputType()
@@ -42,14 +41,6 @@ export class UpdatePageLayoutWidgetInput {
   @IsOptional()
   objectMetadataId?: string | null;
 
-  @Field(() => GridPositionInput, {
-    nullable: true,
-  })
-  @ValidateNested()
-  @Type(() => GridPositionInput)
-  @IsOptional()
-  gridPosition?: GridPositionInput;
-
   @Field(() => GraphQLJSON, { nullable: true })
   @IsObject()
   @IsOptional()
@@ -60,6 +51,7 @@ export class UpdatePageLayoutWidgetInput {
   @IsOptional()
   configuration?: AllPageLayoutWidgetConfiguration;
 
+  // TODO(@neo773): conditionalDisplay and conditionalAvailabilityExpression are legacy; no deprecationReason here because the front type generation drops deprecated input fields and it still sends null to empty them. Removed with the columns
   @Field(() => GraphQLJSON, { nullable: true })
   @IsObject()
   @IsOptional()
@@ -69,4 +61,14 @@ export class UpdatePageLayoutWidgetInput {
   @IsString()
   @IsOptional()
   conditionalAvailabilityExpression?: string | null;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  @IsObject()
+  @IsOptional()
+  conditionalAvailability?: ConditionalAvailabilityNode | null;
+
+  @Field(() => Boolean, { nullable: true })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }

@@ -2,20 +2,20 @@ import { useCallback } from 'react';
 
 import { useMetadataErrorHandler } from '@/metadata-error-handler/hooks/useMetadataErrorHandler';
 import { useUpdateMetadataStoreDraft } from '@/metadata-store/hooks/useUpdateMetadataStoreDraft';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { t } from '@lingui/core/macro';
 import { type AllMetadataName } from 'twenty-shared/metadata';
 import { type CrudOperationType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+import { useToast } from 'twenty-ui/components/feedback';
 
 type MetadataStoreDraftUtils = Pick<
   ReturnType<typeof useUpdateMetadataStoreDraft>,
   'addToDraft' | 'updateInDraft' | 'removeFromDraft'
 >;
 
-type PerformViewEntityAPIPersistOperationArgs<TResponse> = {
+type PerformViewEntityApiPersistOperationArgs<TResponse> = {
   persist: () => Promise<TResponse>;
   applyResultToDraft: (
     response: TResponse,
@@ -24,7 +24,7 @@ type PerformViewEntityAPIPersistOperationArgs<TResponse> = {
   operationType: CrudOperationType;
 };
 
-type PerformViewEntityAPIPersistBatchOperationArgs<TInput, TResult> = {
+type PerformViewEntityApiPersistBatchOperationArgs<TInput, TResult> = {
   inputs: TInput[];
   mutate: (input: TInput) => Promise<TResult>;
   applyResultToDraft: (
@@ -34,14 +34,14 @@ type PerformViewEntityAPIPersistBatchOperationArgs<TInput, TResult> = {
   operationType: CrudOperationType;
 };
 
-export const usePerformViewEntityAPIPersistOperation = (
+export const usePerformViewEntityApiPersistOperation = (
   metadataName: AllMetadataName,
 ) => {
   const { addToDraft, updateInDraft, removeFromDraft, applyChanges } =
     useUpdateMetadataStoreDraft();
 
   const { handleMetadataError } = useMetadataErrorHandler();
-  const { enqueueErrorSnackBar } = useSnackBar();
+  const { enqueueToast } = useToast();
 
   const handlePersistError = useCallback(
     (error: unknown, operationType: CrudOperationType) => {
@@ -51,18 +51,18 @@ export const usePerformViewEntityAPIPersistOperation = (
           operationType,
         });
       } else {
-        enqueueErrorSnackBar({ message: t`An error occurred.` });
+        enqueueToast({ status: 'error', children: t`An error occurred.` });
       }
     },
-    [handleMetadataError, enqueueErrorSnackBar, metadataName],
+    [handleMetadataError, enqueueToast, metadataName],
   );
 
-  const performViewEntityAPIPersistOperation = useCallback(
+  const performViewEntityApiPersistOperation = useCallback(
     async <TResponse>({
       persist,
       applyResultToDraft,
       operationType,
-    }: PerformViewEntityAPIPersistOperationArgs<TResponse>): Promise<
+    }: PerformViewEntityApiPersistOperationArgs<TResponse>): Promise<
       MetadataRequestResult<TResponse>
     > => {
       try {
@@ -97,13 +97,13 @@ export const usePerformViewEntityAPIPersistOperation = (
     ],
   );
 
-  const performViewEntityAPIPersistBatchOperation = useCallback(
+  const performViewEntityApiPersistBatchOperation = useCallback(
     async <TInput, TResult>({
       inputs,
       mutate,
       applyResultToDraft,
       operationType,
-    }: PerformViewEntityAPIPersistBatchOperationArgs<TInput, TResult>): Promise<
+    }: PerformViewEntityApiPersistBatchOperationArgs<TInput, TResult>): Promise<
       MetadataRequestResult<TResult[]>
     > => {
       if (inputs.length === 0) {
@@ -159,7 +159,7 @@ export const usePerformViewEntityAPIPersistOperation = (
   );
 
   return {
-    performViewEntityAPIPersistOperation,
-    performViewEntityAPIPersistBatchOperation,
+    performViewEntityApiPersistOperation,
+    performViewEntityApiPersistBatchOperation,
   };
 };

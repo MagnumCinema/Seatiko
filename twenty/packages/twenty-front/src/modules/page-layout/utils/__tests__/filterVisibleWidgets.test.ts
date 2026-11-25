@@ -1,6 +1,9 @@
 import { type PageLayoutTab } from '@/page-layout/types/PageLayoutTab';
 import { filterVisibleWidgets } from '@/page-layout/utils/filterVisibleWidgets';
+import { buildDeviceConditionalAvailability } from 'twenty-shared/conditional-availability';
 import {
+  FeatureFlagKey,
+  PageLayoutTabLayoutMode,
   WidgetConfigurationType,
   WidgetType,
 } from '~/generated-metadata/graphql';
@@ -20,8 +23,9 @@ describe('filterVisibleWidgets', () => {
     title: `Widget ${id}`,
     type: WidgetType.FIELDS,
     objectMetadataId: null,
-    gridPosition: {
-      __typename: 'GridPosition',
+    position: {
+      layoutMode: PageLayoutTabLayoutMode.GRID,
+      __typename: 'PageLayoutWidgetGridPosition',
       row: 0,
       column: 0,
       rowSpan: 1,
@@ -47,7 +51,7 @@ describe('filterVisibleWidgets', () => {
 
     const result = filterVisibleWidgets({
       widgets,
-      context: { device: 'DESKTOP', selectedRecords: [] },
+      context: { device: 'DESKTOP', selectedRecords: [], featureFlags: {} },
     });
 
     expect(result).toHaveLength(3);
@@ -67,7 +71,7 @@ describe('filterVisibleWidgets', () => {
 
     const result = filterVisibleWidgets({
       widgets,
-      context: { device: 'MOBILE', selectedRecords: [] },
+      context: { device: 'MOBILE', selectedRecords: [], featureFlags: {} },
     });
 
     expect(result).toHaveLength(2);
@@ -87,7 +91,7 @@ describe('filterVisibleWidgets', () => {
 
     const result = filterVisibleWidgets({
       widgets,
-      context: { device: 'DESKTOP', selectedRecords: [] },
+      context: { device: 'DESKTOP', selectedRecords: [], featureFlags: {} },
     });
 
     expect(result).toHaveLength(2);
@@ -97,7 +101,7 @@ describe('filterVisibleWidgets', () => {
   it('should handle empty widgets array', () => {
     const result = filterVisibleWidgets({
       widgets: [],
-      context: { device: 'DESKTOP', selectedRecords: [] },
+      context: { device: 'DESKTOP', selectedRecords: [], featureFlags: {} },
     });
 
     expect(result).toHaveLength(0);
@@ -115,9 +119,52 @@ describe('filterVisibleWidgets', () => {
 
     filterVisibleWidgets({
       widgets,
-      context: { device: 'DESKTOP', selectedRecords: [] },
+      context: { device: 'DESKTOP', selectedRecords: [], featureFlags: {} },
     });
 
     expect(widgets).toHaveLength(originalLength);
+  });
+
+  describe('when the workspace reads the conditional availability tree only', () => {
+    const context = {
+      device: 'DESKTOP' as const,
+      selectedRecords: [],
+      featureFlags: {
+        [FeatureFlagKey.IS_WIDGET_CONDITIONAL_AVAILABILITY_ENABLED]: true,
+      },
+    };
+
+    it('should hide a widget whose tree does not match', () => {
+      const widgets = [
+        createMockWidget('widget-1'),
+        {
+          ...createMockWidget('widget-2'),
+          conditionalAvailability: buildDeviceConditionalAvailability('MOBILE'),
+        },
+      ];
+
+      const result = filterVisibleWidgets({ widgets, context });
+
+      expect(result.map((widget) => widget.id)).toEqual(['widget-1']);
+    });
+
+    it('should ignore the legacy rules of a widget', () => {
+      const widgets = [
+        createMockWidget('widget-1', {
+          and: [{ '===': [{ var: 'device' }, 'MOBILE'] }],
+        }),
+        {
+          ...createMockWidget('widget-2'),
+          conditionalAvailabilityExpression: 'device == "MOBILE"',
+        },
+      ];
+
+      const result = filterVisibleWidgets({ widgets, context });
+
+      expect(result.map((widget) => widget.id)).toEqual([
+        'widget-1',
+        'widget-2',
+      ]);
+    });
   });
 });

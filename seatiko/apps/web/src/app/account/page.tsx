@@ -1,5 +1,6 @@
 "use client";
 
+import { DEMO_LOGIN } from "@/lib/demo";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
@@ -97,7 +98,7 @@ export default function AccountPage() {
         <GuestProfile
           user={user}
           onRequestSignIn={() => router.push("/login?next=/account")}
-          onQuickDemoSignIn={handleQuickDemo}
+          onQuickDemoSignIn={DEMO_LOGIN ? handleQuickDemo : undefined}
           onUserUpdated={setUser}
           onLogout={() => {
             logout();

@@ -1,100 +1,88 @@
 import { Logger, Scope } from '@nestjs/common';
 
-import isEmpty from 'lodash.isempty';
-import { FieldActorSource } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
+import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handler/exception-handler.service';
 import { Process } from 'src/engine/core-modules/message-queue/decorators/process.decorator';
 import { Processor } from 'src/engine/core-modules/message-queue/decorators/processor.decorator';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
-import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
-import { WorkflowVersionStatus } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
-import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
-import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
-import { WorkflowRunnerWorkspaceService } from 'src/modules/workflow/workflow-runner/workspace-services/workflow-runner.workspace-service';
-import { WorkflowTriggerExceptionCode } from 'src/modules/workflow/workflow-trigger/exceptions/workflow-trigger.exception';
+import { WorkflowVersionStatus as CoreWorkflowVersionStatus } from 'src/engine/core-modules/workflow/entities/workflow-version.entity';
+import { CoreWorkflowTriggerService } from 'src/engine/core-modules/workflow/services/core-workflow-trigger.service';
+import { CoreWorkflowRunnerService } from 'src/modules/workflow/workflow-runner/services/core-workflow-runner.service';
+import { buildWorkflowRunSource } from 'src/modules/workflow/workflow-trigger/utils/build-workflow-run-source.util';
 
 export type WorkflowTriggerJobData = {
   workspaceId: string;
   workflowId: string;
+  coreWorkflowVersionId: string;
   payload: object;
 };
-
-const DEFAULT_WORKFLOW_NAME = 'Workflow';
 
 @Processor({ queueName: MessageQueue.workflowQueue, scope: Scope.REQUEST })
 export class WorkflowTriggerJob {
   private readonly logger = new Logger(WorkflowTriggerJob.name);
   constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-    private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
-    private readonly workflowRunnerWorkspaceService: WorkflowRunnerWorkspaceService,
+    private readonly coreWorkflowRunnerService: CoreWorkflowRunnerService,
+    private readonly coreWorkflowTriggerService: CoreWorkflowTriggerService,
+    private readonly exceptionHandlerService: ExceptionHandlerService,
   ) {}
 
   @Process(WorkflowTriggerJob.name)
-  async handle(data: WorkflowTriggerJobData): Promise<void> {
-    const authContext = buildSystemAuthContext(data.workspaceId);
+  async handle({
+    workflowId,
+    workspaceId,
+    coreWorkflowVersionId,
+    payload,
+  }: WorkflowTriggerJobData): Promise<void> {
+    const coreWorkflowVersion =
+      await this.coreWorkflowTriggerService.findCoreVersionById(
+        workspaceId,
+        coreWorkflowVersionId,
+      );
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
-      const workflowRepository =
-        await this.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
-          data.workspaceId,
-          'workflow',
-          { shouldBypassPermissionChecks: true },
-        );
+    if (!isDefined(coreWorkflowVersion)) {
+      this.captureDroppedDispatch(
+        `Core workflow version ${coreWorkflowVersionId} not found in workspace ${workspaceId}`,
+      );
+      return;
+    }
 
-      const workflow = await workflowRepository.findOneBy({
-        id: data.workflowId,
+    const droppedDispatchMessage = `Core workflow version ${coreWorkflowVersionId} does not belong to workflow ${workflowId} in workspace ${workspaceId}`;
+
+    if (!isDefined(coreWorkflowVersion.coreWorkflowId)) {
+      this.captureDroppedDispatch(droppedDispatchMessage);
+      return;
+    }
+
+    const coreWorkflow =
+      await this.coreWorkflowTriggerService.findCoreWorkflowById({
+        workspaceId,
+        coreWorkflowId: coreWorkflowVersion.coreWorkflowId,
       });
 
-      if (!workflow) {
-        this.logger.error(
-          `Workflow ${data.workflowId} not found in workspace ${data.workspaceId}`,
-          WorkflowTriggerExceptionCode.NOT_FOUND,
-        );
+    if (
+      !isDefined(coreWorkflow) ||
+      (workflowId !== coreWorkflow.id &&
+        workflowId !== coreWorkflow.workspaceWorkflowId)
+    ) {
+      this.captureDroppedDispatch(droppedDispatchMessage);
+      return;
+    }
 
-        return;
-      }
+    if (coreWorkflowVersion.status !== CoreWorkflowVersionStatus.ACTIVE) {
+      return;
+    }
 
-      if (!workflow.lastPublishedVersionId) {
-        this.logger.error(
-          `Workflow ${data.workflowId} has no published version in workspace ${data.workspaceId}`,
-          WorkflowTriggerExceptionCode.INTERNAL_ERROR,
-        );
+    await this.coreWorkflowRunnerService.run({
+      workspaceId,
+      coreWorkflowVersionId,
+      payload,
+      source: buildWorkflowRunSource(coreWorkflow.name),
+    });
+  }
 
-        return;
-      }
-
-      const workflowVersion =
-        await this.workflowCommonWorkspaceService.getWorkflowVersionOrFail({
-          workspaceId: data.workspaceId,
-          workflowVersionId: workflow.lastPublishedVersionId,
-        });
-
-      if (workflowVersion.status !== WorkflowVersionStatus.ACTIVE) {
-        this.logger.error(
-          `Workflow version ${workflowVersion?.id} is not active in workspace ${data.workspaceId}`,
-          WorkflowTriggerExceptionCode.INTERNAL_ERROR,
-        );
-
-        return;
-      }
-
-      await this.workflowRunnerWorkspaceService.run({
-        workspaceId: data.workspaceId,
-        workflowVersionId: workflow.lastPublishedVersionId,
-        payload: data.payload,
-        source: {
-          source: FieldActorSource.WORKFLOW,
-          name:
-            isDefined(workflow.name) && !isEmpty(workflow.name)
-              ? workflow.name
-              : DEFAULT_WORKFLOW_NAME,
-          context: {},
-          workspaceMemberId: null,
-        },
-      });
-    }, authContext);
+  private captureDroppedDispatch(message: string): void {
+    this.logger.error(message);
+    this.exceptionHandlerService.captureExceptions([new Error(message)]);
   }
 }

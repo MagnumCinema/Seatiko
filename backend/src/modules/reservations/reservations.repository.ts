@@ -44,6 +44,10 @@ export class ReservationsRepository {
     return rows.map(({ r, venueName }) => ({ ...r, venueName }));
   }
 
+  byVenue(venueId: string): Promise<ReservationRow[]> {
+    return this.db.select().from(reservations).where(eq(reservations.venueId, venueId)).orderBy(asc(reservations.reservedFor));
+  }
+
   async heldTables(reservationIds: string[], db: Db = this.db): Promise<HeldTable[]> {
     if (!reservationIds.length) return [];
     return db

@@ -653,6 +653,155 @@ paths:
                     type: string
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/auth/providers:
+    get:
+      operationId: AuthProviders
+      summary: Auth Providers
+      tags:
+        - Accounts
+      description: Which sign-in buttons to show. google.client_id is the web OAuth client ID for Google Identity
+        Services (and the server client ID for Android Credential Manager); google.enabled is false when the server has
+        no GOOGLE_CLIENT_IDS.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  google:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                      client_id:
+                        type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/auth/google:
+    post:
+      operationId: GoogleSignIn
+      summary: Google Sign In
+      tags:
+        - Accounts
+      description: Signs in (or signs up) with a Google ID token from Google Identity Services or Android Credential
+        Manager. A Google account is found by its id (sub), not its email; a first sign-in creates an account without a
+        password (role guest, or restaurant) for an address Google verified. Errors invalid_google_token (401),
+        google_email_unverified (403), link_required (409, an account with this email exists - sign in with its password
+        and connect Google in the profile), google_signin_disabled / google_unavailable (503).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credential
+              properties:
+                credential:
+                  type: string
+                  description: The Google ID token (Google Identity Services calls it credential).
+                nonce:
+                  type: string
+                  description: The nonce the client put in this sign-in's request to Google; when sent, the token must
+                    carry it.
+                role:
+                  type: string
+                  enum:
+                    - guest
+                    - restaurant
+                  description: Only used when the account is created.
+                locale:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                  created:
+                    type: boolean
+                    description: true when this sign-in created the account.
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/identities:
+    get:
+      operationId: ListIdentities
+      summary: List Identities
+      tags:
+        - Accounts
+      description: Accounts at other providers (Google) that sign the user in.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityList'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/identities/google:
+    post:
+      operationId: ConnectGoogle
+      summary: Connect Google
+      tags:
+        - Accounts
+      description: Connects a Google account to the signed-in user. Accounts with a password confirm it. Errors
+        password_required (400), wrong_password (403), invalid_google_token (401), google_linked_elsewhere (409),
+        google_already_connected (409, another Google account is connected).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - credential
+              properties:
+                credential:
+                  type: string
+                password:
+                  type: string
+                nonce:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityList'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DisconnectGoogle
+      summary: Disconnect Google
+      tags:
+        - Accounts
+      description: Disconnects Google. Errors google_not_connected (404), password_required_first (409, Google is the only
+        way to sign in - set a password first).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityList'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/me:
     get:
       operationId: Me
@@ -703,7 +852,8 @@ paths:
       summary: Delete Me
       tags:
         - Accounts
-      description: GDPR account deletion for guests. Requires the current password. Personal data is anonymised
+      description: GDPR account deletion for guests. Requires the current password (accounts created with Google
+        that never set one send none). Personal data is anonymised
         (name, email, phone, diet, favourites, avatar, reservation notes, waitlist and event contacts); upcoming
         reservations and their preorders are cancelled; orders stay for accounting without personal data. Tokens issued
         before stop working (401 account_deleted). Errors wrong_password (403), role_not_allowed (403, non-guests).
@@ -715,8 +865,6 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - password
               properties:
                 password:
                   type: string
@@ -4400,6 +4548,10 @@ components:
         deleted_at:
           type: string
           format: date-time
+        has_password:
+          type: boolean
+          description: false for an account created with Google until it sets a password (PATCH /me/password without
+            old_password).
         adult_preorder_allowed:
           type: boolean
           description: Read-only. Granted by venue staff after an in-person ID check (APP_LOGIC 8.4).
@@ -4411,6 +4563,23 @@ components:
         updated_at:
           type: string
           format: date-time
+    IdentityList:
+      type: object
+      properties:
+        identities:
+          type: array
+          items:
+            type: object
+            properties:
+              provider:
+                type: string
+                enum:
+                  - google
+              email:
+                type: string
+              created_at:
+                type: string
+                format: date-time
     Venue:
       type: object
       properties:
@@ -5070,11 +5239,12 @@ components:
     updatePasswordReq:
       type: object
       required:
-        - old_password
         - new_password
       properties:
         old_password:
           type: string
+          description: Required when the account has a password (has_password); not when an account created with Google
+            sets its first one.
         new_password:
           type: string
           minLength: 6

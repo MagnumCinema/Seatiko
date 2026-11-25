@@ -311,8 +311,12 @@ export class DemoteAndBackfillApplicationIndexViewCommand extends ProvisionedWor
             size: DEFAULT_VIEW_FIELD_SIZE,
             position,
             aggregateOperation: null,
+            relationTargetFieldMetadataUniversalIdentifier: null,
+            universalRelationScope: null,
+            label: null,
             isActive: true,
             isSystemSideEffect: true,
+            isCanonical: true,
             universalOverrides: null,
             createdAt,
             updatedAt: createdAt,
@@ -394,6 +398,7 @@ export class DemoteAndBackfillApplicationIndexViewCommand extends ProvisionedWor
     const result =
       await this.workspaceMigrationValidateBuildAndRunService.validateBuildAndRunLegacyWorkspaceMigration(
         {
+          shouldDeferActions: false,
           isSystemBuild: true,
           workspaceId,
           applicationUniversalIdentifier,

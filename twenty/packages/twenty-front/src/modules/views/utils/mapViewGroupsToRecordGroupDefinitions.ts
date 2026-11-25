@@ -8,6 +8,7 @@ import {
 } from '@/object-record/record-group/types/RecordGroupDefinition';
 import { type ViewGroup } from '@/views/types/ViewGroup';
 import { isDefined } from 'twenty-shared/utils';
+import { doNotTranslate } from 'twenty-shared/i18n';
 import { type ThemeColor } from 'twenty-ui/theme';
 import { FieldMetadataType } from '~/generated-metadata/graphql';
 
@@ -20,12 +21,14 @@ const buildRecordGroupDefinition = ({
   title,
   value,
   color,
+  description,
 }: {
   viewGroup: ViewGroup;
   isNoValue: boolean;
   title: string;
   value: string | null;
   color: ThemeColor | 'transparent';
+  description?: string | null;
 }): RecordGroupDefinition => ({
   id: viewGroup.id,
   type: isNoValue
@@ -34,6 +37,7 @@ const buildRecordGroupDefinition = ({
   title,
   value,
   color,
+  description,
   position: viewGroup.position,
   isVisible: viewGroup.isVisible,
 });
@@ -79,6 +83,7 @@ const mapSelectViewGroupsToRecordGroupDefinitions = (
         title: selectedOption?.label ?? t`No Value`,
         value: selectedOption?.value ?? null,
         color: selectedOption?.color ?? 'transparent',
+        description: selectedOption?.description,
       });
     })
     .filter(isDefined);
@@ -112,7 +117,9 @@ export const mapViewGroupsToRecordGroupDefinitions = ({
   } else if (groupByFieldMetadataItem.type === FieldMetadataType.SELECT) {
     if (!groupByFieldMetadataItem.options) {
       throw new Error(
-        `Select Field ${objectMetadataItem.nameSingular} has no options`,
+        doNotTranslate(
+          `Select Field ${objectMetadataItem.nameSingular} has no options`,
+        ),
       );
     }
 

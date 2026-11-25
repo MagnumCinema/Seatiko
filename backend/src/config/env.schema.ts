@@ -12,6 +12,8 @@ export const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   DATABASE_URL: z.url(),
   UPLOAD_DIR: z.string().default('./data/uploads'),
+  /** HMAC key of table QR codes; the Go API's default keeps printed codes valid. */
+  QR_SECRET: z.string().default('seatiko-qr-dev-secret'),
 
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default('us-east-1'),
@@ -29,6 +31,10 @@ export const envSchema = z.object({
   TWENTY_API_KEY: z.string().optional(),
   TWENTY_WEBHOOK_SECRET: z.string().optional(),
   TWENTY_SYNC_INTERVAL_SECONDS: z.coerce.number().int().min(5).default(15),
+
+  /** First administrator, created at start when no user has this email (real data, no demo accounts). */
+  SEATIKO_ADMIN_EMAIL: z.string().optional(),
+  SEATIKO_ADMIN_PASSWORD: z.string().min(8, 'SEATIKO_ADMIN_PASSWORD must be at least 8 characters').optional(),
 
   /** Apply pending database migrations when the app starts. */
   DB_MIGRATE_ON_START: z.stringbool().default(true),
@@ -56,6 +62,23 @@ export const envSchema = z.object({
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_MAPS_BROWSER_KEY: z.string().optional(),
   GOOGLE_MAPS_MAP_ID: z.string().optional(),
+
+  /**
+   * Sign in with Google: the OAuth client IDs whose ID tokens the API accepts,
+   * comma-separated, the web client first (the site's button uses it; Android asks
+   * for tokens issued to it too). Empty = Google sign-in is off.
+   */
+  GOOGLE_CLIENT_IDS: z
+    .string()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  /** Google's signing keys; only tests change it. */
+  GOOGLE_JWKS_URL: z.url().default('https://www.googleapis.com/oauth2/v3/certs'),
 });
 
 export type Env = z.infer<typeof envSchema>;

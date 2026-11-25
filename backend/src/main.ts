@@ -8,7 +8,7 @@ import { createValidationPipe } from './core/http/validation.js';
 import { openApiDocument } from './modules/docs/openapi.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { instrument: ObserveInstrument });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { instrument: ObserveInstrument, rawBody: true });
   app.useGlobalPipes(createValidationPipe());
   // Behind nginx: the client address (rate limits) comes from X-Forwarded-For.
   app.set('trust proxy', true);

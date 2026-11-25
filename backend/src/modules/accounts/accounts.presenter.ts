@@ -16,6 +16,8 @@ export function presentUser(u: UserRecord) {
     ...(u.favoriteVenues.length ? { favorite_venues: u.favoriteVenues } : {}),
     ...(u.avatarUrl ? { avatar_url: u.avatarUrl } : {}),
     ...(u.deletedAt ? { deleted_at: formatDbTime(u.deletedAt) } : {}),
+    /** false for an account created with Google until it sets a password. */
+    has_password: Boolean(u.passwordHash),
     adult_preorder_allowed: u.adultPreorderAllowed,
     ...(u.adultVerification ? { adult_verification: u.adultVerification } : {}),
     created_at: formatDbTime(u.createdAt),

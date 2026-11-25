@@ -1,27 +1,20 @@
 import { isDefined } from 'twenty-shared/utils';
 import { z } from 'zod';
 
-import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
-import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
-import {
-  WorkflowVersionStatus,
-  type WorkflowVersionWorkspaceEntity,
-} from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
-import { type WorkflowWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow.workspace-entity';
+import { WorkflowVersionStatus as CoreWorkflowVersionStatus } from 'src/engine/core-modules/workflow/entities/workflow-version.entity';
 import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
 } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
-
-type GetWorkflowCurrentVersionToolContext = WorkflowToolContext & {
-  rolePermissionConfig: RolePermissionConfig;
-};
+import { type WorkflowTool } from 'src/modules/workflow/workflow-tools/types/workflow-tool.type';
 
 const getWorkflowCurrentVersionSchema = z.object({
-  workflowId: z
+  coreWorkflowId: z
     .string()
     .uuid()
-    .describe('The UUID of the workflow to get the current version for'),
+    .describe(
+      'The core workflow UUID to get the current version for, as returned by list_workflows',
+    ),
 });
 
 type GetWorkflowCurrentVersionInput = z.infer<
@@ -29,93 +22,104 @@ type GetWorkflowCurrentVersionInput = z.infer<
 >;
 
 export const createGetWorkflowCurrentVersionTool = (
-  deps: Pick<WorkflowToolDependencies, 'globalWorkspaceOrmManager'>,
-  context: GetWorkflowCurrentVersionToolContext,
-) => ({
-  name: 'get_workflow_current_version' as const,
-  description:
-    'Get the current version of a workflow. Returns the draft version if one exists, otherwise the last published version.',
-  inputSchema: getWorkflowCurrentVersionSchema,
-  execute: async (parameters: GetWorkflowCurrentVersionInput) => {
-    try {
-      const authContext = buildSystemAuthContext(context.workspaceId);
-
-      return await deps.globalWorkspaceOrmManager.executeInWorkspaceContext(
-        async () => {
-          const workflowRepository =
-            await deps.globalWorkspaceOrmManager.getRepository<WorkflowWorkspaceEntity>(
-              context.workspaceId,
-              'workflow',
-              context.rolePermissionConfig,
-            );
-
-          const workflow = await workflowRepository.findOne({
-            where: { id: parameters.workflowId },
-          });
-
-          if (!isDefined(workflow)) {
-            return {
-              success: false,
-              error: `Workflow ${parameters.workflowId} not found`,
-            };
-          }
-
-          const workflowVersionRepository =
-            await deps.globalWorkspaceOrmManager.getRepository<WorkflowVersionWorkspaceEntity>(
-              context.workspaceId,
-              'workflowVersion',
-              context.rolePermissionConfig,
-            );
-
-          const versions = await workflowVersionRepository.find({
-            where: [
-              {
-                workflowId: parameters.workflowId,
-                status: WorkflowVersionStatus.DRAFT,
-              },
-              {
-                workflowId: parameters.workflowId,
-                status: WorkflowVersionStatus.ACTIVE,
-              },
-            ],
-          });
-
-          const draftVersion = versions.find(
-            (version) => version.status === WorkflowVersionStatus.DRAFT,
-          );
-          const activeVersion = versions.find(
-            (version) => version.status === WorkflowVersionStatus.ACTIVE,
-          );
-
-          const currentVersion = draftVersion ?? activeVersion;
-
-          if (!isDefined(currentVersion)) {
-            return {
-              success: false,
-              error: `Workflow ${parameters.workflowId} has no draft or active version`,
-            };
-          }
-
-          return {
-            success: true,
-            workflowVersion: {
-              id: currentVersion.id,
-              name: currentVersion.name,
-              status: currentVersion.status,
-              trigger: currentVersion.trigger,
-              steps: currentVersion.steps,
-              workflowId: currentVersion.workflowId,
-            },
-          };
-        },
-        authContext,
-      );
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: `Failed to get workflow current version: ${error.message}`,
-      };
-    }
+  deps: {
+    coreWorkflowListService: Pick<
+      WorkflowToolDependencies['coreWorkflowListService'],
+      'findOneById'
+    >;
+    coreWorkflowVersionListService: Pick<
+      WorkflowToolDependencies['coreWorkflowVersionListService'],
+      'findManyByCoreWorkflowId' | 'findOneByCoreWorkflowVersionId'
+    >;
   },
-});
+  context: WorkflowToolContext,
+) =>
+  ({
+    name: 'get_workflow_current_version' as const,
+    isReadOnly: true,
+    description:
+      'Get the current version of a workflow. Returns the draft version if one exists, otherwise the last published version. Returns a core workflow version ID (coreWorkflowVersionId), which the editing tools expect.',
+    inputSchema: getWorkflowCurrentVersionSchema,
+    execute: async (parameters: GetWorkflowCurrentVersionInput) => {
+      try {
+        const { workspaceId } = context;
+        const { coreWorkflowId } = parameters;
+
+        const coreWorkflow = await deps.coreWorkflowListService.findOneById({
+          workspaceId,
+          userWorkspaceId: context.userWorkspaceId,
+          callerApplication: undefined,
+          coreWorkflowId,
+        });
+
+        if (!isDefined(coreWorkflow)) {
+          return {
+            success: false,
+            error: `Workflow ${coreWorkflowId} not found`,
+          };
+        }
+
+        const coreWorkflowVersions =
+          await deps.coreWorkflowVersionListService.findManyByCoreWorkflowId({
+            workspaceId,
+            userWorkspaceId: context.userWorkspaceId,
+            callerApplication: undefined,
+            coreWorkflowId,
+          });
+
+        const currentVersion =
+          coreWorkflowVersions.find(
+            (version) => version.status === CoreWorkflowVersionStatus.DRAFT,
+          ) ??
+          coreWorkflowVersions.find(
+            (version) => version.status === CoreWorkflowVersionStatus.ACTIVE,
+          ) ??
+          coreWorkflowVersions.find(
+            (version) =>
+              version.status === CoreWorkflowVersionStatus.DEACTIVATED,
+          );
+
+        if (!isDefined(currentVersion)) {
+          return {
+            success: false,
+            error: `Workflow ${coreWorkflowId} has no draft, active or deactivated version`,
+          };
+        }
+
+        const coreWorkflowVersion =
+          await deps.coreWorkflowVersionListService.findOneByCoreWorkflowVersionId(
+            {
+              workspaceId,
+              userWorkspaceId: context.userWorkspaceId,
+              callerApplication: undefined,
+              coreWorkflowVersionId: currentVersion.id,
+            },
+          );
+
+        if (!isDefined(coreWorkflowVersion)) {
+          return {
+            success: false,
+            error: `Workflow version ${currentVersion.id} not found`,
+          };
+        }
+
+        return {
+          success: true,
+          workflowVersion: {
+            coreWorkflowVersionId: coreWorkflowVersion.id,
+            name: coreWorkflowVersion.label,
+            status: coreWorkflowVersion.status,
+            trigger: coreWorkflowVersion.trigger,
+            steps: coreWorkflowVersion.steps,
+            coreWorkflowId,
+          },
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          message: `Failed to get workflow current version: ${error.message}`,
+        };
+      }
+    },
+  }) satisfies WorkflowTool;

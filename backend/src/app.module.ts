@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule } from './config/config.module.js';
@@ -9,12 +10,20 @@ import { HttpErrorFilter } from './core/http/http-error.filter.js';
 import { TimeModule } from './core/time/time.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
+import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { CrmChangeInterceptor } from './modules/crm/crm-change.interceptor.js';
+import { CrmModule } from './modules/crm/crm.module.js';
+import { DiscoverModule } from './modules/discover/discover.module.js';
 import { DocsModule } from './modules/docs/docs.module.js';
 import { MapModule } from './modules/map/map.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
+import { FloorModule } from './modules/floor/floor.module.js';
+import { StaffTeamModule } from './modules/staff-team/staff-team.module.js';
+import { VenueAdminModule } from './modules/venue-admin/venue-admin.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { VenueAccessModule } from './modules/venue-access/venue-access.service.js';
 import { HealthModule } from './modules/health/health.module.js';
@@ -32,6 +41,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     }),
     ConfigModule,
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     // Per-route limits (@Throttle) as in the Go API; the default is effectively unlimited.
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100_000 }]),
     TimeModule,
@@ -47,10 +57,18 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     MapModule,
     ReservationsModule,
     WaitlistModule,
+    FloorModule,
+    ApplicationsModule,
+    VenueAdminModule,
+    StaffTeamModule,
+    AdminModule,
+    DiscoverModule,
+    CrmModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: CrmChangeInterceptor },
   ],
 })
 export class AppModule {}

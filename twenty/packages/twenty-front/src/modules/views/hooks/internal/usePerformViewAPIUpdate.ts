@@ -5,34 +5,33 @@ import { useUpdateMetadataStoreDraft } from '@/metadata-store/hooks/useUpdateMet
 import { metadataStoreState } from '@/metadata-store/states/metadataStoreState';
 import { type FlatView } from '@/metadata-store/types/FlatView';
 import { type FlatViewGroup } from '@/metadata-store/types/FlatViewGroup';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
 import { computeViewGroupsReplacementForView } from '@/views/utils/computeViewGroupsReplacementForView';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
+import { useMutation } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
 import { useStore } from 'jotai';
 import { CrudOperationType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { useMutation } from '@apollo/client/react';
+import { useToast } from 'twenty-ui/components/feedback';
 import {
   type UpdateViewMutation,
   type UpdateViewMutationVariables,
   UpdateViewDocument,
 } from '~/generated-metadata/graphql';
 
-export const usePerformViewAPIUpdate = () => {
+export const usePerformViewApiUpdate = () => {
   const [updateViewMutation] = useMutation(UpdateViewDocument);
 
   const { updateInDraft, addToDraft, removeFromDraft, applyChanges } =
     useUpdateMetadataStoreDraft();
 
   const { handleMetadataError } = useMetadataErrorHandler();
-  const { enqueueErrorSnackBar } = useSnackBar();
+  const { enqueueToast } = useToast();
 
   const store = useStore();
 
-  // The server recreates the view groups when mainGroupByFieldMetadataId changes,
-  // so the store has to be realigned on the groups returned by the mutation
+  // The server recreates view groups when mainGroupByFieldMetadataId changes
   const syncViewGroupsFromMutationResult = useCallback(
     ({
       viewId,
@@ -67,7 +66,7 @@ export const usePerformViewAPIUpdate = () => {
     [store, addToDraft, removeFromDraft, applyChanges],
   );
 
-  const performViewAPIUpdate = useCallback(
+  const performViewApiUpdate = useCallback(
     async (
       variables: UpdateViewMutationVariables,
     ): Promise<
@@ -114,7 +113,7 @@ export const usePerformViewAPIUpdate = () => {
             operationType: CrudOperationType.UPDATE,
           });
         } else {
-          enqueueErrorSnackBar({ message: t`An error occurred.` });
+          enqueueToast({ status: 'error', children: t`An error occurred.` });
         }
 
         return {
@@ -126,7 +125,7 @@ export const usePerformViewAPIUpdate = () => {
     [
       updateViewMutation,
       handleMetadataError,
-      enqueueErrorSnackBar,
+      enqueueToast,
       updateInDraft,
       applyChanges,
       syncViewGroupsFromMutationResult,
@@ -134,5 +133,5 @@ export const usePerformViewAPIUpdate = () => {
     ],
   );
 
-  return { performViewAPIUpdate };
+  return { performViewApiUpdate };
 };

@@ -5,7 +5,6 @@ import {
   CreateFunctionCommand,
   type CreateFunctionCommandInput,
   DeleteFunctionCommand,
-  GetFunctionCommand,
   type GetFunctionCommandOutput,
   ResourceNotFoundException,
   TagResourceCommand,
@@ -23,18 +22,25 @@ import {
   CacheLockExceptionCode,
 } from 'src/engine/core-modules/cache-lock/exceptions/cache-lock.exception';
 import {
+  BUILD_LOCK_MAX_RETRIES,
+  BUILD_LOCK_RETRY_MS,
+  BUILD_LOCK_TTL_MS,
   EXECUTOR_LAMBDA_MEMORY_MB,
   EXECUTOR_LAMBDA_TIMEOUT_SECONDS,
   LAMBDA_EPHEMERAL_STORAGE_MB,
   LAMBDA_PREBUILT_BUNDLE_CHECKSUM_TAG,
+  LAMBDA_SDK_CLIENT_CHECKSUM_TAG,
   PREBUILT_BUNDLE_FILE_NAME,
   PREBUILT_INSTALL_LOCK_MAX_RETRIES,
   PREBUILT_INSTALL_LOCK_RETRY_MS,
   PREBUILT_INSTALL_LOCK_TTL_MS,
 } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/constants/lambda-driver.constant';
 import { type LambdaDriverOptions } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/types/lambda-driver.type';
+import { type LambdaExecutorReference } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/types/lambda-executor-reference.type';
 import { type LambdaAwsClientService } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/services/lambda-aws-client.service';
 import { type LambdaLayerManagerService } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/services/lambda-layer-manager.service';
+import { buildLambdaResourceTags } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/utils/build-lambda-resource-tags.util';
+import { getLambdaExecutorFunctionName } from 'src/engine/core-modules/logic-function/logic-function-drivers/drivers/lambda/utils/get-lambda-executor-function-name.util';
 import { copyExecutor } from 'src/engine/core-modules/logic-function/logic-function-drivers/utils/copy-executor';
 import { createZipFile } from 'src/engine/core-modules/logic-function/logic-function-drivers/utils/create-zip-file';
 import { TemporaryDirManager } from 'src/engine/core-modules/logic-function/logic-function-drivers/utils/temporary-dir-manager';
@@ -43,20 +49,22 @@ import {
   LogicFunctionException,
   LogicFunctionExceptionCode,
 } from 'src/engine/metadata-modules/logic-function/logic-function.exception';
-import { type FlatLogicFunction } from 'src/engine/metadata-modules/logic-function/types/flat-logic-function.type';
+import { type ExecutableFlatLogicFunction } from 'src/engine/core-modules/logic-function/logic-function-drivers/types/executable-flat-logic-function.type';
 import { type WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 
 type ExecutorBuildContext = {
-  flatLogicFunction: FlatLogicFunction;
+  flatLogicFunction: ExecutableFlatLogicFunction;
   flatApplication: FlatApplication;
-  applicationUniversalIdentifier: string;
 };
 
 export class LambdaExecutorManagerService {
   private readonly logger = new Logger(LambdaExecutorManagerService.name);
 
   constructor(
-    private readonly options: Pick<LambdaDriverOptions, 'lambdaRole'>,
+    private readonly options: Pick<
+      LambdaDriverOptions,
+      'lambdaRole' | 'resourceTags'
+    >,
     private readonly awsClient: LambdaAwsClientService,
     private readonly layerManager: LambdaLayerManagerService,
     private readonly cacheLockService: CacheLockService,
@@ -65,35 +73,37 @@ export class LambdaExecutorManagerService {
   ) {}
 
   async getLambdaExecutor(
-    flatLogicFunction: FlatLogicFunction,
+    flatLogicFunction: ExecutableFlatLogicFunction,
   ): Promise<GetFunctionCommandOutput | undefined> {
+    return this.awsClient.getFunction(
+      getLambdaExecutorFunctionName(flatLogicFunction),
+    );
+  }
+
+  async clearLambdaExecutorCache(
+    executorReference: LambdaExecutorReference,
+  ): Promise<void> {
+    await this.awsClient.clearFunctionCache(
+      getLambdaExecutorFunctionName(executorReference),
+    );
+  }
+
+  async delete(executorReference: LambdaExecutorReference): Promise<void> {
     const lambdaClient = await this.awsClient.getLambdaClient();
 
     try {
-      return await lambdaClient.send(
-        new GetFunctionCommand({ FunctionName: flatLogicFunction.id }),
+      await lambdaClient.send(
+        new DeleteFunctionCommand({
+          FunctionName: getLambdaExecutorFunctionName(executorReference),
+        }),
       );
     } catch (error) {
-      if (error instanceof ResourceNotFoundException) {
-        return undefined;
+      if (!(error instanceof ResourceNotFoundException)) {
+        throw error;
       }
-
-      throw error;
-    }
-  }
-
-  async delete(flatLogicFunction: FlatLogicFunction): Promise<void> {
-    const lambdaExecutor = await this.getLambdaExecutor(flatLogicFunction);
-
-    if (!isDefined(lambdaExecutor)) {
-      return;
     }
 
-    const lambdaClient = await this.awsClient.getLambdaClient();
-
-    await lambdaClient.send(
-      new DeleteFunctionCommand({ FunctionName: flatLogicFunction.id }),
-    );
+    await this.clearLambdaExecutorCache(executorReference);
   }
 
   async buildExecutor(context: ExecutorBuildContext): Promise<void> {
@@ -103,10 +113,7 @@ export class LambdaExecutorManagerService {
       return;
     }
 
-    const buildLockTtlMs = 120_000;
-    const buildLockRetryMs = 500;
-    const buildLockMaxRetries = 240;
-    const lockKey = `lambda-build:${context.flatLogicFunction.id}`;
+    const lockKey = `lambda-build:${getLambdaExecutorFunctionName(context.flatLogicFunction)}`;
 
     try {
       await this.cacheLockService.withLock(
@@ -125,12 +132,15 @@ export class LambdaExecutorManagerService {
           }
 
           await this.ensureExecutor({ ...refreshedContext, lambdaExecutor });
+          await this.clearLambdaExecutorCache(
+            refreshedContext.flatLogicFunction,
+          );
         },
         lockKey,
         {
-          ttl: buildLockTtlMs,
-          ms: buildLockRetryMs,
-          maxRetries: buildLockMaxRetries,
+          ttl: BUILD_LOCK_TTL_MS,
+          ms: BUILD_LOCK_RETRY_MS,
+          maxRetries: BUILD_LOCK_MAX_RETRIES,
         },
       );
     } catch (error) {
@@ -177,7 +187,7 @@ export class LambdaExecutorManagerService {
   }
 
   async installPrebuiltBundle(context: ExecutorBuildContext): Promise<void> {
-    const { flatLogicFunction, applicationUniversalIdentifier } = context;
+    const { flatLogicFunction, flatApplication } = context;
 
     if (!isNonEmptyString(flatLogicFunction.checksum)) {
       throw new LogicFunctionException(
@@ -187,15 +197,23 @@ export class LambdaExecutorManagerService {
     }
 
     const checksum = flatLogicFunction.checksum;
+    const functionName = getLambdaExecutorFunctionName(flatLogicFunction);
 
     await this.buildExecutor(context);
 
     await this.cacheLockService.withLock(
       async () => {
+        if (
+          (await this.getInstalledBundleChecksum(flatLogicFunction)) ===
+          checksum
+        ) {
+          return;
+        }
+
         const compiledCode =
           await this.logicFunctionResourceService.getBuiltCode({
             workspaceId: flatLogicFunction.workspaceId,
-            applicationUniversalIdentifier,
+            applicationUniversalIdentifier: flatApplication.universalIdentifier,
             builtHandlerPath: flatLogicFunction.builtHandlerPath,
           });
 
@@ -216,12 +234,12 @@ export class LambdaExecutorManagerService {
 
           const updateResult = await lambdaClient.send(
             new UpdateFunctionCodeCommand({
-              FunctionName: flatLogicFunction.id,
+              FunctionName: functionName,
               ZipFile: await fs.readFile(lambdaZipPath),
             }),
           );
 
-          await this.awsClient.waitFunctionUpdated(flatLogicFunction.id);
+          await this.awsClient.waitFunctionUpdated(functionName);
 
           const functionArn = updateResult.FunctionArn;
 
@@ -240,6 +258,8 @@ export class LambdaExecutorManagerService {
               },
             }),
           );
+
+          await this.clearLambdaExecutorCache(flatLogicFunction);
         } catch (error) {
           this.logger.error(
             `Failed to install prebuilt bundle for function ${flatLogicFunction.id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -250,7 +270,7 @@ export class LambdaExecutorManagerService {
           await temporaryDirManager.clean();
         }
       },
-      `lambda-install:${flatLogicFunction.id}`,
+      `lambda-install:${functionName}`,
       {
         ttl: PREBUILT_INSTALL_LOCK_TTL_MS,
         ms: PREBUILT_INSTALL_LOCK_RETRY_MS,
@@ -260,7 +280,7 @@ export class LambdaExecutorManagerService {
   }
 
   async getInstalledBundleChecksum(
-    flatLogicFunction: FlatLogicFunction,
+    flatLogicFunction: ExecutableFlatLogicFunction,
   ): Promise<string | null> {
     const lambdaExecutor = await this.getLambdaExecutor(flatLogicFunction);
 
@@ -275,7 +295,7 @@ export class LambdaExecutorManagerService {
     canSkip: boolean;
     lambdaExecutor: GetFunctionCommandOutput | undefined;
   }> {
-    const { flatApplication, applicationUniversalIdentifier } = context;
+    const { flatApplication } = context;
     const lambdaExecutor = await this.getLambdaExecutor(
       context.flatLogicFunction,
     );
@@ -286,11 +306,10 @@ export class LambdaExecutorManagerService {
       isDefined(lambdaExecutor) &&
       isActive &&
       !flatApplication.isSdkLayerStale &&
-      this.layerManager.hasExpectedLayers({
+      (await this.layerManager.hasExpectedLayers({
         lambdaExecutor,
         flatApplication,
-        applicationUniversalIdentifier,
-      });
+      }));
 
     return { canSkip, lambdaExecutor };
   }
@@ -298,7 +317,6 @@ export class LambdaExecutorManagerService {
   private async ensureExecutor({
     flatLogicFunction,
     flatApplication,
-    applicationUniversalIdentifier,
     lambdaExecutor,
   }: ExecutorBuildContext & {
     lambdaExecutor: GetFunctionCommandOutput | undefined;
@@ -306,15 +324,13 @@ export class LambdaExecutorManagerService {
     let depsLayerArn: string;
 
     try {
-      depsLayerArn = await this.layerManager.ensureDepsLayer({
-        flatApplication,
-        applicationUniversalIdentifier,
-      });
+      depsLayerArn = await this.layerManager.ensureDepsLayer(flatApplication);
     } catch (error) {
       if (
         error instanceof LogicFunctionException &&
-        error.code ===
-          LogicFunctionExceptionCode.LOGIC_FUNCTION_DEPENDENCIES_SIZE_EXCEEDED
+        (error.code ===
+          LogicFunctionExceptionCode.LOGIC_FUNCTION_DEPENDENCIES_SIZE_EXCEEDED ||
+          error.code === LogicFunctionExceptionCode.LOGIC_FUNCTION_RATE_LIMITED)
       ) {
         throw error;
       }
@@ -332,11 +348,15 @@ export class LambdaExecutorManagerService {
     let sdkLayerArn: string;
 
     try {
-      sdkLayerArn = await this.layerManager.ensureSdkLayer({
-        flatApplication,
-        applicationUniversalIdentifier,
-      });
+      sdkLayerArn = await this.layerManager.ensureSdkLayer(flatApplication);
     } catch (error) {
+      if (
+        error instanceof LogicFunctionException &&
+        error.code === LogicFunctionExceptionCode.LOGIC_FUNCTION_RATE_LIMITED
+      ) {
+        throw error;
+      }
+
       this.logger.error(
         `Failed to get SDK layer for function ${flatLogicFunction.id}: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
@@ -347,13 +367,17 @@ export class LambdaExecutorManagerService {
       );
     }
 
+    const { sdkClientCoreChecksum } = flatApplication;
+    const functionName = getLambdaExecutorFunctionName(flatLogicFunction);
+
     if (!isDefined(lambdaExecutor)) {
       await this.createExecutor({
         flatLogicFunction,
         depsLayerArn,
         sdkLayerArn,
+        sdkClientCoreChecksum,
       });
-      await this.awsClient.waitFunctionActive(flatLogicFunction.id);
+      await this.awsClient.waitFunctionActive(functionName);
 
       return;
     }
@@ -363,7 +387,20 @@ export class LambdaExecutorManagerService {
       depsLayerArn,
       sdkLayerArn,
     });
-    await this.awsClient.waitFunctionUpdated(flatLogicFunction.id);
+    await this.awsClient.waitFunctionUpdated(functionName);
+
+    const functionArn = lambdaExecutor.Configuration?.FunctionArn;
+
+    if (isDefined(sdkClientCoreChecksum) && isNonEmptyString(functionArn)) {
+      const lambdaClient = await this.awsClient.getLambdaClient();
+
+      await lambdaClient.send(
+        new TagResourceCommand({
+          Resource: functionArn,
+          Tags: { [LAMBDA_SDK_CLIENT_CHECKSUM_TAG]: sdkClientCoreChecksum },
+        }),
+      );
+    }
   }
 
   private async updateExecutorConfiguration({
@@ -371,7 +408,7 @@ export class LambdaExecutorManagerService {
     depsLayerArn,
     sdkLayerArn,
   }: {
-    flatLogicFunction: FlatLogicFunction;
+    flatLogicFunction: ExecutableFlatLogicFunction;
     depsLayerArn: string;
     sdkLayerArn: string;
   }): Promise<void> {
@@ -379,7 +416,7 @@ export class LambdaExecutorManagerService {
 
     await lambdaClient.send(
       new UpdateFunctionConfigurationCommand({
-        FunctionName: flatLogicFunction.id,
+        FunctionName: getLambdaExecutorFunctionName(flatLogicFunction),
         Layers: [depsLayerArn, sdkLayerArn],
         Runtime: flatLogicFunction.runtime,
         Timeout: EXECUTOR_LAMBDA_TIMEOUT_SECONDS,
@@ -392,10 +429,12 @@ export class LambdaExecutorManagerService {
     flatLogicFunction,
     depsLayerArn,
     sdkLayerArn,
+    sdkClientCoreChecksum,
   }: {
-    flatLogicFunction: FlatLogicFunction;
+    flatLogicFunction: ExecutableFlatLogicFunction;
     depsLayerArn: string;
     sdkLayerArn: string;
+    sdkClientCoreChecksum: string | null;
   }): Promise<void> {
     const temporaryDirManager = new TemporaryDirManager();
     const { sourceTemporaryDir, lambdaZipPath } =
@@ -411,7 +450,7 @@ export class LambdaExecutorManagerService {
         Code: {
           ZipFile: await fs.readFile(lambdaZipPath),
         },
-        FunctionName: flatLogicFunction.id,
+        FunctionName: getLambdaExecutorFunctionName(flatLogicFunction),
         Layers: [depsLayerArn, sdkLayerArn],
         Handler: 'index.handler',
         Role: this.options.lambdaRole,
@@ -419,6 +458,10 @@ export class LambdaExecutorManagerService {
         Timeout: EXECUTOR_LAMBDA_TIMEOUT_SECONDS,
         MemorySize: EXECUTOR_LAMBDA_MEMORY_MB,
         EphemeralStorage: { Size: LAMBDA_EPHEMERAL_STORAGE_MB },
+        Tags: buildLambdaResourceTags({
+          resourceTags: this.options.resourceTags,
+          sdkClientCoreChecksum,
+        }),
       };
 
       const lambdaClient = await this.awsClient.getLambdaClient();

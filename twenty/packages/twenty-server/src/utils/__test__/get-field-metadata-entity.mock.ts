@@ -16,13 +16,15 @@ type GetMockFieldMetadataEntityOverride<
     Pick<FieldMetadataEntity<T>, 'workspaceId' | 'objectMetadataId' | 'type'>
   >;
 
-// Should be renamed to abstract
+// TODO: rename to abstract
 export const getMockFieldMetadataEntity = <
   T extends FieldMetadataType = FieldMetadataType.TEXT,
 >(
   overrides: GetMockFieldMetadataEntityOverride<T>,
 ): FieldMetadataEntity => {
   return {
+    isSearchable: false,
+    isAuditLogged: true,
     isSystemSideEffect: false,
     workspace: {} as WorkspaceEntity,
     calendarViews: [],
@@ -33,6 +35,10 @@ export const getMockFieldMetadataEntity = <
     kanbanAggregateOperationViews: [],
     viewSorts: [],
     searchFieldMetadatas: [],
+    fieldMetadataOptions: [],
+    rowLevelPermissionPredicates: [],
+    relationRowLevelPermissionPredicates: [],
+    workspaceMemberRowLevelPermissionPredicates: [],
     morphId: null,
     fieldPermissions: [],
     icon: null,
@@ -41,6 +47,7 @@ export const getMockFieldMetadataEntity = <
     isNullable: null,
     isUIEditable: true,
     writability: MetadataWritability.OPEN,
+    disabledFieldPermissionActions: null,
     isSystem: false,
     isUnique: null,
     object: {} as ObjectMetadataEntity,

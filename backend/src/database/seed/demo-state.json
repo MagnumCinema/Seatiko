@@ -1,6 +1,5 @@
 {
- "generated_at": "2026-11-25T08:53:39.929131Z",
- "note": "Fresh Go API state (demo seed). Regenerate: start the Go API with an empty DATA_FILE and copy it here.",
+ "generated_at": "2026-11-25T10:14:59.801918Z",
  "state": {
   "cities": {
    "city-balti": {
@@ -223,7 +222,7 @@
     "lng": 27.926732,
     "average_check": 250,
     "open_now": true,
-    "free_tables": 3,
+    "free_tables": 10,
     "image_url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
     "photo_urls": [
      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
@@ -295,8 +294,22 @@
     "lng": 27.921709,
     "average_check": 160,
     "open_now": true,
-    "free_tables": 0,
+    "free_tables": 10,
     "image_url": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Ana S.",
+      "rating": 4,
+      "text": "Удобно приходить всей семьёй с детьми.",
+      "relative_time": "неделю назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -308,6 +321,252 @@
     "allow_preorder": true,
     "preorder_lead_min": 0,
     "hours_text": "Пн–Вс 09:00–22:00"
+   },
+   "venue-11": {
+    "id": "venue-11",
+    "city_id": "city-balti",
+    "name": {
+     "ru": "Sakura Sushi & Ramen",
+     "en": "Sakura Sushi & Ramen",
+     "ro": "Sakura Sushi & Ramen"
+    },
+    "description": {
+     "ru": "Авторские роллы, 12-часовой рамен тонкоцу, поке и открытый суши-бар",
+     "en": "Signature sushi rolls, 12-hour tonkotsu ramen, bowls and open sushi bar",
+     "ro": "Rulouri de autor, ramen tonkotsu fiert 12 ore, bowl-uri și sushi bar deschis"
+    },
+    "cuisine": [
+     "japanese",
+     "asian",
+     "seafood"
+    ],
+    "rating": 4.8,
+    "review_count": 176,
+    "price_level": 2,
+    "address": {
+     "ru": "ул. Пушкина 24",
+     "en": "Strada Pușkin 24",
+     "ro": "Strada Pușkin 24"
+    },
+    "lat": 47.7611,
+    "lng": 27.9234,
+    "average_check": 290,
+    "open_now": true,
+    "free_tables": 9,
+    "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Alina K.",
+      "rating": 5,
+      "text": "Очень свежая Филадельфия и насыщенный тонкоцу рамен.",
+      "relative_time": "3 дня назад",
+      "source": "google"
+     },
+     {
+      "author": "Radu P.",
+      "rating": 5,
+      "text": "Посадка у суши-бара топ, видно как крутят роллы.",
+      "relative_time": "2 недели назад",
+      "source": "google"
+     }
+    ],
+    "alcohol_license_valid": true,
+    "session_start_before_min": 15,
+    "release_before_min": 10,
+    "booking_interval_min": 30,
+    "hold_minutes": 15,
+    "max_late_arrival_min": 0,
+    "visit_duration_min": 90,
+    "max_visit_duration_min": 180,
+    "allow_preorder": true,
+    "preorder_lead_min": 0,
+    "hours_text": "Пн–Вс 11:00–23:00"
+   },
+   "venue-12": {
+    "id": "venue-12",
+    "city_id": "city-balti",
+    "name": {
+     "ru": "Porto Mare Seafood & Grill",
+     "en": "Porto Mare Seafood & Grill",
+     "ro": "Porto Mare Seafood & Grill"
+    },
+    "description": {
+     "ru": "Средиземноморская кухня, свежие морепродукты, сибас на углях и белые вина",
+     "en": "Mediterranean fine dining, fresh seafood, charcoal-grilled sea bass and white wines",
+     "ro": "Bucătărie mediteraneană, fructe de mare proaspete, lavrac la cărbuni și vinuri albe"
+    },
+    "cuisine": [
+     "seafood",
+     "mediterranean",
+     "grill"
+    ],
+    "rating": 4.9,
+    "review_count": 134,
+    "price_level": 3,
+    "address": {
+     "ru": "ул. 31 Августа 1989, 20B",
+     "en": "Strada 31 August 1989 20B",
+     "ro": "Strada 31 August 1989 20B"
+    },
+    "lat": 47.7579,
+    "lng": 27.9215,
+    "average_check": 420,
+    "open_now": true,
+    "free_tables": 9,
+    "image_url": "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Natalia L.",
+      "rating": 5,
+      "text": "Лучшие мидии и осьминог в городе, идеальное место для свидания.",
+      "relative_time": "5 дней назад",
+      "source": "google"
+     },
+     {
+      "author": "Igor S.",
+      "rating": 5,
+      "text": "Сибас на мангале и Совиньон Блан — выше всяких похвал.",
+      "relative_time": "месяц назад",
+      "source": "google"
+     }
+    ],
+    "alcohol_license_valid": true,
+    "session_start_before_min": 20,
+    "release_before_min": 15,
+    "booking_interval_min": 30,
+    "hold_minutes": 20,
+    "max_late_arrival_min": 0,
+    "visit_duration_min": 120,
+    "max_visit_duration_min": 210,
+    "allow_preorder": true,
+    "preorder_lead_min": 0,
+    "hours_text": "Пн–Вс 12:00–23:30"
+   },
+   "venue-13": {
+    "id": "venue-13",
+    "city_id": "city-balti",
+    "name": {
+     "ru": "Brioche & Matcha Bakery",
+     "en": "Brioche & Matcha Bakery",
+     "ro": "Brioche & Matcha Bakery"
+    },
+    "description": {
+     "ru": "Французская выпечка на сливочном масле, утренние бранчи, баскский чизкейк и спешелти кофе",
+     "en": "Artisan butter pastries, all-day brunch, Basque cheesecake and specialty coffee & matcha",
+     "ro": "Patiserie artizanală cu unt, brunch toată ziua, cheesecake basc, cafea de specialitate și matcha"
+    },
+    "cuisine": [
+     "bakery",
+     "cafe_sweets",
+     "cafe"
+    ],
+    "rating": 4.7,
+    "review_count": 209,
+    "price_level": 1,
+    "address": {
+     "ru": "ул. Мира 14",
+     "en": "Strada Păcii 14",
+     "ro": "Strada Păcii 14"
+    },
+    "lat": 47.7629,
+    "lng": 27.9248,
+    "average_check": 145,
+    "open_now": true,
+    "free_tables": 7,
+    "image_url": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Daria M.",
+      "rating": 5,
+      "text": "Фисташковый круассан и матча на овсяном — лучший завтрак.",
+      "relative_time": "2 дня назад",
+      "source": "google"
+     }
+    ],
+    "alcohol_license_valid": false,
+    "session_start_before_min": 10,
+    "release_before_min": 10,
+    "booking_interval_min": 30,
+    "hold_minutes": 15,
+    "max_late_arrival_min": 0,
+    "visit_duration_min": 60,
+    "max_visit_duration_min": 150,
+    "allow_preorder": true,
+    "preorder_lead_min": 0,
+    "hours_text": "Пн–Вс 08:00–21:00"
+   },
+   "venue-14": {
+    "id": "venue-14",
+    "city_id": "city-balti",
+    "name": {
+     "ru": "Casa Rustică Grill & Terrace",
+     "en": "Casa Rustică Grill & Terrace",
+     "ro": "Casa Rustică Grill & Terrace"
+    },
+    "description": {
+     "ru": "Открытый мангал-двор, молдавский гратар, речная форель и уютные садовые беседки для компаний",
+     "en": "Open courtyard charcoal grill, Moldovan specialties, roasted river trout and garden tables",
+     "ro": "Grătar în aer liber pe cărbuni, specialități moldovenești, păstrăv și mese în grădină"
+    },
+    "cuisine": [
+     "grill",
+     "moldovan",
+     "european"
+    ],
+    "rating": 4.6,
+    "review_count": 158,
+    "price_level": 2,
+    "address": {
+     "ru": "ул. Штефан чел Маре 82",
+     "en": "Strada Ștefan cel Mare 82",
+     "ro": "Strada Ștefan cel Mare 82"
+    },
+    "lat": 47.7642,
+    "lng": 27.9312,
+    "average_check": 270,
+    "open_now": true,
+    "free_tables": 10,
+    "image_url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Mihai V.",
+      "rating": 5,
+      "text": "Отличный гриль-сет для компании и просторный зелёный сад.",
+      "relative_time": "неделю назад",
+      "source": "google"
+     }
+    ],
+    "alcohol_license_valid": true,
+    "session_start_before_min": 15,
+    "release_before_min": 10,
+    "booking_interval_min": 30,
+    "hold_minutes": 15,
+    "max_late_arrival_min": 0,
+    "visit_duration_min": 120,
+    "max_visit_duration_min": 240,
+    "allow_preorder": true,
+    "preorder_lead_min": 0,
+    "hours_text": "Пн–Вс 11:00–23:00"
    },
    "venue-2": {
     "id": "venue-2",
@@ -338,7 +597,7 @@
     "lng": 27.92616,
     "average_check": 180,
     "open_now": true,
-    "free_tables": 3,
+    "free_tables": 8,
     "image_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
     "photo_urls": [
      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
@@ -409,7 +668,7 @@
     "lng": 27.9255,
     "average_check": 450,
     "open_now": true,
-    "free_tables": 4,
+    "free_tables": 9,
     "image_url": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
     "photo_urls": [
      "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
@@ -474,8 +733,29 @@
     "lng": 27.928449,
     "average_check": 280,
     "open_now": true,
-    "free_tables": 0,
+    "free_tables": 10,
     "image_url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Cristina D.",
+      "rating": 5,
+      "text": "Пицца на дровах и карбонара как в Неаполе. Уютная терраса.",
+      "relative_time": "4 дня назад",
+      "source": "google"
+     },
+     {
+      "author": "Vlad M.",
+      "rating": 5,
+      "text": "Отличное обслуживание и быстрая подача для компании.",
+      "relative_time": "2 недели назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -518,8 +798,29 @@
     "lng": 27.922631,
     "average_check": 260,
     "open_now": true,
-    "free_tables": 0,
+    "free_tables": 9,
     "image_url": "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Sergiu T.",
+      "rating": 5,
+      "text": "Лучший крафт в Бельцах и рёбра BBQ просто тают.",
+      "relative_time": "3 дня назад",
+      "source": "google"
+     },
+     {
+      "author": "Maxim K.",
+      "rating": 5,
+      "text": "Живой звук по пятницам и удобный план столов.",
+      "relative_time": "неделю назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -562,8 +863,22 @@
     "lng": 27.891054,
     "average_check": 240,
     "open_now": true,
-    "free_tables": 0,
+    "free_tables": 9,
     "image_url": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Tatiana B.",
+      "rating": 5,
+      "text": "Настоящая зама и сармале в тихом зелёном саду.",
+      "relative_time": "6 дней назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -606,8 +921,22 @@
     "lng": 27.939163,
     "average_check": 190,
     "open_now": true,
-    "free_tables": 0,
+    "free_tables": 8,
     "image_url": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1551782450-a2132b4ba21d?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Denis G.",
+      "rating": 5,
+      "text": "Бургер Лофт и авторские коктейли на высоте.",
+      "relative_time": "неделю назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -650,8 +979,22 @@
     "lng": 27.925983,
     "average_check": 340,
     "open_now": true,
-    "free_tables": 0,
+    "free_tables": 9,
     "image_url": "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Olga N.",
+      "rating": 5,
+      "text": "Спокойный лаунж, вкусный лосось и отличные десерты.",
+      "relative_time": "10 дней назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -695,6 +1038,20 @@
     "open_now": true,
     "free_tables": 0,
     "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1200&q=80",
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "reviews": [
+     {
+      "author": "Victor R.",
+      "rating": 5,
+      "text": "Потрясающий выбор молдавских вин и сомелье.",
+      "relative_time": "5 дней назад",
+      "source": "google"
+     }
+    ],
     "alcohol_license_valid": true,
     "session_start_before_min": 15,
     "release_before_min": 10,
@@ -709,14 +1066,1106 @@
    }
   },
   "tables": {
+   "t-v1-10": {
+    "id": "t-v1-10",
+    "venue_id": "venue-1",
+    "number": 10,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.6,
+    "zone": "terrace"
+   },
+   "t-v1-11": {
+    "id": "t-v1-11",
+    "venue_id": "venue-1",
+    "number": 11,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.5,
+    "zone": "garden"
+   },
+   "t-v1-12": {
+    "id": "t-v1-12",
+    "venue_id": "venue-1",
+    "number": 12,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.5,
+    "zone": "garden"
+   },
+   "t-v1-6": {
+    "id": "t-v1-6",
+    "venue_id": "venue-1",
+    "number": 6,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.16,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v1-7": {
+    "id": "t-v1-7",
+    "venue_id": "venue-1",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.42,
+    "y": 0.64,
+    "zone": "hall"
+   },
+   "t-v1-8": {
+    "id": "t-v1-8",
+    "venue_id": "venue-1",
+    "number": 8,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.64,
+    "zone": "hall"
+   },
+   "t-v1-9": {
+    "id": "t-v1-9",
+    "venue_id": "venue-1",
+    "number": 9,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.85,
+    "y": 0.48,
+    "zone": "hall"
+   },
+   "t-v10-1": {
+    "id": "t-v10-1",
+    "venue_id": "venue-10",
+    "number": 1,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.18,
+    "y": 0.34,
+    "zone": "hall"
+   },
+   "t-v10-10": {
+    "id": "t-v10-10",
+    "venue_id": "venue-10",
+    "number": 10,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.5,
+    "zone": "street"
+   },
+   "t-v10-2": {
+    "id": "t-v10-2",
+    "venue_id": "venue-10",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.46,
+    "y": 0.34,
+    "zone": "hall"
+   },
+   "t-v10-3": {
+    "id": "t-v10-3",
+    "venue_id": "venue-10",
+    "number": 3,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.74,
+    "y": 0.34,
+    "zone": "hall"
+   },
+   "t-v10-4": {
+    "id": "t-v10-4",
+    "venue_id": "venue-10",
+    "number": 4,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.28,
+    "y": 0.64,
+    "zone": "hall"
+   },
+   "t-v10-5": {
+    "id": "t-v10-5",
+    "venue_id": "venue-10",
+    "number": 5,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.64,
+    "zone": "hall"
+   },
+   "t-v10-6": {
+    "id": "t-v10-6",
+    "venue_id": "venue-10",
+    "number": 6,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v10-7": {
+    "id": "t-v10-7",
+    "venue_id": "venue-10",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v10-8": {
+    "id": "t-v10-8",
+    "venue_id": "venue-10",
+    "number": 8,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.8,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v10-9": {
+    "id": "t-v10-9",
+    "venue_id": "venue-10",
+    "number": 9,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.5,
+    "zone": "street"
+   },
+   "t-v11-1": {
+    "id": "t-v11-1",
+    "venue_id": "venue-11",
+    "number": 1,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.2,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v11-2": {
+    "id": "t-v11-2",
+    "venue_id": "venue-11",
+    "number": 2,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.2,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v11-3": {
+    "id": "t-v11-3",
+    "venue_id": "venue-11",
+    "number": 3,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v11-4": {
+    "id": "t-v11-4",
+    "venue_id": "venue-11",
+    "number": 4,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.6,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v11-5": {
+    "id": "t-v11-5",
+    "venue_id": "venue-11",
+    "number": 5,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v11-6": {
+    "id": "t-v11-6",
+    "venue_id": "venue-11",
+    "number": 6,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v11-7": {
+    "id": "t-v11-7",
+    "venue_id": "venue-11",
+    "number": 7,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v11-8": {
+    "id": "t-v11-8",
+    "venue_id": "venue-11",
+    "number": 8,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.48,
+    "zone": "terrace"
+   },
+   "t-v11-9": {
+    "id": "t-v11-9",
+    "venue_id": "venue-11",
+    "number": 9,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.48,
+    "zone": "terrace"
+   },
+   "t-v12-1": {
+    "id": "t-v12-1",
+    "venue_id": "venue-12",
+    "number": 1,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.18,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v12-2": {
+    "id": "t-v12-2",
+    "venue_id": "venue-12",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.46,
+    "y": 0.34,
+    "zone": "hall"
+   },
+   "t-v12-3": {
+    "id": "t-v12-3",
+    "venue_id": "venue-12",
+    "number": 3,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.74,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v12-4": {
+    "id": "t-v12-4",
+    "venue_id": "venue-12",
+    "number": 4,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.28,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v12-5": {
+    "id": "t-v12-5",
+    "venue_id": "venue-12",
+    "number": 5,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.7,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v12-6": {
+    "id": "t-v12-6",
+    "venue_id": "venue-12",
+    "number": 6,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.36,
+    "zone": "terrace"
+   },
+   "t-v12-7": {
+    "id": "t-v12-7",
+    "venue_id": "venue-12",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.6,
+    "y": 0.36,
+    "zone": "terrace"
+   },
+   "t-v12-8": {
+    "id": "t-v12-8",
+    "venue_id": "venue-12",
+    "number": 8,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.28,
+    "y": 0.66,
+    "zone": "terrace"
+   },
+   "t-v12-9": {
+    "id": "t-v12-9",
+    "venue_id": "venue-12",
+    "number": 9,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.66,
+    "zone": "terrace"
+   },
+   "t-v13-1": {
+    "id": "t-v13-1",
+    "venue_id": "venue-13",
+    "number": 1,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.38,
+    "zone": "hall"
+   },
+   "t-v13-2": {
+    "id": "t-v13-2",
+    "venue_id": "venue-13",
+    "number": 2,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v13-3": {
+    "id": "t-v13-3",
+    "venue_id": "venue-13",
+    "number": 3,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.62,
+    "y": 0.5,
+    "zone": "hall"
+   },
+   "t-v13-4": {
+    "id": "t-v13-4",
+    "venue_id": "venue-13",
+    "number": 4,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.46,
+    "zone": "street"
+   },
+   "t-v13-5": {
+    "id": "t-v13-5",
+    "venue_id": "venue-13",
+    "number": 5,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.46,
+    "zone": "street"
+   },
+   "t-v13-6": {
+    "id": "t-v13-6",
+    "venue_id": "venue-13",
+    "number": 6,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.46,
+    "zone": "street"
+   },
+   "t-v13-7": {
+    "id": "t-v13-7",
+    "venue_id": "venue-13",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.5,
+    "y": 0.48,
+    "zone": "terrace"
+   },
+   "t-v14-1": {
+    "id": "t-v14-1",
+    "venue_id": "venue-14",
+    "number": 1,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v14-10": {
+    "id": "t-v14-10",
+    "venue_id": "venue-14",
+    "number": 10,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v14-2": {
+    "id": "t-v14-2",
+    "venue_id": "venue-14",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.6,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v14-3": {
+    "id": "t-v14-3",
+    "venue_id": "venue-14",
+    "number": 3,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.26,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v14-4": {
+    "id": "t-v14-4",
+    "venue_id": "venue-14",
+    "number": 4,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.7,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v14-5": {
+    "id": "t-v14-5",
+    "venue_id": "venue-14",
+    "number": 5,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.48,
+    "zone": "garden"
+   },
+   "t-v14-6": {
+    "id": "t-v14-6",
+    "venue_id": "venue-14",
+    "number": 6,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.48,
+    "zone": "garden"
+   },
+   "t-v14-7": {
+    "id": "t-v14-7",
+    "venue_id": "venue-14",
+    "number": 7,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.8,
+    "y": 0.48,
+    "zone": "garden"
+   },
+   "t-v14-8": {
+    "id": "t-v14-8",
+    "venue_id": "venue-14",
+    "number": 8,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v14-9": {
+    "id": "t-v14-9",
+    "venue_id": "venue-14",
+    "number": 9,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v2-11": {
+    "id": "t-v2-11",
+    "venue_id": "venue-2",
+    "number": 6,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.68,
+    "zone": "hall"
+   },
+   "t-v2-12": {
+    "id": "t-v2-12",
+    "venue_id": "venue-2",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.74,
+    "y": 0.54,
+    "zone": "hall"
+   },
+   "t-v2-13": {
+    "id": "t-v2-13",
+    "venue_id": "venue-2",
+    "number": 8,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.48,
+    "y": 0.72,
+    "zone": "street"
+   },
+   "t-v2-14": {
+    "id": "t-v2-14",
+    "venue_id": "venue-2",
+    "number": 9,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.34,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v2-15": {
+    "id": "t-v2-15",
+    "venue_id": "venue-2",
+    "number": 10,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.66,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v3-10": {
+    "id": "t-v3-10",
+    "venue_id": "venue-3",
+    "number": 10,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.26,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v3-6": {
+    "id": "t-v3-6",
+    "venue_id": "venue-3",
+    "number": 6,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v3-7": {
+    "id": "t-v3-7",
+    "venue_id": "venue-3",
+    "number": 7,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.56,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v3-8": {
+    "id": "t-v3-8",
+    "venue_id": "venue-3",
+    "number": 8,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.83,
+    "y": 0.5,
+    "zone": "hall"
+   },
+   "t-v3-9": {
+    "id": "t-v3-9",
+    "venue_id": "venue-3",
+    "number": 9,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.56,
+    "zone": "street"
+   },
+   "t-v4-1": {
+    "id": "t-v4-1",
+    "venue_id": "venue-4",
+    "number": 1,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.16,
+    "y": 0.38,
+    "zone": "hall"
+   },
+   "t-v4-10": {
+    "id": "t-v4-10",
+    "venue_id": "venue-4",
+    "number": 10,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.48,
+    "zone": "bar"
+   },
+   "t-v4-11": {
+    "id": "t-v4-11",
+    "venue_id": "venue-4",
+    "number": 11,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.48,
+    "zone": "bar"
+   },
+   "t-v4-2": {
+    "id": "t-v4-2",
+    "venue_id": "venue-4",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.42,
+    "y": 0.34,
+    "zone": "hall"
+   },
+   "t-v4-3": {
+    "id": "t-v4-3",
+    "venue_id": "venue-4",
+    "number": 3,
+    "seats": 4,
+    "status": "OCCUPIED",
+    "occupied_since": "2026-11-25T11:49:59.680277+02:00",
+    "x": 0.68,
+    "y": 0.34,
+    "zone": "hall"
+   },
+   "t-v4-4": {
+    "id": "t-v4-4",
+    "venue_id": "venue-4",
+    "number": 4,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.28,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v4-5": {
+    "id": "t-v4-5",
+    "venue_id": "venue-4",
+    "number": 5,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.74,
+    "y": 0.64,
+    "zone": "hall"
+   },
+   "t-v4-6": {
+    "id": "t-v4-6",
+    "venue_id": "venue-4",
+    "number": 6,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.36,
+    "zone": "terrace"
+   },
+   "t-v4-7": {
+    "id": "t-v4-7",
+    "venue_id": "venue-4",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.5,
+    "y": 0.36,
+    "zone": "terrace"
+   },
+   "t-v4-8": {
+    "id": "t-v4-8",
+    "venue_id": "venue-4",
+    "number": 8,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.38,
+    "zone": "terrace"
+   },
+   "t-v4-9": {
+    "id": "t-v4-9",
+    "venue_id": "venue-4",
+    "number": 9,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.5,
+    "y": 0.68,
+    "zone": "terrace"
+   },
+   "t-v5-1": {
+    "id": "t-v5-1",
+    "venue_id": "venue-5",
+    "number": 1,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.2,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v5-10": {
+    "id": "t-v5-10",
+    "venue_id": "venue-5",
+    "number": 10,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.5,
+    "zone": "terrace"
+   },
+   "t-v5-2": {
+    "id": "t-v5-2",
+    "venue_id": "venue-5",
+    "number": 2,
+    "seats": 4,
+    "status": "OCCUPIED",
+    "occupied_since": "2026-11-25T11:49:59.680277+02:00",
+    "x": 0.48,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v5-3": {
+    "id": "t-v5-3",
+    "venue_id": "venue-5",
+    "number": 3,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.38,
+    "zone": "hall"
+   },
+   "t-v5-4": {
+    "id": "t-v5-4",
+    "venue_id": "venue-5",
+    "number": 4,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.68,
+    "zone": "hall"
+   },
+   "t-v5-5": {
+    "id": "t-v5-5",
+    "venue_id": "venue-5",
+    "number": 5,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.72,
+    "y": 0.68,
+    "zone": "hall"
+   },
+   "t-v5-6": {
+    "id": "t-v5-6",
+    "venue_id": "venue-5",
+    "number": 6,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v5-7": {
+    "id": "t-v5-7",
+    "venue_id": "venue-5",
+    "number": 7,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.5,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v5-8": {
+    "id": "t-v5-8",
+    "venue_id": "venue-5",
+    "number": 8,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.78,
+    "y": 0.44,
+    "zone": "bar"
+   },
+   "t-v5-9": {
+    "id": "t-v5-9",
+    "venue_id": "venue-5",
+    "number": 9,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.5,
+    "zone": "terrace"
+   },
+   "t-v6-1": {
+    "id": "t-v6-1",
+    "venue_id": "venue-6",
+    "number": 1,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v6-2": {
+    "id": "t-v6-2",
+    "venue_id": "venue-6",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.64,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v6-3": {
+    "id": "t-v6-3",
+    "venue_id": "venue-6",
+    "number": 3,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v6-4": {
+    "id": "t-v6-4",
+    "venue_id": "venue-6",
+    "number": 4,
+    "seats": 8,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v6-5": {
+    "id": "t-v6-5",
+    "venue_id": "venue-6",
+    "number": 5,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.46,
+    "zone": "garden"
+   },
+   "t-v6-6": {
+    "id": "t-v6-6",
+    "venue_id": "venue-6",
+    "number": 6,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.54,
+    "y": 0.46,
+    "zone": "garden"
+   },
+   "t-v6-7": {
+    "id": "t-v6-7",
+    "venue_id": "venue-6",
+    "number": 7,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.82,
+    "y": 0.46,
+    "zone": "garden"
+   },
+   "t-v6-8": {
+    "id": "t-v6-8",
+    "venue_id": "venue-6",
+    "number": 8,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.48,
+    "zone": "terrace"
+   },
+   "t-v6-9": {
+    "id": "t-v6-9",
+    "venue_id": "venue-6",
+    "number": 9,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.48,
+    "zone": "terrace"
+   },
+   "t-v7-1": {
+    "id": "t-v7-1",
+    "venue_id": "venue-7",
+    "number": 1,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v7-2": {
+    "id": "t-v7-2",
+    "venue_id": "venue-7",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.58,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v7-3": {
+    "id": "t-v7-3",
+    "venue_id": "venue-7",
+    "number": 3,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.22,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v7-4": {
+    "id": "t-v7-4",
+    "venue_id": "venue-7",
+    "number": 4,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.6,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v7-5": {
+    "id": "t-v7-5",
+    "venue_id": "venue-7",
+    "number": 5,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.34,
+    "y": 0.46,
+    "zone": "bar"
+   },
+   "t-v7-6": {
+    "id": "t-v7-6",
+    "venue_id": "venue-7",
+    "number": 6,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.46,
+    "zone": "bar"
+   },
+   "t-v7-7": {
+    "id": "t-v7-7",
+    "venue_id": "venue-7",
+    "number": 7,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.32,
+    "y": 0.5,
+    "zone": "street"
+   },
+   "t-v7-8": {
+    "id": "t-v7-8",
+    "venue_id": "venue-7",
+    "number": 8,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.5,
+    "zone": "street"
+   },
+   "t-v8-1": {
+    "id": "t-v8-1",
+    "venue_id": "venue-8",
+    "number": 1,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.2,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v8-2": {
+    "id": "t-v8-2",
+    "venue_id": "venue-8",
+    "number": 2,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.36,
+    "zone": "hall"
+   },
+   "t-v8-3": {
+    "id": "t-v8-3",
+    "venue_id": "venue-8",
+    "number": 3,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.26,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v8-4": {
+    "id": "t-v8-4",
+    "venue_id": "venue-8",
+    "number": 4,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.66,
+    "zone": "hall"
+   },
+   "t-v8-5": {
+    "id": "t-v8-5",
+    "venue_id": "venue-8",
+    "number": 5,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.24,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v8-6": {
+    "id": "t-v8-6",
+    "venue_id": "venue-8",
+    "number": 6,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.52,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v8-7": {
+    "id": "t-v8-7",
+    "venue_id": "venue-8",
+    "number": 7,
+    "seats": 6,
+    "status": "FREE",
+    "x": 0.8,
+    "y": 0.46,
+    "zone": "terrace"
+   },
+   "t-v8-8": {
+    "id": "t-v8-8",
+    "venue_id": "venue-8",
+    "number": 8,
+    "seats": 2,
+    "status": "FREE",
+    "x": 0.34,
+    "y": 0.48,
+    "zone": "bar"
+   },
+   "t-v8-9": {
+    "id": "t-v8-9",
+    "venue_id": "venue-8",
+    "number": 9,
+    "seats": 4,
+    "status": "FREE",
+    "x": 0.68,
+    "y": 0.48,
+    "zone": "bar"
+   },
    "t1": {
     "id": "t1",
     "venue_id": "venue-1",
     "number": 1,
     "seats": 2,
     "status": "FREE",
-    "x": 0.2,
-    "y": 0.3,
+    "x": 0.16,
+    "y": 0.36,
     "zone": "hall"
    },
    "t10": {
@@ -725,8 +2174,8 @@
     "number": 5,
     "seats": 6,
     "status": "FREE",
-    "x": 0.2,
-    "y": 0.75,
+    "x": 0.8,
+    "y": 0.44,
     "zone": "street"
    },
    "t11": {
@@ -735,9 +2184,9 @@
     "number": 1,
     "seats": 4,
     "status": "OCCUPIED",
-    "occupied_since": "2026-11-25T10:13:39.63314+02:00",
-    "x": 0.4,
-    "y": 0.5,
+    "occupied_since": "2026-11-25T11:34:59.367971+02:00",
+    "x": 0.26,
+    "y": 0.36,
     "zone": "hall"
    },
    "t12": {
@@ -746,8 +2195,8 @@
     "number": 2,
     "seats": 2,
     "status": "FREE",
-    "x": 0.7,
-    "y": 0.5,
+    "x": 0.58,
+    "y": 0.36,
     "zone": "hall"
    },
    "t13": {
@@ -756,8 +2205,8 @@
     "number": 3,
     "seats": 4,
     "status": "FREE",
-    "x": 0.28,
-    "y": 0.35,
+    "x": 0.24,
+    "y": 0.44,
     "zone": "street"
    },
    "t14": {
@@ -766,8 +2215,8 @@
     "number": 4,
     "seats": 2,
     "status": "FREE",
-    "x": 0.55,
-    "y": 0.4,
+    "x": 0.54,
+    "y": 0.44,
     "zone": "street"
    },
    "t15": {
@@ -776,8 +2225,8 @@
     "number": 5,
     "seats": 6,
     "status": "FREE",
-    "x": 0.78,
-    "y": 0.62,
+    "x": 0.5,
+    "y": 0.46,
     "zone": "terrace"
    },
    "t2": {
@@ -786,8 +2235,8 @@
     "number": 2,
     "seats": 4,
     "status": "FREE",
-    "x": 0.5,
-    "y": 0.3,
+    "x": 0.42,
+    "y": 0.32,
     "zone": "hall"
    },
    "t3": {
@@ -796,9 +2245,9 @@
     "number": 3,
     "seats": 4,
     "status": "OCCUPIED",
-    "occupied_since": "2026-11-25T10:13:39.63314+02:00",
-    "x": 0.8,
-    "y": 0.3,
+    "occupied_since": "2026-11-25T11:34:59.367971+02:00",
+    "x": 0.68,
+    "y": 0.32,
     "zone": "hall"
    },
    "t4": {
@@ -807,9 +2256,9 @@
     "number": 4,
     "seats": 6,
     "status": "RESERVED",
-    "reserved_for": "2026-11-25T11:38:39.63314+02:00",
-    "x": 0.35,
-    "y": 0.65,
+    "reserved_for": "2026-11-25T12:59:59.367971+02:00",
+    "x": 0.24,
+    "y": 0.42,
     "zone": "terrace"
    },
    "t5": {
@@ -818,8 +2267,8 @@
     "number": 5,
     "seats": 2,
     "status": "FREE",
-    "x": 0.65,
-    "y": 0.65,
+    "x": 0.56,
+    "y": 0.36,
     "zone": "terrace"
    },
    "t6": {
@@ -828,8 +2277,8 @@
     "number": 1,
     "seats": 2,
     "status": "FREE",
-    "x": 0.3,
-    "y": 0.4,
+    "x": 0.2,
+    "y": 0.38,
     "zone": "hall"
    },
    "t7": {
@@ -838,10 +2287,10 @@
     "number": 2,
     "seats": 2,
     "status": "RESERVED",
-    "reserved_for": "2026-11-25T11:43:39.63314+02:00",
+    "reserved_for": "2026-11-25T13:04:59.367971+02:00",
     "reservation_id": "res-demo-venue-2-t7",
-    "x": 0.6,
-    "y": 0.4,
+    "x": 0.48,
+    "y": 0.38,
     "zone": "hall"
    },
    "t8": {
@@ -850,8 +2299,8 @@
     "number": 3,
     "seats": 4,
     "status": "FREE",
-    "x": 0.45,
-    "y": 0.7,
+    "x": 0.22,
+    "y": 0.44,
     "zone": "street"
    },
    "t9": {
@@ -860,9 +2309,9 @@
     "number": 4,
     "seats": 2,
     "status": "OCCUPIED",
-    "occupied_since": "2026-11-25T10:13:39.63314+02:00",
-    "x": 0.75,
-    "y": 0.7,
+    "occupied_since": "2026-11-25T11:34:59.367971+02:00",
+    "x": 0.52,
+    "y": 0.44,
     "zone": "street"
    }
   },
@@ -876,9 +2325,9 @@
     "locale": "en",
     "role": "admin",
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.692217Z",
-    "updated_at": "2026-11-25T08:53:39.692217Z",
-    "password_hash": "$2a$10$l9R.ePnY./aLK0xkXLaeyOOhtmHFqj9a0BjxCAzNi435IYkK.SNey"
+    "created_at": "2026-11-25T10:14:59.445074Z",
+    "updated_at": "2026-11-25T10:14:59.445074Z",
+    "password_hash": "$2a$10$nwTgDKb7NoBimGAi6gR15.6IbpGZuz2F8WnEuBkL/C7TprHHH7MT."
    },
    "user-demo-cook-1": {
     "id": "user-demo-cook-1",
@@ -890,9 +2339,107 @@
     "locale": "ru",
     "role": "staff",
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z",
-    "password_hash": "$2a$10$PHuACpDCURsrkouy6At4budJ9T/MUFQqFgxXU6otutpZvx3XHYdhq"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z",
+    "password_hash": "$2a$10$5D/mSHi.Ki7hbpzzmGEop.zqr7UBqa.eZQ3l1cImMLs5IocqpfiT2"
+   },
+   "user-demo-cook-sakura": {
+    "id": "user-demo-cook-sakura",
+    "email": "kenji.tanaka@seatiko.local",
+    "phone": "+373 68 880 112",
+    "first_name": "Kenji",
+    "last_name": "Tanaka",
+    "display_name": "Kenji Tanaka",
+    "locale": "en",
+    "role": "staff",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$GEnqYQbSMQD0S2MhbQWAouA99Xzi9FpGIBdg6tFOEicXTTdXE/iX."
+   },
+   "user-demo-guest-2": {
+    "id": "user-demo-guest-2",
+    "email": "maria.popescu@seatiko.local",
+    "phone": "+373 69 112 233",
+    "first_name": "Maria",
+    "last_name": "Popescu",
+    "display_name": "Maria Popescu",
+    "locale": "ro",
+    "role": "guest",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$PnItbuIpX.C/ZkgdN7fUR.d/0rkEfAOs77snn9DMCFhjg5kggf/b2"
+   },
+   "user-demo-guest-3": {
+    "id": "user-demo-guest-3",
+    "email": "victor.rosca@seatiko.local",
+    "phone": "+373 68 445 566",
+    "first_name": "Victor",
+    "last_name": "Roșca",
+    "display_name": "Victor Roșca",
+    "locale": "ro",
+    "role": "guest",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$PnItbuIpX.C/ZkgdN7fUR.d/0rkEfAOs77snn9DMCFhjg5kggf/b2"
+   },
+   "user-demo-guest-4": {
+    "id": "user-demo-guest-4",
+    "email": "elena.dima@seatiko.local",
+    "phone": "+373 79 334 455",
+    "first_name": "Елена",
+    "last_name": "Дима",
+    "display_name": "Елена Дима",
+    "locale": "ru",
+    "role": "guest",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$PnItbuIpX.C/ZkgdN7fUR.d/0rkEfAOs77snn9DMCFhjg5kggf/b2"
+   },
+   "user-demo-guest-5": {
+    "id": "user-demo-guest-5",
+    "email": "dan.turcanu@seatiko.local",
+    "phone": "+373 69 778 899",
+    "first_name": "Dan",
+    "last_name": "Țurcanu",
+    "display_name": "Dan Țurcanu",
+    "locale": "en",
+    "role": "guest",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$PnItbuIpX.C/ZkgdN7fUR.d/0rkEfAOs77snn9DMCFhjg5kggf/b2"
+   },
+   "user-demo-guest-6": {
+    "id": "user-demo-guest-6",
+    "email": "olga.cojocaru@seatiko.local",
+    "phone": "+373 68 901 234",
+    "first_name": "Ольга",
+    "last_name": "Кожокару",
+    "display_name": "Ольга Кожокару",
+    "locale": "ru",
+    "role": "guest",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$PnItbuIpX.C/ZkgdN7fUR.d/0rkEfAOs77snn9DMCFhjg5kggf/b2"
+   },
+   "user-demo-guest-7": {
+    "id": "user-demo-guest-7",
+    "email": "andrei.botnari@seatiko.local",
+    "phone": "+373 69 554 321",
+    "first_name": "Андрей",
+    "last_name": "Ботнарь",
+    "display_name": "Андрей Ботнарь",
+    "locale": "ru",
+    "role": "guest",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$PnItbuIpX.C/ZkgdN7fUR.d/0rkEfAOs77snn9DMCFhjg5kggf/b2"
    },
    "user-demo-owner": {
     "id": "user-demo-owner",
@@ -904,9 +2451,9 @@
     "locale": "ru",
     "role": "restaurant",
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.866868Z",
-    "updated_at": "2026-11-25T08:53:39.866868Z",
-    "password_hash": "$2a$10$3m4gC8OK602tMzDMMtRiQuLo4EFEjHlFSysMmSDYAnAhQRJ..jzwa"
+    "created_at": "2026-11-25T10:14:59.621923Z",
+    "updated_at": "2026-11-25T10:14:59.621923Z",
+    "password_hash": "$2a$10$yf5WeTKZsMABjr.ZzXnVCeZy3I155DjR8u/ZhUg3uZIihCmCEOJyC"
    },
    "user-demo-staff": {
     "id": "user-demo-staff",
@@ -918,9 +2465,23 @@
     "locale": "ru",
     "role": "staff",
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z",
-    "password_hash": "$2a$10$PHuACpDCURsrkouy6At4budJ9T/MUFQqFgxXU6otutpZvx3XHYdhq"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z",
+    "password_hash": "$2a$10$5D/mSHi.Ki7hbpzzmGEop.zqr7UBqa.eZQ3l1cImMLs5IocqpfiT2"
+   },
+   "user-demo-staff-oliva": {
+    "id": "user-demo-staff-oliva",
+    "email": "olga.bivol@seatiko.local",
+    "phone": "+373 69 321 654",
+    "first_name": "Ольга",
+    "last_name": "Бивол",
+    "display_name": "Ольга Бивол",
+    "locale": "ru",
+    "role": "staff",
+    "adult_preorder_allowed": false,
+    "created_at": "2026-11-25T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z",
+    "password_hash": "$2a$10$GEnqYQbSMQD0S2MhbQWAouA99Xzi9FpGIBdg6tFOEicXTTdXE/iX."
    },
    "user-demo-waiter-2": {
     "id": "user-demo-waiter-2",
@@ -932,9 +2493,9 @@
     "locale": "ro",
     "role": "staff",
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z",
-    "password_hash": "$2a$10$PHuACpDCURsrkouy6At4budJ9T/MUFQqFgxXU6otutpZvx3XHYdhq"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z",
+    "password_hash": "$2a$10$5D/mSHi.Ki7hbpzzmGEop.zqr7UBqa.eZQ3l1cImMLs5IocqpfiT2"
    },
    "user-guest-calendar": {
     "id": "user-guest-calendar",
@@ -945,9 +2506,9 @@
     "locale": "ru",
     "role": "guest",
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.808824Z",
-    "updated_at": "2026-11-25T08:53:39.808824Z",
-    "password_hash": "$2a$10$5wt6RtN8YYT2ICk5ofKgbeXTNA0FuWosVUUPijlxEKcBcp2WS35nu"
+    "created_at": "2026-11-25T10:14:59.563624Z",
+    "updated_at": "2026-11-25T10:14:59.563624Z",
+    "password_hash": "$2a$10$.50wiJxt1IhSFGUAxnMqJOSk6/IpxpmloajBcu6Ocb8m8uZ6p.OhW"
    },
    "user-guest-demo": {
     "id": "user-guest-demo",
@@ -968,12 +2529,414 @@
      "venue-3"
     ],
     "adult_preorder_allowed": false,
-    "created_at": "2026-11-25T08:53:39.750284Z",
-    "updated_at": "2026-11-25T08:53:39.750284Z",
-    "password_hash": "$2a$10$8tZvOjKr66T6qN.oTn11auBJeiPulOJDpIfz7PLYb3LFFBb0frBde"
+    "created_at": "2026-11-25T10:14:59.503927Z",
+    "updated_at": "2026-11-25T10:14:59.503927Z",
+    "password_hash": "$2a$10$7BrP1nDMrVp73CHg0cFKUebOsB07g./hyGMQsuq4Up76WZfuC0ftq"
    }
   },
   "reservations": {
+   "res-demo-v1-d2-20": {
+    "id": "res-demo-v1-d2-20",
+    "user_id": "user-demo-guest-7",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-12",
+    "guests": 6,
+    "reserved_for": "2026-11-27T18:00:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Встреча выпускников",
+    "created_at": "2026-11-25T10:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-today-13": {
+    "id": "res-demo-v1-today-13",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-1",
+    "table_id": "t2",
+    "guests": 4,
+    "reserved_for": "2026-11-25T11:00:00Z",
+    "duration_min": 90,
+    "status": "CHECKED_IN",
+    "source": "WEB",
+    "notes": "Бизнес-ланч, стол у прохода",
+    "arrival_confirmed_at": "2026-11-25T10:55:00Z",
+    "created_at": "2026-11-25T06:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-today-18": {
+    "id": "res-demo-v1-today-18",
+    "user_id": "user-demo-guest-3",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-8",
+    "guests": 6,
+    "reserved_for": "2026-11-25T16:00:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Семейный ужин, детский стул",
+    "created_at": "2026-11-25T08:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-today-20": {
+    "id": "res-demo-v1-today-20",
+    "user_id": "user-demo-guest-4",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-9",
+    "guests": 8,
+    "reserved_for": "2026-11-25T18:00:00Z",
+    "duration_min": 150,
+    "status": "CONFIRMED",
+    "source": "PHONE",
+    "notes": "День рождения, торт принесём заранее",
+    "created_at": "2026-11-25T00:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-tom-13": {
+    "id": "res-demo-v1-tom-13",
+    "user_id": "user-demo-guest-5",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-6",
+    "guests": 2,
+    "reserved_for": "2026-11-26T11:30:00Z",
+    "duration_min": 60,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Тихий столик у окна",
+    "created_at": "2026-11-25T09:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-tom-19": {
+    "id": "res-demo-v1-tom-19",
+    "user_id": "user-demo-guest-6",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-11",
+    "guests": 4,
+    "reserved_for": "2026-11-26T17:00:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "IOS",
+    "notes": "В саду, если не будет дождя",
+    "created_at": "2026-11-25T07:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-yest-can": {
+    "id": "res-demo-v1-yest-can",
+    "user_id": "user-demo-guest-3",
+    "venue_id": "venue-1",
+    "table_id": "t5",
+    "guests": 2,
+    "reserved_for": "2026-11-24T15:30:00Z",
+    "duration_min": 90,
+    "status": "CANCELLED",
+    "source": "WEB",
+    "notes": "Перенесли встречу на пятницу",
+    "created_at": "2026-11-24T06:14:59.680277+02:00",
+    "updated_at": "2026-11-24T10:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-yest-noshow": {
+    "id": "res-demo-v1-yest-noshow",
+    "user_id": "user-demo-guest-4",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-10",
+    "guests": 4,
+    "reserved_for": "2026-11-24T18:30:00Z",
+    "duration_min": 90,
+    "status": "NO_SHOW",
+    "source": "PHONE",
+    "notes": "Гость не ответил на звонок",
+    "created_at": "2026-11-24T00:14:59.680277+02:00",
+    "updated_at": "2026-11-24T14:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v1-yest-ok": {
+    "id": "res-demo-v1-yest-ok",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-1",
+    "table_id": "t-v1-7",
+    "guests": 4,
+    "reserved_for": "2026-11-24T17:00:00Z",
+    "duration_min": 90,
+    "status": "CHECKED_IN",
+    "source": "WEB",
+    "notes": "Подача мамалыги сразу к приходу",
+    "arrival_confirmed_at": "2026-11-24T16:58:00Z",
+    "created_at": "2026-11-24T08:14:59.680277+02:00",
+    "updated_at": "2026-11-24T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v11-today-19": {
+    "id": "res-demo-v11-today-19",
+    "user_id": "user-demo-guest-3",
+    "venue_id": "venue-11",
+    "table_id": "t-v11-3",
+    "guests": 4,
+    "reserved_for": "2026-11-25T17:00:00Z",
+    "duration_min": 90,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Хотим сет Филадельфия к приходу",
+    "created_at": "2026-11-25T09:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v11-tom-14": {
+    "id": "res-demo-v11-tom-14",
+    "user_id": "user-demo-guest-4",
+    "venue_id": "venue-11",
+    "table_id": "t-v11-5",
+    "guests": 2,
+    "reserved_for": "2026-11-26T12:00:00Z",
+    "duration_min": 60,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Обед у суши-бара",
+    "created_at": "2026-11-25T10:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v12-tom-20": {
+    "id": "res-demo-v12-tom-20",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-12",
+    "table_id": "t-v12-4",
+    "guests": 6,
+    "reserved_for": "2026-11-26T18:00:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Сибас на углях и белое вино",
+    "created_at": "2026-11-25T09:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v13-tom-10": {
+    "id": "res-demo-v13-tom-10",
+    "user_id": "user-demo-guest-3",
+    "venue_id": "venue-13",
+    "table_id": "t-v13-3",
+    "guests": 3,
+    "reserved_for": "2026-11-26T08:30:00Z",
+    "duration_min": 60,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Утренний бранч и матча",
+    "created_at": "2026-11-25T11:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v14-d2-18": {
+    "id": "res-demo-v14-d2-18",
+    "user_id": "user-demo-guest-4",
+    "venue_id": "venue-14",
+    "table_id": "t-v14-6",
+    "guests": 6,
+    "reserved_for": "2026-11-27T16:30:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Беседка в саду на компанию",
+    "created_at": "2026-11-25T10:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v3-tom-19": {
+    "id": "res-demo-v3-tom-19",
+    "user_id": "user-demo-guest-5",
+    "venue_id": "venue-3",
+    "table_id": "t-v3-7",
+    "guests": 6,
+    "reserved_for": "2026-11-26T17:30:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Ужин со стейками Рибай",
+    "created_at": "2026-11-25T06:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v4-today-18": {
+    "id": "res-demo-v4-today-18",
+    "user_id": "user-demo-guest-5",
+    "venue_id": "venue-4",
+    "table_id": "t-v4-4",
+    "guests": 5,
+    "reserved_for": "2026-11-25T16:30:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Просьба рядом с розеткой",
+    "created_at": "2026-11-25T07:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v4-today-19": {
+    "id": "res-demo-v4-today-19",
+    "user_id": "user-demo-guest-6",
+    "venue_id": "venue-4",
+    "table_id": "t-v4-6",
+    "guests": 2,
+    "reserved_for": "2026-11-25T17:30:00Z",
+    "duration_min": 90,
+    "status": "CHECKED_IN",
+    "source": "ANDROID",
+    "notes": "Свидание на террасе",
+    "arrival_confirmed_at": "2026-11-25T17:25:00Z",
+    "created_at": "2026-11-25T04:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v4-tom-20": {
+    "id": "res-demo-v4-tom-20",
+    "user_id": "user-demo-guest-7",
+    "venue_id": "venue-4",
+    "table_id": "t-v4-5",
+    "guests": 7,
+    "reserved_for": "2026-11-26T18:00:00Z",
+    "duration_min": 150,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Корпоративный ужин команды",
+    "created_at": "2026-11-25T08:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v4-yest-can": {
+    "id": "res-demo-v4-yest-can",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-4",
+    "table_id": "t-v4-7",
+    "guests": 4,
+    "reserved_for": "2026-11-23T17:00:00Z",
+    "duration_min": 90,
+    "status": "CANCELLED",
+    "source": "WEB",
+    "notes": "Отмена за 3 часа",
+    "created_at": "2026-11-23T08:14:59.680277+02:00",
+    "updated_at": "2026-11-23T10:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v5-tom-20": {
+    "id": "res-demo-v5-tom-20",
+    "user_id": "user-demo-guest-6",
+    "venue_id": "venue-5",
+    "table_id": "t-v5-5",
+    "guests": 8,
+    "reserved_for": "2026-11-26T18:00:00Z",
+    "duration_min": 150,
+    "status": "CONFIRMED",
+    "source": "PHONE",
+    "notes": "Большая компания на крафтовое пиво",
+    "created_at": "2026-11-25T08:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "res-demo-v6-d2-14": {
+    "id": "res-demo-v6-d2-14",
+    "user_id": "user-demo-guest-7",
+    "venue_id": "venue-6",
+    "table_id": "t-v6-6",
+    "guests": 6,
+    "reserved_for": "2026-11-27T12:00:00Z",
+    "duration_min": 120,
+    "status": "CONFIRMED",
+    "source": "WEB",
+    "notes": "Стол в саду, традиционная кухня",
+    "created_at": "2026-11-25T10:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
    "res-demo-venue-2-cal-12": {
     "id": "res-demo-venue-2-cal-12",
     "user_id": "user-guest-calendar",
@@ -983,8 +2946,8 @@
     "reserved_for": "2026-11-25T10:00:00Z",
     "status": "CONFIRMED",
     "source": "WEB",
-    "created_at": "2026-11-25T08:53:39.63314Z",
-    "updated_at": "2026-11-25T08:53:39.63314Z",
+    "created_at": "2026-11-25T10:14:59.367971Z",
+    "updated_at": "2026-11-25T10:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1000,8 +2963,8 @@
     "reserved_for": "2026-11-25T12:30:00Z",
     "status": "CONFIRMED",
     "source": "WEB",
-    "created_at": "2026-11-25T08:53:39.63314Z",
-    "updated_at": "2026-11-25T08:53:39.63314Z",
+    "created_at": "2026-11-25T10:14:59.367971Z",
+    "updated_at": "2026-11-25T10:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1017,8 +2980,8 @@
     "reserved_for": "2026-11-25T16:00:00Z",
     "status": "CONFIRMED",
     "source": "WEB",
-    "created_at": "2026-11-25T08:53:39.63314Z",
-    "updated_at": "2026-11-25T08:53:39.63314Z",
+    "created_at": "2026-11-25T10:14:59.367971Z",
+    "updated_at": "2026-11-25T10:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1034,8 +2997,8 @@
     "reserved_for": "2026-11-25T18:00:00Z",
     "status": "CHECKED_IN",
     "source": "WEB",
-    "created_at": "2026-11-25T08:53:39.63314Z",
-    "updated_at": "2026-11-25T08:53:39.63314Z",
+    "created_at": "2026-11-25T10:14:59.367971Z",
+    "updated_at": "2026-11-25T10:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1048,11 +3011,11 @@
     "venue_id": "venue-2",
     "table_id": "t7",
     "guests": 2,
-    "reserved_for": "2026-11-25T09:43:39.63314Z",
+    "reserved_for": "2026-11-25T11:04:59.367971Z",
     "status": "CONFIRMED",
     "source": "WEB",
-    "created_at": "2026-11-25T08:53:39.63314Z",
-    "updated_at": "2026-11-25T08:53:39.63314Z",
+    "created_at": "2026-11-25T10:14:59.367971Z",
+    "updated_at": "2026-11-25T10:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1069,8 +3032,8 @@
     "status": "CONFIRMED",
     "source": "WEB",
     "notes": "Столик у панорамного окна, празднуем годовщину",
-    "created_at": "2026-11-25T06:53:39.63314Z",
-    "updated_at": "2026-11-25T08:53:39.63314Z",
+    "created_at": "2026-11-25T08:14:59.367971Z",
+    "updated_at": "2026-11-25T10:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1083,12 +3046,12 @@
     "venue_id": "venue-2",
     "table_id": "t2",
     "guests": 2,
-    "reserved_for": "2026-11-22T08:53:39.63314Z",
+    "reserved_for": "2026-11-22T10:14:59.367971Z",
     "status": "CHECKED_IN",
     "source": "WEB",
     "notes": "Ужин для двоих",
-    "created_at": "2026-11-22T06:53:39.63314Z",
-    "updated_at": "2026-11-22T10:53:39.63314Z",
+    "created_at": "2026-11-22T08:14:59.367971Z",
+    "updated_at": "2026-11-22T12:14:59.367971Z",
     "venue_name": {
      "ru": "",
      "en": "",
@@ -1097,7 +3060,24 @@
    }
   },
   "watches": {},
-  "sessions": {},
+  "sessions": {
+   "sess-demo-v1-t3": {
+    "id": "sess-demo-v1-t3",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-1",
+    "table_id": "t3",
+    "status": "ACTIVE",
+    "started_at": "2026-11-25T09:36:59.680277Z"
+   },
+   "sess-demo-v4-t3": {
+    "id": "sess-demo-v4-t3",
+    "user_id": "user-demo-guest-6",
+    "venue_id": "venue-4",
+    "table_id": "t-v4-3",
+    "status": "ACTIVE",
+    "started_at": "2026-11-25T09:49:59.680277Z"
+   }
+  },
   "menu_items": {
    "m-v1-01": {
     "id": "m-v1-01",
@@ -1118,18 +3098,18 @@
      "ro": "Brânză de oi, roșii, castraveți, ceapă verde"
     },
     "ingredients": {
-     "ru": "Ассорти сыров и/или мясных деликатесов, хлеб или гриссини, мёд, орехи, оливки — по составу тарелки.",
-     "en": "Assorted cheeses and/or cured meats, bread or grissini, honey, nuts, olives — as plated.",
-     "ro": "Asortiment de brânzeturi și/sau mezeluri, pâine sau grissini, miere, nuci, măsline — după platou."
+     "ru": "Овечья брынза, томаты, огурцы, зелёный лук",
+     "en": "Sheep cheese, tomatoes, cucumbers, spring onion",
+     "ro": "Brânză de oi, roșii, castraveți, ceapă verde"
     },
     "allergens": [
      "milk",
-     "gluten",
-     "nuts"
+     "eggs",
+     "gluten"
     ],
     "price": 85,
     "weight_g": 220,
-    "image_url": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -1166,7 +3146,7 @@
     ],
     "price": 70,
     "weight_g": 250,
-    "image_url": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -1467,7 +3447,7 @@
     "image_url": "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
-    "position": 12,
+    "position": 14,
     "stopped": false
    },
    "m-v1-11": {
@@ -1501,7 +3481,7 @@
     "image_url": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
-    "position": 13,
+    "position": 15,
     "stopped": false
    },
    "m-v1-12": {
@@ -1532,7 +3512,7 @@
     "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
-    "position": 15,
+    "position": 17,
     "stopped": false
    },
    "m-v1-13": {
@@ -1566,7 +3546,72 @@
     "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": true,
     "requires_age_18": true,
-    "position": 16,
+    "position": 18,
+    "stopped": false
+   },
+   "m-v1-14": {
+    "id": "m-v1-14",
+    "venue_id": "venue-1",
+    "category": {
+     "ru": "Горячее",
+     "en": "Main courses",
+     "ro": "Feluri principale"
+    },
+    "name": {
+     "ru": "Костицэ на гратаре с чесночным муждеем",
+     "en": "Charcoal pork ribs with mujdei",
+     "ro": "Costiță la grătar cu mujdei"
+    },
+    "description": {
+     "ru": "Свиные рёбрышки с печёным картофелем и солёными огурцами",
+     "en": "Charcoal ribs with roasted potato and pickles",
+     "ro": "Costiță la grătar cu cartofi copți și murături"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 155,
+    "weight_g": 380,
+    "image_url": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 12,
+    "stopped": false
+   },
+   "m-v1-15": {
+    "id": "m-v1-15",
+    "venue_id": "venue-1",
+    "category": {
+     "ru": "Горячее",
+     "en": "Main courses",
+     "ro": "Feluri principale"
+    },
+    "name": {
+     "ru": "Мититеи домашние на углях",
+     "en": "Grilled homemade mititei",
+     "ro": "Mititei de casă la grătar"
+    },
+    "description": {
+     "ru": "С горчицей, зелёным луком и свежим хлебом",
+     "en": "With mustard, spring onion and fresh bread",
+     "ro": "Cu muștar, ceapă verde și pâine proaspătă"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 105,
+    "weight_g": 280,
+    "image_url": "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 13,
     "stopped": false
    },
    "m-v10-01": {
@@ -2141,6 +4186,1862 @@
     "position": 16,
     "stopped": false
    },
+   "m-v11-01": {
+    "id": "m-v11-01",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Бобы эдамамэ с морской солью",
+     "en": "Steamed edamame with sea salt",
+     "ro": "Păstăi edamame cu sare de mare"
+    },
+    "description": {
+     "ru": "Тёплые зелёные соевые бобы с хлопьями чили",
+     "en": "Warm soybean pods with sea salt and chilli flakes",
+     "ro": "Păstăi calde de soia cu sare de mare și fulgi chili"
+    },
+    "ingredients": {
+     "ru": "Бульон или лапша/рис по рецепту, соевый соус, кунжут, зелёный лук, специи.",
+     "en": "Broth or noodles/rice as listed, soy sauce, sesame, spring onion, spices.",
+     "ro": "Supă sau tăiței/orez după rețetă, sos de soia, susan, ceapă verde, condimente."
+    },
+    "allergens": [
+     "soy",
+     "sesame",
+     "gluten"
+    ],
+    "price": 65,
+    "weight_g": 180,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 1,
+    "stopped": false
+   },
+   "m-v11-02": {
+    "id": "m-v11-02",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Салат вакамэ с ореховым соусом",
+     "en": "Wakame seaweed salad",
+     "ro": "Salată wakame cu sos de nuci"
+    },
+    "description": {
+     "ru": "Морские водоросли, кунжут, кунжутно-ореховый соус",
+     "en": "Seaweed, sesame seeds, creamy sesame dressing",
+     "ro": "Alge marine, susan, dressing cremos de susan"
+    },
+    "ingredients": {
+     "ru": "Свежие овощи и зелень, заправка домашнего приготовления, специи.",
+     "en": "Fresh vegetables and greens, house dressing, spices.",
+     "ro": "Legume și verdeață proaspete, dressing de casă, condimente."
+    },
+    "price": 75,
+    "weight_g": 160,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 2,
+    "stopped": false
+   },
+   "m-v11-03": {
+    "id": "m-v11-03",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Креветки эби темпура",
+     "en": "Ebi tempura prawns",
+     "ro": "Creveți ebi tempura"
+    },
+    "description": {
+     "ru": "Тигровые креветки в хрустящем кляре со спайси-соусом",
+     "en": "Crispy battered tiger prawns with spicy mayo",
+     "ro": "Creveți tigru în aluat crocant cu sos picant"
+    },
+    "ingredients": {
+     "ru": "Бульон или лапша/рис по рецепту, соевый соус, кунжут, зелёный лук, специи.",
+     "en": "Broth or noodles/rice as listed, soy sauce, sesame, spring onion, spices.",
+     "ro": "Supă sau tăiței/orez după rețetă, sos de soia, susan, ceapă verde, condimente."
+    },
+    "allergens": [
+     "soy",
+     "sesame",
+     "gluten",
+     "crustaceans",
+     "eggs"
+    ],
+    "price": 145,
+    "weight_g": 200,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular",
+     "spicy"
+    ],
+    "position": 3,
+    "stopped": false
+   },
+   "m-v11-04": {
+    "id": "m-v11-04",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Роллы и суши",
+     "en": "Rolls & sushi",
+     "ro": "Rulouri și sushi"
+    },
+    "name": {
+     "ru": "Филадельфия с лососем",
+     "en": "Philadelphia salmon roll",
+     "ro": "Roll Philadelphia cu somon"
+    },
+    "description": {
+     "ru": "Охлаждённый лосось, сливочный сыр, огурец, авокадо",
+     "en": "Fresh salmon, cream cheese, cucumber, avocado",
+     "ro": "Somon proaspăt, cremă de brânză, castravete, avocado"
+    },
+    "ingredients": {
+     "ru": "Рис для суши, нори, лосось/тунец/креветка, сливочный сыр или авокадо, соевый соус, васаби.",
+     "en": "Sushi rice, nori, salmon/tuna/prawn, cream cheese or avocado, soy sauce, wasabi.",
+     "ro": "Orez pentru sushi, nori, somon/ton/crevete, cremă de brânză sau avocado, sos de soia, wasabi."
+    },
+    "allergens": [
+     "fish",
+     "crustaceans",
+     "soy",
+     "sesame",
+     "milk"
+    ],
+    "price": 155,
+    "weight_g": 260,
+    "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 4,
+    "stopped": false
+   },
+   "m-v11-05": {
+    "id": "m-v11-05",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Роллы и суши",
+     "en": "Rolls & sushi",
+     "ro": "Rulouri și sushi"
+    },
+    "name": {
+     "ru": "Ролл Калифорния с крабом",
+     "en": "California crab roll",
+     "ro": "Roll California cu crab"
+    },
+    "description": {
+     "ru": "Снежный краб, авокадо, тобико и огурец",
+     "en": "Snow crab, avocado, tobiko roe and cucumber",
+     "ro": "Crab, avocado, icre tobiko și castravete"
+    },
+    "ingredients": {
+     "ru": "Рис для суши, нори, лосось/тунец/креветка, сливочный сыр или авокадо, соевый соус, васаби.",
+     "en": "Sushi rice, nori, salmon/tuna/prawn, cream cheese or avocado, soy sauce, wasabi.",
+     "ro": "Orez pentru sushi, nori, somon/ton/crevete, cremă de brânză sau avocado, sos de soia, wasabi."
+    },
+    "allergens": [
+     "fish",
+     "crustaceans",
+     "soy",
+     "sesame"
+    ],
+    "price": 140,
+    "weight_g": 240,
+    "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 5,
+    "stopped": false
+   },
+   "m-v11-06": {
+    "id": "m-v11-06",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Роллы и суши",
+     "en": "Rolls & sushi",
+     "ro": "Rulouri și sushi"
+    },
+    "name": {
+     "ru": "Зелёный Дракон с угрём",
+     "en": "Green Dragon unagi roll",
+     "ro": "Roll Green Dragon cu anghilă"
+    },
+    "description": {
+     "ru": "Копчёный угорь, сливочный сыр, авокадо, соус унаги",
+     "en": "Smoked eel, cream cheese, avocado, unagi glaze",
+     "ro": "Anghilă afumată, cremă de brânză, avocado, sos unagi"
+    },
+    "ingredients": {
+     "ru": "Рис для суши, нори, лосось/тунец/креветка, сливочный сыр или авокадо, соевый соус, васаби.",
+     "en": "Sushi rice, nori, salmon/tuna/prawn, cream cheese or avocado, soy sauce, wasabi.",
+     "ro": "Orez pentru sushi, nori, somon/ton/crevete, cremă de brânză sau avocado, sos de soia, wasabi."
+    },
+    "allergens": [
+     "fish",
+     "crustaceans",
+     "soy",
+     "sesame"
+    ],
+    "price": 175,
+    "weight_g": 270,
+    "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 6,
+    "stopped": false
+   },
+   "m-v11-07": {
+    "id": "m-v11-07",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Роллы и суши",
+     "en": "Rolls & sushi",
+     "ro": "Rulouri și sushi"
+    },
+    "name": {
+     "ru": "Острый ролл с тунцом",
+     "en": "Spicy tuna roll",
+     "ro": "Roll picant cu ton"
+    },
+    "description": {
+     "ru": "Тунец, шрирача, хрустящий огурец, кунжут",
+     "en": "Tuna, sriracha mayo, crisp cucumber, sesame",
+     "ro": "Ton, maioneză sriracha, castravete crocant, susan"
+    },
+    "ingredients": {
+     "ru": "Рис для суши, нори, лосось/тунец/креветка, сливочный сыр или авокадо, соевый соус, васаби.",
+     "en": "Sushi rice, nori, salmon/tuna/prawn, cream cheese or avocado, soy sauce, wasabi.",
+     "ro": "Orez pentru sushi, nori, somon/ton/crevete, cremă de brânză sau avocado, sos de soia, wasabi."
+    },
+    "allergens": [
+     "fish",
+     "crustaceans",
+     "soy",
+     "sesame"
+    ],
+    "price": 145,
+    "weight_g": 230,
+    "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "spicy"
+    ],
+    "position": 7,
+    "stopped": false
+   },
+   "m-v11-08": {
+    "id": "m-v11-08",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Роллы и суши",
+     "en": "Rolls & sushi",
+     "ro": "Rulouri și sushi"
+    },
+    "name": {
+     "ru": "Сет нигири с лососем и тунцом",
+     "en": "Salmon & tuna nigiri set",
+     "ro": "Set nigiri cu somon și ton"
+    },
+    "description": {
+     "ru": "6 классических нигири на тёплом рисе",
+     "en": "Six classic hand-pressed nigiri",
+     "ro": "Șase nigiri clasice pe orez cald"
+    },
+    "ingredients": {
+     "ru": "Рис для суши, нори, лосось/тунец/креветка, сливочный сыр или авокадо, соевый соус, васаби.",
+     "en": "Sushi rice, nori, salmon/tuna/prawn, cream cheese or avocado, soy sauce, wasabi.",
+     "ro": "Orez pentru sushi, nori, somon/ton/crevete, cremă de brânză sau avocado, sos de soia, wasabi."
+    },
+    "allergens": [
+     "fish",
+     "crustaceans",
+     "soy",
+     "sesame"
+    ],
+    "price": 165,
+    "weight_g": 220,
+    "image_url": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 8,
+    "stopped": false
+   },
+   "m-v11-09": {
+    "id": "m-v11-09",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Рамен и вок",
+     "en": "Ramen & bowls",
+     "ro": "Ramen și wok"
+    },
+    "name": {
+     "ru": "Тонкоцу рамен со свининой",
+     "en": "Pork tonkotsu ramen",
+     "ro": "Ramen tonkotsu cu porc"
+    },
+    "description": {
+     "ru": "12-часовой бульон, лапша, томлёная свинина и яйцо аджитама",
+     "en": "12-hour broth, noodles, chashu pork, marinated egg",
+     "ro": "Supă fiartă 12 ore, tăiței, porc chashu, ou marinat"
+    },
+    "ingredients": {
+     "ru": "Бульон или лапша/рис по рецепту, соевый соус, кунжут, зелёный лук, специи.",
+     "en": "Broth or noodles/rice as listed, soy sauce, sesame, spring onion, spices.",
+     "ro": "Supă sau tăiței/orez după rețetă, sos de soia, susan, ceapă verde, condimente."
+    },
+    "allergens": [
+     "soy",
+     "sesame",
+     "gluten"
+    ],
+    "price": 145,
+    "weight_g": 480,
+    "image_url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 9,
+    "stopped": false
+   },
+   "m-v11-10": {
+    "id": "m-v11-10",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Рамен и вок",
+     "en": "Ramen & bowls",
+     "ro": "Ramen și wok"
+    },
+    "name": {
+     "ru": "Том Ям с морепродуктами",
+     "en": "Seafood Tom Yum soup",
+     "ro": "Supă Tom Yum cu fructe de mare"
+    },
+    "description": {
+     "ru": "Тигровые креветки, кальмар, кокосовое молоко, лемонграсс",
+     "en": "Tiger prawns, squid, coconut milk, lemongrass, chilli",
+     "ro": "Creveți tigru, calamar, lapte de cocos, lemongrass"
+    },
+    "ingredients": {
+     "ru": "Бульон, овощи, зелень, специи; подаётся со сметаной по желанию.",
+     "en": "Broth, vegetables, herbs, spices; sour cream on the side if desired.",
+     "ro": "Supă, legume, verdeață, condimente; smântână la cerere."
+    },
+    "allergens": [
+     "celery",
+     "milk",
+     "eggs"
+    ],
+    "price": 155,
+    "weight_g": 420,
+    "image_url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "spicy"
+    ],
+    "position": 10,
+    "stopped": false
+   },
+   "m-v11-11": {
+    "id": "m-v11-11",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Рамен и вок",
+     "en": "Ramen & bowls",
+     "ro": "Ramen și wok"
+    },
+    "name": {
+     "ru": "Боул с курицей терияки",
+     "en": "Chicken teriyaki rice bowl",
+     "ro": "Bowl cu pui teriyaki"
+    },
+    "description": {
+     "ru": "Рис на пару, бедро терияки, эдамамэ и маринованный имбирь",
+     "en": "Steamed rice, glazed chicken, edamame, pickled ginger",
+     "ro": "Orez la abur, pui teriyaki, edamame și ghimbir"
+    },
+    "ingredients": {
+     "ru": "Бульон или лапша/рис по рецепту, соевый соус, кунжут, зелёный лук, специи.",
+     "en": "Broth or noodles/rice as listed, soy sauce, sesame, spring onion, spices.",
+     "ro": "Supă sau tăiței/orez după rețetă, sos de soia, susan, ceapă verde, condimente."
+    },
+    "allergens": [
+     "soy",
+     "sesame",
+     "gluten"
+    ],
+    "price": 120,
+    "weight_g": 360,
+    "image_url": "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 11,
+    "stopped": false
+   },
+   "m-v11-12": {
+    "id": "m-v11-12",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Десерты",
+     "en": "Desserts",
+     "ro": "Deserturi"
+    },
+    "name": {
+     "ru": "Сет моти манго и малина",
+     "en": "Mango & raspberry mochi trio",
+     "ro": "Trio mochi cu mango și zmeură"
+    },
+    "description": {
+     "ru": "Нежное рисовое тесто с фруктовым муссом",
+     "en": "Soft rice dough filled with chilled fruit mousse",
+     "ro": "Aluat fin de orez cu mousse de fructe"
+    },
+    "ingredients": {
+     "ru": "Нежное рисовое тесто с фруктовым муссом",
+     "en": "Soft rice dough filled with chilled fruit mousse",
+     "ro": "Aluat fin de orez cu mousse de fructe"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 85,
+    "weight_g": 150,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 12,
+    "stopped": false
+   },
+   "m-v11-13": {
+    "id": "m-v11-13",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Напитки",
+     "en": "Drinks",
+     "ro": "Băuturi"
+    },
+    "name": {
+     "ru": "Чай Генмайча, чайник",
+     "en": "Genmaicha green tea, pot",
+     "ro": "Ceai verde Genmaicha, ceainic"
+    },
+    "description": {
+     "ru": "Зелёный японский чай с обжаренным рисом",
+     "en": "Japanese green tea with toasted brown rice",
+     "ro": "Ceai verde japonez cu orez prăjit"
+    },
+    "ingredients": {
+     "ru": "Вода, фрукты или травы по рецепту, сахар или мёд по вкусу.",
+     "en": "Water, fruit or herbs as listed, sugar or honey to taste.",
+     "ro": "Apă, fructe sau plante după rețetă, zahăr sau miere după gust."
+    },
+    "price": 55,
+    "volume_ml": 500,
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 13,
+    "stopped": false
+   },
+   "m-v11-14": {
+    "id": "m-v11-14",
+    "venue_id": "venue-11",
+    "category": {
+     "ru": "Напитки",
+     "en": "Drinks",
+     "ro": "Băuturi"
+    },
+    "name": {
+     "ru": "Тёплое саке",
+     "en": "Warm junmai sake",
+     "ro": "Sake cald junmai"
+    },
+    "description": {
+     "ru": "Классическое рисовое вино в карафе",
+     "en": "Classic Japanese rice wine served warm",
+     "ro": "Vin japonez clasic din orez"
+    },
+    "ingredients": {
+     "ru": "Классическое рисовое вино в карафе",
+     "en": "Classic Japanese rice wine served warm",
+     "ro": "Vin japonez clasic din orez"
+    },
+    "price": 95,
+    "volume_ml": 150,
+    "image_url": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": true,
+    "requires_age_18": true,
+    "position": 14,
+    "stopped": false
+   },
+   "m-v12-01": {
+    "id": "m-v12-01",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Тартар из тунца с манго",
+     "en": "Bluefin tuna tartare with mango",
+     "ro": "Tartar de ton cu mango"
+    },
+    "description": {
+     "ru": "Свежий тунец, манго, лайм, оливковое масло и тосты",
+     "en": "Fresh tuna, mango, lime, extra virgin olive oil",
+     "ro": "Ton proaspăt, mango, lime, ulei de măsline"
+    },
+    "ingredients": {
+     "ru": "Свежий тунец, манго, лайм, оливковое масло и тосты",
+     "en": "Fresh tuna, mango, lime, extra virgin olive oil",
+     "ro": "Ton proaspăt, mango, lime, ulei de măsline"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 185,
+    "weight_g": 180,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 1,
+    "stopped": false
+   },
+   "m-v12-02": {
+    "id": "m-v12-02",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Кальмары фритти с соусом тартар",
+     "en": "Crispy calamari fritti",
+     "ro": "Calamari prăjiți crocanți"
+    },
+    "description": {
+     "ru": "Нежные кольца кальмара с лимоном и домашним тартаром",
+     "en": "Crisp squid rings with lemon and tartare dip",
+     "ro": "Inele crocante de calamar cu lămâie și sos tartar"
+    },
+    "ingredients": {
+     "ru": "Нежные кольца кальмара с лимоном и домашним тартаром",
+     "en": "Crisp squid rings with lemon and tartare dip",
+     "ro": "Inele crocante de calamar cu lămâie și sos tartar"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 145,
+    "weight_g": 220,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 2,
+    "stopped": false
+   },
+   "m-v12-03": {
+    "id": "m-v12-03",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Салаты",
+     "en": "Salads",
+     "ro": "Salate"
+    },
+    "name": {
+     "ru": "Тёплый салат с осьминогом и картофелем",
+     "en": "Warm grilled octopus salad",
+     "ro": "Salată caldă cu caracatiță"
+    },
+    "description": {
+     "ru": "Мини-картофель, оливки каламата, черри и руккола",
+     "en": "Baby potatoes, Kalamata olives, cherry tomatoes, rocket",
+     "ro": "Cartofi noi, măsline Kalamata, roșii cherry, rucola"
+    },
+    "ingredients": {
+     "ru": "Свежие овощи и зелень, заправка домашнего приготовления, специи.",
+     "en": "Fresh vegetables and greens, house dressing, spices.",
+     "ro": "Legume și verdeață proaspete, dressing de casă, condimente."
+    },
+    "price": 215,
+    "weight_g": 250,
+    "image_url": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 3,
+    "stopped": false
+   },
+   "m-v12-04": {
+    "id": "m-v12-04",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Супы",
+     "en": "Soups",
+     "ro": "Supe"
+    },
+    "name": {
+     "ru": "Средиземноморский буйабес",
+     "en": "Mediterranean bouillabaisse",
+     "ro": "Bouillabaisse mediteranean"
+    },
+    "description": {
+     "ru": "Насыщенный рыбный суп с мидиями, лососем и креветками",
+     "en": "Rich fish stew with mussels, salmon, prawns and rouille",
+     "ro": "Supă bogată de pește cu midii, somon și creveți"
+    },
+    "ingredients": {
+     "ru": "Бульон, овощи, зелень, специи; подаётся со сметаной по желанию.",
+     "en": "Broth, vegetables, herbs, spices; sour cream on the side if desired.",
+     "ro": "Supă, legume, verdeață, condimente; smântână la cerere."
+    },
+    "allergens": [
+     "celery",
+     "milk",
+     "eggs"
+    ],
+    "price": 175,
+    "weight_g": 380,
+    "image_url": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 4,
+    "stopped": false
+   },
+   "m-v12-05": {
+    "id": "m-v12-05",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Морепродукты и рыба",
+     "en": "Seafood & fish",
+     "ro": "Fructe de mare și pește"
+    },
+    "name": {
+     "ru": "Сибас на углях с лимоном",
+     "en": "Charcoal-grilled sea bass",
+     "ro": "Lavrac la grătar cu lămâie"
+    },
+    "description": {
+     "ru": "Целый сибас (лаврак) с тимьяном и оливками",
+     "en": "Whole sea bass grilled with thyme, lemon and capers",
+     "ro": "Lavrac întreg pe cărbuni cu cimbru, lămâie și capere"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 295,
+    "weight_g": 360,
+    "image_url": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 5,
+    "stopped": false
+   },
+   "m-v12-06": {
+    "id": "m-v12-06",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Морепродукты и рыба",
+     "en": "Seafood & fish",
+     "ro": "Fructe de mare și pește"
+    },
+    "name": {
+     "ru": "Мидии в сливочно-чесночном соусе",
+     "en": "Black mussels in creamy garlic sauce",
+     "ro": "Midii în sos cremos cu usturoi"
+    },
+    "description": {
+     "ru": "Подаются с тёплым поджаренным багетом",
+     "en": "Served with warm grilled baguette",
+     "ro": "Servite cu baghetă caldă la grătar"
+    },
+    "ingredients": {
+     "ru": "Филе рыбы, лимон, оливковое масло, травы, овощи на гарнир.",
+     "en": "Fish fillet, lemon, olive oil, herbs, vegetable garnish.",
+     "ro": "File de pește, lămâie, ulei de măsline, ierburi, garnitură de legume."
+    },
+    "allergens": [
+     "fish"
+    ],
+    "price": 195,
+    "weight_g": 450,
+    "image_url": "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 6,
+    "stopped": false
+   },
+   "m-v12-07": {
+    "id": "m-v12-07",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Морепродукты и рыба",
+     "en": "Seafood & fish",
+     "ro": "Fructe de mare și pește"
+    },
+    "name": {
+     "ru": "Тигровые креветки на гриле с чили",
+     "en": "Grilled garlic tiger prawns",
+     "ro": "Creveți tigru la grătar cu chili"
+    },
+    "description": {
+     "ru": "С чесночным маслом, чили и свежей петрушкой",
+     "en": "With garlic herb butter, chilli and lemon",
+     "ro": "Cu unt cu usturoi, chili și lămâie"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 265,
+    "weight_g": 280,
+    "image_url": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "spicy"
+    ],
+    "position": 7,
+    "stopped": false
+   },
+   "m-v12-08": {
+    "id": "m-v12-08",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Морепродукты и рыба",
+     "en": "Seafood & fish",
+     "ro": "Fructe de mare și pește"
+    },
+    "name": {
+     "ru": "Филе лосося с печёной спаржей",
+     "en": "Grilled salmon fillet with asparagus",
+     "ro": "File de somon cu sparanghel"
+    },
+    "description": {
+     "ru": "Лимонный соус велюте и спаржа на гриле",
+     "en": "With lemon velouté sauce and charred asparagus",
+     "ro": "Cu sos de lămâie și sparanghel la grătar"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 275,
+    "weight_g": 320,
+    "image_url": "https://images.unsplash.com/photo-1558030006-450675393462?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 8,
+    "stopped": false
+   },
+   "m-v12-09": {
+    "id": "m-v12-09",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Паста",
+     "en": "Pasta",
+     "ro": "Paste"
+    },
+    "name": {
+     "ru": "Паста Неро с морепродуктами",
+     "en": "Squid-ink seafood pasta",
+     "ro": "Paste Nero cu fructe de mare"
+    },
+    "description": {
+     "ru": "Чёрная паста с кальмаром, мидиями и креветками",
+     "en": "Black tagliolini with prawns, squid, cherry tomatoes",
+     "ro": "Tagliolini negre cu creveți, calamar și midii"
+    },
+    "ingredients": {
+     "ru": "Паста из твёрдых сортов пшеницы, соус по рецепту, сыр пармезан, оливковое масло, специи.",
+     "en": "Durum-wheat pasta, sauce as listed, parmesan, olive oil, spices.",
+     "ro": "Paste din grâu dur, sos după rețetă, parmezan, ulei de măsline, condimente."
+    },
+    "allergens": [
+     "gluten",
+     "milk",
+     "crustaceans",
+     "molluscs",
+     "fish"
+    ],
+    "price": 210,
+    "weight_g": 340,
+    "image_url": "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 9,
+    "stopped": false
+   },
+   "m-v12-10": {
+    "id": "m-v12-10",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Десерты",
+     "en": "Desserts",
+     "ro": "Deserturi"
+    },
+    "name": {
+     "ru": "Лимонный сорбет с мятой",
+     "en": "Amalfi lemon sorbet",
+     "ro": "Sorbet de lămâie cu mentă"
+    },
+    "description": {
+     "ru": "Освежающий десерт без лактозы",
+     "en": "Refreshing dairy-free citrus sorbet",
+     "ro": "Desert răcoritor fără lactoză"
+    },
+    "ingredients": {
+     "ru": "Молочные продукты, сахар, яйца, мука или основа по рецепту; топпинг по подаче.",
+     "en": "Dairy, sugar, eggs, flour or base as listed; topping as served.",
+     "ro": "Produse lactate, zahăr, ouă, făină sau blat după rețetă; topping la servire."
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 65,
+    "weight_g": 150,
+    "image_url": "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 10,
+    "stopped": false
+   },
+   "m-v12-11": {
+    "id": "m-v12-11",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Вино и бар",
+     "en": "Wine & bar",
+     "ro": "Vin și bar"
+    },
+    "name": {
+     "ru": "Совиньон Блан, бокал",
+     "en": "Sauvignon Blanc, glass",
+     "ro": "Sauvignon Blanc, pahar"
+    },
+    "description": {
+     "ru": "Свежее белое сухое вино с нотами лайма",
+     "en": "Crisp dry white wine with citrus notes",
+     "ro": "Vin alb sec proaspăt, cu note de citrice"
+    },
+    "ingredients": {
+     "ru": "Виноградный сок, прошедший брожение; содержит сульфиты.",
+     "en": "Fermented grape must; contains sulphites.",
+     "ro": "Must de struguri fermentat; conține sulfiți."
+    },
+    "allergens": [
+     "sulphites"
+    ],
+    "price": 95,
+    "volume_ml": 150,
+    "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": true,
+    "requires_age_18": true,
+    "position": 11,
+    "stopped": false
+   },
+   "m-v12-12": {
+    "id": "m-v12-12",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Вино и бар",
+     "en": "Wine & bar",
+     "ro": "Vin și bar"
+    },
+    "name": {
+     "ru": "Просекко Экстра Драй, бокал",
+     "en": "Prosecco Extra Dry, glass",
+     "ro": "Prosecco Extra Dry, pahar"
+    },
+    "description": {
+     "ru": "Итальянское игристое, идеальное к морепродуктам",
+     "en": "Italian sparkling wine chilled to perfection",
+     "ro": "Vin spumant italian, rece"
+    },
+    "ingredients": {
+     "ru": "Виноградный сок, прошедший брожение; содержит сульфиты.",
+     "en": "Fermented grape must; contains sulphites.",
+     "ro": "Must de struguri fermentat; conține sulfiți."
+    },
+    "allergens": [
+     "sulphites"
+    ],
+    "price": 105,
+    "volume_ml": 150,
+    "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": true,
+    "requires_age_18": true,
+    "position": 12,
+    "stopped": false
+   },
+   "m-v12-13": {
+    "id": "m-v12-13",
+    "venue_id": "venue-12",
+    "category": {
+     "ru": "Напитки",
+     "en": "Drinks",
+     "ro": "Băuturi"
+    },
+    "name": {
+     "ru": "Цитрусовый лимонад с розмарином",
+     "en": "Citrus & rosemary lemonade",
+     "ro": "Limonadă cu citrice și rozmarin"
+    },
+    "description": {
+     "ru": "Грейпфрут, апельсин, лимон и ветка розмарина",
+     "en": "Grapefruit, orange, lemon and fresh rosemary",
+     "ro": "Grepfrut, portocală, lămâie și rozmarin"
+    },
+    "ingredients": {
+     "ru": "Вода, фрукты или травы по рецепту, сахар или мёд по вкусу.",
+     "en": "Water, fruit or herbs as listed, sugar or honey to taste.",
+     "ro": "Apă, fructe sau plante după rețetă, zahăr sau miere după gust."
+    },
+    "price": 55,
+    "volume_ml": 400,
+    "image_url": "https://images.unsplash.com/photo-1523677011782-c13c525961c0?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 13,
+    "stopped": false
+   },
+   "m-v13-01": {
+    "id": "m-v13-01",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Выпечка и круассаны",
+     "en": "Bakery & croissants",
+     "ro": "Patiserie și croissante"
+    },
+    "name": {
+     "ru": "Круассан с фисташковым кремом",
+     "en": "Pistachio cream croissant",
+     "ro": "Croissant cu cremă de fistic"
+    },
+    "description": {
+     "ru": "Слоёное тесто на французском масле, дробленая фисташка",
+     "en": "Butter-layered pastry filled with roasted pistachio cream",
+     "ro": "Aluat franțuzesc cu unt și cremă de fistic"
+    },
+    "ingredients": {
+     "ru": "Яйца или выпечка, молочные продукты, овощи или начинка по рецепту, специи.",
+     "en": "Eggs or pastry, dairy, vegetables or filling as listed, spices.",
+     "ro": "Ouă sau patiserie, lactate, legume sau umplutură după rețetă, condimente."
+    },
+    "allergens": [
+     "eggs",
+     "milk",
+     "gluten"
+    ],
+    "price": 58,
+    "weight_g": 135,
+    "image_url": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular",
+     "vegetarian"
+    ],
+    "position": 1,
+    "stopped": false
+   },
+   "m-v13-02": {
+    "id": "m-v13-02",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Выпечка и круассаны",
+     "en": "Bakery & croissants",
+     "ro": "Patiserie și croissante"
+    },
+    "name": {
+     "ru": "Миндальная бриошь с ванилью",
+     "en": "Almond vanilla brioche",
+     "ro": "Brioșă cu migdale și vanilie"
+    },
+    "description": {
+     "ru": "Воздушная бриошь с заварным кремом и миндальными лепестками",
+     "en": "Soft brioche with vanilla custard and toasted almonds",
+     "ro": "Brioșă pufoasă cu cremă de vanilie și fulgi de migdale"
+    },
+    "ingredients": {
+     "ru": "Воздушная бриошь с заварным кремом и миндальными лепестками",
+     "en": "Soft brioche with vanilla custard and toasted almonds",
+     "ro": "Brioșă pufoasă cu cremă de vanilie și fulgi de migdale"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 48,
+    "weight_g": 130,
+    "image_url": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 2,
+    "stopped": false
+   },
+   "m-v13-03": {
+    "id": "m-v13-03",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Выпечка и круассаны",
+     "en": "Bakery & croissants",
+     "ro": "Patiserie și croissante"
+    },
+    "name": {
+     "ru": "Улитка с корицей и кардамоном",
+     "en": "Cinnamon & cardamom bun",
+     "ro": "Melc cu scorțișoară și cardamom"
+    },
+    "description": {
+     "ru": "Свежая утренняя выпечка с сахарной глазурью",
+     "en": "Fresh morning bake with aromatic spice swirl",
+     "ro": "Proaspăt copt dimineața, cu scorțișoară și cardamom"
+    },
+    "ingredients": {
+     "ru": "Яйца или выпечка, молочные продукты, овощи или начинка по рецепту, специи.",
+     "en": "Eggs or pastry, dairy, vegetables or filling as listed, spices.",
+     "ro": "Ouă sau patiserie, lactate, legume sau umplutură după rețetă, condimente."
+    },
+    "allergens": [
+     "eggs",
+     "milk",
+     "gluten"
+    ],
+    "price": 42,
+    "weight_g": 120,
+    "image_url": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 3,
+    "stopped": false
+   },
+   "m-v13-04": {
+    "id": "m-v13-04",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Завтраки",
+     "en": "Breakfast",
+     "ro": "Mic dejun"
+    },
+    "name": {
+     "ru": "Бенедикт с лососем на бриоши",
+     "en": "Salmon Eggs Benedict on brioche",
+     "ro": "Ouă Benedict cu somon pe brioșă"
+    },
+    "description": {
+     "ru": "Два яйца пашот, слабосолёный лосось, голландский соус",
+     "en": "Two poached eggs, cured salmon, hollandaise sauce",
+     "ro": "Două ouă poșate, somon, sos olandez"
+    },
+    "ingredients": {
+     "ru": "Два яйца пашот, слабосолёный лосось, голландский соус",
+     "en": "Two poached eggs, cured salmon, hollandaise sauce",
+     "ro": "Două ouă poșate, somon, sos olandez"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 115,
+    "weight_g": 260,
+    "image_url": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 4,
+    "stopped": false
+   },
+   "m-v13-05": {
+    "id": "m-v13-05",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Завтраки",
+     "en": "Breakfast",
+     "ro": "Mic dejun"
+    },
+    "name": {
+     "ru": "Гранола с йогуртом и ягодами",
+     "en": "Crispy granola yogurt bowl",
+     "ro": "Bowl cu granola, iaurt și fructe"
+    },
+    "description": {
+     "ru": "Домашняя медовая гранола, греческий йогурт, малина",
+     "en": "Honey toasted oats, Greek yogurt and seasonal berries",
+     "ro": "Granola de casă cu miere, iaurt grecesc și fructe de pădure"
+    },
+    "ingredients": {
+     "ru": "Домашняя медовая гранола, греческий йогурт, малина",
+     "en": "Honey toasted oats, Greek yogurt and seasonal berries",
+     "ro": "Granola de casă cu miere, iaurt grecesc și fructe de pădure"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 72,
+    "weight_g": 240,
+    "image_url": "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 5,
+    "stopped": false
+   },
+   "m-v13-06": {
+    "id": "m-v13-06",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Десерты",
+     "en": "Desserts",
+     "ro": "Deserturi"
+    },
+    "name": {
+     "ru": "Баскский чизкейк Сан-Себастьян",
+     "en": "Basque burnt cheesecake",
+     "ro": "Cheesecake basc San Sebastián"
+    },
+    "description": {
+     "ru": "Карамелизированная корочка и нежный кремовый центр",
+     "en": "Caramelised top with a silky cream-cheese centre",
+     "ro": "Crustă caramelizată și centru cremos"
+    },
+    "ingredients": {
+     "ru": "Молочные продукты, сахар, яйца, мука или основа по рецепту; топпинг по подаче.",
+     "en": "Dairy, sugar, eggs, flour or base as listed; topping as served.",
+     "ro": "Produse lactate, zahăr, ouă, făină sau blat după rețetă; topping la servire."
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 75,
+    "weight_g": 160,
+    "image_url": "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular",
+     "vegetarian"
+    ],
+    "position": 6,
+    "stopped": false
+   },
+   "m-v13-07": {
+    "id": "m-v13-07",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Десерты",
+     "en": "Desserts",
+     "ro": "Deserturi"
+    },
+    "name": {
+     "ru": "Эклер с солёной карамелью",
+     "en": "Salted caramel eclair",
+     "ro": "Ecler cu caramel sărat"
+    },
+    "description": {
+     "ru": "Заварное пирожное с кремом пралине и карамелью",
+     "en": "Choux pastry with silky salted caramel glaze",
+     "ro": "Aluat choux cu cremă și caramel sărat"
+    },
+    "ingredients": {
+     "ru": "Заварное пирожное с кремом пралине и карамелью",
+     "en": "Choux pastry with silky salted caramel glaze",
+     "ro": "Aluat choux cu cremă și caramel sărat"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 52,
+    "weight_g": 110,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 7,
+    "stopped": false
+   },
+   "m-v13-08": {
+    "id": "m-v13-08",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Десерты",
+     "en": "Desserts",
+     "ro": "Deserturi"
+    },
+    "name": {
+     "ru": "Тарталетка с голубикой и малиной",
+     "en": "Berry custard tart",
+     "ro": "Tartă cu afine și zmeură"
+    },
+    "description": {
+     "ru": "Песочное сабле, крем-дипломат и свежие ягоды",
+     "en": "Crisp sablé crust, vanilla diplomat cream, berries",
+     "ro": "Blat fraged sablé, cremă de vanilie și fructe"
+    },
+    "ingredients": {
+     "ru": "Песочное сабле, крем-дипломат и свежие ягоды",
+     "en": "Crisp sablé crust, vanilla diplomat cream, berries",
+     "ro": "Blat fraged sablé, cremă de vanilie și fructe"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 65,
+    "weight_g": 140,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 8,
+    "stopped": false
+   },
+   "m-v13-09": {
+    "id": "m-v13-09",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Кофе и матча",
+     "en": "Coffee & matcha",
+     "ro": "Cafea și matcha"
+    },
+    "name": {
+     "ru": "Матча латте на овсяном молоке",
+     "en": "Oat milk matcha latte",
+     "ro": "Matcha latte cu lapte de ovăz"
+    },
+    "description": {
+     "ru": "Японский церемониальный чай матча Удзи",
+     "en": "Ceremonial Uji matcha whisked with steamed oat milk",
+     "ro": "Matcha japonez Uji cu lapte cremos de ovăz"
+    },
+    "ingredients": {
+     "ru": "Японский церемониальный чай матча Удзи",
+     "en": "Ceremonial Uji matcha whisked with steamed oat milk",
+     "ro": "Matcha japonez Uji cu lapte cremos de ovăz"
+    },
+    "allergens": [
+     "milk"
+    ],
+    "price": 60,
+    "volume_ml": 300,
+    "image_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 9,
+    "stopped": false
+   },
+   "m-v13-10": {
+    "id": "m-v13-10",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Кофе и матча",
+     "en": "Coffee & matcha",
+     "ro": "Cafea și matcha"
+    },
+    "name": {
+     "ru": "Айс матча с манго",
+     "en": "Iced mango matcha",
+     "ro": "Matcha rece cu mango"
+    },
+    "description": {
+     "ru": "Слоёный освежающий напиток с пюре манго",
+     "en": "Layered iced matcha over Alphonso mango purée",
+     "ro": "Matcha rece stratificată cu piure de mango"
+    },
+    "ingredients": {
+     "ru": "Слоёный освежающий напиток с пюре манго",
+     "en": "Layered iced matcha over Alphonso mango purée",
+     "ro": "Matcha rece stratificată cu piure de mango"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 68,
+    "volume_ml": 350,
+    "image_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 10,
+    "stopped": false
+   },
+   "m-v13-11": {
+    "id": "m-v13-11",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Кофе и матча",
+     "en": "Coffee & matcha",
+     "ro": "Cafea și matcha"
+    },
+    "name": {
+     "ru": "Эспрессо-тоник",
+     "en": "Espresso tonic",
+     "ro": "Espresso tonic"
+    },
+    "description": {
+     "ru": "Спешелти эспрессо на льду с тоником и лаймом",
+     "en": "Double specialty espresso over chilled tonic and lime",
+     "ro": "Espresso de specialitate peste apă tonică cu gheață"
+    },
+    "ingredients": {
+     "ru": "Спешелти эспрессо на льду с тоником и лаймом",
+     "en": "Double specialty espresso over chilled tonic and lime",
+     "ro": "Espresso de specialitate peste apă tonică cu gheață"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 52,
+    "volume_ml": 300,
+    "image_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 11,
+    "stopped": false
+   },
+   "m-v13-12": {
+    "id": "m-v13-12",
+    "venue_id": "venue-13",
+    "category": {
+     "ru": "Чай и лимонады",
+     "en": "Tea & lemonades",
+     "ro": "Ceai și limonade"
+    },
+    "name": {
+     "ru": "Облепиховый чай с апельсином",
+     "en": "Sea buckthorn & orange tea",
+     "ro": "Ceai de cătină și portocală"
+    },
+    "description": {
+     "ru": "Натуральные ягоды облепихи, мёд и специи",
+     "en": "Fresh crushed sea buckthorn, honey and orange slices",
+     "ro": "Cătină proaspătă zdrobită, miere și portocală"
+    },
+    "ingredients": {
+     "ru": "Вода, фрукты или травы по рецепту, сахар или мёд по вкусу.",
+     "en": "Water, fruit or herbs as listed, sugar or honey to taste.",
+     "ro": "Apă, fructe sau plante după rețetă, zahăr sau miere după gust."
+    },
+    "price": 48,
+    "volume_ml": 400,
+    "image_url": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 12,
+    "stopped": false
+   },
+   "m-v14-01": {
+    "id": "m-v14-01",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Соленья из бочки",
+     "en": "Village barrel pickles board",
+     "ro": "Asortiment de murături de casă"
+    },
+    "description": {
+     "ru": "Бочковые томаты, огурцы, квашеная капуста и черемша",
+     "en": "Pickled tomatoes, cucumbers, cabbage and garlic",
+     "ro": "Roșii murate, castraveți, varză și usturoi murat"
+    },
+    "ingredients": {
+     "ru": "Бочковые томаты, огурцы, квашеная капуста и черемша",
+     "en": "Pickled tomatoes, cucumbers, cabbage and garlic",
+     "ro": "Roșii murate, castraveți, varză și usturoi murat"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 65,
+    "weight_g": 260,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 1,
+    "stopped": false
+   },
+   "m-v14-02": {
+    "id": "m-v14-02",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Закуски",
+     "en": "Starters",
+     "ro": "Aperitive"
+    },
+    "name": {
+     "ru": "Запечённые перцы с брынзой и чесноком",
+     "en": "Roasted peppers with brânză",
+     "ro": "Ardei copți cu brânză de oi"
+    },
+    "description": {
+     "ru": "На мангале, с овечьей брынзой и зеленью",
+     "en": "Chargrilled peppers with aged sheep cheese and herbs",
+     "ro": "Ardei la grătar cu brânză de oi și verdeață"
+    },
+    "ingredients": {
+     "ru": "На мангале, с овечьей брынзой и зеленью",
+     "en": "Chargrilled peppers with aged sheep cheese and herbs",
+     "ro": "Ardei la grătar cu brânză de oi și verdeață"
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
+    "price": 78,
+    "weight_g": 230,
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 2,
+    "stopped": false
+   },
+   "m-v14-03": {
+    "id": "m-v14-03",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Супы",
+     "en": "Soups",
+     "ro": "Supe"
+    },
+    "name": {
+     "ru": "Чорбэ с телятиной и квасом",
+     "en": "Veal ciorbă with homemade borș",
+     "ro": "Ciorbă de vițel cu borș de casă"
+    },
+    "description": {
+     "ru": "Наваристый кислый суп в горшочке с острым перцем",
+     "en": "Traditional sour veal soup with hot chilli on the side",
+     "ro": "Ciorbă tradițională acră cu ardei iute"
+    },
+    "ingredients": {
+     "ru": "Бульон, овощи, зелень, специи; подаётся со сметаной по желанию.",
+     "en": "Broth, vegetables, herbs, spices; sour cream on the side if desired.",
+     "ro": "Supă, legume, verdeață, condimente; smântână la cerere."
+    },
+    "allergens": [
+     "celery",
+     "milk",
+     "eggs"
+    ],
+    "price": 75,
+    "weight_g": 380,
+    "image_url": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 3,
+    "stopped": false
+   },
+   "m-v14-04": {
+    "id": "m-v14-04",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Гриль и стейки",
+     "en": "Grill & steaks",
+     "ro": "Grătar și steak-uri"
+    },
+    "name": {
+     "ru": "Фригэруй из баранины",
+     "en": "Charcoal lamb frigărui",
+     "ro": "Frigărui de miel pe cărbuni"
+    },
+    "description": {
+     "ru": "Маринованная баранина с луком и лавашом",
+     "en": "Marinated lamb skewers with pickled onion and lavash",
+     "ro": "Carne fragedă de miel la grătar cu ceapă murată"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 185,
+    "weight_g": 320,
+    "image_url": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 4,
+    "stopped": false
+   },
+   "m-v14-05": {
+    "id": "m-v14-05",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Гриль и стейки",
+     "en": "Grill & steaks",
+     "ro": "Grătar și steak-uri"
+    },
+    "name": {
+     "ru": "Шея свиная на мангале",
+     "en": "Charcoal pork neck",
+     "ro": "Ceafă de porc la grătar"
+    },
+    "description": {
+     "ru": "Сочное мясо с печёными овощами и муждеем",
+     "en": "Juicy charcoal pork neck with mujdei garlic sauce",
+     "ro": "Ceafă suculentă pe cărbuni cu sos mujdei"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 155,
+    "weight_g": 340,
+    "image_url": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 5,
+    "stopped": false
+   },
+   "m-v14-06": {
+    "id": "m-v14-06",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Гриль и стейки",
+     "en": "Grill & steaks",
+     "ro": "Grătar și steak-uri"
+    },
+    "name": {
+     "ru": "Колбаски «Кырнэцеи» на гриле",
+     "en": "Homemade grilled cârnăciori",
+     "ro": "Cârnăciori de casă la grătar"
+    },
+    "description": {
+     "ru": "Из рубленой свинины с чесноком и тимьяном",
+     "en": "Coarse-ground pork sausages with garlic and thyme",
+     "ro": "Cârnăciori tradiționali cu usturoi și cimbru"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 120,
+    "weight_g": 280,
+    "image_url": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 6,
+    "stopped": false
+   },
+   "m-v14-07": {
+    "id": "m-v14-07",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Гриль и стейки",
+     "en": "Grill & steaks",
+     "ro": "Grătar și steak-uri"
+    },
+    "name": {
+     "ru": "Большой гриль-сет «Casa Rustică»",
+     "en": "Casa Rustică mixed grill board",
+     "ro": "Platou grătar Casa Rustică"
+    },
+    "description": {
+     "ru": "Свиная шея, куриные бёдра, мититеи, колбаски и картофель",
+     "en": "Pork neck, chicken thighs, mititei, sausages and wedges",
+     "ro": "Ceafă, pui, mititei, cârnăciori și cartofi pentru 3–4 persoane"
+    },
+    "ingredients": {
+     "ru": "Мясо выбранного отруба, соль, перец, растительное масло; соус и гарнир по подаче.",
+     "en": "Selected cut of meat, salt, pepper, oil; sauce and sides as served.",
+     "ro": "Carne din tăietura aleasă, sare, piper, ulei; sos și garnituri după preparat."
+    },
+    "price": 390,
+    "weight_g": 1100,
+    "image_url": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular"
+    ],
+    "position": 7,
+    "stopped": false
+   },
+   "m-v14-08": {
+    "id": "m-v14-08",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Горячее",
+     "en": "Main courses",
+     "ro": "Feluri principale"
+    },
+    "name": {
+     "ru": "Речная форель запечённая с мамалыгой",
+     "en": "Roasted river trout with mămăligă",
+     "ro": "Păstrăv la cuptor cu mămăligă"
+    },
+    "description": {
+     "ru": "С лимоном, розмарином и сметаной",
+     "en": "Whole baked trout with lemon, rosemary and sour cream",
+     "ro": "Păstrăv întreg la cuptor cu lămâie și smântână"
+    },
+    "ingredients": {
+     "ru": "Филе рыбы, лимон, оливковое масло, травы, овощи на гарнир.",
+     "en": "Fish fillet, lemon, olive oil, herbs, vegetable garnish.",
+     "ro": "File de pește, lămâie, ulei de măsline, ierburi, garnitură de legume."
+    },
+    "allergens": [
+     "fish"
+    ],
+    "price": 175,
+    "weight_g": 380,
+    "image_url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 8,
+    "stopped": false
+   },
+   "m-v14-09": {
+    "id": "m-v14-09",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Гарниры",
+     "en": "Sides",
+     "ro": "Garnituri"
+    },
+    "name": {
+     "ru": "Картофель на углях со шкварками",
+     "en": "Charcoal roasted potatoes",
+     "ro": "Cartofi copți pe cărbuni"
+    },
+    "description": {
+     "ru": "С укропом и хрустящим лучком",
+     "en": "With fresh dill and crisp onion",
+     "ro": "Cu mărar proaspăt și ceapă crocantă"
+    },
+    "ingredients": {
+     "ru": "С укропом и хрустящим лучком",
+     "en": "With fresh dill and crisp onion",
+     "ro": "Cu mărar proaspăt și ceapă crocantă"
+    },
+    "price": 50,
+    "weight_g": 220,
+    "image_url": "https://images.unsplash.com/photo-1576107233122-9590b0d7e9f2?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 9,
+    "stopped": false
+   },
+   "m-v14-10": {
+    "id": "m-v14-10",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Десерты",
+     "en": "Desserts",
+     "ro": "Deserturi"
+    },
+    "name": {
+     "ru": "Печёные яблоки с мёдом и орехами",
+     "en": "Baked apples with honey & walnuts",
+     "ro": "Mere coapte cu miere și nuci"
+    },
+    "description": {
+     "ru": "Тёплый домашний десерт с корицей",
+     "en": "Warm village dessert stuffed with spiced walnuts",
+     "ro": "Desert cald de casă cu nuci, scorțișoară și miere"
+    },
+    "ingredients": {
+     "ru": "Молочные продукты, сахар, яйца, мука или основа по рецепту; топпинг по подаче.",
+     "en": "Dairy, sugar, eggs, flour or base as listed; topping as served.",
+     "ro": "Produse lactate, zahăr, ouă, făină sau blat după rețetă; topping la servire."
+    },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten",
+     "nuts"
+    ],
+    "price": 55,
+    "weight_g": 210,
+    "image_url": "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "vegetarian"
+    ],
+    "position": 10,
+    "stopped": false
+   },
+   "m-v14-11": {
+    "id": "m-v14-11",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Напитки и вино",
+     "en": "Drinks & wine",
+     "ro": "Băuturi și vin"
+    },
+    "name": {
+     "ru": "Кувшин хлебного кваса",
+     "en": "Homemade bread kvass jug",
+     "ro": "Carafă de cvas de casă"
+    },
+    "description": {
+     "ru": "Освежающий, охлаждённый в погребе",
+     "en": "Chilled homemade fermented rye kvass",
+     "ro": "Cvas răcoritor de secară, ca la bunici"
+    },
+    "ingredients": {
+     "ru": "Виноградный сок, прошедший брожение; содержит сульфиты.",
+     "en": "Fermented grape must; contains sulphites.",
+     "ro": "Must de struguri fermentat; conține sulfiți."
+    },
+    "allergens": [
+     "sulphites"
+    ],
+    "price": 45,
+    "volume_ml": 500,
+    "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "position": 11,
+    "stopped": false
+   },
+   "m-v14-12": {
+    "id": "m-v14-12",
+    "venue_id": "venue-14",
+    "category": {
+     "ru": "Напитки и вино",
+     "en": "Drinks & wine",
+     "ro": "Băuturi și vin"
+    },
+    "name": {
+     "ru": "Каберне Совиньон, бокал",
+     "en": "Cabernet Sauvignon, glass",
+     "ro": "Cabernet Sauvignon, pahar"
+    },
+    "description": {
+     "ru": "Насыщенное красное сухое к мясу на гриле",
+     "en": "Full-bodied Moldovan red paired with charcoal grill",
+     "ro": "Vin roșu sec corpolent, perfect la carne pe grătar"
+    },
+    "ingredients": {
+     "ru": "Виноградный сок, прошедший брожение; содержит сульфиты.",
+     "en": "Fermented grape must; contains sulphites.",
+     "ro": "Must de struguri fermentat; conține sulfiți."
+    },
+    "allergens": [
+     "sulphites"
+    ],
+    "price": 65,
+    "volume_ml": 150,
+    "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": true,
+    "requires_age_18": true,
+    "position": 12,
+    "stopped": false
+   },
    "m-v2-01": {
     "id": "m-v2-01",
     "venue_id": "venue-2",
@@ -2614,9 +6515,14 @@
      "en": "Tenderloin, capers, egg yolk, croutons",
      "ro": "Mușchi de vită, capere, gălbenuș, crutoane"
     },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
     "price": 185,
     "weight_g": 180,
-    "image_url": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -2648,9 +6554,14 @@
      "en": "With rocket, parmesan and lemon dressing",
      "ro": "Cu rucola, parmezan și dressing de lămâie"
     },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
     "price": 165,
     "weight_g": 150,
-    "image_url": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "position": 2,
@@ -2684,7 +6595,7 @@
     ],
     "price": 120,
     "weight_g": 250,
-    "image_url": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -3478,7 +7389,7 @@
     "tags": [
      "popular"
     ],
-    "position": 13,
+    "position": 14,
     "stopped": false
    },
    "m-v4-14": {
@@ -3514,7 +7425,7 @@
     "image_url": "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
-    "position": 14,
+    "position": 15,
     "stopped": false
    },
    "m-v4-15": {
@@ -3545,7 +7456,7 @@
     "image_url": "https://images.unsplash.com/photo-1523677011782-c13c525961c0?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
-    "position": 15,
+    "position": 16,
     "stopped": false
    },
    "m-v4-16": {
@@ -3579,7 +7490,7 @@
     "image_url": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": true,
     "requires_age_18": true,
-    "position": 16,
+    "position": 17,
     "stopped": false
    },
    "m-v4-17": {
@@ -3610,7 +7521,46 @@
     "image_url": "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": true,
     "requires_age_18": true,
-    "position": 17,
+    "position": 18,
+    "stopped": false
+   },
+   "m-v4-18": {
+    "id": "m-v4-18",
+    "venue_id": "venue-4",
+    "category": {
+     "ru": "Пицца из дровяной печи",
+     "en": "Wood-fired pizza",
+     "ro": "Pizza din cuptor cu lemne"
+    },
+    "name": {
+     "ru": "Трюфельная пицца с белыми грибами",
+     "en": "Truffle mushroom pizza",
+     "ro": "Pizza cu trufe și hribi"
+    },
+    "description": {
+     "ru": "Сливочная основа, моцарелла, белые грибы, трюфельное масло",
+     "en": "Cream base, mozzarella, porcini mushrooms, truffle oil",
+     "ro": "Bază cremoasă, mozzarella, hribi, ulei de trufe"
+    },
+    "ingredients": {
+     "ru": "Тесто из пшеничной муки, томатный соус, моцарелла, оливковое масло, специи; топпинги по рецепту.",
+     "en": "Wheat-flour dough, tomato sauce, mozzarella, olive oil, spices; toppings as listed.",
+     "ro": "Aluat din făină de grâu, sos de roșii, mozzarella, ulei de măsline, condimente; toppinguri după rețetă."
+    },
+    "allergens": [
+     "gluten",
+     "milk"
+    ],
+    "price": 165,
+    "weight_g": 460,
+    "image_url": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&h=400&q=80",
+    "contains_alcohol": false,
+    "requires_age_18": false,
+    "tags": [
+     "popular",
+     "vegetarian"
+    ],
+    "position": 13,
     "stopped": false
    },
    "m-v5-01": {
@@ -4195,18 +8145,18 @@
      "ro": "Cu pâine de casă"
     },
     "ingredients": {
-     "ru": "Ассорти сыров и/или мясных деликатесов, хлеб или гриссини, мёд, орехи, оливки — по составу тарелки.",
-     "en": "Assorted cheeses and/or cured meats, bread or grissini, honey, nuts, olives — as plated.",
-     "ro": "Asortiment de brânzeturi și/sau mezeluri, pâine sau grissini, miere, nuci, măsline — după platou."
+     "ru": "С домашним хлебом",
+     "en": "With homemade bread",
+     "ro": "Cu pâine de casă"
     },
     "allergens": [
      "milk",
-     "gluten",
-     "nuts"
+     "eggs",
+     "gluten"
     ],
     "price": 70,
     "weight_g": 150,
-    "image_url": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -4240,7 +8190,7 @@
     },
     "price": 60,
     "weight_g": 200,
-    "image_url": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -4272,9 +8222,14 @@
      "en": "Moldovan pork aspic with garlic",
      "ro": "Piftie moldovenească cu usturoi"
     },
+    "allergens": [
+     "milk",
+     "eggs",
+     "gluten"
+    ],
     "price": 75,
     "weight_g": 250,
-    "image_url": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "position": 3,
@@ -4721,18 +8676,18 @@
      "ro": "Sos de brânză, salsa, guacamole"
     },
     "ingredients": {
-     "ru": "Ассорти сыров и/или мясных деликатесов, хлеб или гриссини, мёд, орехи, оливки — по составу тарелки.",
-     "en": "Assorted cheeses and/or cured meats, bread or grissini, honey, nuts, olives — as plated.",
-     "ro": "Asortiment de brânzeturi și/sau mezeluri, pâine sau grissini, miere, nuci, măsline — după platou."
+     "ru": "Сырный соус, сальса, гуакамоле",
+     "en": "Cheese sauce, salsa, guacamole",
+     "ro": "Sos de brânză, salsa, guacamole"
     },
     "allergens": [
      "milk",
-     "gluten",
-     "nuts"
+     "eggs",
+     "gluten"
     ],
     "price": 75,
     "weight_g": 250,
-    "image_url": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -4761,17 +8716,18 @@
      "ro": "Cu sos de miere și muștar"
     },
     "ingredients": {
-     "ru": "Мясо птицы, маринад или панировка, специи; соус в комплекте.",
-     "en": "Poultry, marinade or breading, spices; sauce included.",
-     "ro": "Carne de pasăre, marinadă sau pane, condimente; sos inclus."
+     "ru": "С медово-горчичным соусом",
+     "en": "With honey mustard dip",
+     "ro": "Cu sos de miere și muștar"
     },
     "allergens": [
-     "gluten",
-     "eggs"
+     "milk",
+     "eggs",
+     "gluten"
     ],
     "price": 80,
     "weight_g": 220,
-    "image_url": "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "position": 2,
@@ -5269,16 +9225,18 @@
      "ro": "Cu lime și susan"
     },
     "ingredients": {
-     "ru": "Филе рыбы, лимон, оливковое масло, травы, овощи на гарнир.",
-     "en": "Fish fillet, lemon, olive oil, herbs, vegetable garnish.",
-     "ro": "File de pește, lămâie, ulei de măsline, ierburi, garnitură de legume."
+     "ru": "С лаймом и кунжутом",
+     "en": "With lime and sesame",
+     "ro": "Cu lime și susan"
     },
     "allergens": [
-     "fish"
+     "milk",
+     "eggs",
+     "gluten"
     ],
     "price": 165,
     "weight_g": 160,
-    "image_url": "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -5306,18 +9264,18 @@
      "ro": "Brie, gorgonzola, parmezan, miere și nuci"
     },
     "ingredients": {
-     "ru": "Ассорти сыров и/или мясных деликатесов, хлеб или гриссини, мёд, орехи, оливки — по составу тарелки.",
-     "en": "Assorted cheeses and/or cured meats, bread or grissini, honey, nuts, olives — as plated.",
-     "ro": "Asortiment de brânzeturi și/sau mezeluri, pâine sau grissini, miere, nuci, măsline — după platou."
+     "ru": "Бри, горгонзола, пармезан, мёд и орехи",
+     "en": "Brie, gorgonzola, parmesan, honey and nuts",
+     "ro": "Brie, gorgonzola, parmezan, miere și nuci"
     },
     "allergens": [
      "milk",
-     "gluten",
-     "nuts"
+     "eggs",
+     "gluten"
     ],
     "price": 185,
     "weight_g": 250,
-    "image_url": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -5345,17 +9303,20 @@
      "ro": "Cu sos dulce de chili"
     },
     "ingredients": {
-     "ru": "Морепродукты, тесто темпура или масло для гриля, соус, зелень.",
-     "en": "Seafood, tempura batter or grill oil, sauce, greens.",
-     "ro": "Fructe de mare, aluat tempura sau ulei pentru grătar, sos, verdeață."
+     "ru": "Бульон или лапша/рис по рецепту, соевый соус, кунжут, зелёный лук, специи.",
+     "en": "Broth or noodles/rice as listed, soy sauce, sesame, spring onion, spices.",
+     "ro": "Supă sau tăiței/orez după rețetă, sos de soia, susan, ceapă verde, condimente."
     },
     "allergens": [
+     "soy",
+     "sesame",
+     "gluten",
      "crustaceans",
-     "gluten"
+     "eggs"
     ],
     "price": 155,
     "weight_g": 200,
-    "image_url": "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "position": 3,
@@ -5941,7 +9902,7 @@
     },
     "price": 110,
     "weight_g": 180,
-    "image_url": "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "position": 4,
@@ -5972,7 +9933,7 @@
     },
     "price": 125,
     "weight_g": 220,
-    "image_url": "https://images.unsplash.com/photo-1541529086526-db283c563270?auto=format&fit=crop&w=400&h=400&q=80",
+    "image_url": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
     "tags": [
@@ -6427,7 +10388,7 @@
     "image_url": "https://images.unsplash.com/photo-1523677011782-c13c525961c0?auto=format&fit=crop&w=400&h=400&q=80",
     "contains_alcohol": false,
     "requires_age_18": false,
-    "position": 14,
+    "position": 16,
     "stopped": false
    },
    "m4": {
@@ -6648,8 +10609,162 @@
     "stopped": false
    }
   },
-  "orders": {},
-  "waiter_calls": {},
+  "orders": {
+   "order-demo-v1-1": {
+    "id": "order-demo-v1-1",
+    "session_id": "sess-demo-v1-t3",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-1",
+    "items": [
+     {
+      "menu_item_id": "m1",
+      "name": {
+       "ru": "Плацинда с брынзой",
+       "en": "Cheese plăcintă",
+       "ro": "Plăcintă cu brânză"
+      },
+      "qty": 2,
+      "price": 45
+     },
+     {
+      "menu_item_id": "m-v1-03",
+      "name": {
+       "ru": "Зама с домашней лапшой",
+       "en": "Zeamă with homemade noodles",
+       "ro": "Zeamă cu tăiței de casă"
+      },
+      "qty": 2,
+      "price": 60
+     },
+     {
+      "menu_item_id": "m-v1-09",
+      "name": {
+       "ru": "Токитурэ по-молдавски",
+       "en": "Moldovan tochitură",
+       "ro": "Tochitură moldovenească"
+      },
+      "qty": 1,
+      "price": 145
+     }
+    ],
+    "status": "PREPARING",
+    "total": 355,
+    "check_number": "CHK-1042",
+    "created_at": "2026-11-25T09:54:59.680277Z",
+    "updated_at": "2026-11-25T10:02:59.680277Z",
+    "venue_name": {
+     "ru": "La Plăcinte",
+     "en": "La Plăcinte",
+     "ro": "La Plăcinte"
+    }
+   },
+   "order-demo-v1-2": {
+    "id": "order-demo-v1-2",
+    "session_id": "sess-demo-v1-t3",
+    "user_id": "user-demo-guest-2",
+    "venue_id": "venue-1",
+    "items": [
+     {
+      "menu_item_id": "m-v1-10",
+      "name": {
+       "ru": "Папанаши",
+       "en": "Papanași",
+       "ro": "Papanași"
+      },
+      "qty": 2,
+      "price": 70
+     },
+     {
+      "menu_item_id": "m-v1-12",
+      "name": {
+       "ru": "Травяной чай с мёдом",
+       "en": "Herbal tea with honey",
+       "ro": "Ceai din plante cu miere"
+      },
+      "qty": 1,
+      "price": 30
+     }
+    ],
+    "status": "SUBMITTED",
+    "total": 170,
+    "check_number": "CHK-1043",
+    "created_at": "2026-11-25T10:10:59.680277Z",
+    "updated_at": "2026-11-25T10:10:59.680277Z",
+    "venue_name": {
+     "ru": "La Plăcinte",
+     "en": "La Plăcinte",
+     "ro": "La Plăcinte"
+    }
+   },
+   "order-demo-v4-1": {
+    "id": "order-demo-v4-1",
+    "session_id": "sess-demo-v4-t3",
+    "user_id": "user-demo-guest-6",
+    "venue_id": "venue-4",
+    "items": [
+     {
+      "menu_item_id": "m-v4-09",
+      "name": {
+       "ru": "Маргарита",
+       "en": "Margherita",
+       "ro": "Margherita"
+      },
+      "qty": 1,
+      "price": 105
+     },
+     {
+      "menu_item_id": "m-v4-05",
+      "name": {
+       "ru": "Спагетти карбонара",
+       "en": "Spaghetti carbonara",
+       "ro": "Spaghetti carbonara"
+      },
+      "qty": 1,
+      "price": 125
+     },
+     {
+      "menu_item_id": "m-v4-15",
+      "name": {
+       "ru": "Лимонад с базиликом и лаймом",
+       "en": "Basil and lime lemonade",
+       "ro": "Limonadă cu busuioc și lime"
+      },
+      "qty": 2,
+      "price": 45
+     }
+    ],
+    "status": "READY",
+    "total": 320,
+    "check_number": "CHK-2011",
+    "created_at": "2026-11-25T09:56:59.680277Z",
+    "updated_at": "2026-11-25T10:12:59.680277Z",
+    "venue_name": {
+     "ru": "Oliva",
+     "en": "Oliva",
+     "ro": "Oliva"
+    }
+   }
+  },
+  "waiter_calls": {
+   "call-demo-v1-1": {
+    "id": "call-demo-v1-1",
+    "session_id": "sess-demo-v1-t3",
+    "venue_id": "venue-1",
+    "table_id": "t3",
+    "reason": "bill",
+    "status": "PENDING",
+    "created_at": "2026-11-25T10:11:59.680277Z"
+   },
+   "call-demo-v4-1": {
+    "id": "call-demo-v4-1",
+    "session_id": "sess-demo-v4-t3",
+    "venue_id": "venue-4",
+    "table_id": "t-v4-3",
+    "reason": "question",
+    "status": "ACCEPTED",
+    "created_at": "2026-11-25T10:07:59.680277Z"
+   }
+  },
   "collections": {
    "col-date-night": {
     "id": "col-date-night",
@@ -6660,7 +10775,9 @@
      "ro": "Seară romantică"
     },
     "venue_ids": [
-     "venue-3"
+     "venue-3",
+     "venue-11",
+     "venue-12"
     ]
    },
    "col-easter": {
@@ -6673,7 +10790,9 @@
     },
     "venue_ids": [
      "venue-1",
-     "venue-2"
+     "venue-2",
+     "venue-6",
+     "venue-14"
     ]
    },
    "col-family": {
@@ -6687,7 +10806,9 @@
     "venue_ids": [
      "venue-1",
      "venue-2",
-     "venue-3"
+     "venue-4",
+     "venue-10",
+     "venue-14"
     ]
    }
   },
@@ -6729,8 +10850,92 @@
     ],
     "hours_text": "Пн-Вс 10:00 - 23:00",
     "venue_id": "venue-1",
-    "created_at": "2026-11-25T08:53:39.866871Z",
-    "updated_at": "2026-11-25T08:53:39.866871Z"
+    "created_at": "2026-11-25T10:14:59.621928Z",
+    "updated_at": "2026-11-25T10:14:59.621928Z"
+   },
+   "app-demo-owner-2": {
+    "id": "app-demo-owner-2",
+    "owner_user_id": "user-demo-owner",
+    "status": "PUBLISHED",
+    "name": {
+     "ru": "Oliva",
+     "en": "Oliva",
+     "ro": "Oliva"
+    },
+    "description": {
+     "ru": "Средиземноморская и итальянская кухня, пицца на дровах и паста в центре Бельц",
+     "en": "Mediterranean and Italian cuisine, wood-fired pizza and pasta in central Bălți",
+     "ro": "Bucătărie mediteraneană și italiană, pizza pe lemne și paste în centrul Bălțiului"
+    },
+    "address": {
+     "ru": "ул. Независимости 15A",
+     "en": "Strada Independenței 15A",
+     "ro": "Strada Independenței 15A"
+    },
+    "cuisine": [
+     "italian",
+     "mediterranean",
+     "pizza"
+    ],
+    "phone": "+373 69 987 654",
+    "email": "owner@seatiko.local",
+    "city_id": "city-balti",
+    "lat": 47.761273,
+    "lng": 27.928449,
+    "price_level": 2,
+    "average_check": 280,
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "hours_text": "Пн–Вс 10:00–23:00",
+    "venue_id": "venue-4",
+    "allow_preorder": true,
+    "created_at": "2026-11-11T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z"
+   },
+   "app-demo-owner-3": {
+    "id": "app-demo-owner-3",
+    "owner_user_id": "user-demo-owner",
+    "status": "PUBLISHED",
+    "name": {
+     "ru": "Sakura Sushi & Ramen",
+     "en": "Sakura Sushi & Ramen",
+     "ro": "Sakura Sushi & Ramen"
+    },
+    "description": {
+     "ru": "Авторские роллы, 12-часовой рамен тонкоцу, поке и открытый суши-бар",
+     "en": "Signature sushi rolls, 12-hour tonkotsu ramen, bowls and open sushi bar",
+     "ro": "Rulouri de autor, ramen tonkotsu fiert 12 ore, bowl-uri și sushi bar deschis"
+    },
+    "address": {
+     "ru": "ул. Пушкина 24",
+     "en": "Strada Pușkin 24",
+     "ro": "Strada Pușkin 24"
+    },
+    "cuisine": [
+     "japanese",
+     "asian",
+     "seafood"
+    ],
+    "phone": "+373 69 987 654",
+    "email": "owner@seatiko.local",
+    "city_id": "city-balti",
+    "lat": 47.7611,
+    "lng": 27.9234,
+    "price_level": 2,
+    "average_check": 290,
+    "photo_urls": [
+     "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=1200&q=80",
+     "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "hours_text": "Пн–Вс 11:00–23:00",
+    "venue_id": "venue-11",
+    "allow_preorder": true,
+    "created_at": "2026-11-11T10:14:59.680277Z",
+    "updated_at": "2026-11-25T10:14:59.680277Z"
    }
   },
   "activities": {},
@@ -6744,7 +10949,67 @@
     "role": "waiter",
     "status": "ACTIVE",
     "on_shift": true,
-    "created_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z"
+   },
+   "staff-member-demo-10": {
+    "id": "staff-member-demo-10",
+    "venue_id": "venue-1",
+    "name": "Виктор Панаите",
+    "email": "victor.panaite@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-23T00:14:59.680277+02:00"
+   },
+   "staff-member-demo-11": {
+    "id": "staff-member-demo-11",
+    "venue_id": "venue-1",
+    "name": "Ирина Лупу",
+    "email": "irina.lupu@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-22T20:14:59.680277+02:00"
+   },
+   "staff-member-demo-12": {
+    "id": "staff-member-demo-12",
+    "venue_id": "venue-1",
+    "name": "Кристиан Русу",
+    "email": "cristian.rusu@seatiko.local",
+    "role": "waiter",
+    "status": "INVITED",
+    "on_shift": false,
+    "created_at": "2026-11-25T00:14:59.680277+02:00"
+   },
+   "staff-member-demo-13": {
+    "id": "staff-member-demo-13",
+    "venue_id": "venue-1",
+    "name": "Сергей Мокан",
+    "email": "sergey.mokan@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-22T14:14:59.680277+02:00"
+   },
+   "staff-member-demo-14": {
+    "id": "staff-member-demo-14",
+    "venue_id": "venue-1",
+    "name": "Дойна Берзан",
+    "email": "doina.berzan@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-21T18:14:59.680277+02:00"
+   },
+   "staff-member-demo-15": {
+    "id": "staff-member-demo-15",
+    "venue_id": "venue-1",
+    "name": "Павел Думбрэвяну",
+    "email": "pavel.d@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-23T10:14:59.680277+02:00"
    },
    "staff-member-demo-2": {
     "id": "staff-member-demo-2",
@@ -6755,7 +11020,7 @@
     "role": "waiter",
     "status": "ACTIVE",
     "on_shift": false,
-    "created_at": "2026-11-24T08:53:39.926654Z"
+    "created_at": "2026-11-24T10:14:59.680254Z"
    },
    "staff-member-demo-3": {
     "id": "staff-member-demo-3",
@@ -6766,7 +11031,7 @@
     "role": "cook",
     "status": "ACTIVE",
     "on_shift": true,
-    "created_at": "2026-11-23T08:53:39.926654Z"
+    "created_at": "2026-11-23T10:14:59.680254Z"
    },
    "staff-member-demo-4": {
     "id": "staff-member-demo-4",
@@ -6776,7 +11041,7 @@
     "role": "cook",
     "status": "ACTIVE",
     "on_shift": false,
-    "created_at": "2026-11-22T08:53:39.926654Z"
+    "created_at": "2026-11-22T10:14:59.680254Z"
    },
    "staff-member-demo-5": {
     "id": "staff-member-demo-5",
@@ -6786,7 +11051,7 @@
     "role": "waiter",
     "status": "ACTIVE",
     "on_shift": true,
-    "created_at": "2026-11-23T20:53:39.926654Z"
+    "created_at": "2026-11-23T22:14:59.680254Z"
    },
    "staff-member-demo-6": {
     "id": "staff-member-demo-6",
@@ -6796,7 +11061,7 @@
     "role": "waiter",
     "status": "ACTIVE",
     "on_shift": false,
-    "created_at": "2026-11-23T16:53:39.926654Z"
+    "created_at": "2026-11-23T18:14:59.680254Z"
    },
    "staff-member-demo-7": {
     "id": "staff-member-demo-7",
@@ -6806,7 +11071,7 @@
     "role": "waiter",
     "status": "ACTIVE",
     "on_shift": false,
-    "created_at": "2026-11-23T12:53:39.926654Z"
+    "created_at": "2026-11-23T14:14:59.680254Z"
    },
    "staff-member-demo-8": {
     "id": "staff-member-demo-8",
@@ -6816,7 +11081,7 @@
     "role": "cook",
     "status": "ACTIVE",
     "on_shift": true,
-    "created_at": "2026-11-21T20:53:39.926654Z"
+    "created_at": "2026-11-21T22:14:59.680254Z"
    },
    "staff-member-demo-9": {
     "id": "staff-member-demo-9",
@@ -6826,7 +11091,189 @@
     "role": "cook",
     "status": "ACTIVE",
     "on_shift": false,
-    "created_at": "2026-11-21T08:53:39.926654Z"
+    "created_at": "2026-11-21T10:14:59.680254Z"
+   },
+   "staff-v11-1": {
+    "id": "staff-v11-1",
+    "venue_id": "venue-11",
+    "user_id": "user-demo-cook-sakura",
+    "name": "Kenji Tanaka",
+    "email": "kenji.tanaka@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-21T18:14:59.680277+02:00"
+   },
+   "staff-v11-2": {
+    "id": "staff-v11-2",
+    "venue_id": "venue-11",
+    "name": "Лилия Назарова",
+    "email": "lilia.sakura@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-22T04:14:59.680277+02:00"
+   },
+   "staff-v11-3": {
+    "id": "staff-v11-3",
+    "venue_id": "venue-11",
+    "name": "Vladislav Ioniță",
+    "email": "vlad.sakura@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-23T00:14:59.680277+02:00"
+   },
+   "staff-v11-4": {
+    "id": "staff-v11-4",
+    "venue_id": "venue-11",
+    "name": "Диана Бойко",
+    "email": "diana.sakura@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-23T20:14:59.680277+02:00"
+   },
+   "staff-v11-5": {
+    "id": "staff-v11-5",
+    "venue_id": "venue-11",
+    "name": "Игорь Киртоакэ",
+    "email": "igor.sakura@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-22T14:14:59.680277+02:00"
+   },
+   "staff-v11-6": {
+    "id": "staff-v11-6",
+    "venue_id": "venue-11",
+    "name": "Алина Житару",
+    "email": "alina.sakura@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-24T06:14:59.680277+02:00"
+   },
+   "staff-v2-1": {
+    "id": "staff-v2-1",
+    "venue_id": "venue-2",
+    "name": "Екатерина Лунгу",
+    "email": "kate.central@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-22T12:14:59.680277+02:00"
+   },
+   "staff-v2-2": {
+    "id": "staff-v2-2",
+    "venue_id": "venue-2",
+    "name": "Bogdan Rotaru",
+    "email": "bogdan.central@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-23T12:14:59.680277+02:00"
+   },
+   "staff-v3-1": {
+    "id": "staff-v3-1",
+    "venue_id": "venue-3",
+    "name": "Денис Гырбу",
+    "email": "denis.steak@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-22T12:14:59.680277+02:00"
+   },
+   "staff-v3-2": {
+    "id": "staff-v3-2",
+    "venue_id": "venue-3",
+    "name": "Олег Кирица",
+    "email": "oleg.steak@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-21T12:14:59.680277+02:00"
+   },
+   "staff-v4-1": {
+    "id": "staff-v4-1",
+    "venue_id": "venue-4",
+    "user_id": "user-demo-staff-oliva",
+    "name": "Ольга Бивол",
+    "email": "olga.bivol@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-21T12:14:59.680277+02:00"
+   },
+   "staff-v4-2": {
+    "id": "staff-v4-2",
+    "venue_id": "venue-4",
+    "name": "Ionela Ciobanu",
+    "email": "ionela.oliva@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-22T04:14:59.680277+02:00"
+   },
+   "staff-v4-3": {
+    "id": "staff-v4-3",
+    "venue_id": "venue-4",
+    "name": "Максим Савин",
+    "email": "maxim.oliva@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-22T12:14:59.680277+02:00"
+   },
+   "staff-v4-4": {
+    "id": "staff-v4-4",
+    "venue_id": "venue-4",
+    "name": "Valeria Grosu",
+    "email": "valeria.oliva@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-23T12:14:59.680277+02:00"
+   },
+   "staff-v4-5": {
+    "id": "staff-v4-5",
+    "venue_id": "venue-4",
+    "name": "Никита Ткач",
+    "email": "nikita.oliva@seatiko.local",
+    "role": "waiter",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-24T00:14:59.680277+02:00"
+   },
+   "staff-v4-6": {
+    "id": "staff-v4-6",
+    "venue_id": "venue-4",
+    "name": "Marco Bellini",
+    "email": "marco.oliva@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-20T12:14:59.680277+02:00"
+   },
+   "staff-v4-7": {
+    "id": "staff-v4-7",
+    "venue_id": "venue-4",
+    "name": "Андрей Попа",
+    "email": "andrei.oliva@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": true,
+    "created_at": "2026-11-21T08:14:59.680277+02:00"
+   },
+   "staff-v4-8": {
+    "id": "staff-v4-8",
+    "venue_id": "venue-4",
+    "name": "Svetlana Donica",
+    "email": "svetlana.oliva@seatiko.local",
+    "role": "cook",
+    "status": "ACTIVE",
+    "on_shift": false,
+    "created_at": "2026-11-23T00:14:59.680277+02:00"
    }
   },
   "work_shifts": {
@@ -6841,8 +11288,8 @@
     "end_time": "22:00",
     "status": "CONFIRMED",
     "note": "Основной зал",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-10": {
     "id": "shift-demo-10",
@@ -6855,8 +11302,8 @@
     "end_time": "22:00",
     "status": "PENDING",
     "note": "Основной зал",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-11": {
     "id": "shift-demo-11",
@@ -6869,8 +11316,8 @@
     "end_time": "16:00",
     "status": "CONFIRMED",
     "note": "Завтраки и бизнес-ланчи",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-12": {
     "id": "shift-demo-12",
@@ -6883,8 +11330,8 @@
     "end_time": "23:00",
     "status": "CONFIRMED",
     "note": "Вечерний сервис",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-13": {
     "id": "shift-demo-13",
@@ -6897,8 +11344,8 @@
     "end_time": "16:00",
     "status": "CONFIRMED",
     "note": "Кондитерский цех и выпечка",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-14": {
     "id": "shift-demo-14",
@@ -6911,8 +11358,8 @@
     "end_time": "23:00",
     "status": "DECLINED",
     "note": "Горячий цех",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-15": {
     "id": "shift-demo-15",
@@ -6925,8 +11372,8 @@
     "end_time": "22:00",
     "status": "CONFIRMED",
     "note": "Основной зал",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-16": {
     "id": "shift-demo-16",
@@ -6939,8 +11386,8 @@
     "end_time": "23:00",
     "status": "PENDING",
     "note": "Терраса",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-17": {
     "id": "shift-demo-17",
@@ -6953,8 +11400,8 @@
     "end_time": "18:00",
     "status": "CONFIRMED",
     "note": "Шеф-повар",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-18": {
     "id": "shift-demo-18",
@@ -6967,8 +11414,22 @@
     "end_time": "23:00",
     "status": "CONFIRMED",
     "note": "Холодный цех",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
+   },
+   "shift-demo-19": {
+    "id": "shift-demo-19",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-10",
+    "staff_name": "Виктор Панаите",
+    "role": "waiter",
+    "date": "2026-11-25",
+    "start_time": "12:00",
+    "end_time": "23:00",
+    "status": "CONFIRMED",
+    "note": "Терраса и банкетный стол",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
    },
    "shift-demo-2": {
     "id": "shift-demo-2",
@@ -6981,8 +11442,135 @@
     "end_time": "23:00",
     "status": "PENDING",
     "note": "Вечерняя смена / терраса",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
+   },
+   "shift-demo-20": {
+    "id": "shift-demo-20",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-13",
+    "staff_name": "Сергей Мокан",
+    "role": "cook",
+    "date": "2026-11-25",
+    "start_time": "11:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Мангал и горячий цех",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-21": {
+    "id": "shift-demo-21",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-11",
+    "staff_name": "Ирина Лупу",
+    "role": "waiter",
+    "date": "2026-11-26",
+    "start_time": "09:00",
+    "end_time": "18:00",
+    "status": "SWAP_REQUESTED",
+    "note": "Основной зал",
+    "reason": "Нужно забрать ребёнка со школы — ищу замену на утро",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-22": {
+    "id": "shift-demo-22",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-15",
+    "staff_name": "Павел Думбрэвяну",
+    "role": "waiter",
+    "date": "2026-11-27",
+    "start_time": "12:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Сад и зал",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-23": {
+    "id": "shift-demo-23",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-10",
+    "staff_name": "Виктор Панаите",
+    "role": "waiter",
+    "date": "2026-11-28",
+    "start_time": "10:00",
+    "end_time": "20:00",
+    "status": "CONFIRMED",
+    "note": "Основной зал",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-24": {
+    "id": "shift-demo-24",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-13",
+    "staff_name": "Сергей Мокан",
+    "role": "cook",
+    "date": "2026-11-29",
+    "start_time": "10:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Горячий цех",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-25": {
+    "id": "shift-demo-25",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-5",
+    "staff_name": "Мария Иванова",
+    "role": "waiter",
+    "date": "2026-11-29",
+    "start_time": "11:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Утренний и вечерний сервис",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-26": {
+    "id": "shift-demo-26",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-6",
+    "staff_name": "Дмитрий Орлов",
+    "role": "waiter",
+    "date": "2026-11-30",
+    "start_time": "12:00",
+    "end_time": "23:00",
+    "status": "PENDING",
+    "note": "Пятничный зал",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-27": {
+    "id": "shift-demo-27",
+    "venue_id": "venue-1",
+    "staff_id": "staff-member-demo-9",
+    "staff_name": "Наталья Сырбу",
+    "role": "cook",
+    "date": "2026-11-30",
+    "start_time": "08:00",
+    "end_time": "18:00",
+    "status": "CONFIRMED",
+    "note": "Выпечка плацинд",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-demo-28": {
+    "id": "shift-demo-28",
+    "venue_id": "venue-1",
+    "staff_id": "staff-demo-1",
+    "staff_name": "Анна Коваленко",
+    "role": "waiter",
+    "date": "2026-12-01",
+    "start_time": "10:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Старший официант",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
    },
    "shift-demo-3": {
     "id": "shift-demo-3",
@@ -6995,8 +11583,8 @@
     "end_time": "18:00",
     "status": "CONFIRMED",
     "note": "Шеф / горячий цех",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-4": {
     "id": "shift-demo-4",
@@ -7009,8 +11597,8 @@
     "end_time": "23:00",
     "status": "PENDING",
     "note": "Холодный цех / заготовки",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-5": {
     "id": "shift-demo-5",
@@ -7023,8 +11611,8 @@
     "end_time": "22:00",
     "status": "CONFIRMED",
     "note": "Основной зал",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-6": {
     "id": "shift-demo-6",
@@ -7037,8 +11625,8 @@
     "end_time": "16:00",
     "status": "CONFIRMED",
     "note": "Утренний сервис",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-7": {
     "id": "shift-demo-7",
@@ -7052,8 +11640,8 @@
     "status": "SWAP_REQUESTED",
     "note": "Терраса и бар",
     "reason": "Заболел, высокая температура — прошу найти замену",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-8": {
     "id": "shift-demo-8",
@@ -7066,8 +11654,8 @@
     "end_time": "18:00",
     "status": "CONFIRMED",
     "note": "Шеф / горячий цех",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
    },
    "shift-demo-9": {
     "id": "shift-demo-9",
@@ -7080,12 +11668,251 @@
     "end_time": "22:00",
     "status": "CONFIRMED",
     "note": "Гриль и мангал",
-    "created_at": "2026-11-25T08:53:39.926654Z",
-    "updated_at": "2026-11-25T08:53:39.926654Z"
+    "created_at": "2026-11-25T10:14:59.680254Z",
+    "updated_at": "2026-11-25T10:14:59.680254Z"
+   },
+   "shift-v11-1": {
+    "id": "shift-v11-1",
+    "venue_id": "venue-11",
+    "staff_id": "staff-v11-1",
+    "staff_name": "Kenji Tanaka",
+    "role": "cook",
+    "date": "2026-11-25",
+    "start_time": "11:00",
+    "end_time": "23:00",
+    "status": "CONFIRMED",
+    "note": "Суши-бар",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v11-2": {
+    "id": "shift-v11-2",
+    "venue_id": "venue-11",
+    "staff_id": "staff-v11-2",
+    "staff_name": "Лилия Назарова",
+    "role": "waiter",
+    "date": "2026-11-25",
+    "start_time": "11:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Основной зал",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v11-3": {
+    "id": "shift-v11-3",
+    "venue_id": "venue-11",
+    "staff_id": "staff-v11-4",
+    "staff_name": "Диана Бойко",
+    "role": "waiter",
+    "date": "2026-11-26",
+    "start_time": "12:00",
+    "end_time": "23:00",
+    "status": "PENDING",
+    "note": "Вечерний сервис",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v11-4": {
+    "id": "shift-v11-4",
+    "venue_id": "venue-11",
+    "staff_id": "staff-v11-5",
+    "staff_name": "Игорь Киртоакэ",
+    "role": "cook",
+    "date": "2026-11-26",
+    "start_time": "11:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Рамен-станция",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-1": {
+    "id": "shift-v4-1",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-1",
+    "staff_name": "Ольга Бивол",
+    "role": "waiter",
+    "date": "2026-11-25",
+    "start_time": "10:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Основной зал",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-2": {
+    "id": "shift-v4-2",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-2",
+    "staff_name": "Ionela Ciobanu",
+    "role": "waiter",
+    "date": "2026-11-25",
+    "start_time": "12:00",
+    "end_time": "23:00",
+    "status": "CONFIRMED",
+    "note": "Терраса",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-3": {
+    "id": "shift-v4-3",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-6",
+    "staff_name": "Marco Bellini",
+    "role": "cook",
+    "date": "2026-11-25",
+    "start_time": "10:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Дровяная печь и пицца",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-4": {
+    "id": "shift-v4-4",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-7",
+    "staff_name": "Андрей Попа",
+    "role": "cook",
+    "date": "2026-11-25",
+    "start_time": "11:00",
+    "end_time": "23:00",
+    "status": "CONFIRMED",
+    "note": "Паста-станция",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-5": {
+    "id": "shift-v4-5",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-3",
+    "staff_name": "Максим Савин",
+    "role": "waiter",
+    "date": "2026-11-26",
+    "start_time": "10:00",
+    "end_time": "22:00",
+    "status": "SWAP_REQUESTED",
+    "note": "Основной зал",
+    "reason": "Стоматолог в 16:00, ищу подмену",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-6": {
+    "id": "shift-v4-6",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-5",
+    "staff_name": "Никита Ткач",
+    "role": "waiter",
+    "date": "2026-11-26",
+    "start_time": "12:00",
+    "end_time": "23:00",
+    "status": "CONFIRMED",
+    "note": "Терраса и бар",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-7": {
+    "id": "shift-v4-7",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-8",
+    "staff_name": "Svetlana Donica",
+    "role": "cook",
+    "date": "2026-11-26",
+    "start_time": "10:00",
+    "end_time": "21:00",
+    "status": "PENDING",
+    "note": "Антипасти и салаты",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-8": {
+    "id": "shift-v4-8",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-4",
+    "staff_name": "Valeria Grosu",
+    "role": "waiter",
+    "date": "2026-11-27",
+    "start_time": "11:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Зал",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
+   },
+   "shift-v4-9": {
+    "id": "shift-v4-9",
+    "venue_id": "venue-4",
+    "staff_id": "staff-v4-6",
+    "staff_name": "Marco Bellini",
+    "role": "cook",
+    "date": "2026-11-27",
+    "start_time": "10:00",
+    "end_time": "22:00",
+    "status": "CONFIRMED",
+    "note": "Дровяная печь",
+    "created_at": "2026-11-25T12:14:59.680277+02:00",
+    "updated_at": "2026-11-25T12:14:59.680277+02:00"
    }
   },
   "profile_changes": {},
-  "waitlist": {},
-  "demo_menu_version": 5
+  "waitlist": {
+   "wl-demo-1": {
+    "id": "wl-demo-1",
+    "venue_id": "venue-4",
+    "user_id": "user-demo-guest-5",
+    "guest_name": "Dan Țurcanu",
+    "phone": "+373 69 778 899",
+    "guests": 2,
+    "zone": "terrace",
+    "note": "Ждём стол на террасе",
+    "status": "WAITING",
+    "source": "WEB",
+    "created_at": "2026-11-25T10:02:59.680277Z",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "wl-demo-2": {
+    "id": "wl-demo-2",
+    "venue_id": "venue-4",
+    "user_id": "user-demo-guest-7",
+    "guest_name": "Андрей Ботнарь",
+    "phone": "+373 69 554 321",
+    "guests": 4,
+    "zone": "hall",
+    "note": "В зале некурящих",
+    "status": "WAITING",
+    "source": "HOST",
+    "created_at": "2026-11-25T10:08:59.680277Z",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   },
+   "wl-demo-3": {
+    "id": "wl-demo-3",
+    "venue_id": "venue-3",
+    "user_id": "user-demo-guest-3",
+    "guest_name": "Victor Roșca",
+    "phone": "+373 68 445 566",
+    "guests": 2,
+    "zone": "hall",
+    "note": "У окна",
+    "status": "WAITING",
+    "source": "IOS",
+    "created_at": "2026-11-25T10:05:59.680277Z",
+    "venue_name": {
+     "ru": "",
+     "en": "",
+     "ro": ""
+    }
+   }
+  },
+  "demo_menu_version": 6,
+  "demo_seed_version": 2
  }
 }

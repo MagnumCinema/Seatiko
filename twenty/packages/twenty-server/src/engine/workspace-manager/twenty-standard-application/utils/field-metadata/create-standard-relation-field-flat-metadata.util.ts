@@ -5,7 +5,6 @@ import { type StandardBuilderArgs } from 'src/engine/workspace-manager/twenty-st
 import { TWENTY_STANDARD_APPLICATION_UNIVERSAL_IDENTIFIER } from 'twenty-shared/application';
 import { STANDARD_OBJECTS } from 'twenty-shared/metadata';
 import {
-  MetadataWritability,
   type FieldMetadataComplexOption,
   type FieldMetadataDefaultOption,
   type FieldMetadataDefaultValueForAnyType,
@@ -105,8 +104,10 @@ export const createStandardRelationFieldFlatMetadata = <
     isSystemSideEffect,
     isNullable,
     isUnique: false,
+    isSearchable: false,
+    isAuditLogged: true,
     isUIEditable,
-    writability: MetadataWritability.OPEN,
+    disabledFieldPermissionActions: null,
     isLabelSyncedWithName: false,
     overrides: null,
     defaultValue,
@@ -144,6 +145,14 @@ export const createStandardRelationFieldFlatMetadata = <
     viewSortUniversalIdentifiers: [],
     searchFieldMetadataIds: [],
     searchFieldMetadataUniversalIdentifiers: [],
+    fieldMetadataOptionIds: [],
+    rowLevelPermissionPredicateIds: [],
+    relationRowLevelPermissionPredicateIds: [],
+    workspaceMemberRowLevelPermissionPredicateIds: [],
+    fieldMetadataOptionUniversalIdentifiers: [],
+    rowLevelPermissionPredicateUniversalIdentifiers: [],
+    relationRowLevelPermissionPredicateUniversalIdentifiers: [],
+    workspaceMemberRowLevelPermissionPredicateUniversalIdentifiers: [],
     universalSettings: {
       ...settings,
       ...(junctionTargetFieldUniversalIdentifier && {

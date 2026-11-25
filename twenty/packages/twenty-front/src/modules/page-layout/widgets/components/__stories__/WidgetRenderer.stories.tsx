@@ -3,7 +3,7 @@ import { useApolloClient } from '@apollo/client/react';
 import { type MockedResponse } from '@apollo/client/testing';
 import { type Meta, type StoryObj } from '@storybook/react-vite';
 import { MemoryRouter } from 'react-router-dom';
-import { expect, within } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
 import { CatalogDecorator, type CatalogStory } from 'twenty-ui/testing';
 
 import { currentUserWorkspaceState } from '@/auth/states/currentUserWorkspaceState';
@@ -12,8 +12,10 @@ import { ApolloCoreClientContext } from '@/object-metadata/contexts/ApolloCoreCl
 import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { PageLayoutContentProvider } from '@/page-layout/contexts/PageLayoutContentContext';
+import { PageLayoutWidgetViewportContext } from '@/page-layout/contexts/PageLayoutWidgetViewportContext';
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
+import { StandardObjectNameSingular } from 'twenty-shared/types';
+import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
 import { setTestObjectMetadataItemsInMetadataStore } from '~/testing/utils/setTestObjectMetadataItemsInMetadataStore';
 
 import { pageLayoutPersistedComponentState } from '@/page-layout/states/pageLayoutPersistedComponentState';
@@ -30,18 +32,22 @@ import { pageLayoutDraggingWidgetIdComponentState } from '@/page-layout/states/p
 import { pageLayoutEditingWidgetIdComponentState } from '@/page-layout/states/pageLayoutEditingWidgetIdComponentState';
 import { type PageLayout } from '@/page-layout/types/PageLayout';
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
+import { type TabPresentation } from '@/page-layout/types/TabPresentation';
+import { makeWidget } from '@/page-layout/testing/pageLayoutDraftFixtures';
 import { WidgetComponentInstanceContext } from '@/page-layout/widgets/states/contexts/WidgetComponentInstanceContext';
 import { widgetCardHoveredComponentFamilyState } from '@/page-layout/widgets/states/widgetCardHoveredComponentFamilyState';
-import { type WidgetCardVariant } from '@/page-layout/widgets/types/WidgetCardVariant';
 import { LayoutRenderingProvider } from '@/ui/layout/contexts/LayoutRenderingContext';
+import { WorkspaceSurfaceContext } from '@/ui/layout/contexts/WorkspaceSurfaceContext';
 import {
   AggregateOperations,
   AxisNameDisplay,
   BarChartLayout,
   FieldDisplayMode,
+  FindOneFrontComponentDocument,
   GraphOrderBy,
   PageLayoutTabLayoutMode,
   PageLayoutType,
+  PageLayoutWidgetVerticalListHeightBehavior,
   WidgetConfigurationType,
   WidgetType,
 } from '~/generated-metadata/graphql';
@@ -52,7 +58,7 @@ import { getMockFieldMetadataItemOrThrow } from '~/testing/utils/getMockFieldMet
 import { getMockObjectMetadataItemOrThrow } from '~/testing/utils/getMockObjectMetadataItemOrThrow';
 
 const companyObjectMetadataItem = getMockObjectMetadataItemOrThrow(
-  CoreObjectNameSingular.Company,
+  StandardObjectNameSingular.Company,
 );
 const idField = getMockFieldMetadataItemOrThrow({
   objectMetadataItem: companyObjectMetadataItem,
@@ -84,7 +90,10 @@ const WIDGET_ID_TALL = 'widget-tall';
 const WIDGET_ID_MANY_TO_ONE_RELATION = 'widget-relation-field';
 const WIDGET_ID_ONE_TO_MANY_RELATION = 'widget-one-to-many-relation-field';
 const WIDGET_ID_CATALOG = 'catalog-widget';
+const WIDGET_ID_FRONT_COMPONENT = 'widget-front-component';
+const FRONT_COMPONENT_ID = 'loading-front-component';
 const TAB_ID_OVERVIEW = 'tab-overview';
+const SIDE_PANEL_INSTANCE_ID = 'widget-side-panel';
 
 const mockPersonRecord: ObjectRecord = {
   __typename: 'Person',
@@ -129,7 +138,6 @@ const mockCompanyRecord: ObjectRecord = {
   },
 };
 
-// Helper function to create a page layout with a widget
 const createPageLayoutWithWidget = (
   widget: PageLayoutWidget,
   pageLayoutType: PageLayoutType = PageLayoutType.DASHBOARD,
@@ -139,6 +147,7 @@ const createPageLayoutWithWidget = (
   name: 'Mock Page Layout',
   type: pageLayoutType,
   isSystemSideEffect: false,
+  isFirstTabPinned: true,
   objectMetadataId: companyObjectMetadataItem.id,
   universalIdentifier: '20202020-0000-0000-0000-000000000001',
   tabs: [
@@ -169,6 +178,13 @@ const barChartGroupByQuery = generateGroupByAggregateQuery({
 });
 
 const graphqlMocks: MockedResponse[] = [
+  {
+    request: {
+      query: FindOneFrontComponentDocument,
+      variables: { id: FRONT_COMPONENT_ID },
+    },
+    delay: Infinity,
+  },
   {
     request: {
       query: barChartGroupByQuery,
@@ -252,6 +268,347 @@ const meta: Meta<typeof WidgetRenderer> = {
 export default meta;
 type Story = StoryObj<typeof WidgetRenderer>;
 
+const FRONT_COMPONENT_WIDGET: PageLayoutWidget = {
+  ...makeWidget(WIDGET_ID_FRONT_COMPONENT, 0, TAB_ID_OVERVIEW),
+  type: WidgetType.FRONT_COMPONENT,
+  title: 'App',
+  configuration: {
+    __typename: 'FrontComponentConfiguration',
+    configurationType: WidgetConfigurationType.FRONT_COMPONENT,
+    frontComponentId: FRONT_COMPONENT_ID,
+  },
+};
+
+const FULL_HEIGHT_FRONT_COMPONENT_WIDGET: PageLayoutWidget = {
+  ...FRONT_COMPONENT_WIDGET,
+  position: {
+    __typename: 'PageLayoutWidgetVerticalListPosition',
+    layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
+    index: 0,
+    heightBehavior: PageLayoutWidgetVerticalListHeightBehavior.TAB_VIEWPORT,
+  },
+};
+
+const NUMBER_CHART_WIDGET: PageLayoutWidget = {
+  ...makeWidget(WIDGET_ID_NUMBER_CHART, 0, TAB_ID_OVERVIEW),
+  type: WidgetType.GRAPH,
+  title: 'Sales Pipeline',
+  objectMetadataId: companyObjectMetadataItem.id,
+  configuration: {
+    __typename: 'AggregateChartConfiguration',
+    configurationType: WidgetConfigurationType.AGGREGATE_CHART,
+    aggregateOperation: AggregateOperations.COUNT,
+    aggregateFieldMetadataId: idField.id,
+    displayDataLabel: true,
+  },
+};
+
+const renderWidgetOnPage = ({
+  widget,
+  pageLayoutType,
+  presentation,
+  isInEditMode = false,
+  fillsViewport = false,
+  layoutMode = PageLayoutTabLayoutMode.VERTICAL_LIST,
+}: {
+  widget: PageLayoutWidget;
+  pageLayoutType: PageLayoutType;
+  presentation: TabPresentation;
+  isInEditMode?: boolean;
+  fillsViewport?: boolean;
+  layoutMode?: PageLayoutTabLayoutMode;
+}): Story['render'] => {
+  return () => {
+    const pageLayoutData = createPageLayoutWithWidget(widget, pageLayoutType);
+
+    setTestObjectMetadataItemsInMetadataStore(
+      jotaiStore,
+      getTestEnrichedObjectMetadataItemsMock(),
+    );
+    jotaiStore.set(isMinimalMetadataReadyState.atom, true);
+    jotaiStore.set(
+      pageLayoutPersistedComponentState.atomFamily({
+        instanceId: PAGE_LAYOUT_TEST_INSTANCE_ID,
+      }),
+      pageLayoutData,
+    );
+    jotaiStore.set(
+      pageLayoutDraftComponentState.atomFamily({
+        instanceId: PAGE_LAYOUT_TEST_INSTANCE_ID,
+      }),
+      pageLayoutData,
+    );
+    jotaiStore.set(
+      isDashboardInEditModeComponentState.atomFamily({
+        instanceId: PAGE_LAYOUT_TEST_INSTANCE_ID,
+      }),
+      isInEditMode,
+    );
+
+    return (
+      <div style={{ width: 400, height: 240 }}>
+        <JestMetadataAndApolloMocksWrapper>
+          <CoreClientProviderWrapper>
+            <PageLayoutTestWrapper store={jotaiStore}>
+              <PageLayoutContentProvider
+                value={{
+                  layoutMode,
+                  presentation,
+                  tabId: TAB_ID_OVERVIEW,
+                }}
+              >
+                <PageLayoutWidgetViewportContext.Provider value={fillsViewport}>
+                  <WidgetRenderer widget={widget} />
+                </PageLayoutWidgetViewportContext.Provider>
+              </PageLayoutContentProvider>
+            </PageLayoutTestWrapper>
+          </CoreClientProviderWrapper>
+        </JestMetadataAndApolloMocksWrapper>
+      </div>
+    );
+  };
+};
+
+const expectLoadingFrontComponentFrame = async ({
+  canvasElement,
+  outerFrame,
+}: {
+  canvasElement: HTMLElement;
+  outerFrame: boolean;
+}) => {
+  const card = await within(canvasElement).findByTestId(
+    WIDGET_ID_FRONT_COMPONENT,
+  );
+
+  await waitFor(() =>
+    expect(card.querySelector('[aria-busy="true"]')).toBeVisible(),
+  );
+
+  const loadingIndicator = card.querySelector('[aria-busy="true"]');
+  const containerStyles: CSSStyleDeclaration[] = [];
+
+  for (
+    let container = loadingIndicator?.parentElement;
+    isDefined(container) && container !== card;
+    container = container.parentElement
+  ) {
+    containerStyles.push(getComputedStyle(container));
+  }
+
+  expect(getComputedStyle(card).borderWidth).toBe(outerFrame ? '1px' : '0px');
+  expect(getComputedStyle(card).borderRadius === '0px').toBe(!outerFrame);
+  expect(containerStyles.some((style) => style.borderWidth !== '0px')).toBe(
+    false,
+  );
+  expect(containerStyles.some((style) => style.borderRadius !== '0px')).toBe(
+    false,
+  );
+};
+
+const expectFrontComponentZoomRouting = async ({
+  canvasElement,
+  shouldPreventPageZoom,
+}: {
+  canvasElement: HTMLElement;
+  shouldPreventPageZoom: boolean;
+}) => {
+  const card = await within(canvasElement).findByTestId(
+    WIDGET_ID_FRONT_COMPONENT,
+  );
+  const frontComponentContainer = card.querySelector<HTMLElement>(
+    ':scope > div:last-child > div',
+  );
+
+  assertIsDefinedOrThrow(frontComponentContainer);
+
+  const eventTarget = canvasElement.ownerDocument.createElement('div');
+  const handleWheel = fn();
+
+  eventTarget.addEventListener('wheel', handleWheel);
+  frontComponentContainer.append(eventTarget);
+
+  try {
+    for (const modifier of [
+      { ctrlKey: true },
+      { ctrlKey: true, metaKey: true },
+    ]) {
+      const zoomEvent = new WheelEvent('wheel', {
+        ...modifier,
+        bubbles: true,
+        cancelable: true,
+        deltaY: -100,
+      });
+
+      eventTarget.dispatchEvent(zoomEvent);
+
+      expect(zoomEvent.defaultPrevented).toBe(shouldPreventPageZoom);
+      expect(handleWheel).toHaveBeenLastCalledWith(zoomEvent);
+    }
+
+    for (const modifier of [{}, { metaKey: true }]) {
+      const scrollEvent = new WheelEvent('wheel', {
+        ...modifier,
+        bubbles: true,
+        cancelable: true,
+        deltaY: 100,
+      });
+
+      eventTarget.dispatchEvent(scrollEvent);
+
+      expect(scrollEvent.defaultPrevented).toBe(false);
+      expect(handleWheel).toHaveBeenLastCalledWith(scrollEvent);
+    }
+
+    expect(handleWheel).toHaveBeenCalledTimes(4);
+
+    const outsideZoomEvent = new WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      deltaY: -100,
+    });
+
+    canvasElement.dispatchEvent(outsideZoomEvent);
+
+    expect(outsideZoomEvent.defaultPrevented).toBe(false);
+  } finally {
+    eventTarget.removeEventListener('wheel', handleWheel);
+    eventTarget.remove();
+  }
+};
+
+export const StandaloneFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.STANDALONE_PAGE,
+    presentation: 'solo',
+  }),
+  play: async ({ canvasElement }) => {
+    const card = await within(canvasElement).findByTestId(
+      WIDGET_ID_FRONT_COMPONENT,
+    );
+
+    expect(card.querySelector('[aria-busy="true"]')).toBeNull();
+
+    for (const element of [card, ...card.querySelectorAll('*')]) {
+      const style = getComputedStyle(element);
+
+      expect(style.borderWidth).toBe('0px');
+      expect(style.borderRadius).toBe('0px');
+      expect(style.padding).toBe('0px');
+    }
+
+    await expectFrontComponentZoomRouting({
+      canvasElement,
+      shouldPreventPageZoom: true,
+    });
+  },
+};
+
+export const StackedFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.STANDALONE_PAGE,
+    presentation: 'stack',
+  }),
+  play: async ({ canvasElement }) => {
+    await expectLoadingFrontComponentFrame({
+      canvasElement,
+      outerFrame: true,
+    });
+
+    await expectFrontComponentZoomRouting({
+      canvasElement,
+      shouldPreventPageZoom: false,
+    });
+  },
+};
+
+export const DashboardFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.DASHBOARD,
+    presentation: 'solo',
+  }),
+  play: StackedFrontComponentLoading.play,
+};
+
+export const EditingFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FULL_HEIGHT_FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.DASHBOARD,
+    presentation: 'solo',
+    isInEditMode: true,
+    fillsViewport: true,
+  }),
+  play: StackedFrontComponentLoading.play,
+};
+
+export const RecordFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.RECORD_PAGE,
+    presentation: 'solo',
+  }),
+  play: async ({ canvasElement }) => {
+    await expectLoadingFrontComponentFrame({
+      canvasElement,
+      outerFrame: false,
+    });
+
+    await expectFrontComponentZoomRouting({
+      canvasElement,
+      shouldPreventPageZoom: false,
+    });
+  },
+};
+
+export const FullHeightFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FULL_HEIGHT_FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.RECORD_PAGE,
+    presentation: 'stack',
+    fillsViewport: true,
+  }),
+  play: async ({ canvasElement }) => {
+    await expectLoadingFrontComponentFrame({
+      canvasElement,
+      outerFrame: false,
+    });
+    await expectFrontComponentZoomRouting({
+      canvasElement,
+      shouldPreventPageZoom: true,
+    });
+  },
+};
+
+export const LegacyCanvasFrontComponentLoading: Story = {
+  render: renderWidgetOnPage({
+    widget: FRONT_COMPONENT_WIDGET,
+    pageLayoutType: PageLayoutType.RECORD_PAGE,
+    presentation: 'solo',
+    layoutMode: PageLayoutTabLayoutMode.CANVAS,
+    fillsViewport: true,
+  }),
+  play: FullHeightFrontComponentLoading.play,
+};
+
+export const StandaloneChart: Story = {
+  render: renderWidgetOnPage({
+    widget: NUMBER_CHART_WIDGET,
+    pageLayoutType: PageLayoutType.STANDALONE_PAGE,
+    presentation: 'solo',
+  }),
+  play: async ({ canvasElement }) => {
+    const card = await within(canvasElement).findByTestId(
+      WIDGET_ID_NUMBER_CHART,
+    );
+
+    expect(getComputedStyle(card).borderWidth).toBe('0px');
+    expect(getComputedStyle(card).borderRadius).toBe('0px');
+  },
+};
+
 export const WithNumberChart: Story = {
   render: () => {
     const widget: PageLayoutWidget = {
@@ -265,8 +622,9 @@ export const WithNumberChart: Story = {
       type: WidgetType.GRAPH,
       title: 'Sales Pipeline',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 2,
@@ -310,7 +668,6 @@ export const WithNumberChart: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -356,8 +713,9 @@ export const WithBarChart: Story = {
       type: WidgetType.GRAPH,
       title: 'Monthly Trends',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 5,
@@ -405,7 +763,6 @@ export const WithBarChart: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -458,8 +815,9 @@ export const SmallWidget: Story = {
       type: WidgetType.GRAPH,
       title: 'Small Widget (2x2 grid)',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 2,
@@ -503,7 +861,6 @@ export const SmallWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -556,8 +913,9 @@ export const MediumWidget: Story = {
       type: WidgetType.GRAPH,
       title: 'Medium Widget (4x3 grid)',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 3,
@@ -605,7 +963,6 @@ export const MediumWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -658,8 +1015,9 @@ export const LargeWidget: Story = {
       type: WidgetType.GRAPH,
       title: 'Large Widget (6x4 grid)',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 4,
@@ -707,7 +1065,6 @@ export const LargeWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -760,8 +1117,9 @@ export const WideWidget: Story = {
       type: WidgetType.GRAPH,
       title: 'Wide Widget (8x2 grid)',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 2,
@@ -805,7 +1163,6 @@ export const WideWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -858,8 +1215,9 @@ export const TallWidget: Story = {
       type: WidgetType.GRAPH,
       title: 'Tall Widget (3x6 grid)',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 6,
@@ -907,7 +1265,6 @@ export const TallWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.DASHBOARD,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -961,8 +1318,9 @@ export const WithManyToOneRelationFieldWidget: Story = {
       type: WidgetType.FIELD,
       title: 'Account Owner',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 1,
@@ -1029,7 +1387,6 @@ export const WithManyToOneRelationFieldWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.RECORD_PAGE,
                   targetRecordIdentifier: {
                     id: TEST_RECORD_ID,
@@ -1083,8 +1440,9 @@ export const WithOneToManyRelationFieldWidget: Story = {
       type: WidgetType.FIELD,
       title: 'People',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 1,
@@ -1144,7 +1502,6 @@ export const WithOneToManyRelationFieldWidget: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.RECORD_PAGE,
                   targetRecordIdentifier: {
                     id: TEST_RECORD_ID,
@@ -1182,7 +1539,7 @@ export const OneToManyRelationFieldWidgetWithSeeAllButton: Story = {
     docs: {
       description: {
         story:
-          'A ONE_TO_MANY relation field widget with visible "See all" button and a well-formed link.',
+          'A solo ONE_TO_MANY relation field widget with visible header actions and a well-formed "See all" link.',
       },
     },
   },
@@ -1198,8 +1555,9 @@ export const OneToManyRelationFieldWidgetWithSeeAllButton: Story = {
       type: WidgetType.FIELD,
       title: 'People',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 1,
@@ -1266,7 +1624,6 @@ export const OneToManyRelationFieldWidgetWithSeeAllButton: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.RECORD_PAGE,
                   targetRecordIdentifier: {
                     id: TEST_RECORD_ID,
@@ -1278,7 +1635,7 @@ export const OneToManyRelationFieldWidgetWithSeeAllButton: Story = {
                 <PageLayoutContentProvider
                   value={{
                     layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
-                    presentation: 'stack',
+                    presentation: 'solo',
                     tabId: TAB_ID_OVERVIEW,
                   }}
                 >
@@ -1300,7 +1657,24 @@ export const OneToManyRelationFieldWidgetWithSeeAllButton: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    const seeAllLink = await canvas.findByTestId('widget-see-all-link');
+    const header = canvasElement.querySelector('.widget-card-header');
+
+    expect(header).not.toBeNull();
+
+    if (!(header instanceof HTMLElement)) {
+      throw new Error('Widget header not found');
+    }
+
+    const headerCanvas = within(header);
+
+    expect(headerCanvas.getByText('People')).toBeVisible();
+    expect(
+      headerCanvas.getByRole('button', { name: 'Edit relation' }),
+    ).toBeVisible();
+
+    const seeAllLink = await canvas.findByRole('link', {
+      name: /See all .* linked to this record/,
+    });
 
     expect(seeAllLink).toBeVisible();
 
@@ -1318,8 +1692,7 @@ export const OnMobile: Story = {
     },
     docs: {
       description: {
-        story:
-          'Widget on mobile viewport should use side-column variant instead of record-page variant.',
+        story: 'Widget on mobile viewport should use the flush variant.',
       },
     },
   },
@@ -1335,8 +1708,9 @@ export const OnMobile: Story = {
       type: WidgetType.GRAPH,
       title: 'Mobile Widget',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 2,
@@ -1383,7 +1757,6 @@ export const OnMobile: Story = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: PageLayoutType.RECORD_PAGE,
                   targetRecordIdentifier: {
                     id: TEST_RECORD_ID,
@@ -1420,8 +1793,7 @@ export const InSidePanel: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Widget in side panel should use side-column variant instead of record-page variant.',
+        story: 'Widget in side panel should use the flush variant.',
       },
     },
   },
@@ -1437,8 +1809,9 @@ export const InSidePanel: Story = {
       type: WidgetType.GRAPH,
       title: 'Side Panel Widget',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 2,
@@ -1461,7 +1834,7 @@ export const InSidePanel: Story = {
       getTestEnrichedObjectMetadataItemsMock(),
     );
     jotaiStore.set(isMinimalMetadataReadyState.atom, true);
-    const pageLayoutData = createPageLayoutWithWidget(
+    const sidePanelPageLayoutData = createPageLayoutWithWidget(
       widget,
       PageLayoutType.RECORD_PAGE,
     );
@@ -1469,48 +1842,55 @@ export const InSidePanel: Story = {
       pageLayoutPersistedComponentState.atomFamily({
         instanceId: PAGE_LAYOUT_TEST_INSTANCE_ID,
       }),
-      pageLayoutData,
+      sidePanelPageLayoutData,
     );
     jotaiStore.set(
       pageLayoutDraftComponentState.atomFamily({
         instanceId: PAGE_LAYOUT_TEST_INSTANCE_ID,
       }),
-      pageLayoutData,
+      sidePanelPageLayoutData,
     );
 
     return (
       <div style={{ width: '400px', padding: '20px' }}>
         <JestMetadataAndApolloMocksWrapper>
           <CoreClientProviderWrapper>
-            <PageLayoutTestWrapper store={jotaiStore}>
-              <LayoutRenderingProvider
-                value={{
-                  isInSidePanel: true,
-                  layoutType: PageLayoutType.RECORD_PAGE,
-                  targetRecordIdentifier: {
-                    id: TEST_RECORD_ID,
-                    targetObjectNameSingular:
-                      companyObjectMetadataItem.nameSingular,
-                  },
-                }}
-              >
-                <PageLayoutContentProvider
+            <WorkspaceSurfaceContext.Provider
+              value={{
+                type: 'side-panel',
+                instanceId: SIDE_PANEL_INSTANCE_ID,
+                ownsRouteLocation: false,
+              }}
+            >
+              <PageLayoutTestWrapper store={jotaiStore}>
+                <LayoutRenderingProvider
                   value={{
-                    layoutMode: PageLayoutTabLayoutMode.GRID,
-                    presentation: 'stack',
-                    tabId: TAB_ID_OVERVIEW,
+                    layoutType: PageLayoutType.RECORD_PAGE,
+                    targetRecordIdentifier: {
+                      id: TEST_RECORD_ID,
+                      targetObjectNameSingular:
+                        companyObjectMetadataItem.nameSingular,
+                    },
                   }}
                 >
-                  <WidgetComponentInstanceContext.Provider
+                  <PageLayoutContentProvider
                     value={{
-                      instanceId: 'widget-side-panel',
+                      layoutMode: PageLayoutTabLayoutMode.GRID,
+                      presentation: 'stack',
+                      tabId: TAB_ID_OVERVIEW,
                     }}
                   >
-                    <WidgetRenderer widget={widget} />
-                  </WidgetComponentInstanceContext.Provider>
-                </PageLayoutContentProvider>
-              </LayoutRenderingProvider>
-            </PageLayoutTestWrapper>
+                    <WidgetComponentInstanceContext.Provider
+                      value={{
+                        instanceId: SIDE_PANEL_INSTANCE_ID,
+                      }}
+                    >
+                      <WidgetRenderer widget={widget} />
+                    </WidgetComponentInstanceContext.Provider>
+                  </PageLayoutContentProvider>
+                </LayoutRenderingProvider>
+              </PageLayoutTestWrapper>
+            </WorkspaceSurfaceContext.Provider>
           </CoreClientProviderWrapper>
         </JestMetadataAndApolloMocksWrapper>
       </div>
@@ -1571,24 +1951,22 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
   },
   render: (args) => {
     const state = (args as any).catalogState || 'default';
-    const variantKey = (args as any).catalogVariant || 'record-page';
+    const scenarioKey = (args as any).catalogVariant || 'record-page';
 
-    const isRestricted = variantKey.includes('-restricted');
-    const variant = variantKey.replace('-restricted', '') as WidgetCardVariant;
+    const isRestricted = scenarioKey.includes('-restricted');
+    const scenario = scenarioKey.replace('-restricted', '');
 
     const isInEditMode = state !== 'read';
 
     const pageLayoutType =
-      variant === 'dashboard'
+      scenario === 'dashboard'
         ? PageLayoutType.DASHBOARD
         : PageLayoutType.RECORD_PAGE;
 
     const layoutMode =
-      variant === 'solo'
-        ? PageLayoutTabLayoutMode.CANVAS
-        : PageLayoutTabLayoutMode.GRID;
-
-    const presentation = variant === 'solo' ? 'solo' : 'stack';
+      scenario === 'dashboard'
+        ? PageLayoutTabLayoutMode.GRID
+        : PageLayoutTabLayoutMode.VERTICAL_LIST;
 
     const widget: PageLayoutWidget = {
       isSystemSideEffect: false,
@@ -1598,12 +1976,13 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
       isActive: true,
       id: WIDGET_ID_CATALOG,
       pageLayoutTabId:
-        variant === 'side-column' ? 'pinned-tab' : TAB_ID_OVERVIEW,
+        scenario === 'side-column' ? 'pinned-tab' : TAB_ID_OVERVIEW,
       type: WidgetType.GRAPH,
       title: 'Widget name',
       objectMetadataId: companyObjectMetadataItem.id,
-      gridPosition: {
-        __typename: 'GridPosition',
+      position: {
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        __typename: 'PageLayoutWidgetGridPosition',
         row: 0,
         column: 0,
         rowSpan: 2,
@@ -1659,16 +2038,16 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
       jotaiStore.set(currentUserWorkspaceState.atom, {
         permissionFlags: [],
         twoFactorAuthenticationMethodSummary: null,
-        objectsPermissions: [
+        objectRecordsPermissions: [
           {
             objectMetadataId: companyObjectMetadataItem.id,
-            canReadObjectRecords: false,
-            canUpdateObjectRecords: false,
-            canSoftDeleteObjectRecords: false,
-            canDestroyObjectRecords: false,
-            restrictedFields: {},
-            rowLevelPermissionPredicates: [],
-            rowLevelPermissionPredicateGroups: [],
+            canCreateAllRecords: false,
+            canReadAllRecords: false,
+            canUpdateAllRecords: false,
+            canSoftDeleteAllRecords: false,
+            canDestroyAllRecords: false,
+            unreadableFields: [],
+            uneditableFields: [],
           },
         ],
       });
@@ -1676,16 +2055,16 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
       jotaiStore.set(currentUserWorkspaceState.atom, {
         permissionFlags: [],
         twoFactorAuthenticationMethodSummary: null,
-        objectsPermissions: [
+        objectRecordsPermissions: [
           {
             objectMetadataId: companyObjectMetadataItem.id,
-            canReadObjectRecords: true,
-            canUpdateObjectRecords: true,
-            canSoftDeleteObjectRecords: true,
-            canDestroyObjectRecords: true,
-            restrictedFields: {},
-            rowLevelPermissionPredicates: [],
-            rowLevelPermissionPredicateGroups: [],
+            canCreateAllRecords: true,
+            canReadAllRecords: true,
+            canUpdateAllRecords: true,
+            canSoftDeleteAllRecords: true,
+            canDestroyAllRecords: true,
+            unreadableFields: [],
+            uneditableFields: [],
           },
         ],
       });
@@ -1697,10 +2076,11 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
       name: 'Mock Page Layout',
       type: pageLayoutType,
       isSystemSideEffect: false,
+      isFirstTabPinned: true,
       objectMetadataId: companyObjectMetadataItem.id,
       universalIdentifier: '20202020-0000-0000-0000-000000000001',
       tabs:
-        variant === 'side-column'
+        scenario === 'side-column'
           ? [
               {
                 isSystemSideEffect: false,
@@ -1786,7 +2166,6 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
             <PageLayoutTestWrapper store={jotaiStore}>
               <LayoutRenderingProvider
                 value={{
-                  isInSidePanel: false,
                   layoutType: pageLayoutType,
                   targetRecordIdentifier: {
                     id: companyObjectMetadataItem.id,
@@ -1798,9 +2177,9 @@ export const Catalog: CatalogStory<Story, typeof WidgetRenderer> = {
                 <PageLayoutContentProvider
                   value={{
                     layoutMode,
-                    presentation,
+                    presentation: 'stack',
                     tabId:
-                      variant === 'side-column'
+                      scenario === 'side-column'
                         ? 'pinned-tab'
                         : TAB_ID_OVERVIEW,
                   }}

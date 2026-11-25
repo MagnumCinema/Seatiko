@@ -1,34 +1,34 @@
 /* @license Enterprise */
-
-import { t } from '@lingui/core/macro';
 import { SettingsListCard } from '@/settings/components/SettingsListCard';
-import { SettingsSSOIdentityProviderRowRightContainer } from '@/settings/security/components/SSO/SettingsSSOIdentityProviderRowRightContainer';
-import { SSOIdentitiesProvidersState } from '@/settings/security/states/SSOIdentitiesProvidersState';
-import { guessSSOIdentityProviderIconByUrl } from '@/settings/security/utils/guessSSOIdentityProviderIconByUrl';
+import { SettingsSsoIdentityProviderRowRightContainer } from '@/settings/security/components/sso/SettingsSsoIdentityProviderRowRightContainer';
+import { ssoIdentitiesProvidersState } from '@/settings/security/states/ssoIdentitiesProvidersState';
+import { guessSsoIdentityProviderIconByUrl } from '@/settings/security/utils/guessSsoIdentityProviderIconByUrl';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { SettingsPath } from 'twenty-shared/types';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
+import { useLingui } from '@lingui/react/macro';
 
-export const SettingsSSOIdentitiesProvidersListCardWrapper = () => {
+export const SettingsSsoIdentitiesProvidersListCardWrapper = () => {
+  const { t } = useLingui();
   const navigate = useNavigateSettings();
 
-  const SSOIdentitiesProviders = useAtomStateValue(SSOIdentitiesProvidersState);
+  const ssoIdentitiesProviders = useAtomStateValue(ssoIdentitiesProvidersState);
 
   return (
     <SettingsListCard
-      items={SSOIdentitiesProviders}
-      getItemLabel={(SSOIdentityProvider) =>
-        `${SSOIdentityProvider.name} - ${SSOIdentityProvider.type}`
+      items={ssoIdentitiesProviders}
+      getItemLabel={(ssoIdentityProvider) =>
+        `${ssoIdentityProvider.name} - ${ssoIdentityProvider.type}`
       }
-      RowIconFn={(SSOIdentityProvider) =>
-        guessSSOIdentityProviderIconByUrl(SSOIdentityProvider.issuer)
+      RowIconFn={(ssoIdentityProvider) =>
+        guessSsoIdentityProviderIconByUrl(ssoIdentityProvider.issuer)
       }
-      RowRightComponent={({ item: SSOIdp }) => (
-        <SettingsSSOIdentityProviderRowRightContainer SSOIdp={SSOIdp} />
+      RowRightComponent={({ item: ssoIdp }) => (
+        <SettingsSsoIdentityProviderRowRightContainer ssoIdp={ssoIdp} />
       )}
       hasFooter
       footerButtonLabel={t`Add SSO Identity Provider`}
-      onFooterButtonClick={() => navigate(SettingsPath.NewSSOIdentityProvider)}
+      onFooterButtonClick={() => navigate(SettingsPath.NewSsoIdentityProvider)}
     />
   );
 };

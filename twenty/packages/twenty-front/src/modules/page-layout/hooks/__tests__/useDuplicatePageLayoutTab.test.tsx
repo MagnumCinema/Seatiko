@@ -15,7 +15,6 @@ import {
   PageLayoutTabLayoutMode,
   PageLayoutType,
   ViewType,
-  ViewVisibility,
   WidgetConfigurationType,
   WidgetType,
 } from '~/generated-metadata/graphql';
@@ -58,7 +57,6 @@ const makeRecordTableWidget = (): PageLayoutWidget =>
     title: 'Companies',
     type: WidgetType.RECORD_TABLE,
     objectMetadataId: 'object-metadata-id',
-    gridPosition: { row: 0, column: 0, rowSpan: 4, columnSpan: 4 },
     position: {
       __typename: 'PageLayoutWidgetGridPosition',
       layoutMode: PageLayoutTabLayoutMode.GRID,
@@ -99,6 +97,7 @@ const makeDraftPageLayout = (tabs: PageLayoutTab[]): DraftPageLayout => ({
   id: PAGE_LAYOUT_TEST_INSTANCE_ID,
   name: 'Test Layout',
   type: PageLayoutType.DASHBOARD,
+  isFirstTabPinned: true,
   objectMetadataId: null,
   tabs,
 });
@@ -112,7 +111,7 @@ const sourceRecordTableViewSnapshot: RecordTableWidgetViewSnapshot = {
     type: ViewType.TABLE_WIDGET,
     isCompact: false,
     position: 0,
-    visibility: ViewVisibility.WORKSPACE,
+    isPrivate: false,
     shouldHideEmptyGroups: false,
     isActive: true,
   },

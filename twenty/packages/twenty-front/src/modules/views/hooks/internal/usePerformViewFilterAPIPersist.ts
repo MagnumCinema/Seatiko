@@ -1,25 +1,22 @@
 import { useCallback } from 'react';
 
 import { type FlatViewFilter } from '@/metadata-store/types/FlatViewFilter';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
-import { usePerformViewEntityAPIPersistOperation } from '@/views/hooks/internal/usePerformViewEntityAPIPersistOperation';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
+import { usePerformViewEntityApiPersistOperation } from '@/views/hooks/internal/usePerformViewEntityApiPersistOperation';
 import { useMutation } from '@apollo/client/react';
 import { CrudOperationType } from 'twenty-shared/types';
 import { convertViewFilterValueToString, isDefined } from 'twenty-shared/utils';
 import {
   type CreateViewFilterMutationVariables,
-  type DeleteViewFilterMutationVariables,
   type DestroyViewFilterMutationVariables,
   type UpdateViewFilterMutationVariables,
   type ViewFilterFragmentFragment,
   CreateViewFilterDocument,
-  DeleteViewFilterDocument,
   DestroyViewFilterDocument,
   UpdateViewFilterDocument,
 } from '~/generated-metadata/graphql';
 
-// Normalize value like the fetch path (splitViewWithRelated) so store
-// comparisons against string-converted values stay consistent
+// Normalized like the fetch path (splitViewWithRelated) so store comparisons stay consistent
 const toFlatViewFilter = ({
   __typename,
   ...viewFilter
@@ -29,16 +26,15 @@ const toFlatViewFilter = ({
     value: convertViewFilterValueToString(viewFilter.value),
   }) as FlatViewFilter;
 
-export const usePerformViewFilterAPIPersist = () => {
+export const usePerformViewFilterApiPersist = () => {
   const [createViewFilterMutation] = useMutation(CreateViewFilterDocument);
   const [updateViewFilterMutation] = useMutation(UpdateViewFilterDocument);
-  const [deleteViewFilterMutation] = useMutation(DeleteViewFilterDocument);
   const [destroyViewFilterMutation] = useMutation(DestroyViewFilterDocument);
 
-  const { performViewEntityAPIPersistBatchOperation } =
-    usePerformViewEntityAPIPersistOperation('viewFilter');
+  const { performViewEntityApiPersistBatchOperation } =
+    usePerformViewEntityApiPersistOperation('viewFilter');
 
-  const performViewFilterAPICreate = useCallback(
+  const performViewFilterApiCreate = useCallback(
     async (
       createViewFilterInputs: CreateViewFilterMutationVariables[],
     ): Promise<
@@ -46,7 +42,7 @@ export const usePerformViewFilterAPIPersist = () => {
         Awaited<ReturnType<typeof createViewFilterMutation>>[]
       >
     > =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: createViewFilterInputs,
         mutate: (variables) => createViewFilterMutation({ variables }),
         applyResultToDraft: (fulfilledMutations, { addToDraft }) =>
@@ -59,10 +55,10 @@ export const usePerformViewFilterAPIPersist = () => {
           }),
         operationType: CrudOperationType.CREATE,
       }),
-    [createViewFilterMutation, performViewEntityAPIPersistBatchOperation],
+    [createViewFilterMutation, performViewEntityApiPersistBatchOperation],
   );
 
-  const performViewFilterAPIUpdate = useCallback(
+  const performViewFilterApiUpdate = useCallback(
     async (
       updateViewFilterInputs: UpdateViewFilterMutationVariables[],
     ): Promise<
@@ -70,7 +66,7 @@ export const usePerformViewFilterAPIPersist = () => {
         Awaited<ReturnType<typeof updateViewFilterMutation>>[]
       >
     > =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: updateViewFilterInputs,
         mutate: (variables) => updateViewFilterMutation({ variables }),
         applyResultToDraft: (fulfilledMutations, { updateInDraft }) =>
@@ -83,31 +79,10 @@ export const usePerformViewFilterAPIPersist = () => {
           ),
         operationType: CrudOperationType.UPDATE,
       }),
-    [updateViewFilterMutation, performViewEntityAPIPersistBatchOperation],
+    [updateViewFilterMutation, performViewEntityApiPersistBatchOperation],
   );
 
-  const performViewFilterAPIDelete = useCallback(
-    async (
-      deleteViewFilterInputs: DeleteViewFilterMutationVariables[],
-    ): Promise<
-      MetadataRequestResult<
-        Awaited<ReturnType<typeof deleteViewFilterMutation>>[]
-      >
-    > =>
-      performViewEntityAPIPersistBatchOperation({
-        inputs: deleteViewFilterInputs,
-        mutate: (variables) => deleteViewFilterMutation({ variables }),
-        applyResultToDraft: (fulfilledMutations, { removeFromDraft }) =>
-          removeFromDraft({
-            key: 'viewFilters',
-            itemIds: fulfilledMutations.map(({ input }) => input.input.id),
-          }),
-        operationType: CrudOperationType.DELETE,
-      }),
-    [deleteViewFilterMutation, performViewEntityAPIPersistBatchOperation],
-  );
-
-  const performViewFilterAPIDestroy = useCallback(
+  const performViewFilterApiDestroy = useCallback(
     async (
       destroyViewFilterInputs: DestroyViewFilterMutationVariables[],
     ): Promise<
@@ -115,7 +90,7 @@ export const usePerformViewFilterAPIPersist = () => {
         Awaited<ReturnType<typeof destroyViewFilterMutation>>[]
       >
     > =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: destroyViewFilterInputs,
         mutate: (variables) => destroyViewFilterMutation({ variables }),
         applyResultToDraft: (fulfilledMutations, { removeFromDraft }) =>
@@ -125,13 +100,12 @@ export const usePerformViewFilterAPIPersist = () => {
           }),
         operationType: CrudOperationType.DESTROY,
       }),
-    [destroyViewFilterMutation, performViewEntityAPIPersistBatchOperation],
+    [destroyViewFilterMutation, performViewEntityApiPersistBatchOperation],
   );
 
   return {
-    performViewFilterAPICreate,
-    performViewFilterAPIUpdate,
-    performViewFilterAPIDelete,
-    performViewFilterAPIDestroy,
+    performViewFilterApiCreate,
+    performViewFilterApiUpdate,
+    performViewFilterApiDestroy,
   };
 };

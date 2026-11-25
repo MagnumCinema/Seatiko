@@ -1,20 +1,21 @@
 import { useCallback } from 'react';
 
 import { type FlatViewFilterGroup } from '@/metadata-store/types/FlatViewFilterGroup';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
-import { usePerformViewEntityAPIPersistOperation } from '@/views/hooks/internal/usePerformViewEntityAPIPersistOperation';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
+import { usePerformViewEntityApiPersistOperation } from '@/views/hooks/internal/usePerformViewEntityApiPersistOperation';
 import { type GraphQLView } from '@/views/types/GraphQLView';
 import { type ViewFilterGroup } from '@/views/types/ViewFilterGroup';
 import { useMutation } from '@apollo/client/react';
 import { CrudOperationType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+import { doNotTranslate } from 'twenty-shared/i18n';
 import {
   CreateViewFilterGroupDocument,
   DestroyViewFilterGroupDocument,
   UpdateViewFilterGroupDocument,
 } from '~/generated-metadata/graphql';
 
-export const usePerformViewFilterGroupAPIPersist = () => {
+export const usePerformViewFilterGroupApiPersist = () => {
   const [createViewFilterGroupMutation] = useMutation(
     CreateViewFilterGroupDocument,
   );
@@ -26,9 +27,9 @@ export const usePerformViewFilterGroupAPIPersist = () => {
   );
 
   const {
-    performViewEntityAPIPersistOperation,
-    performViewEntityAPIPersistBatchOperation,
-  } = usePerformViewEntityAPIPersistOperation('viewFilterGroup');
+    performViewEntityApiPersistOperation,
+    performViewEntityApiPersistBatchOperation,
+  } = usePerformViewEntityApiPersistOperation('viewFilterGroup');
 
   const createViewFilterGroupRecord = useCallback(
     async (viewFilterGroup: ViewFilterGroup, view: Pick<GraphQLView, 'id'>) => {
@@ -46,7 +47,7 @@ export const usePerformViewFilterGroupAPIPersist = () => {
       });
 
       if (!isDefined(result.data)) {
-        throw new Error('Failed to create view filter group');
+        throw new Error(doNotTranslate('Failed to create view filter group'));
       }
 
       return { newRecord: result.data.createViewFilterGroup };
@@ -54,7 +55,7 @@ export const usePerformViewFilterGroupAPIPersist = () => {
     [createViewFilterGroupMutation],
   );
 
-  const performViewFilterGroupAPICreate = useCallback(
+  const performViewFilterGroupApiCreate = useCallback(
     async (
       viewFilterGroupsToCreate: ViewFilterGroup[],
       view: Pick<GraphQLView, 'id'>,
@@ -70,7 +71,7 @@ export const usePerformViewFilterGroupAPIPersist = () => {
             viewFilterGroupToCreate.parentViewFilterGroupId)
           : undefined;
 
-        const result = await performViewEntityAPIPersistOperation({
+        const result = await performViewEntityApiPersistOperation({
           persist: () =>
             createViewFilterGroupRecord(
               {
@@ -105,12 +106,12 @@ export const usePerformViewFilterGroupAPIPersist = () => {
         response: newRecordIds,
       };
     },
-    [createViewFilterGroupRecord, performViewEntityAPIPersistOperation],
+    [createViewFilterGroupRecord, performViewEntityApiPersistOperation],
   );
 
-  const performViewFilterGroupAPIUpdate = useCallback(
+  const performViewFilterGroupApiUpdate = useCallback(
     (viewFilterGroupsToUpdate: ViewFilterGroup[]) =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: viewFilterGroupsToUpdate,
         mutate: (viewFilterGroup) =>
           updateViewFilterGroupMutation({
@@ -138,12 +139,12 @@ export const usePerformViewFilterGroupAPIPersist = () => {
           ),
         operationType: CrudOperationType.UPDATE,
       }),
-    [updateViewFilterGroupMutation, performViewEntityAPIPersistBatchOperation],
+    [updateViewFilterGroupMutation, performViewEntityApiPersistBatchOperation],
   );
 
-  const performViewFilterGroupAPIDestroy = useCallback(
+  const performViewFilterGroupApiDestroy = useCallback(
     (viewFilterGroupIdsToDestroy: string[]) =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: viewFilterGroupIdsToDestroy,
         mutate: (viewFilterGroupId) =>
           destroyViewFilterGroupMutation({
@@ -158,12 +159,12 @@ export const usePerformViewFilterGroupAPIPersist = () => {
           }),
         operationType: CrudOperationType.DESTROY,
       }),
-    [destroyViewFilterGroupMutation, performViewEntityAPIPersistBatchOperation],
+    [destroyViewFilterGroupMutation, performViewEntityApiPersistBatchOperation],
   );
 
   return {
-    performViewFilterGroupAPICreate,
-    performViewFilterGroupAPIUpdate,
-    performViewFilterGroupAPIDestroy,
+    performViewFilterGroupApiCreate,
+    performViewFilterGroupApiUpdate,
+    performViewFilterGroupApiDestroy,
   };
 };

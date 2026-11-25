@@ -43,4 +43,28 @@ export const buildCalendarChannelEventAssociationStandardFlatIndexMetadatas = ({
     twentyStandardApplicationId,
     now,
   }),
+  eventExternalIdIndex: createStandardIndexFlatMetadata({
+    objectName,
+    workspaceId,
+    context: {
+      indexName: 'eventExternalIdIndex',
+      relatedFieldNames: ['eventExternalId'],
+    },
+    standardObjectMetadataRelatedEntityIds,
+    dependencyFlatEntityMaps,
+    twentyStandardApplicationId,
+    now,
+  }),
+  accountOwnerIdIndex: createStandardIndexFlatMetadata({
+    objectName,
+    workspaceId,
+    context: {
+      indexName: 'accountOwnerIdIndex',
+      relatedFieldNames: ['accountOwner'],
+    },
+    standardObjectMetadataRelatedEntityIds,
+    dependencyFlatEntityMaps,
+    twentyStandardApplicationId,
+    now,
+  }),
 });

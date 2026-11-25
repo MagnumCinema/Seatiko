@@ -1,6 +1,6 @@
 import { msg, t } from '@lingui/core/macro';
 import { type ALL_METADATA_NAME } from 'twenty-shared/metadata';
-import { FeatureFlagKey, ViewType } from 'twenty-shared/types';
+import { ViewType } from 'twenty-shared/types';
 import { getViewLayoutFromViewType, isDefined } from 'twenty-shared/utils';
 
 import { findFlatEntityByUniversalIdentifier } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-universal-identifier.util';
@@ -9,6 +9,8 @@ import { type FailedFlatEntityValidation } from 'src/engine/workspace-manager/wo
 import { getEmptyFlatEntityValidationError } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/builders/utils/get-flat-entity-validation-error.util';
 import { type UniversalFlatEntityValidationArgs } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/types/universal-flat-entity-validation-args.type';
 import { validateFlatViewCalendarFields } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-flat-view-calendar-fields.util';
+import { validateFlatViewPresetFilter } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-flat-view-preset-filter.util';
+import { validateFlatViewTypeObject } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/validate-flat-view-type-object.util';
 import { isAllowedFlatViewKanbanMainGroupByField } from 'src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/utils/is-allowed-flat-view-kanban-main-group-by-field.util';
 
 export const validateFlatViewCreation = ({
@@ -18,7 +20,6 @@ export const validateFlatViewCreation = ({
     flatFieldMetadataMaps,
     flatObjectMetadataMaps,
   },
-  additionalCacheDataMaps: { featureFlagsMap },
 }: UniversalFlatEntityValidationArgs<
   typeof ALL_METADATA_NAME.view
 >): FailedFlatEntityValidation<'view', 'create'> => {
@@ -159,9 +160,12 @@ export const validateFlatViewCreation = ({
     ...validateFlatViewCalendarFields({
       flatView: flatViewToValidate,
       flatFieldMetadataMaps,
-      isCalendarWeekViewEnabled:
-        featureFlagsMap[FeatureFlagKey.IS_CALENDAR_WEEK_VIEW_ENABLED],
     }),
+  );
+
+  validationResult.errors.push(
+    ...validateFlatViewPresetFilter({ flatView: flatViewToValidate }),
+    ...validateFlatViewTypeObject({ flatView: flatViewToValidate }),
   );
 
   return validationResult;

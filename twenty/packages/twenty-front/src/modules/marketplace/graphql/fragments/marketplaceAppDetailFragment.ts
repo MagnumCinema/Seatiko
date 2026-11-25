@@ -9,18 +9,39 @@ export const MARKETPLACE_APP_DETAIL_FRAGMENT = gql`
     sourcePackage
     latestAvailableVersion
     isListed
-    isVetted
     description
     author
     category
     logoUrl
     websiteUrl
+    connectUrl
     aboutDescription
+    pricingDescription
     termsUrl
     emailSupport
     issueReportUrl
     galleryImages
+    installCount
     defaultRoleUniversalIdentifier
+    requestedCapabilities
+    requestedIframeMediaPermissions {
+      origin
+      microphone
+      camera
+    }
+    billsCredits
+    billingPrices {
+      universalIdentifier
+      label
+      type
+      billingPeriod
+      amountCents
+      currency
+      per
+    }
+    objects {
+      universalIdentifier
+    }
     roles {
       universalIdentifier
       label

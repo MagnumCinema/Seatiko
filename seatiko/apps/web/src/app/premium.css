@@ -13698,6 +13698,24 @@ html[data-theme="light"] .btn-view-toggle.active {
   margin-bottom: 18px;
 }
 
+.auth-social-row.auth-social-row-one {
+  grid-template-columns: 1fr;
+}
+
+/* Site-styled Google button (opens Google's account chooser) */
+.google-auth-wrap {
+  display: grid;
+}
+
+.google-auth-wrap[data-state="loading"] {
+  opacity: 0.7;
+}
+
+.auth-social-btn.auth-social-btn-wide {
+  width: 100%;
+  font-size: 0.88rem;
+}
+
 .auth-social-btn {
   display: inline-flex;
   align-items: center;
@@ -21578,4 +21596,20 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   .catalog-info-action {
     transition: none !important;
   }
+}
+
+/* Profile: Sign in with Google card */
+.google-connect-card .google-connect-password {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.google-connect-card .google-connect-action {
+  min-width: 220px;
+}
+
+.google-connect-card .google-connect-action[aria-busy="true"] {
+  opacity: 0.6;
+  pointer-events: none;
 }

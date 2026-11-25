@@ -4,6 +4,9 @@ const external = (id) => {
   if (id === 'twenty-shared' || id.startsWith('twenty-shared/')) {
     return false;
   }
+  if (id === 'zod' || id.startsWith('zod/')) {
+    return false;
+  }
   if (id.startsWith('@/')) {
     return false;
   }
@@ -19,6 +22,12 @@ const plugins = [
 
 export default [
   {
+    input: 'src/front-component-renderer/index.ts',
+    output: { file: 'dist/front-component-renderer/index.d.ts', format: 'es' },
+    external,
+    plugins,
+  },
+  {
     input: 'src/sdk/define/index.ts',
     output: { file: 'dist/define/index.d.ts', format: 'es' },
     external,
@@ -33,6 +42,12 @@ export default [
   {
     input: 'src/sdk/billing/index.ts',
     output: { file: 'dist/billing/index.d.ts', format: 'es' },
+    external,
+    plugins,
+  },
+  {
+    input: 'src/sdk/email/index.ts',
+    output: { file: 'dist/email/index.d.ts', format: 'es' },
     external,
     plugins,
   },

@@ -4,6 +4,7 @@ import {
 } from '@/page-layout/hooks/__tests__/PageLayoutTestWrapper';
 import { WidgetHeaderCountEffect } from '@/page-layout/widgets/components/WidgetHeaderCountEffect';
 import { WidgetComponentInstanceContext } from '@/page-layout/widgets/states/contexts/WidgetComponentInstanceContext';
+import { PageLayoutWidgetCardHeader } from '@/page-layout/widgets/widget-card/components/PageLayoutWidgetCardHeader';
 import { WidgetCardHeader } from '@/page-layout/widgets/widget-card/components/WidgetCardHeader';
 import { type Meta, type StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
@@ -29,9 +30,9 @@ const WidgetCardHeaderStory = ({
   <PageLayoutTestWrapper instanceId={PAGE_LAYOUT_TEST_INSTANCE_ID}>
     <WidgetComponentInstanceContext.Provider value={{ instanceId: widgetId }}>
       <WidgetHeaderCountEffect count={count} />
-      <WidgetCardHeader
+      <PageLayoutWidgetCardHeader
         widgetId={widgetId}
-        variant="dashboard"
+        variant="framed"
         isInEditMode={isInEditMode}
         title={title}
       />
@@ -98,9 +99,9 @@ const UnmountingContentStory = () => {
         value={{ instanceId: `${WIDGET_ID}-unmount` }}
       >
         {isContentMounted && <WidgetHeaderCountEffect count={42} />}
-        <WidgetCardHeader
+        <PageLayoutWidgetCardHeader
           widgetId={`${WIDGET_ID}-unmount`}
-          variant="dashboard"
+          variant="framed"
           isInEditMode={false}
           title="Call recordings"
         />
@@ -136,9 +137,9 @@ export const CountEffectNoOpsOutsideWidget: Story = {
       <WidgetComponentInstanceContext.Provider
         value={{ instanceId: `${WIDGET_ID}-outside` }}
       >
-        <WidgetCardHeader
+        <PageLayoutWidgetCardHeader
           widgetId={`${WIDGET_ID}-outside`}
-          variant="dashboard"
+          variant="framed"
           isInEditMode={false}
           title="Call recordings"
         />
@@ -150,5 +151,52 @@ export const CountEffectNoOpsOutsideWidget: Story = {
 
     expect(await canvas.findByText('Call recordings')).toBeVisible();
     expect(canvas.queryByText('7')).toBeNull();
+  },
+};
+
+const WidgetHeaderClickStory = () => {
+  const [parentClickCount, setParentClickCount] = useState(0);
+
+  return (
+    <PageLayoutTestWrapper instanceId={PAGE_LAYOUT_TEST_INSTANCE_ID}>
+      <div onClick={() => setParentClickCount((count) => count + 1)}>
+        <WidgetCardHeader variant="flush" isInEditMode title="Timeline" />
+      </div>
+      <output aria-label="Parent click count">{parentClickCount}</output>
+    </PageLayoutTestWrapper>
+  );
+};
+
+export const GripClickBehavior: Story = {
+  render: () => <WidgetHeaderClickStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const grip = canvasElement.querySelector('.drag-handle');
+
+    if (!(grip instanceof HTMLElement)) {
+      throw new Error('Widget grip not found');
+    }
+
+    await userEvent.click(grip);
+    expect(canvas.getByLabelText('Parent click count')).toHaveTextContent('1');
+
+    await userEvent.pointer([
+      {
+        keys: '[MouseLeft>]',
+        target: grip,
+        coords: { clientX: 10, clientY: 10 },
+      },
+      {
+        target: grip,
+        coords: { clientX: 30, clientY: 10 },
+      },
+      {
+        keys: '[/MouseLeft]',
+        target: grip,
+        coords: { clientX: 30, clientY: 10 },
+      },
+    ]);
+
+    expect(canvas.getByLabelText('Parent click count')).toHaveTextContent('1');
   },
 };

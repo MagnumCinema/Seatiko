@@ -7,10 +7,10 @@ import {
 } from 'react';
 import 'react-phone-number-input/style.css';
 
-import { useRegisterInputEvents } from '@/object-record/record-field/ui/meta-types/input/hooks/useRegisterInputEvents';
+import { useRegisterInputEvents } from '@/ui/input/hooks/useRegisterInputEvents';
 import { isDefined } from 'twenty-shared/utils';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { useCombinedRefs } from '~/hooks/useCombinedRefs';
+import { themeCssVariables } from 'twenty-ui/theme';
+import { combineRefs } from '~/utils/combineRefs';
 
 const StyledInput = styled.input<{
   withRightComponent?: boolean;
@@ -96,6 +96,7 @@ export const DropdownMenuInput = forwardRef<
       className,
       value,
       placeholder,
+      maxLength,
       instanceId,
       onChange,
       onClickOutside,
@@ -111,7 +112,7 @@ export const DropdownMenuInput = forwardRef<
     ref,
   ) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const combinedRef = useCombinedRefs(ref, inputRef);
+    const combinedRef = combineRefs(ref, inputRef);
 
     useRegisterInputEvents({
       focusId: instanceId,
@@ -140,6 +141,7 @@ export const DropdownMenuInput = forwardRef<
               autoFocus={autoFocus}
               value={value}
               placeholder={placeholder}
+              maxLength={maxLength}
               onChange={onChange}
               ref={combinedRef}
               withRightComponent={isDefined(rightComponent)}

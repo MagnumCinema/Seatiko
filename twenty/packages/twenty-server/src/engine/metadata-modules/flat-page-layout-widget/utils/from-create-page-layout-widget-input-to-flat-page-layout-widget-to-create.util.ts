@@ -54,7 +54,6 @@ export const fromCreatePageLayoutWidgetInputToFlatPageLayoutWidgetToCreate = ({
       title: createPageLayoutWidgetInput.title,
       type: createPageLayoutWidgetInput.type,
       objectMetadataId: createPageLayoutWidgetInput.objectMetadataId,
-      gridPosition: createPageLayoutWidgetInput.gridPosition,
       position: createPageLayoutWidgetInput.position,
     },
     flatPageLayoutTabMaps,
@@ -76,6 +75,8 @@ export const fromCreatePageLayoutWidgetInputToFlatPageLayoutWidgetToCreate = ({
     applicationUniversalIdentifier: flatApplication.universalIdentifier,
     conditionalDisplay: null,
     conditionalAvailabilityExpression: null,
+    conditionalAvailability:
+      createPageLayoutWidgetInput.conditionalAvailability ?? null,
     overrides: null,
     universalOverrides: null,
     universalConfiguration:

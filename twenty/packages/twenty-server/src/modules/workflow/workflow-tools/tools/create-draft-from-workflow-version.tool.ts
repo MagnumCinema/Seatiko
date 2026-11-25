@@ -4,13 +4,14 @@ import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
 } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
+import { type WorkflowTool } from 'src/modules/workflow/workflow-tools/types/workflow-tool.type';
 
 const createDraftFromWorkflowVersionSchema = z.object({
-  workflowId: z.string().uuid().describe('The UUID of the workflow'),
-  workflowVersionIdToCopy: z
+  coreWorkflowId: z.string().uuid().describe('The core workflow UUID'),
+  coreWorkflowVersionIdToCopy: z
     .string()
     .uuid()
-    .describe('The UUID of the workflow version to create a draft from'),
+    .describe('The core workflow version UUID to create a draft from'),
 });
 
 type CreateDraftFromWorkflowVersionInput = z.infer<
@@ -18,26 +19,41 @@ type CreateDraftFromWorkflowVersionInput = z.infer<
 >;
 
 export const createCreateDraftFromWorkflowVersionTool = (
-  deps: Pick<WorkflowToolDependencies, 'workflowVersionService'>,
+  deps: Pick<WorkflowToolDependencies, 'coreWorkflowVersionMutationService'>,
   context: WorkflowToolContext,
-) => ({
-  name: 'create_draft_from_workflow_version' as const,
-  description:
-    'Create a new draft workflow version from an existing one. This allows for iterative workflow development.',
-  inputSchema: createDraftFromWorkflowVersionSchema,
-  execute: async (parameters: CreateDraftFromWorkflowVersionInput) => {
-    try {
-      return await deps.workflowVersionService.createDraftFromWorkflowVersion({
-        workspaceId: context.workspaceId,
-        workflowId: parameters.workflowId,
-        workflowVersionIdToCopy: parameters.workflowVersionIdToCopy,
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: `Failed to create draft from workflow version: ${error.message}`,
-      };
-    }
-  },
-});
+) =>
+  ({
+    name: 'create_draft_from_workflow_version' as const,
+    isDestructive: true,
+    description:
+      'Create a new draft workflow version from an existing one. This allows for iterative workflow development. Returns the new core workflow version.',
+    inputSchema: createDraftFromWorkflowVersionSchema,
+    execute: async (parameters: CreateDraftFromWorkflowVersionInput) => {
+      try {
+        const coreWorkflowVersion =
+          await deps.coreWorkflowVersionMutationService.createDraftFromCoreWorkflowVersion(
+            {
+              workspaceId: context.workspaceId,
+              userWorkspaceId: context.userWorkspaceId,
+              coreWorkflowId: parameters.coreWorkflowId,
+              coreWorkflowVersionIdToCopy:
+                parameters.coreWorkflowVersionIdToCopy,
+            },
+          );
+
+        return {
+          success: true,
+          coreWorkflowVersionId: coreWorkflowVersion.id,
+          coreWorkflowId: parameters.coreWorkflowId,
+          status: coreWorkflowVersion.status,
+          name: coreWorkflowVersion.label,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          message: `Failed to create draft from workflow version: ${error.message}`,
+        };
+      }
+    },
+  }) satisfies WorkflowTool;

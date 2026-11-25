@@ -40,6 +40,12 @@ export class MediaStorage {
     return `${this.base}/${key.split('/').map(encodeURIComponent).join('/')}`;
   }
 
+  /** Storage key of one of our public URLs, or undefined for a foreign URL. */
+  keyOf(url: string): string | undefined {
+    const prefix = `${this.base}/`;
+    return url.startsWith(prefix) ? url.slice(prefix.length).split('/').map(decodeURIComponent).join('/') : undefined;
+  }
+
   /** Best effort: a missing file is not an error. */
   async delete(key: string): Promise<void> {
     if (!key) return;

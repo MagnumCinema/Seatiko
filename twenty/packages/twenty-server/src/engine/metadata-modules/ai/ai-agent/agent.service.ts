@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
-import { ILike, IsNull } from 'typeorm';
 
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { type CreateAgentInput } from 'src/engine/metadata-modules/ai/ai-agent/dtos/create-agent.input';
 import { type UpdateAgentInput } from 'src/engine/metadata-modules/ai/ai-agent/dtos/update-agent.input';
+import { addAgentTriggerConditionBindingsOrThrow } from 'src/engine/metadata-modules/ai/ai-agent-trigger/utils/add-agent-trigger-condition-bindings-or-throw.util';
 import { fromCreateAgentInputToFlatAgent } from 'src/engine/metadata-modules/ai/ai-agent/utils/from-create-agent-input-to-flat-agent.util';
 import { fromUpdateAgentInputToFlatAgentToUpdate } from 'src/engine/metadata-modules/ai/ai-agent/utils/from-update-agent-input-to-flat-agent-to-update.util';
 import { FlatAgentWithRoleId } from 'src/engine/metadata-modules/flat-agent/types/flat-agent.type';
+import { isPrivatableEntityVisibleToCaller } from 'src/engine/permissions/metadata-permissions/utils/is-privatable-entity-visible-to-caller.util';
+import { resolveEffectiveAgent } from 'src/engine/metadata-modules/flat-agent/utils/resolve-effective-agent.util';
 import { findFlatEntityByIdInFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps-or-throw.util';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
+import { findManyFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-many-flat-entity-by-id-in-flat-entity-maps.util';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
@@ -34,7 +37,11 @@ export class AgentService {
     private readonly workspaceCacheService: WorkspaceCacheService,
   ) {}
 
-  async findManyAgents(workspaceId: string): Promise<FlatAgentWithRoleId[]> {
+  async findManyAgents({
+    workspaceId,
+  }: {
+    workspaceId: string;
+  }): Promise<FlatAgentWithRoleId[]> {
     const { flatAgentMaps, flatRoleTargetByAgentIdMaps } =
       await this.workspaceCacheService.getOrRecompute(workspaceId, [
         'flatAgentMaps',
@@ -43,37 +50,17 @@ export class AgentService {
 
     return Object.values(flatAgentMaps.byUniversalIdentifier)
       .filter(isDefined)
+      .filter((flatAgent) =>
+        isPrivatableEntityVisibleToCaller({ privatableEntity: flatAgent }),
+      )
       .map((flatAgent) => {
         const roleId = flatRoleTargetByAgentIdMaps[flatAgent.id]?.roleId;
 
         return {
-          ...flatAgent,
+          ...resolveEffectiveAgent(flatAgent),
           roleId: roleId ?? null,
         };
       });
-  }
-
-  async findOneAgentByName({
-    name,
-    workspaceId,
-  }: {
-    workspaceId: string;
-    name: string;
-  }): Promise<AgentEntity> {
-    const agent = await this.agentRepository.findOne(workspaceId, {
-      where: { name },
-    });
-
-    if (!agent) {
-      const identifier = `name "${name}"`;
-
-      throw new AiException(
-        `Agent with ${identifier} not found`,
-        AiExceptionCode.AGENT_NOT_FOUND,
-      );
-    }
-
-    return agent;
   }
 
   async findOneAgentById({
@@ -94,24 +81,44 @@ export class AgentService {
       flatEntityMaps: flatAgentMaps,
     });
 
-    if (!isDefined(flatAgent)) {
+    if (
+      !isDefined(flatAgent) ||
+      !isPrivatableEntityVisibleToCaller({ privatableEntity: flatAgent })
+    ) {
       throw new AiException(`Agent not found`, AiExceptionCode.AGENT_NOT_FOUND);
     }
 
     const roleId = flatRoleTargetByAgentIdMaps[flatAgent.id]?.roleId;
 
-    return { ...flatAgent, roleId: roleId ?? null };
+    return { ...resolveEffectiveAgent(flatAgent), roleId: roleId ?? null };
   }
 
-  async createOneAgent(
-    input: CreateAgentInput & { isCustom: boolean },
-    workspaceId: string,
-  ): Promise<FlatAgentWithRoleId> {
-    const { flatApplicationMaps, flatRoleMaps } =
-      await this.workspaceCacheService.getOrRecompute(workspaceId, [
-        'flatApplicationMaps',
-        'flatRoleMaps',
-      ]);
+  async createOneAgent({
+    input: { isSystem = false, ...input },
+    workspaceId,
+    userWorkspaceId,
+  }: {
+    input: CreateAgentInput & { isSystem?: boolean };
+    workspaceId: string;
+    userWorkspaceId: string | undefined;
+  }): Promise<FlatAgentWithRoleId> {
+    const {
+      flatApplicationMaps,
+      flatRoleMaps,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+    } = await this.workspaceCacheService.getOrRecompute(workspaceId, [
+      'flatApplicationMaps',
+      'flatRoleMaps',
+      'flatObjectMetadataMaps',
+      'flatFieldMetadataMaps',
+    ]);
+
+    const triggers = addAgentTriggerConditionBindingsOrThrow({
+      triggers: input.triggers,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+    });
 
     const { workspaceCustomFlatApplication } =
       await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
@@ -129,8 +136,13 @@ export class AgentService {
 
     const { flatAgentToCreate, flatRoleTargetToCreate } =
       fromCreateAgentInputToFlatAgent({
-        createAgentInput: input,
+        createAgentInput: {
+          ...input,
+          ...(isDefined(triggers) && { triggers }),
+        },
+        isSystem,
         workspaceId,
+        userWorkspaceId,
         flatApplication: resolvedFlatApplication,
         flatRoleMaps,
       });
@@ -177,7 +189,7 @@ export class AgentService {
     });
 
     return {
-      ...createdAgent,
+      ...resolveEffectiveAgent(createdAgent),
       roleId: flatRoleTargetToCreate?.roleId ?? null,
     };
   }
@@ -185,9 +197,11 @@ export class AgentService {
   async updateOneAgent({
     input,
     workspaceId,
+    userWorkspaceId,
   }: {
     input: UpdateAgentInput;
     workspaceId: string;
+    userWorkspaceId: string | undefined;
   }): Promise<FlatAgentWithRoleId> {
     const { workspaceCustomFlatApplication } =
       await this.applicationService.findWorkspaceTwentyStandardAndCustomApplicationOrThrow(
@@ -196,12 +210,29 @@ export class AgentService {
         },
       );
 
-    const { flatRoleTargetByAgentIdMaps, flatAgentMaps, flatRoleMaps } =
-      await this.workspaceCacheService.getOrRecompute(workspaceId, [
-        'flatRoleTargetByAgentIdMaps',
-        'flatAgentMaps',
-        'flatRoleMaps',
-      ]);
+    const {
+      flatRoleTargetByAgentIdMaps,
+      flatAgentMaps,
+      flatRoleMaps,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+    } = await this.workspaceCacheService.getOrRecompute(workspaceId, [
+      'flatRoleTargetByAgentIdMaps',
+      'flatAgentMaps',
+      'flatRoleMaps',
+      'flatObjectMetadataMaps',
+      'flatFieldMetadataMaps',
+    ]);
+
+    const triggers = addAgentTriggerConditionBindingsOrThrow({
+      triggers: input.triggers,
+      storedTriggers: findFlatEntityByIdInFlatEntityMaps({
+        flatEntityId: input.id,
+        flatEntityMaps: flatAgentMaps,
+      })?.triggers,
+      flatObjectMetadataMaps,
+      flatFieldMetadataMaps,
+    });
 
     const {
       flatAgentToUpdate,
@@ -209,10 +240,15 @@ export class AgentService {
       flatRoleTargetToDelete,
       flatRoleTargetToUpdate,
     } = fromUpdateAgentInputToFlatAgentToUpdate({
-      updateAgentInput: input,
+      updateAgentInput: { ...input, ...(isDefined(triggers) && { triggers }) },
       flatAgentMaps,
       flatRoleTargetByAgentIdMaps,
       flatRoleMaps,
+      callerApplicationUniversalIdentifier:
+        workspaceCustomFlatApplication.universalIdentifier,
+      workspaceCustomApplicationUniversalIdentifier:
+        workspaceCustomFlatApplication.universalIdentifier,
+      userWorkspaceId,
     });
 
     const validateAndBuildResult =
@@ -267,15 +303,20 @@ export class AgentService {
       recomputedFlatRoleTargetByAgentIdMaps[flatAgentToUpdate.id];
 
     return {
-      ...updatedAgent,
+      ...resolveEffectiveAgent(updatedAgent),
       roleId: existingRoleTarget?.roleId ?? null,
     };
   }
 
-  async deleteOneAgent(
-    id: string,
-    workspaceId: string,
-  ): Promise<FlatAgentWithRoleId> {
+  async deleteOneAgent({
+    id,
+    workspaceId,
+  }: {
+    id: string;
+    workspaceId: string;
+  }): Promise<FlatAgentWithRoleId> {
+    await this.findOneAgentById({ id, workspaceId });
+
     const deletedAgents = await this.deleteManyAgents({
       ids: [id],
       workspaceId,
@@ -313,11 +354,15 @@ export class AgentService {
         },
       );
 
-    const { flatAgentMaps, flatRoleTargetByAgentIdMaps } =
-      await this.workspaceCacheService.getOrRecompute(workspaceId, [
-        'flatAgentMaps',
-        'flatRoleTargetByAgentIdMaps',
-      ]);
+    const {
+      flatAgentMaps,
+      flatRoleTargetByAgentIdMaps,
+      flatNavigationMenuItemMaps,
+    } = await this.workspaceCacheService.getOrRecompute(workspaceId, [
+      'flatAgentMaps',
+      'flatRoleTargetByAgentIdMaps',
+      'flatNavigationMenuItemMaps',
+    ]);
 
     const agentsToDelete = ids
       .map((id) =>
@@ -336,6 +381,13 @@ export class AgentService {
       .map((agent) => flatRoleTargetByAgentIdMaps[agent.id])
       .filter(isDefined);
 
+    const navigationMenuItemsToDelete = agentsToDelete.flatMap((agent) =>
+      findManyFlatEntityByIdInFlatEntityMaps({
+        flatEntityIds: agent.navigationMenuItemIds,
+        flatEntityMaps: flatNavigationMenuItemMaps,
+      }),
+    );
+
     const validateAndBuildResult =
       await this.workspaceMigrationValidateBuildAndRunService.validateBuildAndRunWorkspaceMigration(
         {
@@ -348,6 +400,11 @@ export class AgentService {
             roleTarget: {
               flatEntityToCreate: [],
               flatEntityToDelete: roleTargetsToDelete,
+              flatEntityToUpdate: [],
+            },
+            navigationMenuItem: {
+              flatEntityToCreate: [],
+              flatEntityToDelete: navigationMenuItemsToDelete,
               flatEntityToUpdate: [],
             },
           },
@@ -366,29 +423,8 @@ export class AgentService {
     }
 
     return agentsToDelete.map((agent) => ({
-      ...agent,
+      ...resolveEffectiveAgent(agent),
       roleId: flatRoleTargetByAgentIdMaps[agent.id]?.roleId ?? null,
     }));
-  }
-
-  async searchAgents(
-    query: string,
-    workspaceId: string,
-    options: { limit: number } = { limit: 2 },
-  ): Promise<AgentEntity[]> {
-    const queryLower = query.toLowerCase();
-
-    return this.agentRepository.find(workspaceId, {
-      where: [
-        { deletedAt: IsNull(), name: ILike(`%${queryLower}%`) },
-        {
-          deletedAt: IsNull(),
-          description: ILike(`%${queryLower}%`),
-        },
-        { deletedAt: IsNull(), label: ILike(`%${queryLower}%`) },
-      ],
-      take: options.limit,
-      order: { name: 'ASC' },
-    });
   }
 }

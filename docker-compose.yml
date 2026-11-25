@@ -9,7 +9,7 @@ services:
       - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80"
       - "${BIND_ADDRESS:-127.0.0.1}:3000:80"
     depends_on:
-      api:
+      nest-api:
         condition: service_healthy
       web:
         condition: service_healthy
@@ -18,61 +18,14 @@ services:
       minio:
         condition: service_healthy
     environment:
-      # Which API serves /api/: api:8080 (Go, default) or nest-api:8080 (NestJS,
-      # start it with --profile nest). See backend/PLAN.md, cutover.
-      SEATIKO_API_UPSTREAM: ${SEATIKO_API_UPSTREAM:-api:8080}
+      # The API behind /api/ (NestJS, ./backend).
+      SEATIKO_API_UPSTREAM: ${SEATIKO_API_UPSTREAM:-nest-api:8080}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
       interval: 5s
       timeout: 3s
       retries: 15
-
-  api:
-    build:
-      context: ./seatiko/services/api
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
-    networks:
-      default:
-        aliases: [api.seatiko.local]
-    # Secrets are loaded only by the backend container and never exposed to web/mobile builds.
-    env_file:
-      - path: ./.env.keys
-        required: false
-      - path: ./.env.integration.local
-        required: false
-    volumes:
-      - api-data:/app/data
-      - api-uploads:/app/data/uploads
-      - ./.seatiko-local:/run/seatiko/local:ro
-    environment:
-      ADDR: ":8080"
-      JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
-      APP_ENV: ${APP_ENV:-development}
-      UPLOAD_DIR: /app/data/uploads
-      DATA_FILE: /app/data/seatiko-state.json
-      GOOGLE_CONFIG_FILE: /run/seatiko/local/google.env
-      TWENTY_BASE_URL: http://twenty-server:3000
-      TWENTY_PUBLIC_URL: ${SERVER_URL:-http://crm.localhost}
-      TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
-      # Avatars in MinIO (S3); browsers load them through nginx /media/.
-      S3_ENDPOINT: http://minio:9000
-      S3_REGION: us-east-1
-      S3_BUCKET: ${S3_BUCKET:-seatiko}
-      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-seatiko}
-      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-seatiko-minio-dev-secret}
-      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-/media}
-    depends_on:
-      minio-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
 
   web:
     build:
@@ -81,13 +34,15 @@ services:
       args:
         # Browser calls same origin via nginx :80 → /api/...
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        # Demo sign-in buttons: only for a demo database (the site uses real data).
+        NEXT_PUBLIC_DEMO_LOGIN: ${NEXT_PUBLIC_DEMO_LOGIN:-false}
     expose:
       - "3001"
     environment:
       PORT: 3001
       HOSTNAME: 0.0.0.0
     depends_on:
-      api:
+      nest-api:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3001/"]
@@ -96,11 +51,9 @@ services:
       retries: 15
     restart: unless-stopped
 
-  # --- NestJS API (migration from the Go api, see backend/PLAN.md). Not started by
-  # default: `docker compose --profile nest up -d seatiko-db nest-api`.
+  # --- Seatiko API: NestJS (./backend) on PostgreSQL.
   seatiko-db:
     image: postgres:16
-    profiles: ["nest"]
     environment:
       POSTGRES_DB: seatiko
       POSTGRES_USER: seatiko
@@ -119,22 +72,35 @@ services:
   nest-api:
     build:
       context: ./backend
-    profiles: ["nest"]
     expose:
       - "8080"
-    env_file:
-      - path: ./.env.integration.local
-        required: false
-    volumes:
-      - ./.seatiko-local:/run/seatiko/local:ro
+    networks:
+      default:
+        aliases: [api.seatiko.local]
     environment:
       ADDR: ":8080"
       APP_ENV: ${APP_ENV:-development}
       JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
       DATABASE_URL: postgres://seatiko:${SEATIKO_DB_PASSWORD:-seatiko-dev-password}@seatiko-db:5432/seatiko
-      GOOGLE_CONFIG_FILE: /run/seatiko/local/google.env
+      SEATIKO_ADMIN_EMAIL: ${SEATIKO_ADMIN_EMAIL:-}
+      SEATIKO_ADMIN_PASSWORD: ${SEATIKO_ADMIN_PASSWORD:-}
       # Google map on the site needs a billing account; off = free OpenFreeMap map.
       GOOGLE_MAPS_ENABLED: ${GOOGLE_MAPS_ENABLED:-false}
+      GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
+      GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      # Sign in with Google (web client ID first); empty = no Google button.
+      GOOGLE_CLIENT_IDS: ${GOOGLE_CLIENT_IDS:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      TWENTY_BASE_URL: http://twenty-server:3000
+      TWENTY_PUBLIC_URL: ${SERVER_URL:-http://crm.localhost}
+      TWENTY_API_KEY: ${TWENTY_API_KEY:-}
+      TWENTY_WEBHOOK_SECRET: ${TWENTY_WEBHOOK_SECRET:-}
+      TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
+      # NestJS Observe telemetry (traces, errors, logs); nothing is sent while the key is empty.
+      OBSERVE_APP_KEY: ${OBSERVE_APP_KEY:-}
+      OBSERVE_APP_SECRET: ${OBSERVE_APP_SECRET:-}
       # Cafes and restaurants from OpenStreetMap + Overture, imported at start and refreshed weekly.
       OPEN_PLACES_CITIES: ${OPEN_PLACES_CITIES:-balti}
       S3_ENDPOINT: http://minio:9000
@@ -145,10 +111,12 @@ services:
     depends_on:
       seatiko-db:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   # S3-compatible object storage: MinIO Community (Chainguard build; MinIO stopped
-  # publishing free images in Oct 2025). For AWS S3 / R2 change the S3_* variables of api.
+  # publishing free images in Oct 2025). For AWS S3 / R2 change the S3_* variables of nest-api.
   minio:
     image: cgr.dev/chainguard/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
@@ -180,11 +148,11 @@ services:
     restart: "no"
 
   twenty-server:
-    image: seatiko/twenty:${TWENTY_IMAGE_TAG:-v2.57.1}
+    image: seatiko/twenty:${TWENTY_IMAGE_TAG:-v2.63.0}
     build:
       context: ./config/twenty
       args:
-        TWENTY_IMAGE_TAG: ${TWENTY_IMAGE_TAG:-v2.57.1}
+        TWENTY_IMAGE_TAG: ${TWENTY_IMAGE_TAG:-v2.63.0}
     stop_grace_period: 120s
     volumes:
       - twenty-server-data:/app/packages/twenty-server/.local-storage
@@ -205,9 +173,9 @@ services:
       FALLBACK_ENCRYPTION_KEY: ${FALLBACK_ENCRYPTION_KEY:-}
       APP_SECRET: ${APP_SECRET:-}
       LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-LOCAL}
-      # Local-only: Twenty must be allowed to deliver webhooks to the Docker network.
-      # Keep the default safe mode enabled in production and use a public HTTPS endpoint.
-      OUTBOUND_HTTP_SAFE_MODE_ENABLED: ${TWENTY_OUTBOUND_HTTP_SAFE_MODE_ENABLED:-false}
+      # Private hosts Twenty may call (webhooks to the Seatiko API on the Docker network);
+      # every other private address stays blocked (SSRF protection).
+      OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS: ${TWENTY_OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS:-api.seatiko.local}
     depends_on:
       twenty-db:
         condition: service_healthy
@@ -221,11 +189,11 @@ services:
     restart: unless-stopped
 
   twenty-worker:
-    image: seatiko/twenty:${TWENTY_IMAGE_TAG:-v2.57.1}
+    image: seatiko/twenty:${TWENTY_IMAGE_TAG:-v2.63.0}
     build:
       context: ./config/twenty
       args:
-        TWENTY_IMAGE_TAG: ${TWENTY_IMAGE_TAG:-v2.57.1}
+        TWENTY_IMAGE_TAG: ${TWENTY_IMAGE_TAG:-v2.63.0}
     stop_grace_period: 120s
     volumes:
       - twenty-server-data:/app/packages/twenty-server/.local-storage
@@ -245,7 +213,7 @@ services:
       APP_SECRET: ${APP_SECRET:-}
       LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-LOCAL}
       # Must match twenty-server so queued webhook jobs can reach the local API.
-      OUTBOUND_HTTP_SAFE_MODE_ENABLED: ${TWENTY_OUTBOUND_HTTP_SAFE_MODE_ENABLED:-false}
+      OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS: ${TWENTY_OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS:-api.seatiko.local}
     depends_on:
       twenty-db:
         condition: service_healthy
@@ -283,8 +251,6 @@ services:
 volumes:
   seatiko-db-data:
   minio-data:
-  api-data:
-  api-uploads:
   twenty-db-data:
     name: twenty_db-data
   twenty-server-data:

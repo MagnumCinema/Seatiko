@@ -9,11 +9,13 @@ import {
   AggregateOperations,
   ViewCalendarLayout,
   ViewOpenRecordIn,
+  ViewPresetFilter,
   ViewType,
   ViewVisibility,
   ViewKey,
 } from 'twenty-shared/types';
 
+import { type AuthoredOverrides } from 'src/engine/metadata-modules/overrides/types/authored-overrides.type';
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 import { ViewFieldGroupDTO } from 'src/engine/metadata-modules/view-field-group/dtos/view-field-group.dto';
 import { type ViewOverrides } from 'src/engine/metadata-modules/view/entities/view.entity';
@@ -29,6 +31,7 @@ registerEnumType(ViewType, { name: 'ViewType' });
 registerEnumType(ViewKey, { name: 'ViewKey' });
 registerEnumType(ViewCalendarLayout, { name: 'ViewCalendarLayout' });
 registerEnumType(ViewVisibility, { name: 'ViewVisibility' });
+registerEnumType(ViewPresetFilter, { name: 'ViewPresetFilter' });
 
 @ObjectType('View')
 export class ViewDTO {
@@ -65,9 +68,6 @@ export class ViewDTO {
   @Field({ nullable: false, defaultValue: false })
   isCompact: boolean;
 
-  @Field({ nullable: false, defaultValue: false })
-  isCustom: boolean;
-
   @Field(() => ViewOpenRecordIn, {
     nullable: false,
     defaultValue: ViewOpenRecordIn.SIDE_PANEL,
@@ -87,8 +87,16 @@ export class ViewDTO {
   @Field({ nullable: false, defaultValue: false })
   shouldHideEmptyGroups: boolean;
 
+  // Nullable since cached views can predate the column and Boolean! fails the query
+  @Field(() => Boolean, { nullable: true })
+  shouldDisplayGroupsAsTabs?: boolean | null;
+
   @Field(() => Int, { nullable: true })
   kanbanColumnWidth?: number | null;
+
+  // Nullable since cached views can predate the column and Int! fails the query
+  @Field(() => Int, { nullable: true })
+  groupLoadLimit?: number | null;
 
   @Field(() => UUIDScalarType, { nullable: true })
   calendarFieldMetadataId?: string | null;
@@ -101,6 +109,9 @@ export class ViewDTO {
 
   @Field(() => String, { nullable: true })
   anyFieldFilterValue?: string | null;
+
+  @Field(() => ViewPresetFilter, { nullable: true })
+  presetFilter?: ViewPresetFilter | null;
 
   @Field(() => ViewCalendarLayout, { nullable: true })
   calendarLayout: ViewCalendarLayout | null;
@@ -132,8 +143,12 @@ export class ViewDTO {
   @Field(() => [ViewFieldGroupDTO])
   viewFieldGroups?: ViewFieldGroupDTO[];
 
+  @Field(() => Boolean, { nullable: false })
+  isPrivate: boolean;
+
   @Field(() => ViewVisibility, {
     nullable: false,
+    deprecationReason: 'Use isPrivate instead',
   })
   visibility: ViewVisibility;
 
@@ -144,5 +159,5 @@ export class ViewDTO {
   isActive: boolean;
 
   @HideField()
-  overrides?: ViewOverrides | null;
+  overrides?: AuthoredOverrides<ViewOverrides> | null;
 }

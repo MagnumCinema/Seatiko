@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { In } from 'typeorm';
 
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
-import { type WorkspaceTransactionScope } from 'src/engine/twenty-orm/global-workspace-datasource/types/workspace-transaction-scope.type';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
+import { type WorkspaceTransactionScope } from 'src/engine/twenty-orm/types/workspace-transaction-scope.type';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { type MessageChannelMessageAssociationMessageFolderWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel-message-association-message-folder.workspace-entity';
 import { type MessageChannelMessageAssociationFolderAssociation } from 'src/modules/messaging/message-import-manager/types/message-channel-message-association-folder-association.type';
@@ -11,15 +11,14 @@ import { buildMessageFolderAssociationsToInsert } from 'src/modules/messaging/me
 
 @Injectable()
 export class MessagingMessageFolderAssociationService {
-  constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-  ) {}
+  constructor(private readonly workspaceOrmManager: WorkspaceOrmManager) {}
 
   async saveMessageFolderAssociations(
     associations: MessageChannelMessageAssociationFolderAssociation[],
     workspaceId: string,
     transactionScope: WorkspaceTransactionScope,
-  ): Promise<void> {
+    associationIdsToReplaceLinks: string[],
+  ): Promise<string[]> {
     const associationIds = [
       ...new Set(
         associations
@@ -29,15 +28,15 @@ export class MessagingMessageFolderAssociationService {
     ];
 
     if (associationIds.length === 0) {
-      return;
+      return [];
     }
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+    return this.workspaceOrmManager.executeInWorkspaceContext(
       async () => {
         const repository =
-          transactionScope.getRepository<MessageChannelMessageAssociationMessageFolderWorkspaceEntity>(
+          transactionScope.getRepositoryWithoutPermissionChecks<MessageChannelMessageAssociationMessageFolderWorkspaceEntity>(
             'messageChannelMessageAssociationMessageFolder',
           );
 
@@ -55,6 +54,39 @@ export class MessagingMessageFolderAssociationService {
         if (recordsToInsert.length > 0) {
           await repository.insert(recordsToInsert);
         }
+
+        const staleRecords = existingRecords.filter(
+          ({ messageChannelMessageAssociationId, messageFolderId }) =>
+            associationIdsToReplaceLinks.includes(
+              messageChannelMessageAssociationId,
+            ) &&
+            !associations.some(
+              (association) =>
+                association.messageChannelMessageAssociationId ===
+                  messageChannelMessageAssociationId &&
+                association.messageFolderIds.includes(messageFolderId),
+            ),
+        );
+
+        if (staleRecords.length === 0) {
+          return [];
+        }
+
+        await transactionScope
+          .getRepositoryWithoutPermissionChecks<MessageChannelMessageAssociationMessageFolderWorkspaceEntity>(
+            'messageChannelMessageAssociationMessageFolder',
+            { shouldSkipEventEmission: true },
+          )
+          .delete({ id: In(staleRecords.map(({ id }) => id)) });
+
+        return [
+          ...new Set(
+            staleRecords.map(
+              ({ messageChannelMessageAssociationId }) =>
+                messageChannelMessageAssociationId,
+            ),
+          ),
+        ];
       },
       authContext,
       { lite: true },

@@ -1,9 +1,9 @@
-import { useRedeemSSOExchangeToken } from '@/auth/hooks/useRedeemSSOExchangeToken';
+import { useRedeemSsoExchangeToken } from '@/auth/hooks/useRedeemSsoExchangeToken';
 import { useEffect } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 
-export const SignInUpSSOExchangeTokenEffect = () => {
-  const { redeemSSOExchangeToken } = useRedeemSSOExchangeToken();
+export const SignInUpSsoExchangeTokenEffect = () => {
+  const { redeemSsoExchangeToken } = useRedeemSsoExchangeToken();
 
   useEffect(() => {
     const ssoExchangeToken = new URLSearchParams(
@@ -14,17 +14,15 @@ export const SignInUpSSOExchangeTokenEffect = () => {
       return;
     }
 
-    // Stripping synchronously through window.history rather than the router
-    // (whose data-router navigations defer the replace) latches re-invoked and
-    // remounted effects out: they re-read window.location and find no token
+    // Synchronous strip (the router defers replace) so re-run or remounted effects find no token
     window.history.replaceState(
       window.history.state,
       '',
       window.location.pathname + window.location.search,
     );
 
-    void redeemSSOExchangeToken(ssoExchangeToken);
-  }, [redeemSSOExchangeToken]);
+    void redeemSsoExchangeToken(ssoExchangeToken);
+  }, [redeemSsoExchangeToken]);
 
   return <></>;
 };

@@ -1,29 +1,22 @@
-import { WorkflowActionType } from 'twenty-shared/workflow';
 import { z } from 'zod';
 
+import { workflowStepConnectionOptionsSchema } from 'src/modules/workflow/workflow-tools/tools/schemas/workflow-step-connection-options.schema';
 import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
 } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
+import { type WorkflowTool } from 'src/modules/workflow/workflow-tools/types/workflow-tool.type';
 
 const createWorkflowVersionEdgeSchema = z.object({
-  workflowVersionId: z
+  coreWorkflowVersionId: z
     .string()
     .uuid()
-    .describe('The UUID of the workflow version'),
+    .describe('The core workflow version UUID'),
   source: z
     .union([z.literal('trigger'), z.string().uuid()])
     .describe('The source step: "trigger" or a step UUID'),
   target: z.string().uuid().describe('The UUID of the target step'),
-  sourceConnectionOptions: z
-    .object({
-      connectedStepType: z.literal(WorkflowActionType.ITERATOR),
-      settings: z.object({
-        isConnectedToLoop: z.boolean(),
-      }),
-    })
-    .optional()
-    .describe('Optional connection options for iterator steps'),
+  sourceConnectionOptions: workflowStepConnectionOptionsSchema.optional(),
 });
 
 type CreateWorkflowVersionEdgeInput = z.infer<
@@ -31,28 +24,30 @@ type CreateWorkflowVersionEdgeInput = z.infer<
 >;
 
 export const createCreateWorkflowVersionEdgeTool = (
-  deps: Pick<WorkflowToolDependencies, 'workflowVersionEdgeService'>,
+  deps: Pick<WorkflowToolDependencies, 'coreWorkflowVersionMutationService'>,
   context: WorkflowToolContext,
-) => ({
-  name: 'create_workflow_version_edge' as const,
-  description:
-    'Create a connection (edge) between two workflow steps. This defines the flow between steps.',
-  inputSchema: createWorkflowVersionEdgeSchema,
-  execute: async (parameters: CreateWorkflowVersionEdgeInput) => {
-    try {
-      return await deps.workflowVersionEdgeService.createWorkflowVersionEdge({
-        source: parameters.source,
-        target: parameters.target,
-        workflowVersionId: parameters.workflowVersionId,
-        workspaceId: context.workspaceId,
-        sourceConnectionOptions: parameters.sourceConnectionOptions,
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: `Failed to create workflow version edge: ${error.message}`,
-      };
-    }
-  },
-});
+) =>
+  ({
+    name: 'create_workflow_version_edge' as const,
+    description:
+      'Create a connection (edge) between two workflow steps. This defines the flow between steps.',
+    inputSchema: createWorkflowVersionEdgeSchema,
+    execute: async (parameters: CreateWorkflowVersionEdgeInput) => {
+      try {
+        return await deps.coreWorkflowVersionMutationService.createEdge({
+          source: parameters.source,
+          target: parameters.target,
+          coreWorkflowVersionId: parameters.coreWorkflowVersionId,
+          workspaceId: context.workspaceId,
+          userWorkspaceId: context.userWorkspaceId,
+          sourceConnectionOptions: parameters.sourceConnectionOptions,
+        });
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          message: `Failed to create workflow version edge: ${error.message}`,
+        };
+      }
+    },
+  }) satisfies WorkflowTool;

@@ -14,7 +14,24 @@ const CODE_KEYS: Record<string, MessageKey> = {
   invalid_status: "error.invalid_status",
   reservation_not_found: "error.not_found",
   not_found: "error.not_found",
+  link_required: "error.google_link_required",
+  google_email_unverified: "error.google_email_unverified",
+  invalid_google_token: "error.google_unavailable",
+  google_unavailable: "error.google_unavailable",
+  google_signin_disabled: "error.google_unavailable",
+  google_linked_elsewhere: "error.google_linked_elsewhere",
+  google_already_connected: "error.google_already_connected",
+  wrong_password: "error.wrong_password",
+  password_required: "error.password_required",
+  password_required_first: "error.password_required_first",
 };
+
+/** Message key for a failure of Google's window (lib/google-oauth), not of the API. */
+export function googleErrorKey(code: string): MessageKey {
+  if (code === "popup_blocked") return "error.google_popup_blocked";
+  if (code === "access_denied") return "error.google_access_denied";
+  return "error.google_unavailable";
+}
 
 /** Message key for an API failure; never shows raw server codes to guests. */
 export function apiErrorKey(error: unknown): MessageKey {

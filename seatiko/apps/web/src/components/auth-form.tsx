@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { login, register } from "@/lib/api";
-import { apiErrorKey } from "@/lib/api-error-message";
+import { googleSignIn, login, register } from "@/lib/api";
+import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
+import { apiErrorKey, googleErrorKey } from "@/lib/api-error-message";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
 type AuthFormProps = {
@@ -26,6 +27,8 @@ export function AuthForm({
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
+  // No Google button when the server has Google sign-in off.
+  const [googleOff, setGoogleOff] = useState(false);
 
   const update = (field: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -54,12 +57,39 @@ export function AuthForm({
     }
   }
 
+  /** Google's ID token → session; a first sign-in creates a guest account. */
+  async function google(credential: string, nonce: string) {
+    setBusy(true);
+    setErrorKey(null);
+    try {
+      await googleSignIn({ credential, nonce, locale, role: "guest" });
+      onSuccess();
+    } catch (error) {
+      setErrorKey(apiErrorKey(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const title = mode === "login" ? t("auth.login") : t("auth.register");
 
   return (
     <form className="booking-popup-auth" onSubmit={(e) => void submit(e)} noValidate>
       <h3 id={titleId}>{title}</h3>
       <p className="web-book-muted">{hint ?? t("res.auth_save")}</p>
+      {!googleOff && (
+      <GoogleSignInButton
+        redirect={{ role: "guest" }}
+        onCredential={(credential, nonce) => void google(credential, nonce)}
+        onUnavailable={() => setGoogleOff(true)}
+        onError={(code) => setErrorKey(googleErrorKey(code))}
+      >
+        <button type="button" className="auth-social-btn google auth-social-btn-wide">
+          <GoogleLogo />
+          <span>{t("google.continue")}</span>
+        </button>
+      </GoogleSignInButton>
+      )}
       {mode === "register" && (
         <>
           <input

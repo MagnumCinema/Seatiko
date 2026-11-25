@@ -2,34 +2,21 @@
 
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SettingsRadioCardContainer } from '@/settings/components/SettingsRadioCardContainer';
-import { SettingsSSOOIDCForm } from '@/settings/security/components/SSO/SettingsSSOOIDCForm';
-import { SettingsSSOSAMLForm } from '@/settings/security/components/SSO/SettingsSSOSAMLForm';
-import { type SettingSecurityNewSSOIdentityFormValues } from '@/settings/security/types/SSOIdentityProvider';
+import { SettingsSsoOidcForm } from '@/settings/security/components/sso/SettingsSsoOidcForm';
+import { SettingsSsoSamlForm } from '@/settings/security/components/sso/SettingsSsoSamlForm';
+import { type SettingSecurityNewSsoIdentityFormValues } from '@/settings/security/types/SsoIdentityProvider';
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
-import { styled } from '@linaria/react';
-import { t } from '@lingui/core/macro';
 import { type ReactElement, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
+import { Section } from 'twenty-ui/components/layout';
 import { type IconComponent, IconKey } from 'twenty-ui/icon';
-import { H2Title } from 'twenty-ui/typography';
-import { Section } from 'twenty-ui/layout';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { IdentityProviderType } from '~/generated-metadata/graphql';
+import { useLingui } from '@lingui/react/macro';
 
-const StyledInputsContainer = styled.div`
-  display: grid;
-  gap: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[4]};
-  grid-template-areas: 'input-1 input-1';
-  grid-template-columns: 1fr 1fr;
-
-  & :first-of-type {
-    grid-area: input-1;
-  }
-`;
-
-export const SettingsSSOIdentitiesProvidersForm = () => {
+export const SettingsSsoIdentitiesProvidersForm = () => {
+  const { t } = useLingui();
   const { control, watch } =
-    useFormContext<SettingSecurityNewSSOIdentityFormValues>();
+    useFormContext<SettingSecurityNewSsoIdentityFormValues>();
 
   const IdentitiesProvidersMap: Record<
     IdentityProviderType,
@@ -50,7 +37,7 @@ export const SettingsSSOIdentitiesProvidersForm = () => {
         value: 'OIDC',
         description: '',
       },
-      form: <SettingsSSOOIDCForm />,
+      form: <SettingsSsoOidcForm />,
     },
     SAML: {
       option: {
@@ -59,7 +46,7 @@ export const SettingsSSOIdentitiesProvidersForm = () => {
         value: 'SAML',
         description: '',
       },
-      form: <SettingsSSOSAMLForm />,
+      form: <SettingsSsoSamlForm />,
     },
   };
 
@@ -82,50 +69,49 @@ export const SettingsSSOIdentitiesProvidersForm = () => {
 
   return (
     <SettingsPageContainer>
-      <Section>
-        <H2Title title={t`Name`} description={t`The name of your connection`} />
-        <StyledInputsContainer>
-          <Controller
-            name="name"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <SettingsTextInput
-                instanceId="sso-identity-provider-name"
-                autoComplete="off"
-                label={t`Name`}
-                value={value}
-                onChange={onChange}
-                fullWidth
-                placeholder={t`Google OIDC`}
-              />
-            )}
-          />
-        </StyledInputsContainer>
-      </Section>
-      <Section>
-        <H2Title
+      <Section.Root>
+        <Section.Header
+          title={t`Name`}
+          description={t`The name of your connection`}
+        />
+        <Controller
+          name="name"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <SettingsTextInput
+              instanceId="sso-identity-provider-name"
+              autoComplete="off"
+              label={t`Name`}
+              value={value}
+              onChange={onChange}
+              fullWidth
+              placeholder={t`Google OIDC`}
+            />
+          )}
+        />
+      </Section.Root>
+      <Section.Root>
+        <Section.Header
           title={t`Type`}
           description={t`Choose between OIDC and SAML protocols`}
         />
-        <StyledInputsContainer>
-          <Controller
-            name="type"
-            control={control}
-            render={({ field: { onChange, value } }) => (
-              <SettingsRadioCardContainer
-                value={value}
-                options={Object.values(IdentitiesProvidersMap).map(
-                  (identityProviderType) => identityProviderType.option,
-                )}
-                onChange={onChange}
-              />
-            )}
-          />
-        </StyledInputsContainer>
-      </Section>
+        <Controller
+          name="type"
+          control={control}
+          render={({ field: { onChange, value } }) => (
+            <SettingsRadioCardContainer
+              value={value}
+              options={Object.values(IdentitiesProvidersMap).map(
+                (identityProviderType) => identityProviderType.option,
+              )}
+              onChange={onChange}
+            />
+          )}
+        />
+      </Section.Root>
       {formByType}
     </SettingsPageContainer>
   );
 };
 
-export default SettingsSSOIdentitiesProvidersForm;
+export default SettingsSsoIdentitiesProvidersForm;

@@ -1,6 +1,6 @@
 # Seatiko — Virtual Restaurant
 
-Единая ресторанная платформа для гостей, владельцев заведений и модерации: публичный сайт, кабинет владельца, Android-клиент, Go API, карта, схема столиков и Twenty CRM.
+Единая ресторанная платформа для гостей, владельцев заведений и модерации: публичный сайт, кабинет владельца, Android-клиент, API на NestJS, карта, схема столиков и Twenty CRM.
 
 **Пилот:** Бельцы, Молдова · **Языки:** RU / EN / RO
 
@@ -54,11 +54,11 @@ docs/                     ← вся документация в одном ме
 ├── prototype/
 ├── diagrams/
 └── superpowers/          спеки/планы агентов
+backend/                  API на NestJS + PostgreSQL (см. backend/README.md)
 seatiko/            код
 ├── README.md             runbook + скриншоты
 ├── apps/web/
-├── apps/mobile/
-└── services/api/
+└── apps/mobile/
 twenty/                   vendored CRM (не продукт FA)
 docker-compose.yml
 ```

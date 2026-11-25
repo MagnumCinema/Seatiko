@@ -27,5 +27,11 @@ dist/
 
 # Local brainstorm / visual companion sessions
 .superpowers/
-.env.integration.local
+# Settings and secrets: one .env, never committed (template: .env.example).
+.env
+.env.*
+!.env.example
 .seatiko-local/
+
+# Local file storage of the API (uploads written by dev runs and contract tests)
+backend/data/

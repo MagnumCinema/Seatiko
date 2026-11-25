@@ -1,19 +1,18 @@
+import { DEFAULT_VIEW_GROUP_LOAD_LIMIT } from 'twenty-shared/constants';
 import {
   isDefined,
   trimAndRemoveDuplicatedWhitespacesFromObjectStringProperties,
 } from 'twenty-shared/utils';
 import { v4 } from 'uuid';
-import {
-  ViewOpenRecordIn,
-  ViewType,
-  ViewVisibility,
-} from 'twenty-shared/types';
+import { ViewOpenRecordIn, ViewType } from 'twenty-shared/types';
 
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
 import { type AllFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/all-flat-entity-maps.type';
 import { resolveEntityRelationUniversalIdentifiers } from 'src/engine/metadata-modules/flat-entity/utils/resolve-entity-relation-universal-identifiers.util';
 import { computeFlatViewGroupsOnViewCreate } from 'src/engine/metadata-modules/flat-view-group/utils/compute-flat-view-groups-on-view-create.util';
+import { validateViewGroupLoadLimitOrThrow } from 'src/engine/metadata-modules/flat-view/utils/validate-view-group-load-limit-or-throw.util';
 import { type CreateViewInput } from 'src/engine/metadata-modules/view/dtos/inputs/create-view.input';
+import { resolveViewIsPrivateFromInput } from 'src/engine/metadata-modules/view/utils/resolve-view-is-private-from-input.util';
 import { type UniversalFlatViewGroup } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view-group.type';
 import { type UniversalFlatView } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view.type';
 
@@ -22,12 +21,14 @@ export const fromCreateViewInputToFlatViewToCreate = ({
   createdByUserWorkspaceId,
   flatApplication,
   flatFieldMetadataMaps,
+  flatFieldMetadataOptionMaps,
   flatObjectMetadataMaps,
 }: {
   createViewInput: CreateViewInput;
   createdByUserWorkspaceId?: string;
   flatApplication: FlatApplication;
   flatFieldMetadataMaps: AllFlatEntityMaps['flatFieldMetadataMaps'];
+  flatFieldMetadataOptionMaps: AllFlatEntityMaps['flatFieldMetadataOptionMaps'];
   flatObjectMetadataMaps: AllFlatEntityMaps['flatObjectMetadataMaps'];
 }): {
   flatViewToCreate: UniversalFlatView & { id: string };
@@ -38,6 +39,8 @@ export const fromCreateViewInputToFlatViewToCreate = ({
       rawCreateViewInput,
       ['id', 'name', 'objectMetadataId'],
     );
+
+  validateViewGroupLoadLimitOrThrow(createViewInput.groupLoadLimit);
 
   const createdAt = new Date().toISOString();
   const viewId = createViewInput.id ?? v4();
@@ -71,15 +74,19 @@ export const fromCreateViewInputToFlatViewToCreate = ({
     createdAt,
     updatedAt: createdAt,
     deletedAt: null,
-    isCustom: true,
     anyFieldFilterValue: createViewInput.anyFieldFilterValue ?? null,
+    presetFilter: createViewInput.presetFilter ?? null,
     calendarFieldMetadataUniversalIdentifier,
     calendarEndFieldMetadataUniversalIdentifier,
     calendarLayout: createViewInput.calendarLayout ?? null,
     icon: createViewInput.icon,
     isCompact: createViewInput.isCompact ?? false,
     shouldHideEmptyGroups: createViewInput.shouldHideEmptyGroups ?? false,
+    shouldDisplayGroupsAsTabs:
+      createViewInput.shouldDisplayGroupsAsTabs ?? false,
     kanbanColumnWidth: createViewInput.kanbanColumnWidth ?? null,
+    groupLoadLimit:
+      createViewInput.groupLoadLimit ?? DEFAULT_VIEW_GROUP_LOAD_LIMIT,
     kanbanAggregateOperation: createViewInput.kanbanAggregateOperation ?? null,
     kanbanAggregateOperationFieldMetadataUniversalIdentifier,
     mainGroupByFieldMetadataUniversalIdentifier,
@@ -88,7 +95,11 @@ export const fromCreateViewInputToFlatViewToCreate = ({
     position: createViewInput.position ?? 0,
     type: createViewInput.type ?? ViewType.TABLE,
     universalIdentifier: createViewInput.universalIdentifier ?? v4(),
-    visibility: createViewInput.visibility ?? ViewVisibility.WORKSPACE,
+    isPrivate:
+      resolveViewIsPrivateFromInput({
+        isPrivate: createViewInput.isPrivate,
+        visibility: createViewInput.visibility,
+      }) ?? false,
     createdByUserWorkspaceId: createdByUserWorkspaceId ?? null,
     isActive: true,
     isSystemSideEffect: false,
@@ -98,6 +109,7 @@ export const fromCreateViewInputToFlatViewToCreate = ({
     viewGroupUniversalIdentifiers: [],
     viewFieldGroupUniversalIdentifiers: [],
     viewFilterGroupUniversalIdentifiers: [],
+    navigationMenuItemUniversalIdentifiers: [],
     viewSortUniversalIdentifiers: [],
     applicationUniversalIdentifier: flatApplication.universalIdentifier,
   };
@@ -109,6 +121,7 @@ export const fromCreateViewInputToFlatViewToCreate = ({
       flatViewToCreateUniversalIdentifier: flatViewToCreate.universalIdentifier,
       mainGroupByFieldMetadataId,
       flatFieldMetadataMaps,
+      flatFieldMetadataOptionMaps,
     });
   }
 

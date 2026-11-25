@@ -2,15 +2,15 @@
 
 import { renderHook } from '@testing-library/react';
 
-import { useUpdateSSOIdentityProvider } from '@/settings/security/hooks/useUpdateSSOIdentityProvider';
+import { useUpdateSsoIdentityProvider } from '@/settings/security/hooks/useUpdateSsoIdentityProvider';
 import { SsoIdentityProviderStatus } from '~/generated-metadata/graphql';
 import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksWrapper';
 
-const mutationEditSSOIDPCallSpy = jest.fn();
+const mutationEditSsoIdpCallSpy = jest.fn();
 
 jest.mock('@apollo/client/react', () => ({
   ...jest.requireActual('@apollo/client/react'),
-  useMutation: () => [mutationEditSSOIDPCallSpy],
+  useMutation: () => [mutationEditSsoIdpCallSpy],
 }));
 
 const Wrapper = getJestMetadataAndApolloMocksWrapper({
@@ -29,13 +29,13 @@ describe('useEditSsoIdentityProvider', () => {
     };
     renderHook(
       () => {
-        const { updateSSOIdentityProvider } = useUpdateSSOIdentityProvider();
-        updateSSOIdentityProvider(params);
+        const { updateSsoIdentityProvider } = useUpdateSsoIdentityProvider();
+        updateSsoIdentityProvider(params);
       },
       { wrapper: Wrapper },
     );
 
-    expect(mutationEditSSOIDPCallSpy).toHaveBeenCalledWith({
+    expect(mutationEditSsoIdpCallSpy).toHaveBeenCalledWith({
       onCompleted: expect.any(Function),
       variables: {
         input: params,

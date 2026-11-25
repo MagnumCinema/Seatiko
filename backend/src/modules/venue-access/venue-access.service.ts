@@ -1,6 +1,7 @@
 import { Global, Injectable, Module } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
 import { and, eq, or, sql } from 'drizzle-orm';
+import { badRequest, forbidden } from '../../core/errors/domain-error.js';
 import type { Database } from '../../database/database.module.js';
 import { applications, staffMembers, users } from '../../database/schema/index.js';
 
@@ -26,6 +27,18 @@ export class VenueAccessService {
     return Boolean(row);
   }
 
+  /** An application id stands for its published venue (resolveVenueIDLocked). */
+  async resolveVenueId(id: string): Promise<string> {
+    const [app] = await this.db.select({ venueId: applications.venueId }).from(applications).where(eq(applications.id, id));
+    return app?.venueId || id;
+  }
+
+  /** Owner check that returns the venue id behind an application id, else 403. */
+  async requireOwner(ownerId: string, venueOrAppId: string): Promise<string> {
+    if (!(await this.ownerCanManage(ownerId, venueOrAppId))) throw forbidden();
+    return this.resolveVenueId(venueOrAppId);
+  }
+
   async isActiveStaff(user: { id: string; email: string }, venueId: string): Promise<boolean> {
     const [row] = await this.db
       .select({ id: staffMembers.id })
@@ -39,6 +52,14 @@ export class VenueAccessService {
       )
       .limit(1);
     return Boolean(row);
+  }
+
+  /** Staff routes: 400 venue_id_required without a venue, 403 when the user may not work it (gateStaffVenue). */
+  async requireStaff(userId: string, venueId?: string): Promise<StaffActor> {
+    if (!venueId) throw badRequest('venue_id_required');
+    const actor = await this.staffActor(userId, venueId);
+    if (!actor) throw forbidden();
+    return actor;
   }
 
   /** The user and their role at the venue, or undefined when they may not act there. */

@@ -11,6 +11,12 @@ import {
   createClient,
 } from '@clickhouse/client';
 
+import { isDefined } from 'twenty-shared/utils';
+
+import {
+  ClickHouseException,
+  ClickHouseExceptionCode,
+} from 'src/database/clickhouse/clickhouse.exception';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 
 export type ClickHouseInsertOptions = {
@@ -27,6 +33,7 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
   private mainClient: ClickHouseClient | undefined;
   private clients: Map<string, ClickHouseClient> = new Map();
   private isClientInitializing: Map<string, boolean> = new Map();
+  private isDestroyed = false;
   private readonly logger = new Logger(ClickHouseService.name);
 
   constructor(private readonly twentyConfigService: TwentyConfigService) {
@@ -59,6 +66,10 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
+    if (this.isDestroyed) {
+      return undefined;
+    }
+
     if (this.clients.has(clientId)) {
       return this.clients.get(clientId);
     }
@@ -67,6 +78,12 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const clientInstance = await this.createAndInitializeClient(url);
+
+      if (this.isDestroyed) {
+        await clientInstance.close();
+
+        return undefined;
+      }
 
       this.clients.set(clientId, clientInstance);
 
@@ -126,13 +143,16 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy() {
-    if (this.mainClient) {
-      await this.mainClient.close();
-    }
+    this.isDestroyed = true;
 
-    for (const [, client] of this.clients) {
-      await client.close();
-    }
+    const clients = [this.mainClient, ...this.clients.values()].filter(
+      isDefined,
+    );
+
+    this.mainClient = undefined;
+    this.clients.clear();
+
+    await Promise.all(clients.map((client) => client.close()));
   }
 
   // oxlint-disable-next-line typescript/no-explicit-any
@@ -204,6 +224,29 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
 
       return [];
     }
+  }
+
+  public async selectOrThrow<T>(
+    query: string,
+    // oxlint-disable-next-line typescript/no-explicit-any
+    params?: Record<string, any>,
+  ): Promise<T[]> {
+    if (!this.mainClient) {
+      throw new ClickHouseException(
+        'ClickHouse client is not available',
+        ClickHouseExceptionCode.CLIENT_NOT_AVAILABLE,
+      );
+    }
+
+    const resultSet = await this.mainClient.query({
+      query,
+      format: 'JSONEachRow',
+      query_params: params,
+    });
+
+    const result = await resultSet.json<T>();
+
+    return Array.isArray(result) ? result : [];
   }
 
   public async createDatabase(databaseName: string): Promise<boolean> {
@@ -288,7 +331,9 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
     let currentSizeBytes = 0;
 
     const flush = async () => {
-      if (chunk.length === 0) return;
+      if (chunk.length === 0) {
+        return;
+      }
       await client.insert({
         table,
         values: chunk,

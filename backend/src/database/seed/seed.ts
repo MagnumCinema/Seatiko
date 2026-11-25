@@ -13,7 +13,11 @@ import { importGoState } from './import-go-state.js';
 async function main() {
   const fileArg = process.argv.indexOf('--file');
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
+  if (!url) throw new Error('DATABASE_URL is not set (give the test database explicitly)');
+  // Demo data is for contract tests only: never into the site's database.
+  if (process.env.APP_ENV === 'production' || /\/seatiko(\?|$)/.test(url)) {
+    throw new Error('refusing to seed demo data into the main database; use a test database (e.g. …/seatiko_test)');
+  }
   const db = drizzle({ connection: url, schema, casing: 'snake_case' });
   try {
     if (fileArg > 0) {

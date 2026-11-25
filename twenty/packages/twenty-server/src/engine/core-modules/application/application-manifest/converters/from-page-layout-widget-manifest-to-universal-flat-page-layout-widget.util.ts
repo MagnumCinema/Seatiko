@@ -1,7 +1,8 @@
-import { type PageLayoutWidgetManifest } from 'twenty-shared/application';
-import { DEFAULT_WIDGET_SIZE } from 'twenty-shared/constants';
+import { type NormalizedPageLayoutWidgetManifest } from 'twenty-shared/application';
+import { validateConditionalAvailabilityNode } from 'twenty-shared/conditional-availability';
+import { isDefined } from 'twenty-shared/utils';
 
-import { type WidgetType } from 'src/engine/metadata-modules/page-layout-widget/enums/widget-type.enum';
+import { fromLegacyJsonLogicToConditionalAvailability } from 'src/engine/metadata-modules/page-layout-widget/utils/from-legacy-json-logic-to-conditional-availability.util';
 import { type UniversalFlatPageLayoutWidget } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-page-layout-widget.type';
 
 export const fromPageLayoutWidgetManifestToUniversalFlatPageLayoutWidget = ({
@@ -10,11 +11,27 @@ export const fromPageLayoutWidgetManifestToUniversalFlatPageLayoutWidget = ({
   applicationUniversalIdentifier,
   now,
 }: {
-  pageLayoutWidgetManifest: PageLayoutWidgetManifest;
+  pageLayoutWidgetManifest: NormalizedPageLayoutWidgetManifest;
   pageLayoutTabUniversalIdentifier: string;
   applicationUniversalIdentifier: string;
   now: string;
 }): UniversalFlatPageLayoutWidget => {
+  const conditionalDisplay =
+    pageLayoutWidgetManifest.conditionalDisplay ?? null;
+
+  const conditionalAvailabilityFromJsonLogic =
+    fromLegacyJsonLogicToConditionalAvailability(conditionalDisplay);
+
+  // TODO(@neo773): a manifest declares its rule as json-logic, so the tree is filled from it; without this a sync empties the tree of the widget
+  const conditionalAvailability =
+    isDefined(conditionalAvailabilityFromJsonLogic) &&
+    validateConditionalAvailabilityNode({
+      node: conditionalAvailabilityFromJsonLogic,
+      metadataName: 'pageLayoutWidget',
+    }).isValid
+      ? conditionalAvailabilityFromJsonLogic
+      : null;
+
   return {
     universalIdentifier: pageLayoutWidgetManifest.universalIdentifier,
     applicationUniversalIdentifier,
@@ -22,23 +39,18 @@ export const fromPageLayoutWidgetManifestToUniversalFlatPageLayoutWidget = ({
     title: pageLayoutWidgetManifest.title,
     isActive: true,
     isSystemSideEffect: false,
-    type: pageLayoutWidgetManifest.type as WidgetType,
+    type: pageLayoutWidgetManifest.type,
     objectMetadataUniversalIdentifier:
       pageLayoutWidgetManifest.objectUniversalIdentifier ?? null,
-    conditionalDisplay: pageLayoutWidgetManifest.conditionalDisplay ?? null,
-    gridPosition: pageLayoutWidgetManifest.gridPosition ?? {
-      row: 0,
-      column: 0,
-      rowSpan: DEFAULT_WIDGET_SIZE.default.h,
-      columnSpan: DEFAULT_WIDGET_SIZE.default.w,
-    },
-    position: null,
+    conditionalDisplay,
+    position: pageLayoutWidgetManifest.position,
     universalConfiguration:
       pageLayoutWidgetManifest.configuration as UniversalFlatPageLayoutWidget['universalConfiguration'],
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
     conditionalAvailabilityExpression: null,
+    conditionalAvailability,
     universalOverrides: null,
   };
 };

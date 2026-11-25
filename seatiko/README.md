@@ -21,7 +21,7 @@
 | Гостевой кабинет (web) | Профиль: имя, тема, избранное, аллергии, оплата, 18+ (UI / localStorage) | http://localhost/account |
 | Админка | Модерация и публикация | http://localhost/admin |
 | Android | Карта, рестораны, план зала и бронирование | `apps/mobile` |
-| API | Пользователи, анкеты, рестораны, столики, брони и CRM sync | `services/api` |
+| API | Пользователи, анкеты, рестораны, столики, брони и CRM sync | `../backend` (NestJS) |
 | Twenty CRM | Владельцы, рестораны, гости, брони и Timeline | http://crm.localhost/ |
 
 Сайт: RU / EN / RO (язык в браузере + кабинет).
@@ -131,13 +131,9 @@ Seed-рестораны карты не уходят в CRM, пока нет з�
 
 ### Секреты и webhook
 
-Секреты — в корневом `.env.keys` (см. политику в [`ENGINEERING.md`](../docs/ENGINEERING.md#секреты-в-приватном-репозитории)). Шаблон: `.env.keys.example`.
+Секреты — в корневом `.env` (см. [`ENGINEERING.md`](../docs/ENGINEERING.md#секреты-в-приватном-репозитории)). Шаблон: `.env.example`.
 
-```bash
-cd seatiko/services/api
-set -a && source ../../../.env.keys && set +a
-TWENTY_BASE_URL=http://crm.localhost go run ./cmd/crm-bootstrap
-```
+API сам готовит Twenty при первой синхронизации: поля Seatiko, объект Reservation, доску подключения ресторанов и дашборд. Отдельный шаг не нужен — достаточно `TWENTY_API_KEY` в `.env`.
 
 Webhook: `http://host.docker.internal/api/v1/integrations/twenty/webhook`, secret = `TWENTY_WEBHOOK_SECRET`.
 
@@ -171,7 +167,7 @@ curl http://localhost/api/v1/integrations/twenty/status
 ## Тесты
 
 ```bash
-cd seatiko/services/api && go test ./...
+cd backend && npm run lint && npm test && npm run build
 cd seatiko/apps/web && npm run lint && npm test && npm run build
 cd seatiko/apps/mobile && flutter analyze && flutter test
 ```

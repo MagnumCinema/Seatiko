@@ -1,17 +1,9 @@
 import request from 'supertest';
 
-import { MCP_PROTOCOL_VERSION } from 'src/engine/api/mcp/constants/mcp-protocol-version.const';
-
-/**
- * Integration tests for MCP core controller
- *
- * These tests hit the real Nest app bootstrapped by test/integration/utils/setup-test.ts
- * and exercise the guarded POST /mcp endpoint using valid/invalid JSON-RPC payloads.
- */
-
 describe('MCP Controller (integration)', () => {
   const baseUrl = `http://localhost:${APP_PORT}`;
-  const endpoint = '/mcp';
+  // Meta mode: the call-every-listed-tool test below must not reach direct mode's write tools
+  const endpoint = '/mcp?mode=meta';
 
   const postMcp = (
     body: any,
@@ -65,19 +57,56 @@ describe('MCP Controller (integration)', () => {
       });
   });
 
+  it('should return method not found for an unsupported method', async () => {
+    await postMcp({
+      jsonrpc: '2.0',
+      method: 'sampling/createMessage',
+      id: 'unsupported-method',
+    })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual({
+          id: 'unsupported-method',
+          jsonrpc: '2.0',
+          error: {
+            code: -32601,
+            message: 'Method not found',
+          },
+        });
+      });
+  });
+
+  const initialize = (protocolVersion: string) =>
+    postMcp({
+      jsonrpc: '2.0',
+      method: 'initialize',
+      id: 123,
+      params: {
+        protocolVersion,
+        capabilities: {},
+        clientInfo: { name: 'integration-test', version: '1.0.0' },
+      },
+    });
+
   it('should respond to initialize with spec-compliant InitializeResult', async () => {
-    await postMcp({ jsonrpc: '2.0', method: 'initialize', id: 123 })
+    await initialize('2025-06-18')
       .expect(200)
       .expect((res) => {
         expect(res.body.id).toBe(123);
         expect(res.body.jsonrpc).toBe('2.0');
         expect(res.body.result).toBeDefined();
-        expect(res.body.result.protocolVersion).toBe(MCP_PROTOCOL_VERSION);
+        expect(res.body.result.protocolVersion).toBe('2025-06-18');
         expect(res.body.result.capabilities).toBeDefined();
         expect(res.body.result.serverInfo).toBeDefined();
         expect(res.body.result.serverInfo.name).toBe('Twenty MCP Server');
         expect(typeof res.body.result.instructions).toBe('string');
       });
+  });
+
+  it('should negotiate the newest legacy version a client asks for', async () => {
+    const res = await initialize('2025-11-25').expect(200);
+
+    expect(res.body.result.protocolVersion).toBe('2025-11-25');
   });
 
   it('should return 202 with no body for notifications/initialized (no id)', async () => {
@@ -92,7 +121,7 @@ describe('MCP Controller (integration)', () => {
     await postMcp({})
       .expect(400)
       .expect((res) => {
-        expect(res.body.error).toBe('BadRequestException');
+        expect(res.body.error.code).toBe(-32600);
       });
   });
 
@@ -253,13 +282,17 @@ describe('MCP Controller (integration)', () => {
       });
     });
 
-    it('should include progress notification before tool call result in SSE', async () => {
+    it('should echo the client progress token before the tool call result in SSE', async () => {
       const res = await postMcp(
         {
           jsonrpc: '2.0',
           method: 'tools/call',
           id: 'sse-tool-1',
-          params: { name: 'learn_tools', arguments: { toolNames: [] } },
+          params: {
+            name: 'learn_tools',
+            arguments: { toolNames: [] },
+            _meta: { progressToken: 'client-token-1' },
+          },
         },
         API_KEY_ACCESS_TOKEN,
         'application/json, text/event-stream',
@@ -277,7 +310,7 @@ describe('MCP Controller (integration)', () => {
         jsonrpc: '2.0',
         method: 'notifications/progress',
         params: {
-          progressToken: 'tool-call-sse-tool-1',
+          progressToken: 'client-token-1',
           progress: 0,
           total: 1,
         },
@@ -294,6 +327,179 @@ describe('MCP Controller (integration)', () => {
       const hasError = !!(lastEvent as any)?.error;
 
       expect(hasResultContent || hasError).toBe(true);
+    });
+
+    it('should send no progress notification when the client did not supply a token', async () => {
+      const res = await postMcp(
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          id: 'sse-tool-no-progress',
+          params: { name: 'learn_tools', arguments: { toolNames: [] } },
+        },
+        API_KEY_ACCESS_TOKEN,
+        'application/json, text/event-stream',
+      ).expect(200);
+
+      const events = parseSseEvents(res.text);
+
+      expect(
+        events.some((event) => event.method === 'notifications/progress'),
+      ).toBe(false);
+
+      const lastEvent = events[events.length - 1];
+
+      expect(lastEvent).toMatchObject({
+        id: 'sse-tool-no-progress',
+        jsonrpc: '2.0',
+      });
+    });
+  });
+
+  describe('Protocol 2026-07-28', () => {
+    const MODERN_VERSION = '2026-07-28';
+    const modernMeta = {
+      'io.modelcontextprotocol/protocolVersion': MODERN_VERSION,
+      'io.modelcontextprotocol/clientCapabilities': {},
+    };
+
+    const postModernMcp = ({
+      method,
+      params,
+      headers = {},
+    }: {
+      method: string;
+      params?: Record<string, unknown>;
+      headers?: Record<string, string>;
+    }) =>
+      request(baseUrl)
+        .post(endpoint)
+        .set('Authorization', `Bearer ${API_KEY_ACCESS_TOKEN}`)
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json, text/event-stream')
+        .set({
+          'MCP-Protocol-Version': MODERN_VERSION,
+          'Mcp-Method': method,
+          ...headers,
+        })
+        .send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'modern',
+            method,
+            params: { ...params, _meta: modernMeta },
+          }),
+        );
+
+    it('should answer server/discover', async () => {
+      const res = await postModernMcp({ method: 'server/discover' }).expect(
+        200,
+      );
+
+      expect(res.body.result).toMatchObject({
+        supportedVersions: [MODERN_VERSION],
+        capabilities: { tools: {}, resources: {}, prompts: {} },
+        resultType: 'complete',
+        ttlMs: 60_000,
+        cacheScope: 'private',
+        _meta: {
+          'io.modelcontextprotocol/serverInfo': { name: 'Twenty MCP Server' },
+        },
+      });
+      expect(typeof res.body.result.instructions).toBe('string');
+    });
+
+    it('should mark tools/list as a complete private cacheable result', async () => {
+      const res = await postModernMcp({ method: 'tools/list' }).expect(200);
+
+      expect(Array.isArray(res.body.result.tools)).toBe(true);
+      expect(res.body.result.tools.length).toBeGreaterThan(0);
+      expect(res.body.result).toMatchObject({
+        resultType: 'complete',
+        cacheScope: 'private',
+      });
+    });
+
+    it('should call a tool when Mcp-Name matches', async () => {
+      const res = await postModernMcp({
+        method: 'tools/call',
+        params: { name: 'get_tool_catalog', arguments: {} },
+        headers: { 'Mcp-Name': 'get_tool_catalog' },
+      }).expect(200);
+
+      expect(res.body.result).toMatchObject({
+        resultType: 'complete',
+        isError: false,
+      });
+    });
+
+    it('should reject an Mcp-Name header that differs from the tool name', async () => {
+      const res = await postModernMcp({
+        method: 'tools/call',
+        params: { name: 'get_tool_catalog', arguments: {} },
+        headers: { 'Mcp-Name': 'learn_tools' },
+      }).expect(400);
+
+      expect(res.body.error.code).toBe(-32020);
+    });
+
+    it('should reject an unsupported version with the supported list', async () => {
+      const res = await request(baseUrl)
+        .post(endpoint)
+        .set('Authorization', `Bearer ${API_KEY_ACCESS_TOKEN}`)
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json, text/event-stream')
+        .set({
+          'MCP-Protocol-Version': '2099-01-01',
+          'Mcp-Method': 'tools/list',
+        })
+        .send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 'future',
+            method: 'tools/list',
+            params: {
+              _meta: {
+                ...modernMeta,
+                'io.modelcontextprotocol/protocolVersion': '2099-01-01',
+              },
+            },
+          }),
+        )
+        .expect(400);
+
+      expect(res.body.error.code).toBe(-32022);
+      expect(res.body.error.data.supported).toContain(MODERN_VERSION);
+    });
+
+    it('should answer 404 to ping, which this revision removed', async () => {
+      const res = await postModernMcp({ method: 'ping' }).expect(404);
+
+      expect(res.body.error.code).toBe(-32601);
+    });
+
+    it('should keep ignoring a protocol header a legacy client sends', async () => {
+      const res = await request(baseUrl)
+        .post(endpoint)
+        .set('Authorization', `Bearer ${API_KEY_ACCESS_TOKEN}`)
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .set('MCP-Protocol-Version', '2025-11-25')
+        .send(JSON.stringify({ jsonrpc: '2.0', method: 'ping', id: 'legacy' }))
+        .expect(200);
+
+      expect(res.body.result).toEqual({});
+    });
+
+    it('should leave legacy results without the new fields', async () => {
+      const res = await postMcp({
+        jsonrpc: '2.0',
+        method: 'tools/list',
+        id: 'legacy',
+      }).expect(200);
+
+      expect(res.body.result.resultType).toBeUndefined();
+      expect(res.body.result.ttlMs).toBeUndefined();
     });
   });
 });

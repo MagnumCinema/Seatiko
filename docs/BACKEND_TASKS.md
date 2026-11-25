@@ -1,6 +1,6 @@
 # Backend tasks
 
-Очередь задач для API (`seatiko/services/api`). Сюда записываем всё, что фронт уже ждёт или обошёл локально, а бэк ещё не сделал.
+Очередь задач для API (`backend`, NestJS). Сюда записываем всё, что фронт уже ждёт или обошёл локально, а бэк ещё не сделал.
 
 Связанные документы: [`ENGINEERING.md`](./ENGINEERING.md) (маршруты и ops), [`APP_LOGIC.md`](./APP_LOGIC.md) (правила продукта), [`WEB_PAGES_STATUS.md`](./WEB_PAGES_STATUS.md) (веб-страницы).
 

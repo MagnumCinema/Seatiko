@@ -93,9 +93,9 @@ flowchart LR
     subgraph Docker[Docker Compose]
         Nginx[Nginx :80]
         Web[Next.js :3001]
-        API[Go API :8080]
-        State[(Atomic JSON state)]
-        Uploads[(Uploads volume)]
+        API[NestJS API :8080]
+        State[(PostgreSQL)]
+        Uploads[(MinIO / S3)]
         CRM[Twenty server]
         Worker[Twenty worker]
         DB[(PostgreSQL)]
@@ -124,7 +124,7 @@ Nginx является единой точкой входа:
 
 ```text
 http://localhost/          → Next.js
-http://localhost/api/...   → Go API
+http://localhost/api/...   → NestJS API
 http://localhost/uploads/  → загруженные фотографии
 http://localhost/healthz   → health check API
 http://crm.localhost/      → Twenty CRM
@@ -150,8 +150,7 @@ Backend напрямую не публикует порт `8080` на компь
 Virtual-restaurant-/
 ├── README.md                         # главный вход (карта документации)
 ├── docker-compose.yml                # весь локальный стек
-├── .env                              # настройки Docker/Twenty
-├── .env.keys                         # API key и webhook secret CRM
+├── .env                              # все настройки и ключи (не в git; шаблон .env.example)
 ├── config/nginx/                     # единый reverse proxy
 ├── docs/                             # вся документация, прототип, диаграммы
 │   ├── README.md                     # индекс docs
@@ -162,7 +161,7 @@ Virtual-restaurant-/
 ├── seatiko/
 │   ├── apps/web/                     # Next.js, TypeScript, MapLibre
 │   ├── apps/mobile/                  # Flutter Android
-│   ├── services/api/                 # Go, Gin, JWT, storage, CRM sync
+│   ├── (API — в /backend: NestJS, PostgreSQL, CRM sync)
 │   ├── docs/images/                  # скриншоты README
 │   └── README.md                     # пошаговая инструкция со скриншотами
 └── twenty/                           # исходный код Twenty CRM
@@ -275,13 +274,14 @@ erDiagram
 
 ### 1. Конфигурация
 
-В этом приватном репозитории рабочие `.env` и `.env.keys` включены по решению владельца. Для нового независимого окружения используйте шаблоны:
+Все настройки и ключи проекта — в одном файле `.env` в корне (в git его нет). Шаблон с комментариями — `.env.example`:
 
 ```bash
 cp .env.example .env
-cp .env.keys.example .env.keys
-chmod 600 .env .env.keys
+chmod 600 .env
 ```
+
+docker compose читает `.env` и передаёт каждому контейнеру только нужные ему переменные.
 
 Минимальные секреты можно сгенерировать так:
 
@@ -497,7 +497,7 @@ API=http://localhost/api/v1
 #### /discover: счётчик и AI
 
 - `GET /map/places?...&cuisine=&type=&budget=MIN-MAX&occasion=&practical=&lat=&lng=` → `filters: {total, matched, relax}` (№11).
-- `POST /discover/ai` `{query, locale, city_id, prefs}` → фильтры и места (№10). Groq: `GROQ_API_KEY` (кладите в `.env.integration.local`, он не в git), `GROQ_MODEL` (по умолчанию `openai/gpt-oss-120b`); без ключа — правила. 20 запросов/мин с IP.
+- `POST /discover/ai` `{query, locale, city_id, prefs}` → фильтры и места (№10). Groq: `GROQ_API_KEY` (в `.env`), `GROQ_MODEL` (по умолчанию `openai/gpt-oss-120b`); без ключа — правила. 20 запросов/мин с IP.
 
 ### Маршруты владельца
 
@@ -747,8 +747,10 @@ docker volume ls | rg 'virtual-restaurant|twenty'
 ### Backend
 
 ```bash
-cd seatiko/services/api
-go test ./...
+cd backend
+npm run lint && npm test && npm run build
+# контрактные тесты против запущенного API (своя тестовая база с демо):
+CONTRACT_BASE_URL=http://127.0.0.1:18091 npm run test:contract
 ```
 
 ### Web
@@ -805,7 +807,7 @@ docker compose logs --tail=100 twenty-server twenty-worker
 
 Проверить:
 
-1. существует `.env.keys`;
+1. в `.env` заполнены `TWENTY_API_KEY` и `TWENTY_WEBHOOK_SECRET`;
 2. API key активен в Twenty;
 3. `docker compose up -d --force-recreate api` выполнен после изменения ключа;
 4. `http://crm.localhost/healthz` доступен;
@@ -821,9 +823,9 @@ docker compose logs --tail=100 twenty-server twenty-worker
 ### Webhook не доходит локально
 
 - URL должен быть `http://api.seatiko.local:8080/api/v1/integrations/twenty/webhook`;
-- у `twenty-worker` должен быть `OUTBOUND_HTTP_SAFE_MODE_ENABLED=false`;
+- `api.seatiko.local` должен быть в `OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS` у `twenty-server` и `twenty-worker` (по умолчанию так и есть; остальные внутренние адреса Twenty блокирует);
 - worker должен быть запущен;
-- в production не отключайте safe mode — используйте публичный HTTPS URL.
+- в production используйте публичный HTTPS URL API и не расширяйте список внутренних хостов.
 
 ### Карта пустая
 
@@ -852,9 +854,7 @@ curl -I http://crm.localhost/
 
 ### Секреты в приватном репозитории
 
-По явному решению владельца проекта рабочие `.env` и `.env.keys` включаются в этот приватный репозиторий. Это удобно для единственного владельца, но всё равно означает, что GitHub и вся история Git содержат секреты.
-
-Если репозиторий когда-либо станет публичным или появится новый участник:
+Ключи и пароли живут только в `.env` (в `.gitignore`). Раньше `.env` и `.env.keys` лежали в git, а репозиторий публичный, поэтому старые значения есть в истории:
 
 1. немедленно отозвать Twenty API keys;
 2. сменить JWT и `APP_SECRET`;
@@ -863,7 +863,7 @@ curl -I http://crm.localhost/
 5. очистить Git history специализированным инструментом;
 6. перейти на GitHub Actions Secrets, Vault, SOPS или secrets manager.
 
-Никогда не выводите содержимое `.env.keys` в CI logs.
+Никогда не выводите содержимое `.env` в CI logs.
 
 ### Что изменить перед production
 

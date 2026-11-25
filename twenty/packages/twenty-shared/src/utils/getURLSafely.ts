@@ -1,4 +1,4 @@
-export const getURLSafely = (url: string) => {
+export const getUrlSafely = (url: string) => {
   try {
     return new URL(url);
   } catch {

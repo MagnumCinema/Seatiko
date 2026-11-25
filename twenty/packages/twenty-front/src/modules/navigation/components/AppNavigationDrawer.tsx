@@ -1,8 +1,16 @@
+import { GettingStartedSidebarCard } from '@/getting-started/components/GettingStartedSidebarCard';
 import { useIsSettingsDrawer } from '@/navigation/hooks/useIsSettingsDrawer';
 
-import { MainNavigationDrawer } from '@/navigation/components/MainNavigationDrawer';
-import { SettingsNavigationDrawer } from '@/navigation/components/SettingsNavigationDrawer';
-import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { MainNavigationDrawerFixedRows } from '@/navigation/components/MainNavigationDrawerFixedRows';
+import { MainNavigationDrawerContent } from '@/navigation/components/MainNavigationDrawerContent';
+import { MainNavigationDrawerContextMenu } from '@/navigation/components/MainNavigationDrawerContextMenu';
+import { MainNavigationDrawerTabSwitcher } from '@/navigation/components/MainNavigationDrawerTabSwitcher';
+import { NavigationDrawerHeader } from '@/navigation/components/NavigationDrawerHeader';
+import { NavigationDrawerModeTransition } from '@/navigation/components/NavigationDrawerModeTransition';
+import { SettingsNavigationDrawerContent } from '@/navigation/components/SettingsNavigationDrawerContent';
+import { NavigationDrawer } from '@/ui/navigation/navigation-drawer/components/NavigationDrawer';
+import { NavigationDrawerFixedContent } from '@/ui/navigation/navigation-drawer/components/NavigationDrawerFixedContent';
+import { useIsMobile } from 'twenty-ui/utilities';
 
 export type AppNavigationDrawerProps = {
   className?: string;
@@ -14,14 +22,31 @@ export const AppNavigationDrawer = ({
   const isMobile = useIsMobile();
   const isSettingsDrawer = useIsSettingsDrawer();
 
-  if (isSettingsDrawer) {
-    return <SettingsNavigationDrawer className={className} />;
-  }
-
   // The main navigation is the home page on mobile, not a drawer.
-  if (isMobile) {
+  if (isMobile && !isSettingsDrawer) {
     return null;
   }
 
-  return <MainNavigationDrawer className={className} />;
+  return (
+    <NavigationDrawer className={className} header={<NavigationDrawerHeader />}>
+      <MainNavigationDrawerContextMenu>
+        {/* Mobile switches modes from the bottom navigation bar instead. */}
+        {!isMobile && (
+          <NavigationDrawerFixedContent>
+            <MainNavigationDrawerTabSwitcher />
+            <MainNavigationDrawerFixedRows />
+          </NavigationDrawerFixedContent>
+        )}
+
+        <NavigationDrawerModeTransition>
+          {isSettingsDrawer ? (
+            <SettingsNavigationDrawerContent />
+          ) : (
+            <MainNavigationDrawerContent />
+          )}
+        </NavigationDrawerModeTransition>
+      </MainNavigationDrawerContextMenu>
+      {!isSettingsDrawer && <GettingStartedSidebarCard />}
+    </NavigationDrawer>
+  );
 };

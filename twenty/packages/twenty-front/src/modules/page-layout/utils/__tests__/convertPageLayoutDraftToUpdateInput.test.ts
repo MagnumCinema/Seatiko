@@ -1,8 +1,12 @@
+import { type ConditionalAvailabilityNode } from 'twenty-shared/conditional-availability';
+import { DEFAULT_WIDGET_SIZE } from 'twenty-shared/constants';
+
 import { type DraftPageLayout } from '@/page-layout/types/DraftPageLayout';
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
 import { convertPageLayoutDraftToUpdateInput } from '@/page-layout/utils/convertPageLayoutDraftToUpdateInput';
 import {
   PageLayoutTabLayoutMode,
+  PageLayoutWidgetVerticalListHeightBehavior,
   PageLayoutType,
   WidgetType,
 } from '~/generated-metadata/graphql';
@@ -14,7 +18,14 @@ const makeWidget = (
     title: 'Widget',
     type: WidgetType.FIELDS,
     pageLayoutTabId: 'tab-1',
-    gridPosition: { row: 0, column: 0, rowSpan: 1, columnSpan: 1 },
+    position: {
+      __typename: 'PageLayoutWidgetGridPosition' as const,
+      layoutMode: PageLayoutTabLayoutMode.GRID,
+      row: 0,
+      column: 0,
+      rowSpan: 1,
+      columnSpan: 1,
+    },
     configuration: null,
     objectMetadataId: null,
     ...overrides,
@@ -62,6 +73,32 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
     expect(result.tabs[0].widgets[0].id).toBe('w1');
   });
 
+  it('should send the visibility rules the draft holds', () => {
+    const conditionalDisplay = { '===': [{ var: 'device' }, 'MOBILE'] };
+    const conditionalAvailability: ConditionalAvailabilityNode = {
+      type: 'VARIABLE',
+      path: 'featureFlags.A',
+    };
+    const draft = makeDraft([
+      makeTab('tab-1', [
+        makeWidget({ id: 'w1', conditionalDisplay }),
+        makeWidget({ id: 'w2', conditionalAvailability }),
+      ]),
+    ]);
+
+    const [firstWidget, secondWidget] =
+      convertPageLayoutDraftToUpdateInput(draft).tabs[0].widgets;
+
+    expect(firstWidget).toMatchObject({
+      conditionalDisplay,
+      conditionalAvailability: null,
+    });
+    expect(secondWidget).toMatchObject({
+      conditionalDisplay: null,
+      conditionalAvailability,
+    });
+  });
+
   it('should handle multiple widget types', () => {
     const fieldsWidget = makeWidget({ id: 'w1', type: WidgetType.FIELDS });
     const timelineWidget = makeWidget({
@@ -77,16 +114,24 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
     expect(result.tabs[0].widgets.map((w) => w.id)).toEqual(['w1', 'w2']);
   });
 
-  it('should map gridPosition correctly', () => {
+  it('should map position correctly', () => {
     const widget = makeWidget({
       id: 'w1',
-      gridPosition: { row: 2, column: 3, rowSpan: 4, columnSpan: 5 },
+      position: {
+        __typename: 'PageLayoutWidgetGridPosition' as const,
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        row: 2,
+        column: 3,
+        rowSpan: 4,
+        columnSpan: 5,
+      },
     });
     const draft = makeDraft([makeTab('tab-1', [widget])]);
 
     const result = convertPageLayoutDraftToUpdateInput(draft);
 
-    expect(result.tabs[0].widgets[0].gridPosition).toEqual({
+    expect(result.tabs[0].widgets[0].position).toEqual({
+      layoutMode: PageLayoutTabLayoutMode.GRID,
       row: 2,
       column: 3,
       rowSpan: 4,
@@ -185,6 +230,29 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
     });
   });
 
+  it('should preserve vertical-list height behavior', () => {
+    const widget = makeWidget({
+      id: 'w1',
+      position: {
+        __typename: 'PageLayoutWidgetVerticalListPosition',
+        layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
+        index: 0,
+        heightBehavior: PageLayoutWidgetVerticalListHeightBehavior.TAB_VIEWPORT,
+      },
+    });
+    const draft = makeDraft([
+      makeTab('tab-1', [widget], PageLayoutTabLayoutMode.VERTICAL_LIST),
+    ]);
+
+    const result = convertPageLayoutDraftToUpdateInput(draft);
+
+    expect(result.tabs[0].widgets[0].position).toEqual({
+      layoutMode: PageLayoutTabLayoutMode.VERTICAL_LIST,
+      index: 0,
+      heightBehavior: PageLayoutWidgetVerticalListHeightBehavior.TAB_VIEWPORT,
+    });
+  });
+
   it('should fall back to array index for VERTICAL_LIST when widget position typename does not match', () => {
     const widget = makeWidget({
       id: 'w1',
@@ -244,7 +312,7 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
     });
   });
 
-  it('should produce GRID position from gridPosition when tab layoutMode is undefined', () => {
+  it('should fall back to legacy grid coordinates when position is null', () => {
     const widget = makeWidget({
       id: 'w1',
       position: null,
@@ -266,7 +334,14 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
   it('should produce GRID position when tab layoutMode is explicitly GRID', () => {
     const widget = makeWidget({
       id: 'w1',
-      gridPosition: { row: 5, column: 6, rowSpan: 7, columnSpan: 8 },
+      position: {
+        __typename: 'PageLayoutWidgetGridPosition' as const,
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        row: 5,
+        column: 6,
+        rowSpan: 7,
+        columnSpan: 8,
+      },
     });
     const draft = makeDraft([
       makeTab('tab-1', [widget], PageLayoutTabLayoutMode.GRID),
@@ -283,14 +358,13 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
     });
   });
 
-  it('should use tab layoutMode over widget position layoutMode when they differ', () => {
+  it('should use default grid coordinates when moving from another layout mode', () => {
     const widget = makeWidget({
       id: 'w1',
       position: {
         __typename: 'PageLayoutWidgetCanvasPosition',
         layoutMode: PageLayoutTabLayoutMode.CANVAS,
       },
-      gridPosition: { row: 1, column: 2, rowSpan: 3, columnSpan: 4 },
     });
     const draft = makeDraft([
       makeTab('tab-1', [widget], PageLayoutTabLayoutMode.GRID),
@@ -300,10 +374,10 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
 
     expect(result.tabs[0].widgets[0].position).toEqual({
       layoutMode: PageLayoutTabLayoutMode.GRID,
-      row: 1,
-      column: 2,
-      rowSpan: 3,
-      columnSpan: 4,
+      row: 0,
+      column: 0,
+      rowSpan: DEFAULT_WIDGET_SIZE.default.h,
+      columnSpan: DEFAULT_WIDGET_SIZE.default.w,
     });
   });
 
@@ -319,7 +393,14 @@ describe('convertPageLayoutDraftToUpdateInput', () => {
     const canvasWidget = makeWidget({ id: 'w2' });
     const gridWidget = makeWidget({
       id: 'w3',
-      gridPosition: { row: 1, column: 0, rowSpan: 2, columnSpan: 6 },
+      position: {
+        __typename: 'PageLayoutWidgetGridPosition' as const,
+        layoutMode: PageLayoutTabLayoutMode.GRID,
+        row: 1,
+        column: 0,
+        rowSpan: 2,
+        columnSpan: 6,
+      },
     });
 
     const draft = makeDraft([
