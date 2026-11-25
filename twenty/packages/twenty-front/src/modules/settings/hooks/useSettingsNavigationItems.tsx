@@ -168,12 +168,13 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           Icon: IconServer,
           isHidden: !isAdminEnabled,
         },
-        {
-          label: t`Community`,
-          path: SettingsPath.Community,
-          Icon: IconUsers,
-          isHidden: !permissionFlagMap[PermissionFlagType.WORKSPACE],
-        },
+        // Seatiko: no Community page in the CRM.
+        // {
+        //   label: t`Community`,
+        //   path: SettingsPath.Community,
+        //   Icon: IconUsers,
+        //   isHidden: !permissionFlagMap[PermissionFlagType.WORKSPACE],
+        // },
         {
           label: t`Support`,
           onClick: () => window.FrontChat?.('show'),
