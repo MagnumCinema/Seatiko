@@ -12,6 +12,7 @@ import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { DiscoverModule } from './modules/discover/discover.module.js';
 import { DocsModule } from './modules/docs/docs.module.js';
 import { MapModule } from './modules/map/map.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -57,6 +58,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     VenueAdminModule,
     StaffTeamModule,
     AdminModule,
+    DiscoverModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },

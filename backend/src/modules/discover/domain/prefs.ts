@@ -7,8 +7,8 @@ export const TYPE_IDS = ['restaurant', 'cafe', 'bar', 'fast_food', 'fine_dining'
 export const OCCASION_IDS = ['quick_lunch', 'date_night', 'family', 'business', 'group', 'brunch', 'celebration', 'solo'];
 export const PRACTICAL_IDS = ['open_now', 'free_tables', 'partners', 'nearby', 'outdoor', 'parking', 'wifi', 'kid_friendly'];
 
-const BUDGET_MIN = 50;
-const BUDGET_MAX = 1000;
+export const BUDGET_MIN = 50;
+export const BUDGET_MAX = 1000;
 const BUDGET_STEP = 50;
 /** RankOptions.nearbyRadiusKm on the web. */
 export const NEARBY_RADIUS_KM = 3;
@@ -100,13 +100,13 @@ const CUISINE_ALIASES: Record<string, string[]> = {
   cafe_sweets: ['cafe', 'coffee', 'dessert', 'sweet', 'кондитер', 'кофе'],
 };
 
-function cuisineMatches(p: FilterablePlace, ids: string[]): boolean {
+export function cuisineMatches(p: FilterablePlace, ids: string[]): boolean {
   if (!ids.length) return true;
   const text = [p.name.ru, p.name.en, p.name.ro, ...(p.cuisine ?? [])].join(' ').toLowerCase();
   return ids.some((id) => (CUISINE_ALIASES[id] ?? []).some((a) => text.includes(a)));
 }
 
-function budgetMatches(p: FilterablePlace, b?: Budget): boolean {
+export function budgetMatches(p: FilterablePlace, b?: Budget): boolean {
   const levels = priceLevels(b);
   // Unknown price is not a mismatch.
   return !levels.length || !p.price_level || levels.includes(p.price_level);
@@ -145,3 +145,37 @@ export function countFilters(places: FilterablePlace[], prefs: Prefs, origin?: O
   for (const f of prefs.practical) attempt(f, { ...prefs, practical: prefs.practical.filter((o) => o !== f) });
   return c;
 }
+
+/** Drops unknown ids and normalises the budget (values coming from a model). */
+export function cleanPrefs(p: Partial<Prefs> & { budget?: Budget | null }): Prefs {
+  const list = (v: unknown, ids: string[]) => parseList(Array.isArray(v) ? v.filter((x) => typeof x === 'string').join(',') : '', ids);
+  const out: Prefs = {
+    cuisine: list(p.cuisine, CUISINE_IDS),
+    restaurant_type: list(p.restaurant_type, TYPE_IDS),
+    occasion: list(p.occasion, OCCASION_IDS),
+    practical: list(p.practical, PRACTICAL_IDS),
+  };
+  if (p.budget && Number.isFinite(p.budget.min) && Number.isFinite(p.budget.max)) out.budget = normalizeBudget(p.budget);
+  return out;
+}
+
+/** Query string the web /discover and map pages understand (Go url.Values.Encode: sorted keys). */
+export function encodePrefs(p: Prefs): string {
+  const v: Array<[string, string]> = [];
+  if (p.budget) v.push(['budget', `${p.budget.min}-${p.budget.max}`]);
+  if (p.cuisine.length) v.push(['cuisine', p.cuisine.join(',')]);
+  if (p.occasion.length) v.push(['occasion', p.occasion.join(',')]);
+  if (p.practical.length) v.push(['practical', p.practical.join(',')]);
+  if (p.restaurant_type.length) v.push(['type', p.restaurant_type.join(',')]);
+  return new URLSearchParams(v).toString();
+}
+
+/** JSON of preferences as Go marshals discover.Prefs (budget omitted when unset). */
+export const presentPrefs = (p: Prefs) => ({
+  cuisine: p.cuisine,
+  restaurant_type: p.restaurant_type,
+  ...(p.budget ? { budget: p.budget } : {}),
+  occasion: p.occasion,
+  practical: p.practical,
+});
+
