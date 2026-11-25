@@ -6,10 +6,12 @@ import { AppModule, ObserveInstrument } from './app.module.js';
 import { listenAddress, type Env } from './config/env.schema.js';
 import { createValidationPipe } from './core/http/validation.js';
 import { openApiDocument } from './modules/docs/openapi.js';
-import { json } from 'express';
+import { json, type Request, type Response } from 'express';
 import { GROQ_PROXY_PATH } from './integrations/groq/groq-proxy.controller.js';
 
-async function bootstrap() {
+let cachedApp: Promise<NestExpressApplication> | undefined;
+
+async function createApp(): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { instrument: ObserveInstrument, rawBody: true, bodyParser: false });
   // The CRM's AI requests (tool definitions, history) outgrow the 100 KB default; only that
   // internal route gets a larger limit, parsed first so the default parsers skip it.
@@ -39,12 +41,39 @@ async function bootstrap() {
   } catch {
     // Optional in serverless bundle without swagger-ui-dist static files; /api/openapi.yaml stays active.
   }
-
-  const config = app.get(ConfigService<Env, true>);
-  const { host, port } = listenAddress({ ADDR: config.get('ADDR', { infer: true }), PORT: config.get('PORT', { infer: true }) });
-  await app.listen(port, host ?? '0.0.0.0');
+  await app.init();
+  return app;
 }
-void bootstrap().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+
+function getApp(): Promise<NestExpressApplication> {
+  if (!cachedApp) {
+    cachedApp = createApp().catch((err) => {
+      cachedApp = undefined;
+      throw err;
+    });
+  }
+  return cachedApp;
+}
+
+export default async function handler(req: Request, res: Response): Promise<void> {
+  const app = await getApp();
+  const instance = app.getHttpAdapter().getInstance() as (r: Request, s: Response) => void;
+  await new Promise<void>((resolve) => {
+    res.once('finish', resolve);
+    res.once('close', resolve);
+    instance(req, res);
+  });
+}
+
+if (!process.env.VERCEL) {
+  void getApp()
+    .then(async (app) => {
+      const config = app.get(ConfigService<Env, true>);
+      const { host, port } = listenAddress({ ADDR: config.get('ADDR', { infer: true }), PORT: config.get('PORT', { infer: true }) });
+      await app.listen(port, host ?? '0.0.0.0');
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}
