@@ -10,7 +10,7 @@ function jwtClaims(token: string): Record<string, unknown> {
   return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
 }
 
-function pngBytes(width: number, height: number): Uint8Array {
+function pngBytes(width: number, height: number): Uint8Array<ArrayBuffer> {
   // Minimal valid PNG (one grey row repeated) built without dependencies.
   const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(width * 3, 128)]);
   const raw = Buffer.concat(Array.from({ length: height }, () => row));

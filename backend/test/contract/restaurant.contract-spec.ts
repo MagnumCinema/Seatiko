@@ -1,49 +1,6 @@
-import { deflateSync, crc32 } from 'node:zlib';
-import { api, DEMO, login, newGuest } from './client.js';
+import { api, DEMO, login, newGuest, newOwner, pngBlob, VENUE_PROFILE as profile } from './client.js';
 
 // Restaurant onboarding and cabinet, admin moderation and reports.
-
-function tinyPng(): Blob {
-  const chunk = (type: string, data: Buffer) => {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(data.length);
-    const body = Buffer.concat([Buffer.from(type), data]);
-    const crc = Buffer.alloc(4);
-    crc.writeUInt32BE(crc32(body) >>> 0);
-    return Buffer.concat([len, body, crc]);
-  };
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(4, 0);
-  ihdr.writeUInt32BE(4, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 2;
-  const raw = Buffer.concat(Array.from({ length: 4 }, () => Buffer.concat([Buffer.from([0]), Buffer.alloc(12, 200)])));
-  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-  return new Blob([new Uint8Array(png)], { type: 'image/png' });
-}
-
-async function newOwner() {
-  const email = `owner-${Date.now()}-${Math.floor(Math.random() * 1e6)}@contract.test`;
-  const res = await api('POST', '/api/v1/auth/register', { body: { email, password: 'secret123', first_name: 'Owner', role: 'restaurant' } });
-  expect(res.status, JSON.stringify(res.body)).toBe(201);
-  expect(res.body.user.role).toBe('restaurant');
-  return { token: res.body.token as string, user: res.body.user, email };
-}
-
-const profile = {
-  name: { ru: 'Контрактный ресторан', en: 'Contract Restaurant', ro: 'Restaurant Contract' },
-  description: { ru: 'Тестовое заведение', en: 'Test venue', ro: 'Local de test' },
-  address: { ru: 'ул. Тестовая 1', en: 'Test St 1', ro: 'Str. Test 1' },
-  cuisine: ['moldovan'],
-  phone: '+37369000001',
-  email: 'venue@contract.test',
-  city_id: 'city-balti',
-  lat: 47.76,
-  lng: 27.93,
-  price_level: 2,
-  average_check: 250,
-  hours_text: 'Пн–Вс 10:00–22:00',
-};
 
 describe('restaurant onboarding → admin publish → cabinet', () => {
   it('runs the whole lifecycle', async () => {
@@ -63,14 +20,14 @@ describe('restaurant onboarding → admin publish → cabinet', () => {
     expect(patched.body.application).toMatchObject({ name: profile.name, hours_text: profile.hours_text, phone: profile.phone });
 
     const form = new FormData();
-    form.append('photo', tinyPng(), 'front.png');
+    form.append('photo', pngBlob(), 'front.png');
     const photo = await api('POST', `/api/v1/restaurant/applications/${appId}/photos`, { token: owner.token, form });
     expect(photo.status, JSON.stringify(photo.body)).toBe(201);
     expect(photo.body.url).toEqual(expect.any(String));
     expect(photo.body.application.photo_urls).toContain(photo.body.url);
 
     const second = new FormData();
-    second.append('photo', tinyPng(), 'hall.png');
+    second.append('photo', pngBlob(), 'hall.png');
     const photo2 = await api('POST', `/api/v1/restaurant/applications/${appId}/photos`, { token: owner.token, form: second });
     const removed = await api('DELETE', `/api/v1/restaurant/applications/${appId}/photos`, { token: owner.token, body: { url: photo2.body.url } });
     expect(removed.status).toBe(200);

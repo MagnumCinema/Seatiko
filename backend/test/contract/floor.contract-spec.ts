@@ -1,39 +1,39 @@
-import { api, DEMO, freeSlot, login, newGuest } from './client.js';
+import { api, DEMO, freeSlot, login, newGuest, publishedVenue } from './client.js';
 
 // In the venue: QR table sessions, orders, waiter calls, payment, staff panel, 18+.
 
-async function qrTokens(): Promise<Record<string, any>> {
-  const owner = await login(DEMO.owner.email, DEMO.owner.password);
-  const res = await api('GET', '/api/v1/restaurant/venues/venue-1/qr', { token: owner });
-  expect(res.status).toBe(200);
-  return Object.fromEntries(res.body.tables.map((t: any) => [t.id, t]));
-}
+let venue: Awaited<ReturnType<typeof publishedVenue>>;
+beforeAll(async () => {
+  venue = await publishedVenue();
+});
 
-async function freeTable(): Promise<any> {
-  const tables = await qrTokens();
-  const free = Object.values(tables).find((t: any) => t.status === 'FREE');
-  if (!free) throw new Error('no free table at venue-1');
-  return free;
+async function tablesNow(): Promise<any[]> {
+  const res = await api('GET', `/api/v1/restaurant/venues/${venue.venueId}/qr`, { token: venue.ownerToken });
+  return res.body.tables;
 }
 
 describe('QR session, order, waiter call, payment', () => {
   it('walk-in guest scans a free table and orders', async () => {
     const guest = await newGuest('walkin');
-    const table = await freeTable();
+    const table = (await tablesNow()).find((t: any) => t.status === 'FREE');
 
-    const bad = await api('POST', '/api/v1/sessions/qr', { token: guest.token, body: { venue_id: 'venue-1', table_id: table.id, token: 'forged' } });
+    const bad = await api('POST', '/api/v1/sessions/qr', { token: guest.token, body: { venue_id: venue.venueId, table_id: table.id, token: 'forged' } });
     expect(bad.status).toBeGreaterThanOrEqual(400);
 
-    const scan = await api('POST', '/api/v1/sessions/qr', { token: guest.token, body: { venue_id: 'venue-1', table_id: table.id, token: table.qr_token } });
+    const scan = await api('POST', '/api/v1/sessions/qr', { token: guest.token, body: { venue_id: venue.venueId, table_id: table.id, token: table.qr_token } });
     expect(scan.status, JSON.stringify(scan.body)).toBe(201);
     const session = scan.body.session;
-    expect(session).toMatchObject({ venue_id: 'venue-1', table_id: table.id, status: 'ACTIVE', user_id: guest.user.id });
+    expect(session).toMatchObject({ venue_id: venue.venueId, table_id: table.id, status: 'ACTIVE', user_id: guest.user.id });
 
     const got = await api('GET', `/api/v1/sessions/${session.id}`, { token: guest.token });
     expect(got.status).toBe(200);
     expect(got.body.session.id).toBe(session.id);
 
-    const order = await api('POST', `/api/v1/sessions/${session.id}/orders`, { token: guest.token, body: { items: [{ menu_item_id: 'm1', qty: 2 }] } });
+    const dish = await api('POST', `/api/v1/restaurant/venues/${venue.venueId}/menu`, {
+      token: venue.ownerToken,
+      body: { category: { ru: 'Плацинды', en: 'Pies', ro: 'Plăcinte' }, name: { ru: 'Плацинда', en: 'Pie', ro: 'Plăcintă' }, description: { ru: '', en: '', ro: '' }, price: 45 },
+    });
+    const order = await api('POST', `/api/v1/sessions/${session.id}/orders`, { token: guest.token, body: { items: [{ menu_item_id: dish.body.item.id, qty: 2 }] } });
     expect(order.status).toBe(201);
     expect(order.body.order).toMatchObject({ session_id: session.id, status: 'SUBMITTED', total: order.body.order.items[0].price * 2, check_number: expect.stringMatching(/^FA-\d{8}-\d{4}$/) });
     const orderId = order.body.order.id;
@@ -42,22 +42,22 @@ describe('QR session, order, waiter call, payment', () => {
     expect(call.status).toBe(201);
     expect(call.body.waiter_call).toMatchObject({ reason: 'bill', status: 'PENDING', table_id: table.id });
 
-    const staff = await login(DEMO.staff.email, DEMO.staff.password);
-    const calls = await api('GET', '/api/v1/staff/waiter-calls', { token: staff, query: { venue_id: 'venue-1' } });
+    const staff = venue.ownerToken; // owners act as staff of their venue
+    const calls = await api('GET', '/api/v1/staff/waiter-calls', { token: staff, query: { venue_id: venue.venueId } });
     expect(calls.status).toBe(200);
     expect(JSON.stringify(calls.body)).toContain(call.body.waiter_call.id);
-    const accepted = await api('POST', `/api/v1/staff/waiter-calls/${call.body.waiter_call.id}/accept`, { token: staff, body: { venue_id: 'venue-1' } });
+    const accepted = await api('POST', `/api/v1/staff/waiter-calls/${call.body.waiter_call.id}/accept`, { token: staff, body: { venue_id: venue.venueId } });
     expect(accepted.status).toBe(200);
-    const done = await api('POST', `/api/v1/staff/waiter-calls/${call.body.waiter_call.id}/complete`, { token: staff, body: { venue_id: 'venue-1' } });
+    const done = await api('POST', `/api/v1/staff/waiter-calls/${call.body.waiter_call.id}/complete`, { token: staff, body: { venue_id: venue.venueId } });
     expect(done.status).toBe(200);
     expect(done.body.waiter_call.status).toBe('DONE');
 
-    const staffOrders = await api('GET', '/api/v1/staff/orders', { token: staff, query: { venue_id: 'venue-1' } });
+    const staffOrders = await api('GET', '/api/v1/staff/orders', { token: staff, query: { venue_id: venue.venueId } });
     expect(staffOrders.body.orders.map((o: any) => o.id)).toContain(orderId);
-    const preparing = await api('PATCH', `/api/v1/staff/orders/${orderId}`, { token: staff, body: { status: 'PREPARING', venue_id: 'venue-1' } });
+    const preparing = await api('PATCH', `/api/v1/staff/orders/${orderId}`, { token: staff, body: { status: 'PREPARING', venue_id: venue.venueId } });
     expect(preparing.status).toBe(200);
     expect(preparing.body.order.status).toBe('PREPARING');
-    const invalid = await api('PATCH', `/api/v1/staff/orders/${orderId}`, { token: staff, body: { status: 'TELEPORTED', venue_id: 'venue-1' } });
+    const invalid = await api('PATCH', `/api/v1/staff/orders/${orderId}`, { token: staff, body: { status: 'TELEPORTED', venue_id: venue.venueId } });
     expect(invalid.status).toBe(400);
 
     const mine = await api('GET', '/api/v1/orders', { token: guest.token });
@@ -83,23 +83,24 @@ describe('staff panel', () => {
     expect((await api('GET', '/api/v1/staff/reservations', { token: staff })).status).toBe(400);
     expect((await api('GET', '/api/v1/staff/reservations', { token: staff, query: { venue_id: 'venue-2' } })).status).toBe(403);
 
-    const added = await api('POST', '/api/v1/staff/waitlist', { token: staff, body: { venue_id: 'venue-1', guest_name: 'Walk-in', guests: 3, source: 'WALK_IN' } });
+    const host = venue.ownerToken;
+    const added = await api('POST', '/api/v1/staff/waitlist', { token: host, body: { venue_id: venue.venueId, guest_name: 'Walk-in', guests: 3, source: 'WALK_IN' } });
     expect(added.status).toBe(201);
     const id = added.body.entry.id;
-    const list = await api('GET', '/api/v1/staff/waitlist', { token: staff, query: { venue_id: 'venue-1' } });
+    const list = await api('GET', '/api/v1/staff/waitlist', { token: host, query: { venue_id: venue.venueId } });
     expect(list.body.waitlist.map((e: any) => e.id)).toContain(id);
-    const notified = await api('POST', `/api/v1/staff/waitlist/${id}/notify`, { token: staff, body: {} });
+    const notified = await api('POST', `/api/v1/staff/waitlist/${id}/notify`, { token: host, body: {} });
     expect(notified.status).toBe(200);
     expect(notified.body.entry.status).toBe('READY');
     expect(added.body.entry.source).toBe('HOST');
-    expect((await api('POST', `/api/v1/staff/waitlist/${id}/seat`, { token: staff, body: {} })).body).toEqual({ error: 'bad_request' });
-    const table = Object.values(await qrTokens()).find((t: any) => t.status === 'FREE' && t.seats >= 3) as any;
-    const seated = await api('POST', `/api/v1/staff/waitlist/${id}/seat`, { token: staff, body: { table_id: table.id } });
+    expect((await api('POST', `/api/v1/staff/waitlist/${id}/seat`, { token: host, body: {} })).body).toEqual({ error: 'bad_request' });
+    const table = (await tablesNow()).find((t: any) => t.status === 'FREE' && t.seats >= 3);
+    const seated = await api('POST', `/api/v1/staff/waitlist/${id}/seat`, { token: host, body: { table_id: table.id } });
     expect(seated.status, JSON.stringify(seated.body)).toBe(200);
     expect(seated.body.entry).toMatchObject({ status: 'SEATED', table_id: table.id });
 
-    const other = await api('POST', '/api/v1/staff/waitlist', { token: staff, body: { venue_id: 'venue-1', guest_name: 'Gone', guests: 2 } });
-    const closed = await api('POST', `/api/v1/staff/waitlist/${other.body.entry.id}/close`, { token: staff, body: { status: 'LEFT' } });
+    const other = await api('POST', '/api/v1/staff/waitlist', { token: host, body: { venue_id: venue.venueId, guest_name: 'Gone', guests: 2 } });
+    const closed = await api('POST', `/api/v1/staff/waitlist/${other.body.entry.id}/close`, { token: host, body: { status: 'LEFT' } });
     expect(closed.status).toBe(200);
     expect(closed.body.entry.status).toBe('LEFT');
   });
