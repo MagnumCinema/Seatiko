@@ -4,3 +4,4 @@ export * from './catalog.js';
 export * from './users.js';
 export * from './booking.js';
 export * from './restaurant.js';
+export * from './open-places.js';

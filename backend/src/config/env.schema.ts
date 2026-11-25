@@ -30,6 +30,23 @@ export const envSchema = z.object({
   TWENTY_WEBHOOK_SECRET: z.string().optional(),
   TWENTY_SYNC_INTERVAL_SECONDS: z.coerce.number().int().min(5).default(15),
 
+  /** Apply pending database migrations when the app starts. */
+  DB_MIGRATE_ON_START: z.stringbool().default(true),
+
+  /** Import cafes and restaurants from open data (OSM + Overture) at start and on schedule. */
+  OPEN_PLACES_IMPORT: z.stringbool().default(true),
+  /** City slugs to import, comma separated (balti,chisinau). */
+  OPEN_PLACES_CITIES: z.string().default('balti'),
+  /** Re-import when the last successful import is older than this. */
+  OPEN_PLACES_REFRESH_DAYS: z.coerce.number().int().min(1).default(7),
+  OVERPASS_URLS: z
+    .string()
+    .default('https://overpass-api.de/api/interpreter,https://maps.mail.ru/osm/tools/overpass/api/interpreter,https://overpass.kumi.systems/api/interpreter'),
+  /** Overture release (2026-11-18.0); empty = latest. */
+  OVERTURE_RELEASE: z.string().optional(),
+  /** Overture places below this confidence are often closed or wrong. */
+  OVERTURE_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.6),
+
   GOOGLE_CONFIG_FILE: z.string().optional(),
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_MAPS_BROWSER_KEY: z.string().optional(),

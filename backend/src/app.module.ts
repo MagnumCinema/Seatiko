@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from './config/config.module.js';
 import { AuthCoreModule } from './core/auth/auth-core.module.js';
 import { HttpErrorFilter } from './core/http/http-error.filter.js';
-import { Clock, SystemClock } from './core/time/time.js';
+import { TimeModule } from './core/time/time.module.js';
 import { DatabaseModule } from './database/database.module.js';
+import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DocsModule } from './modules/docs/docs.module.js';
+import { MapModule } from './modules/map/map.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -21,14 +24,17 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       serviceId: 'seatiko-api',
     }),
     ConfigModule,
+    ScheduleModule.forRoot(),
+    TimeModule,
     DatabaseModule,
     AuthCoreModule,
     HealthModule,
     DocsModule,
+    CatalogModule,
+    MapModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },
-    { provide: Clock, useClass: SystemClock },
   ],
 })
 export class AppModule {}
