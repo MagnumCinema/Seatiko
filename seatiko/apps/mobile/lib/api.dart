@@ -25,11 +25,11 @@ String get apiBaseUrl {
       return _stagingApiUrl;
     case 'dev':
       if (!kIsWeb && Platform.isAndroid) return 'http://10.0.2.2';
-      return 'http://127.0.0.1';
+      return 'http://localhost';
     default:
       if (kDebugMode) {
         if (!kIsWeb && Platform.isAndroid) return 'http://10.0.2.2';
-        return 'http://127.0.0.1';
+        return 'http://localhost';
       }
       return _prodApiUrl;
   }
