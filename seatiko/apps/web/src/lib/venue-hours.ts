@@ -51,6 +51,26 @@ export const VENUE_HOURS: Record<string, Record<LocaleCode, string>> = {
     en: "Mon–Sun 09:00–22:00",
     ro: "Lun–Dum 09:00–22:00",
   },
+  "venue-11": {
+    ru: "Пн–Вс 11:00–23:00",
+    en: "Mon–Sun 11:00–23:00",
+    ro: "Lun–Dum 11:00–23:00",
+  },
+  "venue-12": {
+    ru: "Пн–Вс 12:00–23:30",
+    en: "Mon–Sun 12:00–23:30",
+    ro: "Lun–Dum 12:00–23:30",
+  },
+  "venue-13": {
+    ru: "Пн–Вс 08:00–21:00",
+    en: "Mon–Sun 08:00–21:00",
+    ro: "Lun–Dum 08:00–21:00",
+  },
+  "venue-14": {
+    ru: "Пн–Вс 11:00–23:00",
+    en: "Mon–Sun 11:00–23:00",
+    ro: "Lun–Dum 11:00–23:00",
+  },
 };
 
 export function getVenueHours(venueId: string, locale: LocaleCode): string {

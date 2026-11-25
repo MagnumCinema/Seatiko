@@ -305,7 +305,7 @@ const copy = {
       ownerTagGrowth: "Приток",
       ownerTagSave: "Экономия",
       ownerTagControl: "Контроль",
-      ownerLiveCount: "10 заведений Бельц уже в системе",
+      ownerLiveCount: "14 заведений Бельц уже в системе",
       slogan: "Гостеприимство начинается до входа в ресторан.", restaurants: "Ресторанам",
     },
     discover: {
@@ -1041,7 +1041,7 @@ const copy = {
       ownerTagGrowth: "Growth",
       ownerTagSave: "Saved",
       ownerTagControl: "Control",
-      ownerLiveCount: "10 Bălți venues already active",
+      ownerLiveCount: "14 Bălți venues already active",
       slogan: "Hospitality starts before guests enter.", restaurants: "Restaurants",
     },
     discover: {
@@ -1777,7 +1777,7 @@ const copy = {
       ownerTagGrowth: "Creștere",
       ownerTagSave: "Economie",
       ownerTagControl: "Control",
-      ownerLiveCount: "10 localuri din Bălți deja active",
+      ownerLiveCount: "14 localuri din Bălți deja active",
       slogan: "Ospitalitatea începe înainte de intrare.", restaurants: "Restaurante",
     },
     discover: {

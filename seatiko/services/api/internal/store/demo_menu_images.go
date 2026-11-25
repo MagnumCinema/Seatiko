@@ -37,6 +37,9 @@ const (
 	imgIceCream   = "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=400&h=400&q=80"
 	imgRisotto    = "https://images.unsplash.com/photo-1476124369491-e7addf5db371?auto=format&fit=crop&w=400&h=400&q=80"
 	imgDuck       = "https://images.unsplash.com/photo-1432139555190-58524dae6a55?auto=format&fit=crop&w=400&h=400&q=80"
+	imgMochi      = "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&h=400&q=80"
+	imgSushi      = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=400&h=400&q=80"
+	imgRamen      = "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=400&h=400&q=80"
 	imgDefault    = "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=400&h=400&q=80"
 )
 
@@ -44,6 +47,12 @@ const (
 func demoDishImage(d demoDish) string {
 	name := strings.ToLower(d.name.EN + " " + d.category.EN)
 	switch {
+	case strings.Contains(name, "sushi") || strings.Contains(name, "roll") || strings.Contains(name, "nigiri") || strings.Contains(name, "philadelphia") || strings.Contains(name, "dragon") || strings.Contains(name, "california"):
+		return imgSushi
+	case strings.Contains(name, "ramen") || strings.Contains(name, "tom yum"):
+		return imgRamen
+	case strings.Contains(name, "mochi") || strings.Contains(name, "eclair") || strings.Contains(name, "tart"):
+		return imgMochi
 	case strings.Contains(name, "plăcint") || strings.Contains(name, "placint"):
 		return imgPlacinta
 	case strings.Contains(name, "papana") || strings.Contains(name, "cheesecake"):

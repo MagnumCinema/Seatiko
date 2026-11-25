@@ -46,7 +46,7 @@ const (
 )
 
 func IsDemoGuestID(id string) bool {
-	return id == demoGuestID || id == demoCalendarGuestID
+	return id == demoGuestID || id == demoCalendarGuestID || strings.HasPrefix(id, "user-demo-guest-")
 }
 
 func IsDemoUserID(id string) bool {
@@ -54,7 +54,7 @@ func IsDemoUserID(id string) bool {
 }
 
 func IsDemoApplicationID(id string) bool {
-	return id == demoOwnerAppID
+	return id == demoOwnerAppID || strings.HasPrefix(id, "app-demo-")
 }
 
 type UserProfileUpdate struct {
@@ -110,6 +110,7 @@ type MemoryStore struct {
 	pendingPush    []models.Notification
 	hub            notificationHub
 	demoMenuVer    int
+	demoSeedVer    int
 }
 
 func NewMemory() *MemoryStore {
@@ -134,6 +135,7 @@ func NewMemory() *MemoryStore {
 		waitlist:       make(map[string]models.WaitlistEntry),
 		eventInquiries: make(map[string]models.EventInquiry),
 		demoMenuVer:    demoMenuVersion,
+		demoSeedVer:    demoSeedVersion,
 	}
 	s.seed()
 	return s
@@ -1013,6 +1015,8 @@ func (s *MemoryStore) seed() {
 			UpdatedAt: now,
 		}
 	}
+
+	s.seedExtendedDemoLocked()
 }
 
 func (s *MemoryStore) refreshFreeTablesLocked(venueID string) {

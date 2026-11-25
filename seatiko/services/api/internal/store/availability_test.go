@@ -115,8 +115,9 @@ func TestAvailabilityAroundTarget(t *testing.T) {
 	mem := NewMemory()
 	target := localAt(1, 19, 0)
 	results := mem.SearchAvailability(AvailabilityQuery{CityID: DefaultCityID, Day: target, Target: &target, Guests: 2, Limit: 4})
-	if len(results) != 10 {
-		t.Fatalf("got %d venues, want all 10 seeded venues", len(results))
+	want := len(mem.ListVenues(DefaultCityID))
+	if len(results) != want {
+		t.Fatalf("got %d venues, want all %d seeded venues", len(results), want)
 	}
 	first := results[0]
 	if !first.Exact {
