@@ -26,6 +26,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { useLocale } from "@/components/locale-provider";
 import { venueBookingHref } from "@/lib/booking-link";
 import { googleMapSearch } from "@/lib/google-map";
+import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import { GoogleVenueMap } from "@/components/google-venue-map";
 
 type MapState = "loading" | "ready" | "error";
@@ -61,6 +62,7 @@ const mapCopy = {
     open: "Открыто сейчас",
     closed: "Сейчас закрыто",
     free: "свободных столов",
+    freeTables: { one: "свободный стол", few: "свободных стола", many: "свободных столов", other: "свободного стола" },
     tables: "столов",
     empty: "После публикации рестораны автоматически появятся здесь.",
     action: "Забронировать стол",
@@ -73,6 +75,8 @@ const mapCopy = {
     comingSoon: "Google Maps",
     bookableBadge: "Можно забронировать",
     listPartners: "Партнёры",
+    websiteLabel: "Сайт ресторана",
+    defaultCity: "Бельцы",
   },
   en: {
     unavailable: "Map temporarily unavailable",
@@ -88,6 +92,7 @@ const mapCopy = {
     open: "Open now",
     closed: "Closed now",
     free: "tables available",
+    freeTables: { one: "table available", few: "tables available", many: "tables available", other: "tables available" },
     tables: "tables",
     empty: "Restaurants appear here automatically after publication.",
     action: "Book a table",
@@ -100,6 +105,8 @@ const mapCopy = {
     comingSoon: "Google Maps",
     bookableBadge: "Bookable",
     listPartners: "Partners",
+    websiteLabel: "Restaurant website",
+    defaultCity: "Bălți",
   },
   ro: {
     unavailable: "Harta este temporar indisponibilă",
@@ -115,6 +122,7 @@ const mapCopy = {
     open: "Deschis acum",
     closed: "Închis acum",
     free: "mese libere",
+    freeTables: { one: "masă liberă", few: "mese libere", many: "de mese libere", other: "de mese libere" },
     tables: "mese",
     empty: "Restaurantele apar automat aici după publicare.",
     action: "Rezervă o masă",
@@ -127,8 +135,16 @@ const mapCopy = {
     comingSoon: "Google Maps",
     bookableBadge: "Se poate rezerva",
     listPartners: "Parteneri",
+    websiteLabel: "Site-ul restaurantului",
+    defaultCity: "Bălți",
   },
 } as const;
+
+function formatFreeTablesLabel(locale: LocaleCode, count: number): string {
+  const forms = mapCopy[locale].freeTables;
+  const rule = new Intl.PluralRules(locale).select(count);
+  return rule === "one" || rule === "few" || rule === "many" ? forms[rule] : forms.other;
+}
 
 const RECOMMENDED_LIST_COUNT = 3;
 
@@ -224,7 +240,7 @@ export function VenueMap(props: VenueMapProps) {
   const labels = areaCopy[locale];
   const cities = (config?.cities ?? []).filter((city) => city.country === "MD" && city.bounds);
   const city = cities.find((item) => item.id === cityId);
-  const name = cityId === "all" ? labels.countryName : city ? pickLocale(city.name, locale) : "Bălți";
+  const name = cityId === "all" ? labels.countryName : city ? pickLocale(city.name, locale) : mapCopy[locale].defaultCity;
   const bounds = cityId === "all"
     ? config?.country_bounds ?? MOLDOVA_BOUNDS
     : city?.bounds ?? BALTI_BOUNDS;
@@ -249,7 +265,7 @@ export function VenueMap(props: VenueMapProps) {
               onChange={(event) => setCityId(event.target.value)}
             >
               {!cities.some((item) => item.id === DEFAULT_CITY) && (
-                <option value={DEFAULT_CITY}>Bălți</option>
+                <option value={DEFAULT_CITY}>{mapCopy[locale].defaultCity}</option>
               )}
               {cities.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -484,7 +500,7 @@ function VenueMapArea({
         free.appendChild(freeCount);
 
         const freeText = document.createElement("span");
-        freeText.textContent = ` ${labels.free}`;
+        freeText.textContent = ` ${formatFreeTablesLabel(localeRef.current, place.free_tables)}`;
         free.appendChild(freeText);
 
         root.appendChild(free);
@@ -561,6 +577,7 @@ function VenueMapArea({
         maxZoom: 19,
         cooperativeGestures: true,
         attributionControl: false,
+        locale: getMapLibreLocale(localeRef.current),
       });
     } catch {
       queueMicrotask(() => setMapState("error"));
@@ -587,7 +604,10 @@ function VenueMapArea({
       "bottom-right",
     );
 
-    map.once("load", () => setMapState("ready"));
+    map.once("load", () => {
+      applyMapLibreLocalization(map, localeRef.current);
+      setMapState("ready");
+    });
     map.on("error", () => {
       if (!map.loaded()) setMapState("error");
     });
@@ -603,6 +623,7 @@ function VenueMapArea({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || mapState !== "ready") return;
+    applyMapLibreLocalization(map, locale);
     const effectiveSelectedId =
       places.find((place) => place.id === selectedId)?.id ?? places[0]?.id ?? null;
     const data = placeCollection(places, locale, effectiveSelectedId);
@@ -849,7 +870,7 @@ function VenueMapArea({
               <span
                 className={`status-dot ${place.open_now ? "open" : "closed"}`}
               />
-              {place.free_tables ?? 0} {copy.free}
+              {place.free_tables ?? 0} {formatFreeTablesLabel(locale, place.free_tables ?? 0)}
             </>
           ) : place.in_database ? (
             labels.partner
@@ -972,7 +993,12 @@ function VenueMapArea({
             {hasMeta && (
               <div className="venue-map-meta">
                 {selected.cuisine && selected.cuisine.length > 0 && (
-                  <span>{selected.cuisine.slice(0, 2).join(" · ")}</span>
+                  <span>
+                    {selected.cuisine
+                      .slice(0, 2)
+                      .map((item) => siteCopy.catalog.cuisines[item as keyof typeof siteCopy.catalog.cuisines] ?? item)
+                      .join(" · ")}
+                  </span>
                 )}
                 {typeof selected.price_level === "number" && (
                   <span>{priceLevelLabel(selected.price_level)}</span>
@@ -1000,7 +1026,7 @@ function VenueMapArea({
                     {getVenueHours(selected, locale)}
                   </span>
                 </div>
-                <strong>{selected.free_tables ?? 0} {copy.free}</strong>
+                <strong>{selected.free_tables ?? 0} {formatFreeTablesLabel(locale, selected.free_tables ?? 0)}</strong>
               </div>
             ) : null}
 
@@ -1027,7 +1053,7 @@ function VenueMapArea({
                     <polyline points="15 3 21 3 21 9" />
                     <line x1="10" y1="14" x2="21" y2="3" />
                   </svg>
-                  <span>{locale === "ru" ? "Сайт ресторана" : locale === "ro" ? "Site-ul restaurantului" : "Restaurant website"}</span>
+                  <span>{copy.websiteLabel}</span>
                 </a>
               )}
 

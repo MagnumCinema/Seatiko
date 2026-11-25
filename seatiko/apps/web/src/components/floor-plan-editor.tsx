@@ -39,8 +39,60 @@ function nextNumber(tables: FloorDraftTable[]) {
   return n;
 }
 
+const floorCopy = {
+  ru: {
+    zonesLabel: "Зоны",
+    planPrefix: "План",
+    bar: "Бар",
+    outside: "Снаружи",
+    kitchen: "Кухня",
+    entrance: "Вход ↑",
+    emptyZone: (zone: string) => `В зоне «${zone}» пока нет столов — добавьте или перенесите стол сюда`,
+    settingsTitle: "Настройки стола",
+    clickTable: "Кликните стол на плане",
+    numberLabel: "Номер",
+    seatsLabel: "Мест",
+    zoneLabel: "Зона",
+    lockedHint: "Стол занят/в брони — позицию можно менять, удаление недоступно",
+    zonesHint: "Зоны (зал / улица / терраса) гости увидят вкладками на сайте и в приложении. Новый стол добавляется в текущую вкладку.",
+  },
+  en: {
+    zonesLabel: "Zones",
+    planPrefix: "Floor plan",
+    bar: "Bar",
+    outside: "Outside",
+    kitchen: "Kitchen",
+    entrance: "Entrance ↑",
+    emptyZone: (zone: string) => `No tables in “${zone}” yet — add or move a table here`,
+    settingsTitle: "Table settings",
+    clickTable: "Click a table on the floor plan",
+    numberLabel: "Number",
+    seatsLabel: "Seats",
+    zoneLabel: "Zone",
+    lockedHint: "Table is occupied or reserved — position can be changed, deletion is disabled",
+    zonesHint: "Guests will see zones (hall / street / terrace) as tabs on the website and in the app. New tables are added to the active tab.",
+  },
+  ro: {
+    zonesLabel: "Zone",
+    planPrefix: "Plan",
+    bar: "Bar",
+    outside: "Exterior",
+    kitchen: "Bucătărie",
+    entrance: "Intrare ↑",
+    emptyZone: (zone: string) => `Nu există încă mese în zona „${zone}” — adaugă sau mută o masă aici`,
+    settingsTitle: "Setările mesei",
+    clickTable: "Fă clic pe o masă de pe plan",
+    numberLabel: "Număr",
+    seatsLabel: "Locuri",
+    zoneLabel: "Zonă",
+    lockedHint: "Masa este ocupată sau rezervată — poziția poate fi mutată, ștergerea este dezactivată",
+    zonesHint: "Oaspeții vor vedea zonele (sală / stradă / terasă) ca file pe site și în aplicație. Mesele noi se adaugă în fila curentă.",
+  },
+} as const;
+
 export function FloorPlanEditor({ tables, onChange, busy }: Props) {
   const { locale } = useLocale();
+  const copy = floorCopy[locale];
   const roomRef = useRef<HTMLDivElement | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
@@ -178,7 +230,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
   return (
     <div className={`floor-editor ${busy ? "busy" : ""}`}>
       <div className="floor-editor-toolbar">
-        <div className="floor-zone-tabs" role="tablist" aria-label="Зоны">
+        <div className="floor-zone-tabs" role="tablist" aria-label={copy.zonesLabel}>
           {zones.map((zone) => (
             <button
               key={zone}
@@ -188,7 +240,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
               className={activeZone === zone ? "on" : ""}
               onClick={() => setActiveZone(zone)}
             >
-              {zoneLabel(zone)}
+              {zoneLabel(zone, locale)}
               <small>
                 {tables.filter((t) => normalizeZone(t.zone) === zone).length}
               </small>
@@ -283,16 +335,16 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
           ref={roomRef}
           className="fa-floor-room schematic floor-editor-room"
           role="application"
-          aria-label={`План · ${zoneLabel(activeZone)}`}
+          aria-label={`${copy.planPrefix} · ${zoneLabel(activeZone, locale)}`}
         >
           <div className="fa-floor-zone bar" aria-hidden>
-            BAR
+            {copy.bar}
           </div>
           <div className="fa-floor-zone kitchen" aria-hidden>
-            {activeZone === "street" || activeZone === "terrace" ? "Снаружи" : "Кухня"}
+            {activeZone === "street" || activeZone === "terrace" ? copy.outside : copy.kitchen}
           </div>
           <div className="fa-floor-zone entrance" aria-hidden>
-            Вход ↑
+            {copy.entrance}
           </div>
 
           {visible.map((table) => (
@@ -327,18 +379,18 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
 
           {visible.length === 0 && (
             <div className="fa-floor-empty">
-              В зоне «{zoneLabel(activeZone)}» пока нет столов — добавьте или перенесите стол сюда
+              {copy.emptyZone(zoneLabel(activeZone, locale))}
             </div>
           )}
         </div>
 
         <aside className="floor-editor-side">
-          <h4>Настройки стола</h4>
-          {!selected && <p className="fa-muted">Кликните стол на плане</p>}
+          <h4>{copy.settingsTitle}</h4>
+          {!selected && <p className="fa-muted">{copy.clickTable}</p>}
           {selected && (
             <>
               <label>
-                Номер
+                {copy.numberLabel}
                 <input
                   type="number"
                   min={1}
@@ -348,7 +400,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 />
               </label>
               <label>
-                Мест
+                {copy.seatsLabel}
                 <input
                   type="number"
                   min={1}
@@ -361,7 +413,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 />
               </label>
               <label>
-                Зона
+                {copy.zoneLabel}
                 <select
                   value={normalizeZone(selected.zone)}
                   disabled={busy}
@@ -369,7 +421,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 >
                   {FLOOR_ZONE_PRESETS.map((z) => (
                     <option key={z.id} value={z.id}>
-                      {z.label}
+                      {zoneLabel(z.id, locale)}
                     </option>
                   ))}
                 </select>
@@ -379,7 +431,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 <span>Y {(selected.y * 100).toFixed(0)}%</span>
               </div>
               {selected.locked ? (
-                <p className="fa-muted">Стол занят/в брони — позицию можно менять, удаление недоступно</p>
+                <p className="fa-muted">{copy.lockedHint}</p>
               ) : (
                 <button
                   type="button"
@@ -393,8 +445,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
             </>
           )}
           <p className="floor-editor-hint">
-            Зоны (зал / улица / терраса) гости увидят вкладками на сайте и в приложении. Новый стол
-            добавляется в текущую вкладку.
+            {copy.zonesHint}
           </p>
         </aside>
       </div>

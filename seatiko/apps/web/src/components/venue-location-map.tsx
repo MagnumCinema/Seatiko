@@ -6,6 +6,7 @@ import maplibregl from "maplibre-gl";
 import { pickLocale, type Venue } from "@/lib/api";
 import { mapsRouteUrl } from "@/lib/booking-share";
 import { getVenueHours } from "@/lib/venue-hours";
+import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import { useLocale } from "@/components/locale-provider";
 import { MapPinIcon } from "@/components/venue-icons";
 
@@ -22,8 +23,17 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
   const { locale, t } = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const mapNodeRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const localeRef = useRef(locale);
   const [visible, setVisible] = useState(false);
   const [mapState, setMapState] = useState<"idle" | "ready" | "error">("idle");
+
+  useEffect(() => {
+    localeRef.current = locale;
+    if (mapRef.current && mapState === "ready") {
+      applyMapLibreLocalization(mapRef.current, locale);
+    }
+  }, [locale, mapState]);
   const coords = hasCoords(venue);
   const name = pickLocale(venue.name, locale);
   const address = pickLocale(venue.address, locale);
@@ -59,12 +69,14 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
         maxZoom: 19,
         cooperativeGestures: true,
         attributionControl: false,
+        locale: getMapLibreLocale(localeRef.current),
       });
     } catch {
       // No WebGL (old device, hardware acceleration off): keep the address and route links.
       queueMicrotask(() => setMapState("error"));
       return;
     }
+    mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
 
@@ -75,12 +87,16 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
 
     map.once("load", () => {
       map.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+      applyMapLibreLocalization(map, localeRef.current);
       setMapState("ready");
     });
     map.on("error", () => {
       if (!map.loaded()) setMapState("error");
     });
-    return () => map.remove();
+    return () => {
+      mapRef.current = null;
+      map.remove();
+    };
   }, [visible, venue.lat, venue.lng]);
 
   const googleUrl = coords

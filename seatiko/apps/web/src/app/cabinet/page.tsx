@@ -8,6 +8,7 @@ import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
 import { GoogleLocationPicker } from "@/components/google-location-picker";
 import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
+import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import {
   CabinetFloorPanel,
   CabinetMenuPanel,
@@ -337,6 +338,7 @@ function ApplicationLocationPicker({
   selectedHint: string;
   editHint: string;
 }) {
+  const { locale } = useLocale();
   const [googleFailed, setGoogleFailed] = useState(false);
   const fallback = useCallback(() => setGoogleFailed(true), []);
   const point = useMemo(() => {
@@ -352,11 +354,11 @@ function ApplicationLocationPicker({
       {config?.google_maps_key && !googleFailed ? (
         <GoogleLocationPicker
           apiKey={config.google_maps_key} mapId={config.google_maps_id} center={center}
-          point={point} disabled={disabled} onError={fallback}
+          point={point} disabled={disabled} locale={locale} onError={fallback}
           onChange={(next) => onChange(next.lat.toFixed(6), next.lng.toFixed(6))}
         />
       ) : (
-        <OpenLocationPicker lat={lat} lng={lng} disabled={disabled} onChange={onChange} center={center} />
+        <OpenLocationPicker lat={lat} lng={lng} disabled={disabled} locale={locale} onChange={onChange} center={center} />
       )}
       <p>
         {disabled ? selectedHint : editHint}{" "}
@@ -372,12 +374,14 @@ function OpenLocationPicker({
   lat,
   lng,
   disabled,
+  locale,
   onChange,
   center,
 }: {
   lat: string;
   lng: string;
   disabled: boolean;
+  locale: "ru" | "en" | "ro";
   onChange: (lat: string, lng: string) => void;
   center: MapCoordinates;
 }) {
@@ -385,10 +389,18 @@ function OpenLocationPicker({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const onChangeRef = useRef(onChange);
+  const localeRef = useRef(locale);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    localeRef.current = locale;
+    if (mapRef.current) {
+      applyMapLibreLocalization(mapRef.current, locale);
+    }
+  }, [locale]);
 
   useEffect(() => {
     if (!mapNodeRef.current) return;
@@ -406,6 +418,7 @@ function OpenLocationPicker({
         maxZoom: 19,
         attributionControl: false,
         cooperativeGestures: true,
+        locale: getMapLibreLocale(localeRef.current),
       });
     } catch {
       return;
@@ -419,6 +432,9 @@ function OpenLocationPicker({
       new maplibregl.AttributionControl({ compact: true }),
       "bottom-right",
     );
+    map.once("load", () => {
+      applyMapLibreLocalization(map, localeRef.current);
+    });
 
     const placeMarker = (nextLng: number, nextLat: number, report: boolean) => {
       if (!markerRef.current) {
