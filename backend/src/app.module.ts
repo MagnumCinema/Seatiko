@@ -27,6 +27,7 @@ import { VenueAdminModule } from './modules/venue-admin/venue-admin.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { VenueAccessModule } from './modules/venue-access/venue-access.service.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { GroqProxyModule } from './integrations/groq/groq-proxy.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -64,6 +65,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AdminModule,
     DiscoverModule,
     CrmModule,
+    GroqProxyModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },

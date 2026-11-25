@@ -6,9 +6,16 @@ import { AppModule, ObserveInstrument } from './app.module.js';
 import { listenAddress, type Env } from './config/env.schema.js';
 import { createValidationPipe } from './core/http/validation.js';
 import { openApiDocument } from './modules/docs/openapi.js';
+import { json } from 'express';
+import { GROQ_PROXY_PATH } from './integrations/groq/groq-proxy.controller.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { instrument: ObserveInstrument, rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { instrument: ObserveInstrument, rawBody: true, bodyParser: false });
+  // The CRM's AI requests (tool definitions, history) outgrow the 100 KB default; only that
+  // internal route gets a larger limit, parsed first so the default parsers skip it.
+  app.use(GROQ_PROXY_PATH, json({ limit: '20mb' }));
+  app.useBodyParser('json');
+  app.useBodyParser('urlencoded', { extended: true });
   app.useGlobalPipes(createValidationPipe());
   // Behind nginx: the client address (rate limits) comes from X-Forwarded-For.
   app.set('trust proxy', true);
