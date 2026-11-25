@@ -749,6 +749,8 @@ export async function fetchAuthProviders(): Promise<AuthProviders> {
  */
 export async function googleSignIn(input: {
   credential: string;
+  /** The nonce of this sign-in's request to Google; the token must carry it. */
+  nonce?: string;
   role?: UserRole;
   locale?: string;
 }): Promise<AuthResponse & { created: boolean }> {
@@ -766,7 +768,7 @@ export async function listIdentities(): Promise<ConnectedIdentity[]> {
   return data.identities ?? [];
 }
 
-export async function connectGoogle(input: { credential: string; password?: string }): Promise<ConnectedIdentity[]> {
+export async function connectGoogle(input: { credential: string; nonce?: string; password?: string }): Promise<ConnectedIdentity[]> {
   const data = await apiFetch<{ identities: ConnectedIdentity[] }>("/api/v1/me/identities/google", {
     method: "POST",
     body: input,

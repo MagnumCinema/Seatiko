@@ -13576,54 +13576,13 @@ html[data-theme="light"] .btn-view-toggle.active {
   grid-template-columns: 1fr;
 }
 
-/* Google's own Sign in with Google button (Google Identity Services) */
-.google-signin-slot {
-  margin-bottom: 10px;
-  /* Google's iframe is light; under the site's dark color-scheme it would get an opaque white box. */
-  color-scheme: light;
-}
-
-.google-signin-slot[data-state="loading"] {
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 6%, transparent);
-}
-
-/* Site-styled Google button with Google's (invisible) button on top taking the click */
+/* Site-styled Google button (opens Google's account chooser) */
 .google-auth-wrap {
-  position: relative;
   display: grid;
 }
 
-.google-auth-face {
-  display: grid;
-}
-
-.google-auth-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  opacity: 0;
-  color-scheme: light;
-  cursor: pointer;
-}
-
-.google-auth-wrap[data-state="ready"]:hover .auth-social-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(233, 185, 110, 0.35);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.google-auth-wrap[data-state="ready"]:hover .btn-outline {
-  border-color: rgba(233, 185, 110, 0.5);
-}
-
-.google-auth-wrap:focus-within .auth-social-btn {
-  outline: 2px solid rgba(233, 185, 110, 0.6);
-  outline-offset: 2px;
+.google-auth-wrap[data-state="loading"] {
+  opacity: 0.7;
 }
 
 .auth-social-btn.auth-social-btn-wide {

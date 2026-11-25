@@ -26,6 +26,13 @@ const CODE_KEYS: Record<string, MessageKey> = {
   password_required_first: "error.password_required_first",
 };
 
+/** Message key for a failure of Google's window (lib/google-oauth), not of the API. */
+export function googleErrorKey(code: string): MessageKey {
+  if (code === "popup_blocked") return "error.google_popup_blocked";
+  if (code === "access_denied") return "error.google_access_denied";
+  return "error.google_unavailable";
+}
+
 /** Message key for an API failure; never shows raw server codes to guests. */
 export function apiErrorKey(error: unknown): MessageKey {
   if (error instanceof ApiError) {

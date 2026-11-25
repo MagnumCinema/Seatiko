@@ -17,7 +17,7 @@ import {
   type User,
 } from "@/lib/api";
 import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
-import { apiErrorKey } from "@/lib/api-error-message";
+import { apiErrorKey, googleErrorKey } from "@/lib/api-error-message";
 import { getSiteCopy } from "@/lib/site-copy";
 
 function EyeIcon() {
@@ -243,11 +243,11 @@ export default function RegisterPage() {
   }
 
   /** Owner sign-up with Google: a new account is a restaurant owner; an existing one keeps its role. */
-  async function onGoogle(credential: string) {
+  async function onGoogle(credential: string, nonce: string) {
     setBusy(true);
     setError(null);
     try {
-      const res = await googleSignIn({ credential, locale, role: "restaurant" });
+      const res = await googleSignIn({ credential, nonce, locale, role: "restaurant" });
       if (res.user.role === "restaurant") router.replace("/cabinet");
       else if (res.user.role === "guest") setCurrentUser(res.user);
       else router.replace(redirectPathForRole(res.user.role));
@@ -385,11 +385,12 @@ export default function RegisterPage() {
               {!googleOff && !currentUser && (
                 <>
                   <GoogleSignInButton
-                    text="signup_with"
-                    onCredential={(credential) => void onGoogle(credential)}
+                    redirect={{ role: "restaurant" }}
+                    onCredential={(credential, nonce) => void onGoogle(credential, nonce)}
                     onUnavailable={() => setGoogleOff(true)}
+                    onError={(code) => setError(t(googleErrorKey(code)))}
                   >
-                    <button type="button" className="auth-social-btn google auth-social-btn-wide" tabIndex={-1}>
+                    <button type="button" className="auth-social-btn google auth-social-btn-wide">
                       <GoogleLogo />
                       <span>{t("google.continue")}</span>
                     </button>

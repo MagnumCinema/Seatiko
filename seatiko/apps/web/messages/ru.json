@@ -645,5 +645,8 @@
   "google.connected_ok": "Google подключён",
   "google.no_password": "У аккаунта нет пароля: вы входите через Google. Пароль можно задать ниже.",
   "google.continue": "Продолжить с Google",
-  "google.connect": "Подключить Google"
+  "google.connect": "Подключить Google",
+  "error.google_popup_blocked": "Браузер заблокировал окно Google. Разрешите всплывающие окна для этого сайта и нажмите ещё раз.",
+  "error.google_access_denied": "Вход через Google отменён.",
+  "google.window_done": "Готово — это окно можно закрыть."
 }

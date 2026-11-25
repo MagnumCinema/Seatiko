@@ -58,13 +58,18 @@ export class GoogleIdTokenVerifier {
     return this.clientIds[0] ?? '';
   }
 
-  /** 401 invalid_google_token for a bad token; 503 when Google's keys are unreachable. */
-  async verify(idToken: string): Promise<GoogleAccount> {
+  /**
+   * 401 invalid_google_token for a bad token; 503 when Google's keys are unreachable.
+   * With `nonce`, the token must carry it: the site makes one per sign-in, so a token
+   * copied from another sign-in is refused.
+   */
+  async verify(idToken: string, nonce?: string): Promise<GoogleAccount> {
     if (!this.enabled) throw unavailable('google_signin_disabled');
     // Reading `iss` unverified only picks the verifier, which then checks it.
     const verifier = this.verifiers.get(unverifiedIssuer(idToken)) ?? this.verifiers.get(GOOGLE_ISSUERS[0])!;
     try {
       const claims = await verifier.verify(idToken);
+      if (nonce !== undefined && claims.nonce !== nonce) throw unauthorized('invalid_google_token');
       const text = (v: unknown) => (typeof v === 'string' ? v : '');
       return {
         subject: claims.sub!,

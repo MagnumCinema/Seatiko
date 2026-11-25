@@ -75,6 +75,13 @@ describe('GoogleIdTokenVerifier', () => {
     expect(await code(v.verify('not-a-jwt'))).toBe('401 invalid_google_token');
   });
 
+  it('checks the nonce of this sign-in when given', async () => {
+    const v = verifier();
+    expect(await code(v.verify(idToken({ nonce: 'n-1234567890abcdef' }), 'n-1234567890abcdef'))).toBe('ok');
+    expect(await code(v.verify(idToken({ nonce: 'n-other' }), 'n-1234567890abcdef'))).toBe('401 invalid_google_token');
+    expect(await code(v.verify(idToken({}), 'n-1234567890abcdef'))).toBe('401 invalid_google_token');
+  });
+
   it('reports an unverified email as such', async () => {
     expect((await verifier().verify(idToken({ email_verified: false }))).emailVerified).toBe(false);
   });

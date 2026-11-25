@@ -645,5 +645,8 @@
   "google.connected_ok": "Google connected",
   "google.no_password": "This account has no password: you sign in with Google. You can set one below.",
   "google.continue": "Continue with Google",
-  "google.connect": "Connect Google"
+  "google.connect": "Connect Google",
+  "error.google_popup_blocked": "The browser blocked the Google window. Allow pop-ups for this site and try again.",
+  "error.google_access_denied": "Google sign-in was cancelled.",
+  "google.window_done": "Done — you can close this window."
 }

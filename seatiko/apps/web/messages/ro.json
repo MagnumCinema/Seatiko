@@ -645,5 +645,8 @@
   "google.connected_ok": "Google conectat",
   "google.no_password": "Contul nu are parolă: vă autentificați cu Google. Puteți seta una mai jos.",
   "google.continue": "Continuați cu Google",
-  "google.connect": "Conectați Google"
+  "google.connect": "Conectați Google",
+  "error.google_popup_blocked": "Browserul a blocat fereastra Google. Permiteți ferestrele pop-up pentru acest site și încercați din nou.",
+  "error.google_access_denied": "Autentificarea prin Google a fost anulată.",
+  "google.window_done": "Gata — puteți închide această fereastră."
 }

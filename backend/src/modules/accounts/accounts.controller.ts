@@ -33,8 +33,10 @@ const passwordBody = z.object({ old_password: z.string().optional(), new_passwor
 const deleteBody = z.object({ password: z.string('password_required').optional() }, 'password_required');
 // A Google ID token as Google's sign-in libraries hand it over (a signed JWT, ~1 KB).
 const credential = z.string().min(1).max(4096);
-const googleBody = z.object({ credential, role: z.string().optional(), locale: z.string().optional() });
-const connectGoogleBody = z.object({ credential, password: z.string().max(128).optional() });
+// nonce: the one the site put in this sign-in's request to Google; the token must carry it.
+const nonce = z.string().min(16).max(128).optional();
+const googleBody = z.object({ credential, nonce, role: z.string().optional(), locale: z.string().optional() });
+const connectGoogleBody = z.object({ credential, nonce, password: z.string().max(128).optional() });
 
 /** Sign-in limit per client address, as the Go API (40 per minute). */
 const AUTH_LIMIT = { default: { limit: 40, ttl: 60_000 } };
@@ -84,7 +86,7 @@ export class AccountsController {
   @Post('me/identities/google')
   @HttpCode(200)
   connectGoogle(@CurrentUser() user: AuthUser, @Body({ schema: connectGoogleBody }) body: z.infer<typeof connectGoogleBody>) {
-    return this.accounts.connectGoogle(user.id, body.credential, body.password);
+    return this.accounts.connectGoogle(user.id, body.credential, body.password, body.nonce);
   }
 
   @Delete('me/identities/google')

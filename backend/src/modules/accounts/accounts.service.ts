@@ -15,7 +15,7 @@ import { AccountsRepository, type UserRecord } from './accounts.repository.js';
 const BCRYPT_COST = 10;
 const EMAIL = /^[^\s@<>()[\],;:"]+@[^\s@<>()[\],;:"]+$/;
 
-export type GoogleSignInInput = { credential: string; role?: string; locale?: string };
+export type GoogleSignInInput = { credential: string; nonce?: string; role?: string; locale?: string };
 export type RegisterInput = { email: string; password: string; first_name?: string; last_name?: string; locale?: string; role?: string };
 export type ProfilePatch = {
   first_name?: string;
@@ -97,7 +97,7 @@ export class AccountsService {
    * password and connect Google in the profile.
    */
   async signInWithGoogle(input: GoogleSignInInput) {
-    const google = await this.google.verify(input.credential);
+    const google = await this.google.verify(input.credential, input.nonce);
     const linked = await this.repo.byIdentity('google', google.subject);
     if (linked) return this.googleSession(linked);
     if (!google.email || !google.emailVerified) throw forbidden('google_email_unverified');
@@ -137,13 +137,13 @@ export class AccountsService {
   }
 
   /** Connects a Google account to a signed-in user; a password account confirms its password. */
-  async connectGoogle(userId: string, credential: string, password: string | undefined) {
+  async connectGoogle(userId: string, credential: string, password: string | undefined, nonce?: string) {
     const user = await this.user(userId);
     if (user.passwordHash) {
       if (!password) throw badRequest('password_required');
       if (!(await bcrypt.compare(password, user.passwordHash))) throw forbidden('wrong_password');
     }
-    const google: GoogleAccount = await this.google.verify(credential);
+    const google: GoogleAccount = await this.google.verify(credential, nonce);
     if (await this.repo.link(userId, { provider: 'google', subject: google.subject, email: google.email }, this.now())) return this.identities(userId);
     const owner = await this.repo.identityOwner('google', google.subject);
     if (owner === userId) return this.identities(userId);

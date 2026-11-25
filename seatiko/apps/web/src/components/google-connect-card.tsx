@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { connectGoogle, disconnectGoogle, listIdentities, type ConnectedIdentity, type User } from "@/lib/api";
-import { apiErrorKey } from "@/lib/api-error-message";
+import { apiErrorKey, googleErrorKey } from "@/lib/api-error-message";
 import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
@@ -34,15 +34,21 @@ export function GoogleConnectCard({ user, onToast }: Props) {
 
   const google = identities?.find((i) => i.provider === "google");
 
-  async function connect(credential: string) {
+  /** Before Google opens: a password account confirms its password first. */
+  function ready(): boolean {
     if (hasPassword && !password) {
       setErrorKey("error.password_required");
-      return;
+      return false;
     }
+    setErrorKey(null);
+    return true;
+  }
+
+  async function connect(credential: string, nonce: string) {
     setBusy(true);
     setErrorKey(null);
     try {
-      setIdentities(await connectGoogle({ credential, password: hasPassword ? password : undefined }));
+      setIdentities(await connectGoogle({ credential, nonce, password: hasPassword ? password : undefined }));
       setPassword("");
       onToast?.(t("google.connected_ok"));
     } catch (error) {
@@ -107,8 +113,13 @@ export function GoogleConnectCard({ user, onToast }: Props) {
         </button>
       ) : (
         <div className="google-connect-action" aria-busy={busy}>
-          <GoogleSignInButton text="continue_with" onCredential={(credential) => void connect(credential)} onUnavailable={() => setGoogleOff(true)}>
-            <button type="button" className="btn btn-outline guest-security-action-btn" tabIndex={-1}>
+          <GoogleSignInButton
+            canStart={ready}
+            onCredential={(credential, nonce) => void connect(credential, nonce)}
+            onUnavailable={() => setGoogleOff(true)}
+            onError={(code) => setErrorKey(googleErrorKey(code))}
+          >
+            <button type="button" className="btn btn-outline guest-security-action-btn">
               <GoogleLogo size={16} />
               <span>{t("google.connect")}</span>
             </button>

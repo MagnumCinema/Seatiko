@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { googleSignIn, login, register } from "@/lib/api";
 import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
-import { apiErrorKey } from "@/lib/api-error-message";
+import { apiErrorKey, googleErrorKey } from "@/lib/api-error-message";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
 type AuthFormProps = {
@@ -58,11 +58,11 @@ export function AuthForm({
   }
 
   /** Google's ID token → session; a first sign-in creates a guest account. */
-  async function google(credential: string) {
+  async function google(credential: string, nonce: string) {
     setBusy(true);
     setErrorKey(null);
     try {
-      await googleSignIn({ credential, locale, role: "guest" });
+      await googleSignIn({ credential, nonce, locale, role: "guest" });
       onSuccess();
     } catch (error) {
       setErrorKey(apiErrorKey(error));
@@ -79,11 +79,12 @@ export function AuthForm({
       <p className="web-book-muted">{hint ?? t("res.auth_save")}</p>
       {!googleOff && (
       <GoogleSignInButton
-        text={mode === "login" ? "continue_with" : "signup_with"}
-        onCredential={(credential) => void google(credential)}
+        redirect={{ role: "guest" }}
+        onCredential={(credential, nonce) => void google(credential, nonce)}
         onUnavailable={() => setGoogleOff(true)}
+        onError={(code) => setErrorKey(googleErrorKey(code))}
       >
-        <button type="button" className="auth-social-btn google auth-social-btn-wide" tabIndex={-1}>
+        <button type="button" className="auth-social-btn google auth-social-btn-wide">
           <GoogleLogo />
           <span>{t("google.continue")}</span>
         </button>

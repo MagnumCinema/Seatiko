@@ -702,6 +702,10 @@ paths:
                 credential:
                   type: string
                   description: The Google ID token (Google Identity Services calls it credential).
+                nonce:
+                  type: string
+                  description: The nonce the client put in this sign-in's request to Google; when sent, the token must
+                    carry it.
                 role:
                   type: string
                   enum:
@@ -768,6 +772,8 @@ paths:
                 credential:
                   type: string
                 password:
+                  type: string
+                nonce:
                   type: string
       responses:
         '200':

@@ -19,7 +19,7 @@ import {
 } from "@/lib/api";
 import { useLocale } from "@/components/locale-provider";
 import { GoogleSignInButton } from "@/components/google-sign-in-button";
-import { apiErrorKey } from "@/lib/api-error-message";
+import { apiErrorKey, googleErrorKey } from "@/lib/api-error-message";
 import { getSiteCopy } from "@/lib/site-copy";
 
 function BuildingIcon() {
@@ -432,12 +432,12 @@ function LoginForm() {
   const isPasswordValid = password.length >= 6;
 
   /** Google's ID token → Seatiko session (a first sign-in creates a guest account). */
-  async function onGoogle(credential: string) {
+  async function onGoogle(credential: string, nonce: string) {
     setBusy(true);
     setError(null);
     setSocialNotice(null);
     try {
-      const res = await googleSignIn({ credential, locale, role: "guest" });
+      const res = await googleSignIn({ credential, nonce, locale, role: "guest" });
       const next = searchParams.get("next");
       const target =
         next && next.startsWith("/") && !next.startsWith("//")
@@ -591,17 +591,18 @@ function LoginForm() {
         </p>
       </div>
 
-      {/* Sign in with Google (our button, Google's invisible one on top), then the providers still to come */}
+      {/* Sign in with Google (opens Google's account chooser), then the providers still to come */}
       {(!isRegisteringGuest || !googleOff) && (
         <>
           {isRegisteringGuest ? (
             <div className="auth-social-row auth-social-row-one">
               <GoogleSignInButton
-                text="signup_with"
-                onCredential={(credential) => void onGoogle(credential)}
+                redirect={{ role: "guest" }}
+                onCredential={(credential, nonce) => void onGoogle(credential, nonce)}
                 onUnavailable={() => setGoogleOff(true)}
+                onError={(code) => setError(t(googleErrorKey(code)))}
               >
-                <button type="button" className="auth-social-btn google auth-social-btn-wide" tabIndex={-1}>
+                <button type="button" className="auth-social-btn google auth-social-btn-wide">
                   <GoogleIcon />
                   <span>Google</span>
                 </button>
@@ -609,22 +610,30 @@ function LoginForm() {
             </div>
           ) : (
           <div className="auth-social-row">
-            <GoogleSignInButton
-              text="continue_with"
-              onCredential={(credential) => void onGoogle(credential)}
-              onUnavailable={() => setGoogleOff(true)}
-            >
+            {googleOff ? (
               <button
                 type="button"
                 className="auth-social-btn google"
-                onClick={() => googleOff && handleSocialClick("Google")}
+                onClick={() => handleSocialClick("Google")}
                 aria-label={copy.authGoogle}
                 title={copy.authGoogle}
               >
                 <GoogleIcon />
                 <span>Google</span>
               </button>
-            </GoogleSignInButton>
+            ) : (
+              <GoogleSignInButton
+                redirect={{ role: "guest" }}
+                onCredential={(credential, nonce) => void onGoogle(credential, nonce)}
+                onUnavailable={() => setGoogleOff(true)}
+                onError={(code) => setError(t(googleErrorKey(code)))}
+              >
+                <button type="button" className="auth-social-btn google" aria-label={copy.authGoogle} title={copy.authGoogle}>
+                  <GoogleIcon />
+                  <span>Google</span>
+                </button>
+              </GoogleSignInButton>
+            )}
             <button
               type="button"
               className="auth-social-btn apple"
