@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/locale-provider";
 import { fetchVenue, updateBookingRules, type Venue } from "@/lib/api";
+import { getSiteCopy } from "@/lib/site-copy";
 import {
   BOOKING_RULE_KEYS,
   BOOKING_RULE_LIMITS,
@@ -12,56 +14,25 @@ import {
   type BookingRules,
 } from "@/lib/venue-rules";
 
-type RuleFieldConfig = {
-  key: BookingRuleKey;
-  label: string;
-  hint: string;
-  step: number;
+/** Input step per rule; labels and hints come from site-copy (cabinet.ui.rulesFields). */
+const RULE_STEPS: Record<BookingRuleKey, number> = {
+  booking_interval_min: 15,
+  visit_duration_min: 15,
+  max_visit_duration_min: 30,
+  hold_minutes: 5,
+  max_late_arrival_min: 5,
+  session_start_before_min: 5,
+  release_before_min: 5,
 };
 
-const RULE_FIELDS: RuleFieldConfig[] = [
-  {
-    key: "booking_interval_min",
-    label: "Шаг времени брони, мин",
-    hint: "Через сколько минут можно выбрать следующее время (например 18:00, 18:30).",
-    step: 15,
-  },
-  {
-    key: "visit_duration_min",
-    label: "Длительность брони по умолчанию, мин",
-    hint: "Будет выбрана в окне брони заранее; гость может изменить её сам.",
-    step: 15,
-  },
-  {
-    key: "max_visit_duration_min",
-    label: "Максимальная длительность брони, мин",
-    hint: "Дольше этого гость забронировать стол не сможет.",
-    step: 30,
-  },
-  {
-    key: "hold_minutes",
-    label: "Опоздание без предупреждения, мин",
-    hint: "Сколько стол ждёт гостя после времени брони, если он ничего не отметил.",
-    step: 5,
-  },
-  {
-    key: "max_late_arrival_min",
-    label: "Максимальное опоздание с предупреждением, мин",
-    hint: "До скольких минут гость может опоздать, если отметил это в «Я приду». Не меньше опоздания без предупреждения.",
-    step: 5,
-  },
-  {
-    key: "session_start_before_min",
-    label: "Посадка до брони, мин",
-    hint: "За сколько минут до брони гость с бронью может сесть за стол.",
-    step: 5,
-  },
-  {
-    key: "release_before_min",
-    label: "Освобождение для гостей без брони, мин",
-    hint: "За сколько минут до брони гости без брони должны освободить стол.",
-    step: 5,
-  },
+const RULE_ORDER: BookingRuleKey[] = [
+  "booking_interval_min",
+  "visit_duration_min",
+  "max_visit_duration_min",
+  "hold_minutes",
+  "max_late_arrival_min",
+  "session_start_before_min",
+  "release_before_min",
 ];
 
 type FormValues = Record<BookingRuleKey, string>;
@@ -79,18 +50,23 @@ function rulesToFormValues(rules: BookingRules): FormValues {
 }
 
 export function BookingRulesForm({ venueId }: { venueId: string }) {
+  const { locale } = useLocale();
+  const ui = getSiteCopy(locale).cabinet.ui;
   const [values, setValues] = useState<FormValues>(() =>
     rulesToFormValues(DEFAULT_BOOKING_RULES)
   );
   const [allowPreorder, setAllowPreorder] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<BookingRuleKey, string>>>({});
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   function populateFromVenue(venue: Partial<Venue> | null | undefined) {
     const rules = resolveBookingRules(venue);
     setValues(rulesToFormValues(rules));
     setAllowPreorder(venue?.allow_preorder ?? true);
+    setDirty(false);
   }
 
   useEffect(() => {
@@ -101,7 +77,8 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
         if (cancelled) return;
         populateFromVenue(venue);
       } catch {
-        /* ignore network errors on initial load, fallback to defaults */
+        // Defaults stay in the form, but the owner is told they are not the saved values.
+        if (!cancelled) setLoadFailed(true);
       }
     }
     void load();
@@ -112,6 +89,7 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
 
   function handleChange(key: BookingRuleKey, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
     if (errors[key]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -137,14 +115,14 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
       for (const err of validationErrors) {
         if (err.reason === "range") {
           const { min, max } = BOOKING_RULE_LIMITS[err.key];
-          nextErrors[err.key] = `Допустимо от ${min} до ${max}`;
+          nextErrors[err.key] = ui.rulesRange.replace("{min}", String(min)).replace("{max}", String(max));
         } else if (err.reason === "below_hold") {
           const hold = Number.isFinite(numericRules.hold_minutes)
             ? numericRules.hold_minutes
             : values.hold_minutes;
-          nextErrors[err.key] = `Должно быть не меньше опоздания без предупреждения (${hold} мин)`;
+          nextErrors[err.key] = ui.rulesBelowHold.replace("{hold}", String(hold));
         } else if (err.reason === "above_max") {
-          nextErrors[err.key] = `Не больше максимальной длительности (${values.max_visit_duration_min} мин)`;
+          nextErrors[err.key] = ui.rulesAboveMax.replace("{max}", String(values.max_visit_duration_min));
         }
       }
       setErrors(nextErrors);
@@ -161,9 +139,10 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
         allow_preorder: allowPreorder,
       });
       populateFromVenue(updated);
-      setStatus("Правила брони сохранены");
+      setLoadFailed(false);
+      setStatus({ kind: "success", text: ui.rulesSaved });
     } catch {
-      setStatus("Не удалось сохранить правила");
+      setStatus({ kind: "error", text: ui.rulesSaveFailed });
     } finally {
       setSaving(false);
     }
@@ -171,20 +150,28 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
 
   return (
     <section className="booking-rules-form">
+      {loadFailed && (
+        <p className="booking-rules-status error" role="alert">
+          {ui.rulesLoadFailed}
+        </p>
+      )}
       <div className="booking-rules-grid">
-        {RULE_FIELDS.map((cfg) => {
-          const { min, max } = BOOKING_RULE_LIMITS[cfg.key];
-          const error = errors[cfg.key];
+        {RULE_ORDER.map((key) => {
+          const { min, max } = BOOKING_RULE_LIMITS[key];
+          const error = errors[key];
+          const [label, hint] = ui.rulesFields[key];
           return (
-            <label key={cfg.key} className="booking-rules-field">
-              <span className="booking-rules-label">{cfg.label}</span>
+            <label key={key} className="booking-rules-field">
+              <span className="booking-rules-label">{label}</span>
               <input
                 type="number"
+                inputMode="numeric"
                 min={min}
                 max={max}
-                step={cfg.step}
-                value={values[cfg.key]}
-                onChange={(e) => handleChange(cfg.key, e.target.value)}
+                step={RULE_STEPS[key]}
+                value={values[key]}
+                aria-invalid={error ? true : undefined}
+                onChange={(e) => handleChange(key, e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -192,7 +179,7 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
                   }
                 }}
               />
-              <small className="booking-rules-hint">{cfg.hint}</small>
+              <small className="booking-rules-hint">{hint}</small>
               {error && (
                 <small className="booking-rules-error" role="alert">
                   {error}
@@ -203,38 +190,47 @@ export function BookingRulesForm({ venueId }: { venueId: string }) {
         })}
       </div>
 
-      <label className="booking-rules-field">
+      <label className="booking-rules-field booking-rules-check">
         <input
           type="checkbox"
           checked={allowPreorder}
           onChange={(e) => {
             setAllowPreorder(e.target.checked);
+            setDirty(true);
             if (status) setStatus(null);
           }}
         />
-        <span className="booking-rules-label">
-          Разрешить предзаказ блюд к брони
-        </span>
+        <span className="booking-rules-label">{ui.rulesPreorder}</span>
       </label>
 
-      <p className="booking-rules-preview">
-        Гость увидит: без предупреждения можно опоздать на {values.hold_minutes || "0"} мин; предупредив — до {values.max_late_arrival_min || "0"} мин; длительность брони гость выбирает сам — до {values.max_visit_duration_min || "0"} мин (по умолчанию {values.visit_duration_min || "0"}).
-      </p>
-
-      {status && (
-        <p className="booking-rules-status" role="status">
-          {status}
+      <div className="booking-rules-preview">
+        <strong>{ui.rulesPreviewLabel}</strong>
+        <p>
+          {ui.rulesPreview
+            .replace("{hold}", values.hold_minutes || "0")
+            .replace("{late}", values.max_late_arrival_min || "0")
+            .replace("{max}", values.max_visit_duration_min || "0")
+            .replace("{def}", values.visit_duration_min || "0")}
         </p>
-      )}
+      </div>
 
-      <button
-        type="button"
-        className="fa-btn"
-        disabled={saving}
-        onClick={() => void handleSave()}
-      >
-        Сохранить
-      </button>
+      <div className="booking-rules-actions">
+        <button
+          type="button"
+          className="panel-btn"
+          disabled={saving || !dirty}
+          onClick={() => void handleSave()}
+        >
+          {ui.rulesSave}
+        </button>
+        {status ? (
+          <p className={`booking-rules-status ${status.kind}`} role={status.kind === "error" ? "alert" : "status"}>
+            {status.text}
+          </p>
+        ) : dirty ? (
+          <p className="booking-rules-dirty">{ui.rulesUnsaved}</p>
+        ) : null}
+      </div>
     </section>
   );
 }

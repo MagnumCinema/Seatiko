@@ -22091,3 +22091,149 @@ html[data-theme="light"] .owner-section-empty > span:first-child:not(.owner-inli
   .owner-filters { width: 100%; }
   .owner-filters button { flex: 1; justify-content: center; padding-inline: 8px; }
 }
+
+/* Floor / menu / rules panels */
+.cabinet-ops-card .owner-card-head h3 { margin-top: 0; }
+.cabinet-ops-unsaved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  color: #d49a46;
+  background: rgba(233, 185, 110, .14);
+  font-size: .68rem;
+  font-weight: 750;
+}
+.cabinet-ops-unsaved::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+html[data-theme="light"] .cabinet-ops-unsaved { color: #8a5a17; background: #fbf0dc; }
+.cabinet-ops-loading {
+  min-height: 220px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--site-muted);
+  font-size: .78rem;
+}
+.cabinet-ops-loading p { margin: 0; }
+.cabinet-ops-floor-actions,
+.cabinet-qr-actions { flex-wrap: wrap; }
+
+/* Menu: one card layout for every dish — text on top, actions on the bottom row. */
+.cabinet-menu-head { margin-bottom: 16px; }
+.cabinet-menu-group li {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cabinet-dish-info { min-width: 0; display: grid; gap: 6px; }
+.cabinet-dish-title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.cabinet-dish-title-row strong { min-width: 0; line-height: 1.35; }
+.cabinet-menu-group .cabinet-dish-price { margin-left: 0; flex-shrink: 0; white-space: nowrap; }
+.cabinet-dish-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.cabinet-dish-badges .cabinet-dish-stop-badge { margin-left: 0; }
+.cabinet-dish-adult-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--site-border);
+  color: var(--site-muted);
+  font-size: .65rem;
+  font-weight: 750;
+}
+.cabinet-menu-group li p { margin: 0; line-height: 1.45; }
+.cabinet-menu-group li .cabinet-menu-actions { flex-wrap: wrap; }
+.cabinet-menu-group li.stopped > .cabinet-dish-info { opacity: .6 !important; }
+.cabinet-menu-actions .panel-btn[aria-pressed="true"] {
+  color: #3b825c !important;
+  border-color: rgba(59, 130, 92, .45) !important;
+}
+.cabinet-menu-empty {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 36px 16px;
+  text-align: center;
+  border: 1px dashed var(--site-border);
+  border-radius: 14px;
+}
+.cabinet-menu-empty p { margin: 0; color: var(--site-muted); }
+.cabinet-dish-form-error {
+  margin: 0;
+  color: #e07a66;
+  font-size: .78rem;
+  font-weight: 650;
+}
+html[data-theme="light"] .cabinet-dish-form-error { color: #b3412c; }
+.cabinet-dish-price-input-box:has(input[aria-invalid="true"]) { border-color: rgba(224, 122, 102, .75) !important; }
+
+/* Rules: labels sit right above their input; inputs still line up across columns. */
+.booking-rules-form .booking-rules-label { align-items: flex-end; }
+.booking-rules-form .booking-rules-hint { min-height: 0; }
+.booking-rules-form .booking-rules-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  height: auto;
+  padding: 10px 14px;
+  border: 1px solid var(--site-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.booking-rules-form .booking-rules-check .booking-rules-label { min-height: 0; margin: 0; }
+.booking-rules-form .booking-rules-check input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; }
+.booking-rules-form .booking-rules-preview { display: grid; gap: 4px; }
+.booking-rules-form .booking-rules-preview strong {
+  color: var(--site-muted);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.booking-rules-form .booking-rules-preview p { margin: 0; line-height: 1.5; }
+.booking-rules-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.booking-rules-form .booking-rules-status { align-items: center; font-size: .78rem; }
+.booking-rules-form .booking-rules-status.success { color: #4fa676; }
+.booking-rules-form .booking-rules-status.error { color: #e07a66; }
+html[data-theme="light"] .booking-rules-form .booking-rules-status.success { color: #2f6b4f; }
+html[data-theme="light"] .booking-rules-form .booking-rules-status.error { color: #b3412c; }
+.booking-rules-form > .booking-rules-status.error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(189, 91, 73, .12);
+}
+.booking-rules-dirty { margin: 0; color: var(--site-muted); font-size: .74rem; }
+.booking-rules-form input[aria-invalid="true"] { border-color: rgba(224, 122, 102, .75) !important; }
+
+@media (max-width: 700px) {
+  .cabinet-ops-card { padding: 18px 14px; }
+  .cabinet-ops-floor-head { flex-direction: column; }
+  .cabinet-ops-floor-actions { width: 100%; }
+  .cabinet-ops-floor-actions .panel-btn { flex: 1; }
+  .cabinet-menu-head { flex-direction: column; align-items: stretch; }
+  .cabinet-menu-head-actions { width: 100%; }
+  .booking-rules-form .booking-rules-label { min-height: 0; }
+  .booking-rules-actions .panel-btn { width: 100%; }
+}
+.cabinet-rules-lead { margin: 0 0 20px; font-size: .82rem; }
+@media (max-width: 700px) {
+  .cabinet-qr-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+  .cabinet-qr-card svg { width: 100%; height: auto; max-width: 132px; }
+}
+/* Same rounded clipping, but without a scroll container — lets the notice stick while scrolling. */
+.owner-dashboard { overflow: clip; }
+/* Sticky layers need opaque backgrounds: --site-surface is translucent in the dark theme. */
+.owner-content > .owner-notice.success {
+  background: linear-gradient(rgba(59, 130, 92, .2), rgba(59, 130, 92, .2)), var(--site-bg);
+}
+.owner-content > .owner-notice.error {
+  background: linear-gradient(rgba(189, 91, 73, .2), rgba(189, 91, 73, .2)), var(--site-bg);
+}
+.owner-form-footer {
+  z-index: 25;
+  background: linear-gradient(var(--site-surface), var(--site-surface)), var(--site-bg);
+}
