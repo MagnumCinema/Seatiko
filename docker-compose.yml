@@ -176,6 +176,20 @@ services:
       # Private hosts Twenty may call (webhooks to the Seatiko API on the Docker network);
       # every other private address stays blocked (SSRF protection).
       OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS: ${TWENTY_OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS:-api.seatiko.local}
+      # AI (chat, workflows) through Groq, an OpenAI-compatible endpoint. The key comes from
+      # GROQ_API_KEY ({{GROQ_API_KEY}} is filled in by Twenty, so the JSON holds no secret).
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      AI_PROVIDERS: >-
+        {"groq": {"npm": "@ai-sdk/openai-compatible", "label": "Groq",
+        "baseUrl": "https://api.groq.com/openai/v1", "apiKey": "{{GROQ_API_KEY}}",
+        "models": [
+        {"name": "openai/gpt-oss-120b", "label": "GPT-OSS 120B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536},
+        {"name": "openai/gpt-oss-20b", "label": "GPT-OSS 20B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536}]}}
+      AI_MODELS_DEFAULT_EXTRA_FAST: groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_FAST: groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_BALANCED: groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_SMART: groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_EXTRA_SMART: groq/openai/gpt-oss-120b
     depends_on:
       twenty-db:
         condition: service_healthy
@@ -214,6 +228,20 @@ services:
       LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-LOCAL}
       # Must match twenty-server so queued webhook jobs can reach the local API.
       OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS: ${TWENTY_OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS:-api.seatiko.local}
+      # AI (chat, workflows) through Groq, an OpenAI-compatible endpoint. The key comes from
+      # GROQ_API_KEY ({{GROQ_API_KEY}} is filled in by Twenty, so the JSON holds no secret).
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      AI_PROVIDERS: >-
+        {"groq": {"npm": "@ai-sdk/openai-compatible", "label": "Groq",
+        "baseUrl": "https://api.groq.com/openai/v1", "apiKey": "{{GROQ_API_KEY}}",
+        "models": [
+        {"name": "openai/gpt-oss-120b", "label": "GPT-OSS 120B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536},
+        {"name": "openai/gpt-oss-20b", "label": "GPT-OSS 20B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536}]}}
+      AI_MODELS_DEFAULT_EXTRA_FAST: groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_FAST: groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_BALANCED: groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_SMART: groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_EXTRA_SMART: groq/openai/gpt-oss-120b
     depends_on:
       twenty-db:
         condition: service_healthy
