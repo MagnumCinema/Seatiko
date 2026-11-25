@@ -27,5 +27,8 @@ dist/
 
 # Local brainstorm / visual companion sessions
 .superpowers/
-.env.integration.local
+# Settings and secrets: one .env, never committed (template: .env.example).
+.env
+.env.*
+!.env.example
 .seatiko-local/

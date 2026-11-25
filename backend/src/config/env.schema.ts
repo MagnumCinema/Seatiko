@@ -32,6 +32,10 @@ export const envSchema = z.object({
   TWENTY_WEBHOOK_SECRET: z.string().optional(),
   TWENTY_SYNC_INTERVAL_SECONDS: z.coerce.number().int().min(5).default(15),
 
+  /** First administrator, created at start when no user has this email (real data, no demo accounts). */
+  SEATIKO_ADMIN_EMAIL: z.string().optional(),
+  SEATIKO_ADMIN_PASSWORD: z.string().min(8, 'SEATIKO_ADMIN_PASSWORD must be at least 8 characters').optional(),
+
   /** Apply pending database migrations when the app starts. */
   DB_MIGRATE_ON_START: z.stringbool().default(true),
 

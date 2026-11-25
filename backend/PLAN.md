@@ -56,7 +56,7 @@
 
 ### Внешние зависимости
 
-Twenty (REST + GraphQL + метаданные, вебхук с подписью), Google Places (ключи в `.seatiko-local/google.env`, перечитываются на лету), Groq, S3/MinIO, JWT (общий `JWT_SECRET`).
+Twenty (REST + GraphQL + метаданные, вебхук с подписью), Google (ключи в `.env`, карта Google только при `GOOGLE_MAPS_ENABLED=true`), Groq, S3/MinIO, JWT (общий `JWT_SECRET`).
 
 ### Кто зависит от контракта
 

@@ -150,8 +150,7 @@ Backend напрямую не публикует порт `8080` на компь
 Virtual-restaurant-/
 ├── README.md                         # главный вход (карта документации)
 ├── docker-compose.yml                # весь локальный стек
-├── .env                              # настройки Docker/Twenty
-├── .env.keys                         # API key и webhook secret CRM
+├── .env                              # все настройки и ключи (не в git; шаблон .env.example)
 ├── config/nginx/                     # единый reverse proxy
 ├── docs/                             # вся документация, прототип, диаграммы
 │   ├── README.md                     # индекс docs
@@ -275,13 +274,14 @@ erDiagram
 
 ### 1. Конфигурация
 
-В этом приватном репозитории рабочие `.env` и `.env.keys` включены по решению владельца. Для нового независимого окружения используйте шаблоны:
+Все настройки и ключи проекта — в одном файле `.env` в корне (в git его нет). Шаблон с комментариями — `.env.example`:
 
 ```bash
 cp .env.example .env
-cp .env.keys.example .env.keys
-chmod 600 .env .env.keys
+chmod 600 .env
 ```
+
+docker compose читает `.env` и передаёт каждому контейнеру только нужные ему переменные.
 
 Минимальные секреты можно сгенерировать так:
 
@@ -497,7 +497,7 @@ API=http://localhost/api/v1
 #### /discover: счётчик и AI
 
 - `GET /map/places?...&cuisine=&type=&budget=MIN-MAX&occasion=&practical=&lat=&lng=` → `filters: {total, matched, relax}` (№11).
-- `POST /discover/ai` `{query, locale, city_id, prefs}` → фильтры и места (№10). Groq: `GROQ_API_KEY` (кладите в `.env.integration.local`, он не в git), `GROQ_MODEL` (по умолчанию `openai/gpt-oss-120b`); без ключа — правила. 20 запросов/мин с IP.
+- `POST /discover/ai` `{query, locale, city_id, prefs}` → фильтры и места (№10). Groq: `GROQ_API_KEY` (в `.env`), `GROQ_MODEL` (по умолчанию `openai/gpt-oss-120b`); без ключа — правила. 20 запросов/мин с IP.
 
 ### Маршруты владельца
 
@@ -805,7 +805,7 @@ docker compose logs --tail=100 twenty-server twenty-worker
 
 Проверить:
 
-1. существует `.env.keys`;
+1. в `.env` заполнены `TWENTY_API_KEY` и `TWENTY_WEBHOOK_SECRET`;
 2. API key активен в Twenty;
 3. `docker compose up -d --force-recreate api` выполнен после изменения ключа;
 4. `http://crm.localhost/healthz` доступен;
@@ -852,9 +852,7 @@ curl -I http://crm.localhost/
 
 ### Секреты в приватном репозитории
 
-По явному решению владельца проекта рабочие `.env` и `.env.keys` включаются в этот приватный репозиторий. Это удобно для единственного владельца, но всё равно означает, что GitHub и вся история Git содержат секреты.
-
-Если репозиторий когда-либо станет публичным или появится новый участник:
+Ключи и пароли живут только в `.env` (в `.gitignore`). Раньше `.env` и `.env.keys` лежали в git, а репозиторий публичный, поэтому старые значения есть в истории:
 
 1. немедленно отозвать Twenty API keys;
 2. сменить JWT и `APP_SECRET`;
@@ -863,7 +861,7 @@ curl -I http://crm.localhost/
 5. очистить Git history специализированным инструментом;
 6. перейти на GitHub Actions Secrets, Vault, SOPS или secrets manager.
 
-Никогда не выводите содержимое `.env.keys` в CI logs.
+Никогда не выводите содержимое `.env` в CI logs.
 
 ### Что изменить перед production
 

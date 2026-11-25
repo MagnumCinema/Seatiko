@@ -131,11 +131,11 @@ Seed-рестораны карты не уходят в CRM, пока нет з�
 
 ### Секреты и webhook
 
-Секреты — в корневом `.env.keys` (см. политику в [`ENGINEERING.md`](../docs/ENGINEERING.md#секреты-в-приватном-репозитории)). Шаблон: `.env.keys.example`.
+Секреты — в корневом `.env` (см. [`ENGINEERING.md`](../docs/ENGINEERING.md#секреты-в-приватном-репозитории)). Шаблон: `.env.example`.
 
 ```bash
 cd seatiko/services/api
-set -a && source ../../../.env.keys && set +a
+set -a && source ../../../.env && set +a
 TWENTY_BASE_URL=http://crm.localhost go run ./cmd/crm-bootstrap
 ```
 

@@ -37,23 +37,20 @@ services:
     networks:
       default:
         aliases: [api.seatiko.local]
-    # Secrets are loaded only by the backend container and never exposed to web/mobile builds.
-    env_file:
-      - path: ./.env.keys
-        required: false
-      - path: ./.env.integration.local
-        required: false
+    # Settings come from the single .env; secrets go to the backend only, never to web builds.
     volumes:
       - api-data:/app/data
       - api-uploads:/app/data/uploads
-      - ./.seatiko-local:/run/seatiko/local:ro
     environment:
       ADDR: ":8080"
       JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
       APP_ENV: ${APP_ENV:-development}
       UPLOAD_DIR: /app/data/uploads
       DATA_FILE: /app/data/seatiko-state.json
-      GOOGLE_CONFIG_FILE: /run/seatiko/local/google.env
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      TWENTY_API_KEY: ${TWENTY_API_KEY:-}
+      TWENTY_WEBHOOK_SECRET: ${TWENTY_WEBHOOK_SECRET:-}
       TWENTY_BASE_URL: http://twenty-server:3000
       TWENTY_PUBLIC_URL: ${SERVER_URL:-http://crm.localhost}
       TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
@@ -96,8 +93,8 @@ services:
       retries: 15
     restart: unless-stopped
 
-  # --- NestJS API (migration from the Go api, see backend/PLAN.md). Not started by
-  # default: `docker compose --profile nest up -d seatiko-db nest-api`.
+  # --- NestJS API (migration from the Go api, see backend/PLAN.md). Profile "nest",
+  # on by default through COMPOSE_PROFILES=nest in .env.
   seatiko-db:
     image: postgres:16
     profiles: ["nest"]
@@ -122,19 +119,25 @@ services:
     profiles: ["nest"]
     expose:
       - "8080"
-    env_file:
-      - path: ./.env.integration.local
-        required: false
-    volumes:
-      - ./.seatiko-local:/run/seatiko/local:ro
     environment:
       ADDR: ":8080"
       APP_ENV: ${APP_ENV:-development}
       JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
       DATABASE_URL: postgres://seatiko:${SEATIKO_DB_PASSWORD:-seatiko-dev-password}@seatiko-db:5432/seatiko
-      GOOGLE_CONFIG_FILE: /run/seatiko/local/google.env
+      SEATIKO_ADMIN_EMAIL: ${SEATIKO_ADMIN_EMAIL:-}
+      SEATIKO_ADMIN_PASSWORD: ${SEATIKO_ADMIN_PASSWORD:-}
       # Google map on the site needs a billing account; off = free OpenFreeMap map.
       GOOGLE_MAPS_ENABLED: ${GOOGLE_MAPS_ENABLED:-false}
+      GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
+      GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      TWENTY_BASE_URL: http://twenty-server:3000
+      TWENTY_PUBLIC_URL: ${SERVER_URL:-http://crm.localhost}
+      TWENTY_API_KEY: ${TWENTY_API_KEY:-}
+      TWENTY_WEBHOOK_SECRET: ${TWENTY_WEBHOOK_SECRET:-}
+      TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
       # Cafes and restaurants from OpenStreetMap + Overture, imported at start and refreshed weekly.
       OPEN_PLACES_CITIES: ${OPEN_PLACES_CITIES:-balti}
       S3_ENDPOINT: http://minio:9000

@@ -6,25 +6,21 @@
 
 ## Посмотреть сайт
 
+Все настройки и ключи — в одном файле `.env` в корне (не в git). Первый раз:
+
 ```bash
 git pull
-docker compose up -d --build          # сайт на http://localhost, API — Go (как раньше)
+cp .env.example .env      # впишите SEATIKO_ADMIN_EMAIL / SEATIKO_ADMIN_PASSWORD (и ключи, если есть)
+docker compose up -d --build
 ```
 
-Новый бэкенд (Nest) с настоящими заведениями Бельц из OpenStreetMap и Overture:
+Сайт — http://localhost. Поднимается и Nest (`COMPOSE_PROFILES=nest` в `.env`); при первом запуске он сам
+загружает настоящие кафе и рестораны Бельц из OpenStreetMap и Overture (~1 мин), администратор создаётся из `.env`.
+Демо-данных на сайте нет: только настоящие места и аккаунты, которые регистрируются.
 
-```bash
-docker compose --profile nest up -d --build seatiko-db nest-api
-# первый запуск сам импортирует кафе и рестораны Бельц (~1 мин), проверить:
-docker compose logs nest-api | grep "open places"
-SEATIKO_API_UPSTREAM=nest-api:8080 docker compose --profile nest up -d nginx   # сайт → Nest
-docker compose up -d nginx                                                    # вернуть Go
-```
-
-На Nest уже работают: карта и каталог, вход и регистрация, профиль, брони, предзаказ, очередь.
-Ещё нет (пока смотреть на Go): QR и заказы за столом, кабинет ресторана, персонал, админка, AI-подбор, CRM.
-Демо-аккаунты для проверки на Nest (только для разработки): `docker compose exec nest-api node dist/database/seed/seed.js`,
-затем `docker compose exec nest-api node dist/cli/import-open-places.js`, чтобы заново привязать заведения к карте.
+Какой бэкенд отвечает сайту — `SEATIKO_API_UPSTREAM` в `.env`: `api:8080` (Go) или `nest-api:8080` (Nest),
+после изменения `docker compose up -d nginx`. На Nest уже работают: карта и каталог, вход и регистрация, профиль,
+брони, предзаказ, очередь. Пока только на Go: кабинет ресторана, персонал, админка, AI-подбор, CRM.
 
 ## Команды
 
@@ -43,9 +39,8 @@ CONTRACT_BASE_URL=http://127.0.0.1:18090 npm run test:contract
 ## Запуск Nest локально
 
 ```bash
-docker compose --profile nest up -d seatiko-db   # PostgreSQL на localhost:5433
-cp .env.example .env
-npm run build && node --env-file=.env dist/main.js
+docker compose up -d seatiko-db                  # PostgreSQL на localhost:5433
+npm run build && node --env-file=../.env dist/main.js   # настройки — из корневого .env
 ```
 
 Структура и правила слоёв — в PLAN.md, раздел «Архитектура и структура».
