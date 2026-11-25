@@ -35,6 +35,7 @@ type persistedState struct {
 	AdultLog       []models.AdultPermissionLogEntry        `json:"adult_permission_log,omitempty"`
 	Notifications  []models.Notification                   `json:"notifications,omitempty"`
 	DemoMenuVer    int                                     `json:"demo_menu_version"`
+	DemoSeedVer    int                                     `json:"demo_seed_version"`
 }
 
 type persistedUser struct {
@@ -70,6 +71,7 @@ func NewPersistent(path string) (*MemoryStore, error) {
 	s.ensureDemoUsersLocked()
 	s.ensureDemoFloorExamplesLocked()
 	s.ensureDemoMenuLocked()
+	s.ensureExtendedDemoSeedLocked()
 	s.releaseStaleReservedTablesLocked()
 	return s, nil
 }
@@ -427,6 +429,7 @@ func (s *MemoryStore) applyState(state persistedState) {
 		s.menuItems[id] = normalizeAgeRestriction(item)
 	}
 	s.demoMenuVer = state.DemoMenuVer
+	s.demoSeedVer = state.DemoSeedVer
 }
 
 func (s *MemoryStore) stateLocked() persistedState {
@@ -455,6 +458,7 @@ func (s *MemoryStore) stateLocked() persistedState {
 		AdultLog:       s.adultLog,
 		Notifications:  s.notifications,
 		DemoMenuVer:    s.demoMenuVer,
+		DemoSeedVer:    s.demoSeedVer,
 	}
 }
 

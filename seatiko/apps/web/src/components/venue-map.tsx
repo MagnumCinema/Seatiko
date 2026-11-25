@@ -923,7 +923,7 @@ function VenueMapArea({
       <div className="venue-map-panel" aria-busy={loading}>
         {loadError && (
           <p role="status" className="venue-map-address">
-            {labels.loadError}{" "}<button type="button" onClick={() => setRetry((attempt) => attempt + 1)}>{labels.retry}</button>
+            {labels.loadError}{" "}<button type="button" className="live-map-relax" onClick={() => setRetry((attempt) => attempt + 1)}>{labels.retry}</button>
           </p>
         )}
         {useGoogle && (googleStatus === "unavailable" || googleStatus === "disabled") && <p role="status" className="venue-map-address">{labels.providerError}</p>}

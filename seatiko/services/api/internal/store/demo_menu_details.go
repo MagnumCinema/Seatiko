@@ -166,7 +166,36 @@ func demoDishDetails(d demoDish) (models.LocalizedString, []string) {
 		if strings.Contains(name, "wine") {
 			allergens = []string{allergenSulphites}
 		}
-	case strings.Contains(name, "salmon") || strings.Contains(name, "dorad") || strings.Contains(name, "bream") || strings.Contains(name, "fish"):
+	case strings.Contains(name, "sushi") || strings.Contains(name, "roll") || strings.Contains(name, "nigiri") || strings.Contains(name, "philadelphia") || strings.Contains(name, "dragon") || strings.Contains(name, "california"):
+		ingredients = ls(
+			"Рис для суши, нори, лосось/тунец/креветка, сливочный сыр или авокадо, соевый соус, васаби.",
+			"Sushi rice, nori, salmon/tuna/prawn, cream cheese or avocado, soy sauce, wasabi.",
+			"Orez pentru sushi, nori, somon/ton/crevete, cremă de brânză sau avocado, sos de soia, wasabi.",
+		)
+		allergens = []string{allergenFish, allergenCrustaceans, allergenSoy, allergenSesame}
+		if strings.Contains(name, "philadelphia") {
+			allergens = append(allergens, allergenMilk)
+		}
+	case strings.Contains(name, "ramen") || strings.Contains(name, "tom yum") || strings.Contains(name, "teriyaki") || strings.Contains(name, "edamame") || strings.Contains(name, "wakame") || strings.Contains(name, "tempura"):
+		ingredients = ls(
+			"Бульон или лапша/рис по рецепту, соевый соус, кунжут, зелёный лук, специи.",
+			"Broth or noodles/rice as listed, soy sauce, sesame, spring onion, spices.",
+			"Supă sau tăiței/orez după rețetă, sos de soia, susan, ceapă verde, condimente.",
+		)
+		allergens = []string{allergenSoy, allergenSesame, allergenGluten}
+		if strings.Contains(name, "tempura") || strings.Contains(name, "tom yum") {
+			allergens = append(allergens, allergenCrustaceans, allergenEggs)
+		}
+	case strings.Contains(name, "mochi") || strings.Contains(name, "matcha") || strings.Contains(name, "eclair") || strings.Contains(name, "tart") || strings.Contains(name, "brioche") || strings.Contains(name, "granola"):
+		if d.desc.RU != "" {
+			ingredients = d.desc
+		}
+		if strings.Contains(name, "matcha") && strings.Contains(name, "latte") || strings.Contains(name, "raf") {
+			allergens = []string{allergenMilk}
+		} else {
+			allergens = []string{allergenMilk, allergenEggs, allergenGluten}
+		}
+	case strings.Contains(name, "trout") || strings.Contains(name, "sea bass") || strings.Contains(name, "lavrac") || strings.Contains(name, "tuna") || strings.Contains(name, "salmon") || strings.Contains(name, "dorad") || strings.Contains(name, "bream") || strings.Contains(name, "fish"):
 		ingredients = ls(
 			"Филе рыбы, лимон, оливковое масло, травы, овощи на гарнир.",
 			"Fish fillet, lemon, olive oil, herbs, vegetable garnish.",

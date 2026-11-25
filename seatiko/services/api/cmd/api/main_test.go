@@ -66,9 +66,9 @@ func TestMapAreaSelection(t *testing.T) {
 		status int
 		count  int
 	}{
-		{"?city_id=city-balti", 200, 10},
+		{"?city_id=city-balti", 200, 14},
 		{"?city_id=city-chisinau", 200, 0},
-		{"?city_id=all", 200, 10},
+		{"?city_id=all", 200, 14},
 		{"?city_id=all&bounds=46.92,28.72,47.12,29.02", 200, 0},
 		{"?city_id=all&bounds=NaN,10,40,12", 400, 0},
 		{"?city_id=all&bounds=10,10,12,12", 400, 0},
@@ -144,7 +144,7 @@ func TestMapSearchAndBookingFilter(t *testing.T) {
 		{"include all translations", "?city_id=all&q=" + url.QueryEscape("Штефан чел Маре 57") + "&include_google=false", "venue-1", false, 200},
 		{"combined name and address", "?q=placinte+57&include_google=false", "venue-1", false, 200},
 		{"wrong area", "?bounds=47.78,27.84,47.82,28.02&q=placinte&include_google=false", "", false, 200},
-		{"bookable in Moldova", "?city_id=all&bookable_only=true", "venue-1,venue-2,venue-3", true, 200},
+		{"bookable in Moldova", "?city_id=all&bookable_only=true", "venue-1,venue-10,venue-11,venue-12,venue-13,venue-14,venue-2,venue-3,venue-4,venue-5,venue-6,venue-7,venue-8", true, 200},
 		{"seatiko place without tables", "?q=wine+house&bookable_only=true", "", true, 200},
 		{"invalid toggle", "?bookable_only=maybe", "", false, 400},
 		{"too long", "?q=" + url.QueryEscape(strings.Repeat("ș", 101)), "", false, 400},
@@ -218,7 +218,7 @@ func TestAvailabilityEndpoint(t *testing.T) {
 			if err := json.Unmarshal(res.Body.Bytes(), &data); err != nil {
 				t.Fatal(err)
 			}
-			if data.Timezone != "Europe/Chisinau" || len(data.Venues) != 10 {
+			if data.Timezone != "Europe/Chisinau" || len(data.Venues) != 14 {
 				t.Fatalf("timezone %q, %d venues", data.Timezone, len(data.Venues))
 			}
 		})
@@ -320,10 +320,10 @@ func TestMapPlacesFilterCounts(t *testing.T) {
 		t.Fatal("filters block without /discover params")
 	}
 	moldovan := get("&cuisine=moldovan")
-	if moldovan.Filters == nil || moldovan.Filters.Total != 10 || moldovan.Filters.Matched < 1 || moldovan.Filters.Matched >= 10 {
+	if moldovan.Filters == nil || moldovan.Filters.Total != 14 || moldovan.Filters.Matched < 1 || moldovan.Filters.Matched >= 14 {
 		t.Fatalf("moldovan counts %+v", moldovan.Filters)
 	}
-	if len(moldovan.Places) != 10 {
+	if len(moldovan.Places) != 14 {
 		t.Fatal("counts must not change the place list")
 	}
 	impossible := get("&cuisine=mexican")

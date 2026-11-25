@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { VenueMap } from "@/components/venue-map";
 import { useLocale, type Locale } from "@/components/locale-provider";
 import { getSiteCopy } from "@/lib/site-copy";
 
-/* Mini SVG icons for dashboard aside mock */
+/* Mini SVG icons matching the redesigned owner cabinet */
 function HomeIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
@@ -19,7 +20,7 @@ function HomeIcon() {
 
 function LayoutGridIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="3" width="7" height="7" rx="1.5" />
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
@@ -28,20 +29,34 @@ function LayoutGridIcon() {
   );
 }
 
-function SparkleIcon() {
+function CalendarClockIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 2l2.4 6.8L21 12l-6.6 3.2L12 22l-2.4-6.8L3 12l6.6-3.2z" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   );
 }
 
 function ListMenuIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <line x1="4" y1="6" x2="20" y2="6" />
       <line x1="4" y1="12" x2="20" y2="12" />
       <line x1="4" y1="18" x2="20" y2="18" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -95,68 +110,142 @@ const BENEFIT_ICONS = [
   GuestRetentionIcon,
 ];
 
+type PreviewTab = "overview" | "shifts" | "floor";
+
 const DASHBOARD_MOCK: Record<
   Locale,
   {
+    previewAria: string;
+    workspaceLabel: string;
+    publishedBadge: string;
     today: string;
     greeting: string;
     overview: string;
-    metric1Label: string;
-    metric1Trend: string;
-    metric2Label: string;
-    metric2Trend: string;
-    metric3Label: string;
-    metric3Trend: string;
+    tabs: {
+      overview: string;
+      shifts: string;
+      floor: string;
+      menu: string;
+      staff: string;
+    };
+    metrics: [
+      { label: string; value: string; note: string },
+      { label: string; value: string; note: string },
+      { label: string; value: string; note: string },
+      { label: string; value: string; note: string },
+    ];
     floorTitle: string;
     floorFree: string;
+    floorZones: [string, string, string];
     bookingsTitle: string;
+    confirmedLabel: string;
+    pendingLabel: string;
     guestLabel: (count: number) => string;
+    shiftsTitle: string;
+    swapAlert: string;
+    days: [string, string, string, string, string];
+    waitersRole: string;
+    cooksRole: string;
   }
 > = {
   ru: {
-    today: "Сегодня · 18 июня",
-    greeting: "Добрый вечер, Andrei",
-    overview: "Обзор ресторана",
-    metric1Label: "Брони сегодня",
-    metric1Trend: "↑ 12% к прошлой неделе",
-    metric2Label: "Загрузка зала",
-    metric2Trend: "Пик ожидается в 20:00",
-    metric3Label: "Средний чек",
-    metric3Trend: "↑ 8% за месяц",
-    floorTitle: "Зал сейчас",
+    previewAria: "Актуальный интерфейс кабинета владельца Seatiko",
+    workspaceLabel: "Кабинет владельца",
+    publishedBadge: "Опубликовано",
+    today: "La Plăcinte · Сегодня",
+    greeting: "Обзор заведения",
+    overview: "Смены, зал и брони в реальном времени",
+    tabs: {
+      overview: "Обзор",
+      shifts: "График смен",
+      floor: "План зала",
+      menu: "Меню",
+      staff: "Персонал",
+    },
+    metrics: [
+      { label: "Свободно сейчас", value: "9 / 14", note: "столов готовы" },
+      { label: "Брони сегодня", value: "28", note: "+14% за неделю" },
+      { label: "На смене", value: "6 / 8", note: "4 официанта · 2 повара" },
+      { label: "Меню активно", value: "42", note: "2 в стоп-листе" },
+    ],
+    floorTitle: "План зала",
     floorFree: "9 свободно",
+    floorZones: ["Зал", "Терраса", "Улица"],
     bookingsTitle: "Ближайшие брони",
+    confirmedLabel: "Подтверждена",
+    pendingLabel: "Ожидает",
     guestLabel: (count) => (count >= 5 ? `${count} гостей` : `${count} гостя`),
+    shiftsTitle: "Недельная матрица смен",
+    swapAlert: "1 запрос замены",
+    days: ["Пн", "Вт", "Ср", "Чт", "Пт"],
+    waitersRole: "Официанты",
+    cooksRole: "Повара",
   },
   en: {
-    today: "Today · June 18",
-    greeting: "Good evening, Andrei",
-    overview: "Restaurant overview",
-    metric1Label: "Bookings today",
-    metric1Trend: "↑ 12% vs last week",
-    metric2Label: "Floor occupancy",
-    metric2Trend: "Peak expected at 20:00",
-    metric3Label: "Average check",
-    metric3Trend: "↑ 8% this month",
-    floorTitle: "Floor live",
+    previewAria: "Live preview of the Seatiko owner cabinet",
+    workspaceLabel: "Owner cabinet",
+    publishedBadge: "Published",
+    today: "La Plăcinte · Today",
+    greeting: "Venue overview",
+    overview: "Shifts, floor plan & bookings live",
+    tabs: {
+      overview: "Overview",
+      shifts: "Shift roster",
+      floor: "Floor plan",
+      menu: "Menu",
+      staff: "Team",
+    },
+    metrics: [
+      { label: "Free right now", value: "9 / 14", note: "tables open" },
+      { label: "Bookings today", value: "28", note: "+14% vs last week" },
+      { label: "On shift", value: "6 / 8", note: "4 waiters · 2 cooks" },
+      { label: "Active menu", value: "42", note: "2 in stop-list" },
+    ],
+    floorTitle: "Floor plan",
     floorFree: "9 available",
+    floorZones: ["Hall", "Terrace", "Street"],
     bookingsTitle: "Upcoming bookings",
+    confirmedLabel: "Confirmed",
+    pendingLabel: "Pending",
     guestLabel: (count) => (count === 1 ? `${count} guest` : `${count} guests`),
+    shiftsTitle: "Weekly staff roster matrix",
+    swapAlert: "1 swap request",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    waitersRole: "Waiters",
+    cooksRole: "Cooks",
   },
   ro: {
-    today: "Astăzi · 18 iunie",
-    greeting: "Bună seara, Andrei",
-    overview: "Prezentare generală",
-    metric1Label: "Rezervări azi",
-    metric1Trend: "↑ 12% față de săpt. trecută",
-    metric2Label: "Grad de ocupare",
-    metric2Trend: "Vârf estimat la 20:00",
-    metric3Label: "Notă medie",
-    metric3Trend: "↑ 8% luna aceasta",
-    floorTitle: "Sala acum",
+    previewAria: "Previzualizarea actualizată a cabinetului Seatiko",
+    workspaceLabel: "Cabinet proprietar",
+    publishedBadge: "Publicat",
+    today: "La Plăcinte · Azi",
+    greeting: "Prezentare local",
+    overview: "Ture, plan sală și rezervări în timp real",
+    tabs: {
+      overview: "Prezentare",
+      shifts: "Program ture",
+      floor: "Plan sală",
+      menu: "Meniu",
+      staff: "Echipă",
+    },
+    metrics: [
+      { label: "Libere acum", value: "9 / 14", note: "mese disponibile" },
+      { label: "Rezervări azi", value: "28", note: "+14% săptămâna aceasta" },
+      { label: "În tură", value: "6 / 8", note: "4 ospătari · 2 bucătari" },
+      { label: "Meniu activ", value: "42", note: "2 în stop-list" },
+    ],
+    floorTitle: "Plan sală",
     floorFree: "9 libere",
+    floorZones: ["Sală", "Terasă", "Stradă"],
     bookingsTitle: "Rezervări viitoare",
+    confirmedLabel: "Confirmată",
+    pendingLabel: "În așteptare",
     guestLabel: (count) => (count === 1 ? `${count} oaspete` : `${count} oaspeți`),
+    shiftsTitle: "Matrice săptămânală de ture",
+    swapAlert: "1 cerere schimb",
+    days: ["Lun", "Mar", "Mie", "Joi", "Vin"],
+    waitersRole: "Ospătari",
+    cooksRole: "Bucătari",
   },
 };
 
@@ -164,6 +253,7 @@ export default function BusinessPage() {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).business;
   const mock = DASHBOARD_MOCK[locale] ?? DASHBOARD_MOCK.ru;
+  const [previewTab, setPreviewTab] = useState<PreviewTab>("overview");
 
   return (
     <div className="landing business-premium">
@@ -197,84 +287,188 @@ export default function BusinessPage() {
 
           <div
             className="dashboard-preview"
-            aria-label="Пример кабинета ресторана"
+            aria-label={mock.previewAria}
           >
             <div className="dashboard-topbar">
               <div>
                 <span className="site-brand-mark">S</span>
-                <b>Restaurant OS</b>
+                <b>Seatiko</b>
+                <span className="dashboard-topbar-role">{mock.workspaceLabel}</span>
               </div>
-              <span>{mock.today}</span>
+              <div className="dashboard-topbar-meta">
+                <span className="dashboard-status-pill">
+                  <i /> {mock.publishedBadge}
+                </span>
+                <span>{mock.today}</span>
+              </div>
             </div>
+
             <div className="dashboard-body">
-              <aside>
-                <span className="dashboard-nav-btn on" title="Home">
+              <aside aria-label={mock.workspaceLabel}>
+                <button
+                  type="button"
+                  className={`dashboard-nav-btn ${previewTab === "overview" ? "on" : ""}`}
+                  onClick={() => setPreviewTab("overview")}
+                >
                   <HomeIcon />
-                </span>
-                <span className="dashboard-nav-btn" title="Tables">
+                  <span>{mock.tabs.overview}</span>
+                </button>
+                <button
+                  type="button"
+                  className={`dashboard-nav-btn ${previewTab === "shifts" ? "on" : ""}`}
+                  onClick={() => setPreviewTab("shifts")}
+                >
+                  <CalendarClockIcon />
+                  <span>{mock.tabs.shifts}</span>
+                  <em className="dashboard-nav-badge">1</em>
+                </button>
+                <button
+                  type="button"
+                  className={`dashboard-nav-btn ${previewTab === "floor" ? "on" : ""}`}
+                  onClick={() => setPreviewTab("floor")}
+                >
                   <LayoutGridIcon />
-                </span>
-                <span className="dashboard-nav-btn" title="Stats">
-                  <SparkleIcon />
-                </span>
-                <span className="dashboard-nav-btn" title="Menu">
+                  <span>{mock.tabs.floor}</span>
+                </button>
+                <span className="dashboard-nav-btn static">
                   <ListMenuIcon />
+                  <span>{mock.tabs.menu}</span>
+                </span>
+                <span className="dashboard-nav-btn static">
+                  <UsersIcon />
+                  <span>{mock.tabs.staff}</span>
                 </span>
               </aside>
+
               <div className="dashboard-content">
                 <div className="dashboard-greeting">
-                  <span>{mock.greeting}</span>
-                  <strong>{mock.overview}</strong>
+                  <div>
+                    <span>{mock.greeting}</span>
+                    <strong>{mock.overview}</strong>
+                  </div>
+                  <span className="dashboard-swap-chip">{mock.swapAlert}</span>
                 </div>
+
                 <div className="dashboard-metrics">
-                  <article>
-                    <span>{mock.metric1Label}</span>
-                    <strong>28</strong>
-                    <small>{mock.metric1Trend}</small>
-                  </article>
-                  <article>
-                    <span>{mock.metric2Label}</span>
-                    <strong>74%</strong>
-                    <small>{mock.metric2Trend}</small>
-                  </article>
-                  <article>
-                    <span>{mock.metric3Label}</span>
-                    <strong>
-                      412 <small>MDL</small>
-                    </strong>
-                    <small>{mock.metric3Trend}</small>
-                  </article>
+                  {mock.metrics.map((metric) => (
+                    <article key={metric.label}>
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                      <small>{metric.note}</small>
+                    </article>
+                  ))}
                 </div>
-                <div className="dashboard-lower">
-                  <article className="mini-floor">
-                    <div>
-                      <strong>{mock.floorTitle}</strong>
-                      <span>
-                        <i /> {mock.floorFree}
-                      </span>
+
+                {previewTab === "shifts" ? (
+                  <div className="dashboard-shifts-card">
+                    <div className="dashboard-card-head">
+                      <strong>{mock.shiftsTitle}</strong>
+                      <span>{mock.waitersRole} · {mock.cooksRole}</span>
                     </div>
-                    <div className="mini-tables">
-                      <i className="busy">1</i>
-                      <i>2</i>
-                      <i className="booked">3</i>
-                      <i>4</i>
-                      <i className="busy">5</i>
-                      <i>6</i>
+                    <div className="dashboard-roster-scroll" tabIndex={0} role="region" aria-label={mock.shiftsTitle}>
+                      <div className="dashboard-roster-grid">
+                        <span className="roster-h" />
+                        {mock.days.map((day) => (
+                          <span key={day} className="roster-h">{day}</span>
+                        ))}
+
+                        <span className="roster-name">Alex R. <em>W</em></span>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip off">—</i>
+                        <i className="shift-chip warn">14–22</i>
+                        <i className="shift-chip ok">14–22</i>
+
+                        <span className="roster-name">Elena M. <em>W</em></span>
+                        <i className="shift-chip off">—</i>
+                        <i className="shift-chip ok">12–22</i>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip off">—</i>
+
+                        <span className="roster-name">Andrei C. <em>C</em></span>
+                        <i className="shift-chip cook">09–19</i>
+                        <i className="shift-chip off">—</i>
+                        <i className="shift-chip cook">09–19</i>
+                        <i className="shift-chip cook">09–19</i>
+                        <i className="shift-chip cook">12–22</i>
+                      </div>
                     </div>
-                  </article>
-                  <article className="mini-bookings">
-                    <strong>{mock.bookingsTitle}</strong>
-                    <span>
-                      <b>19:30</b> Maria P. · {mock.guestLabel(4)}
-                    </span>
-                    <span>
-                      <b>20:00</b> Victor R. · {mock.guestLabel(2)}
-                    </span>
-                    <span>
-                      <b>20:15</b> Elena D. · {mock.guestLabel(6)}
-                    </span>
-                  </article>
-                </div>
+                  </div>
+                ) : (
+                  <div className={`dashboard-lower ${previewTab === "floor" ? "focus-floor" : ""}`}>
+                    <article className="mini-floor">
+                      <div className="dashboard-card-head">
+                        <strong>{mock.floorTitle}</strong>
+                        <span className="mini-floor-pill">
+                          <i /> {mock.floorFree}
+                        </span>
+                      </div>
+                      <div className="mini-zones">
+                        {mock.floorZones.map((zone, idx) => (
+                          <span key={zone} className={idx === 0 ? "on" : ""}>{zone}</span>
+                        ))}
+                      </div>
+                      <div className="mini-tables">
+                        <i className="busy">11 · 4p</i>
+                        <i>12 · 4p</i>
+                        <i className="booked">14 · 6p</i>
+                        <i>15 · 2p</i>
+                        <i className="busy">16 · 4p</i>
+                        <i>19 · 4p</i>
+                      </div>
+                    </article>
+
+                    {previewTab !== "floor" ? (
+                      <article className="mini-bookings">
+                        <div className="dashboard-card-head">
+                          <strong>{mock.bookingsTitle}</strong>
+                        </div>
+                        <div className="mini-booking-row">
+                          <div>
+                            <b>19:30</b>
+                            <span>Maria P. · {mock.guestLabel(4)}</span>
+                          </div>
+                          <em className="ok">{mock.confirmedLabel}</em>
+                        </div>
+                        <div className="mini-booking-row">
+                          <div>
+                            <b>20:00</b>
+                            <span>Victor R. · {mock.guestLabel(2)}</span>
+                          </div>
+                          <em className="ok">{mock.confirmedLabel}</em>
+                        </div>
+                        <div className="mini-booking-row">
+                          <div>
+                            <b>20:15</b>
+                            <span>Elena D. · {mock.guestLabel(6)}</span>
+                          </div>
+                          <em className="wait">{mock.pendingLabel}</em>
+                        </div>
+                      </article>
+                    ) : (
+                      <article className="mini-bookings">
+                        <div className="dashboard-card-head">
+                          <strong>{mock.shiftsTitle}</strong>
+                        </div>
+                        <div className="mini-booking-row">
+                          <div>
+                            <b>{mock.waitersRole}</b>
+                            <span>Alex R., Elena M., Dan T.</span>
+                          </div>
+                          <em className="ok">10–22</em>
+                        </div>
+                        <div className="mini-booking-row">
+                          <div>
+                            <b>{mock.cooksRole}</b>
+                            <span>Andrei C., Irina B.</span>
+                          </div>
+                          <em className="ok">09–22</em>
+                        </div>
+                      </article>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
