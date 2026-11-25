@@ -2,6 +2,7 @@
 // applicationComplete) and ops.go (profile change requests).
 import type { LocalizedString } from '../../../database/schema/columns.js';
 import type { ApplicationPatch } from '../../../database/schema/restaurant.js';
+import { isVenueType } from '../../venue-roles/domain/role-presets.js';
 
 export const MAX_APPLICATION_PHOTOS = 8;
 export const MOLDOVA = { south: 45.45, west: 26.6, north: 48.55, east: 30.2 };
@@ -13,6 +14,7 @@ export type Profile = {
   description: LocalizedString;
   address: LocalizedString;
   cuisine: string[];
+  venueType: string;
   phone: string;
   email: string;
   website: string;
@@ -45,6 +47,7 @@ export function validWebsite(url: string): boolean {
 
 /** Field checks of an owner's edit; `knownCity` tells whether a Moldovan city id exists. False = invalid_fields. */
 export function validPatch(p: ApplicationPatch, current: Pick<Profile, 'cityId'>, knownCity: (id: string) => boolean): boolean {
+  if (p.venue_type !== undefined && p.venue_type !== '' && !isVenueType(p.venue_type)) return false;
   if (p.email && !validEmail(p.email)) return false;
   if (p.website && !validWebsite(p.website)) return false;
   if (p.city_id !== undefined && p.city_id !== current.cityId && !knownCity(p.city_id)) return false;
@@ -69,6 +72,7 @@ export function applyPatch(cur: Profile, p: ApplicationPatch): { next: Profile; 
   set('description', p.description, 'description', sameText);
   set('address', p.address, 'address', sameText);
   set('cuisine', p.cuisine, 'cuisine', sameList);
+  set('venueType', p.venue_type, 'venue_type', eq);
   set('phone', p.phone, 'phone', eq);
   set('email', p.email, 'email', eq);
   set('website', p.website, 'website', eq);

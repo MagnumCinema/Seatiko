@@ -17,6 +17,7 @@ export type GoState = {
   activities?: Record<string, any[]>;
   staff_members?: Record<string, any>;
   work_shifts?: Record<string, any>;
+  venue_roles?: Record<string, any>;
   profile_changes?: Record<string, any>;
   waitlist?: Record<string, any>;
   event_inquiries?: Record<string, any>;

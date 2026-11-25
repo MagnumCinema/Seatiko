@@ -21,6 +21,8 @@ export const venues = pgTable(
     name: localized('name').notNull(),
     description: localized('description').notNull(),
     cuisine: textList('cuisine'),
+    /** Venue format (restaurant, cafe, bar…); '' = not set. */
+    venueType: text().notNull().default(''),
     rating: doublePrecision().notNull().default(0),
     reviewCount: integer().notNull().default(0),
     priceLevel: integer().notNull().default(0),

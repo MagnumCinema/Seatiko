@@ -9,13 +9,15 @@ import type { ApplicationPatch } from '../../database/schema/restaurant.js';
 import { photoJpeg } from '../../integrations/storage/image.js';
 import { MediaStorage } from '../../integrations/storage/media-storage.js';
 import { CatalogService } from '../catalog/catalog.service.js';
+import { isVenueType } from '../venue-roles/domain/role-presets.js';
+import { VenueRolesService } from '../venue-roles/venue-roles.service.js';
 import { applicationComplete, applyPatch, DEFAULT_LAYOUT, MAX_APPLICATION_PHOTOS, type Profile, REVIEW_STATUSES, reviewAction, validPatch } from './domain/application-rules.js';
 import { type ActivityRow, type ApplicationRow, ApplicationsRepository, type ChangeRow, type Db } from './applications.repository.js';
 
 const EDITABLE = ['DRAFT', 'REJECTED'];
 
 const profileOf = (a: ApplicationRow): Profile => ({
-  name: a.name, description: a.description, address: a.address, cuisine: a.cuisine, phone: a.phone, email: a.email, website: a.website,
+  name: a.name, description: a.description, address: a.address, cuisine: a.cuisine, venueType: a.venueType, phone: a.phone, email: a.email, website: a.website,
   cityId: a.cityId, lat: a.lat, lng: a.lng, priceLevel: a.priceLevel, averageCheck: a.averageCheck, hoursText: a.hoursText, photoUrls: a.photoUrls,
 });
 
@@ -29,6 +31,7 @@ export function presentApplication(a: ApplicationRow) {
     description: a.description,
     address: a.address,
     cuisine: a.cuisine,
+    venue_type: a.venueType,
     phone: a.phone,
     email: a.email,
     ...(a.website ? { website: a.website } : {}),
@@ -90,6 +93,7 @@ export class ApplicationsService {
     private readonly repo: ApplicationsRepository,
     private readonly catalog: CatalogService,
     private readonly media: MediaStorage,
+    private readonly roles: VenueRolesService,
     private readonly clock: Clock,
     config: ConfigService<Env, true>,
   ) {
@@ -174,6 +178,8 @@ export class ApplicationsService {
         updatedAt: this.now(),
       });
       await this.record(tx, id, ownerId, 'PROFILE_UPDATED', changed);
+      // A type chosen for a venue without roles seeds the type's preset roles.
+      if (changed.includes('venue_type') && next.venueType) await this.roles.seedIfEmpty(cur.venueId || cur.id, tx);
       return updated;
     });
     return presentApplication(app);
@@ -273,6 +279,7 @@ export class ApplicationsService {
         name: cur.name,
         description: cur.description,
         cuisine: cur.cuisine,
+        venueType: cur.venueType,
         priceLevel: cur.priceLevel,
         address: cur.address,
         lat: cur.lat,
@@ -314,6 +321,7 @@ export class ApplicationsService {
     if (!app) throw notFound('not_found');
     if (app.ownerUserId !== ownerId) throw forbidden();
     if (app.status !== 'PUBLISHED') throw conflict('conflict');
+    if (patch.venue_type && !isVenueType(patch.venue_type)) throw badRequest('invalid_fields');
     const change = await this.repo.transaction(async (tx) => {
       const row = await this.repo.insertChange(tx, { id: randomUUID(), applicationId: id, ownerUserId: ownerId, status: 'PENDING', patch, createdAt: this.now() });
       await this.record(tx, id, ownerId, 'PROFILE_CHANGE_REQUESTED');
@@ -342,6 +350,7 @@ export class ApplicationsService {
             description: next.description,
             address: next.address,
             cuisine: next.cuisine,
+            venueType: next.venueType,
             website: next.website,
             cityId: next.cityId,
             lat: next.lat,

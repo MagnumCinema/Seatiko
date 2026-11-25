@@ -2999,6 +2999,11 @@ paths:
                 email:
                   type: string
                   format: email
+                name:
+                  type: string
+                role:
+                  type: string
+                  description: Venue role key; empty picks the first role in the shift planner.
       responses:
         '201':
           description: Created
@@ -3068,6 +3073,256 @@ paths:
                 properties:
                   ok:
                     type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+    patch:
+      operationId: AssignVenueStaffRole
+      summary: Assign A Venue Role To A Team Member
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/roles:
+    get:
+      operationId: ListVenueRoles
+      summary: List Venue Roles (seeded from the venue type preset on first use)
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  venue_type:
+                    type: string
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueRole'
+                  suggested:
+                    type: array
+                    description: Preset role keys of the venue type the venue does not have yet.
+                    items:
+                      type: string
+        default:
+          $ref: '#/components/responses/APIError'
+    post:
+      operationId: CreateVenueRole
+      summary: Create Custom Venue Role
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 40
+                color:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                in_schedule:
+                  type: boolean
+                position:
+                  type: integer
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    $ref: '#/components/schemas/VenueRole'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/roles/preset:
+    post:
+      operationId: AddVenuePresetRoles
+      summary: Add Missing Preset Roles Of The Venue Type
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keys:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueRole'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/roles/{roleId}:
+    patch:
+      operationId: UpdateVenueRole
+      summary: Rename, Recolour Or Reorder A Venue Role
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  maxLength: 40
+                color:
+                  type: string
+                  pattern: '^#[0-9a-fA-F]{6}$'
+                in_schedule:
+                  type: boolean
+                position:
+                  type: integer
+                permissions:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    $ref: '#/components/schemas/VenueRole'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteVenueRole
+      summary: Delete Custom Venue Role (409 system_role / role_in_use)
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reassign_to
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  reassigned:
+                    type: integer
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/restaurant/venues/{venueId}/staff/{staffId}/shift:
@@ -3910,6 +4165,9 @@ components:
           $ref: '#/components/schemas/LocalizedString'
         address:
           $ref: '#/components/schemas/LocalizedString'
+        venue_type:
+          type: string
+          enum: ['', restaurant, cafe, bar, fast_food, fine_dining, pub, pizzeria, bakery, wine_bar]
         cuisine:
           type: array
           items:
@@ -4436,6 +4694,35 @@ components:
         closed_at:
           type: string
           format: date-time
+    VenueRole:
+      type: object
+      properties:
+        id:
+          type: string
+        venue_id:
+          type: string
+        key:
+          type: string
+          description: Preset key (waiter, cook, barista…) or custom-<id>; staff and shifts refer to it.
+        name:
+          type: string
+          description: Owner's name; empty means the translated preset name.
+        color:
+          type: string
+        in_schedule:
+          type: boolean
+        position:
+          type: integer
+        is_system:
+          type: boolean
+        permissions:
+          type: array
+          description: Stored for venue-scoped access (phase 2), not enforced yet.
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
     StaffMember:
       type: object
       properties:
@@ -4591,6 +4878,9 @@ components:
           $ref: '#/components/schemas/LocalizedString'
         description:
           $ref: '#/components/schemas/LocalizedString'
+        venue_type:
+          type: string
+          enum: ['', restaurant, cafe, bar, fast_food, fine_dining, pub, pizzeria, bakery, wine_bar]
         cuisine:
           type: array
           items:
@@ -4682,6 +4972,9 @@ components:
           $ref: '#/components/schemas/LocalizedString'
         address:
           $ref: '#/components/schemas/LocalizedString'
+        venue_type:
+          type: string
+          enum: ['', restaurant, cafe, bar, fast_food, fine_dining, pub, pizzeria, bakery, wine_bar]
         cuisine:
           type: array
           items:
@@ -5184,6 +5477,9 @@ components:
           $ref: '#/components/schemas/LocalizedString'
         address:
           $ref: '#/components/schemas/LocalizedString'
+        venue_type:
+          type: string
+          enum: ['', restaurant, cafe, bar, fast_food, fine_dining, pub, pizzeria, bakery, wine_bar]
         cuisine:
           type: array
           items:
