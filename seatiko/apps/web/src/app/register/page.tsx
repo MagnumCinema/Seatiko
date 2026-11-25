@@ -16,7 +16,7 @@ import {
   redirectPathForRole,
   type User,
 } from "@/lib/api";
-import { GoogleSignInButton } from "@/components/google-sign-in-button";
+import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
 import { apiErrorKey } from "@/lib/api-error-message";
 import { getSiteCopy } from "@/lib/site-copy";
 
@@ -388,7 +388,12 @@ export default function RegisterPage() {
                     text="signup_with"
                     onCredential={(credential) => void onGoogle(credential)}
                     onUnavailable={() => setGoogleOff(true)}
-                  />
+                  >
+                    <button type="button" className="auth-social-btn google auth-social-btn-wide" tabIndex={-1}>
+                      <GoogleLogo />
+                      <span>{t("google.continue")}</span>
+                    </button>
+                  </GoogleSignInButton>
                   <div className="auth-divider">
                     <span>{t("auth.or")}</span>
                   </div>

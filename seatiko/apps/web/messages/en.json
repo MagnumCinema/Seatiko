@@ -643,5 +643,7 @@
   "google.disconnect": "Disconnect Google",
   "google.disconnected": "Google disconnected",
   "google.connected_ok": "Google connected",
-  "google.no_password": "This account has no password: you sign in with Google. You can set one below."
+  "google.no_password": "This account has no password: you sign in with Google. You can set one below.",
+  "google.continue": "Continue with Google",
+  "google.connect": "Connect Google"
 }

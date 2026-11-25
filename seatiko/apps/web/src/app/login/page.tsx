@@ -591,30 +591,40 @@ function LoginForm() {
         </p>
       </div>
 
-      {/* Sign in with Google (Google's own button), then the providers still to come */}
+      {/* Sign in with Google (our button, Google's invisible one on top), then the providers still to come */}
       {(!isRegisteringGuest || !googleOff) && (
         <>
-          {!googleOff && (
+          {isRegisteringGuest ? (
+            <div className="auth-social-row auth-social-row-one">
+              <GoogleSignInButton
+                text="signup_with"
+                onCredential={(credential) => void onGoogle(credential)}
+                onUnavailable={() => setGoogleOff(true)}
+              >
+                <button type="button" className="auth-social-btn google auth-social-btn-wide" tabIndex={-1}>
+                  <GoogleIcon />
+                  <span>Google</span>
+                </button>
+              </GoogleSignInButton>
+            </div>
+          ) : (
+          <div className="auth-social-row">
             <GoogleSignInButton
-              text={isRegisteringGuest ? "signup_with" : "continue_with"}
+              text="continue_with"
               onCredential={(credential) => void onGoogle(credential)}
               onUnavailable={() => setGoogleOff(true)}
-            />
-          )}
-          {!isRegisteringGuest && (
-          <div className={`auth-social-row${googleOff ? "" : " auth-social-row-two"}`}>
-            {googleOff && (
-            <button
-              type="button"
-              className="auth-social-btn google"
-              onClick={() => handleSocialClick("Google")}
-              aria-label={copy.authGoogle}
-              title={copy.authGoogle}
             >
-              <GoogleIcon />
-              <span>Google</span>
-            </button>
-            )}
+              <button
+                type="button"
+                className="auth-social-btn google"
+                onClick={() => googleOff && handleSocialClick("Google")}
+                aria-label={copy.authGoogle}
+                title={copy.authGoogle}
+              >
+                <GoogleIcon />
+                <span>Google</span>
+              </button>
+            </GoogleSignInButton>
             <button
               type="button"
               className="auth-social-btn apple"

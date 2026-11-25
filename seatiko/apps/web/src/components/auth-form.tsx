@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { googleSignIn, login, register } from "@/lib/api";
-import { GoogleSignInButton } from "@/components/google-sign-in-button";
+import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
 import { apiErrorKey } from "@/lib/api-error-message";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
@@ -27,6 +27,8 @@ export function AuthForm({
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
+  // No Google button when the server has Google sign-in off.
+  const [googleOff, setGoogleOff] = useState(false);
 
   const update = (field: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -75,10 +77,18 @@ export function AuthForm({
     <form className="booking-popup-auth" onSubmit={(e) => void submit(e)} noValidate>
       <h3 id={titleId}>{title}</h3>
       <p className="web-book-muted">{hint ?? t("res.auth_save")}</p>
+      {!googleOff && (
       <GoogleSignInButton
         text={mode === "login" ? "continue_with" : "signup_with"}
         onCredential={(credential) => void google(credential)}
-      />
+        onUnavailable={() => setGoogleOff(true)}
+      >
+        <button type="button" className="auth-social-btn google auth-social-btn-wide" tabIndex={-1}>
+          <GoogleLogo />
+          <span>{t("google.continue")}</span>
+        </button>
+      </GoogleSignInButton>
+      )}
       {mode === "register" && (
         <>
           <input

@@ -643,5 +643,7 @@
   "google.disconnect": "Отключить Google",
   "google.disconnected": "Google отключён",
   "google.connected_ok": "Google подключён",
-  "google.no_password": "У аккаунта нет пароля: вы входите через Google. Пароль можно задать ниже."
+  "google.no_password": "У аккаунта нет пароля: вы входите через Google. Пароль можно задать ниже.",
+  "google.continue": "Продолжить с Google",
+  "google.connect": "Подключить Google"
 }

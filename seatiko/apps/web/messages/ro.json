@@ -643,5 +643,7 @@
   "google.disconnect": "Deconectați Google",
   "google.disconnected": "Google deconectat",
   "google.connected_ok": "Google conectat",
-  "google.no_password": "Contul nu are parolă: vă autentificați cu Google. Puteți seta una mai jos."
+  "google.no_password": "Contul nu are parolă: vă autentificați cu Google. Puteți seta una mai jos.",
+  "google.continue": "Continuați cu Google",
+  "google.connect": "Conectați Google"
 }
