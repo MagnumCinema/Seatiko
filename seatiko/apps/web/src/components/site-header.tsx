@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useCurrency } from "@/components/currency-provider";
 import { useLocale, type Locale } from "@/components/locale-provider";
 import { useTheme } from "@/components/theme-provider";
@@ -181,6 +181,52 @@ function MoonIcon() {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  );
+}
+
+function CloseMenuIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function isRouteActive(pathname: string, target: string): boolean {
+  if (target === "/venues") {
+    return pathname === "/venues" || pathname.startsWith("/venues/");
+  }
+  return pathname === target;
+}
+
 export function SiteHeader({ variant = "solid" }: Props) {
   const { locale, setLocale } = useLocale();
   const { currency, setCurrency, currencies } = useCurrency();
@@ -188,8 +234,34 @@ export function SiteHeader({ variant = "solid" }: Props) {
   const copy = getSiteCopy(locale).header;
   const pathname = usePathname();
   const router = useRouter();
+  const mobileNavId = useId();
+  const menuToggleRef = useRef<HTMLButtonElement | null>(null);
   const [headerUser, setHeaderUser] = useState<HeaderUser>(cachedHeaderUser);
   const [openPref, setOpenPref] = useState<PrefMenu>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [syncedPath, setSyncedPath] = useState(pathname);
+
+  if (syncedPath !== pathname) {
+    setSyncedPath(pathname);
+    if (mobileOpen) setMobileOpen(false);
+  }
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+        menuToggleRef.current?.focus();
+      }
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileOpen]);
 
   useEffect(() => {
     let alive = true;
@@ -247,7 +319,31 @@ export function SiteHeader({ variant = "solid" }: Props) {
         ? copy.account
         : copy.login;
 
+  const roleLink =
+    userRole === "restaurant"
+      ? {
+          href: "/cabinet",
+          label:
+            locale === "en"
+              ? "Venue Cabinet"
+              : locale === "ro"
+                ? "Cabinet Restaurant"
+                : "Кабинет ресторана",
+        }
+      : userRole === "staff"
+        ? {
+            href: "/staff",
+            label:
+              locale === "en"
+                ? "Staff Panel"
+                : locale === "ro"
+                  ? "Panou Personal"
+                  : "Панель персонала",
+          }
+        : { href: "/business", label: copy.business };
+
   function goHomeSection(sectionId: "map" | "how") {
+    setMobileOpen(false);
     if (pathname === "/") {
       scrollToId(sectionId);
       window.history.replaceState(null, "", `/#${sectionId}`);
@@ -257,17 +353,25 @@ export function SiteHeader({ variant = "solid" }: Props) {
   }
 
   return (
-    <header className={`site-header ${variant}`}>
+    <header className={`site-header ${variant}${mobileOpen ? " mobile-nav-open" : ""}`}>
       <div className="site-header-inner">
-        <Link href="/" className="site-brand">
+        <Link href="/" className="site-brand" onClick={() => setMobileOpen(false)}>
           <span className="site-brand-mark" aria-hidden>S</span>
           <span>Seatiko</span>
         </Link>
         <nav className="site-nav" aria-label={copy.nav}>
-          <Link href="/venues" className="site-nav-link">
+          <Link
+            href="/venues"
+            className="site-nav-link"
+            aria-current={isRouteActive(pathname, "/venues") ? "page" : undefined}
+          >
             {copy.catalog}
           </Link>
-          <Link href="/discover" className="site-nav-link">
+          <Link
+            href="/discover"
+            className="site-nav-link"
+            aria-current={isRouteActive(pathname, "/discover") ? "page" : undefined}
+          >
             {copy.discover}
           </Link>
           <Link
@@ -280,7 +384,11 @@ export function SiteHeader({ variant = "solid" }: Props) {
           >
             {copy.map}
           </Link>
-          <Link href="/book" className="site-nav-link">
+          <Link
+            href="/book"
+            className="site-nav-link"
+            aria-current={isRouteActive(pathname, "/book") ? "page" : undefined}
+          >
             {copy.book}
           </Link>
           <Link
@@ -293,27 +401,13 @@ export function SiteHeader({ variant = "solid" }: Props) {
           >
             {copy.how}
           </Link>
-          {userRole === "restaurant" ? (
-            <Link href="/cabinet" className="site-nav-secondary">
-              {locale === "en"
-                ? "Venue Cabinet"
-                : locale === "ro"
-                ? "Cabinet Restaurant"
-                : "Кабинет ресторана"}
-            </Link>
-          ) : userRole === "staff" ? (
-            <Link href="/staff" className="site-nav-secondary">
-              {locale === "en"
-                ? "Staff Panel"
-                : locale === "ro"
-                ? "Panou Personal"
-                : "Панель персонала"}
-            </Link>
-          ) : (
-            <Link href="/business" className="site-nav-secondary">
-              {copy.business}
-            </Link>
-          )}
+          <Link
+            href={roleLink.href}
+            className="site-nav-secondary"
+            aria-current={isRouteActive(pathname, roleLink.href) ? "page" : undefined}
+          >
+            {roleLink.label}
+          </Link>
           <div className="site-prefs" role="group">
             <PrefDropdown
               label={copy.language}
@@ -351,12 +445,160 @@ export function SiteHeader({ variant = "solid" }: Props) {
             href={authLink.href}
             className="site-nav-login site-nav-primary"
             aria-label={headerUser.kind === "user" ? `${copy.account}: ${headerUser.name}` : authLabel}
+            aria-current={isRouteActive(pathname, authLink.href) ? "page" : undefined}
             title={headerUser.kind === "user" ? headerUser.name : undefined}
           >
             <UserIcon />
             <span className="site-nav-user-name">{authLabel}</span>
             {authed && <span className="site-nav-online-dot" aria-hidden="true" />}
           </Link>
+
+          <button
+            ref={menuToggleRef}
+            type="button"
+            className="site-menu-toggle"
+            aria-expanded={mobileOpen}
+            aria-controls={mobileNavId}
+            aria-label={mobileOpen ? copy.menuClose : copy.menuOpen}
+            onClick={() => {
+              setOpenPref(null);
+              setMobileOpen((v) => !v);
+            }}
+          >
+            {mobileOpen ? <CloseMenuIcon /> : <MenuIcon />}
+          </button>
+
+          {mobileOpen ? (
+            <button
+              type="button"
+              className="site-mobile-backdrop"
+              tabIndex={-1}
+              aria-label={copy.menuClose}
+              onClick={() => setMobileOpen(false)}
+            />
+          ) : null}
+
+          <div
+            id={mobileNavId}
+            className="site-mobile-drawer"
+            hidden={!mobileOpen}
+          >
+            <div className="site-mobile-drawer-head">
+              <span className="site-mobile-drawer-title">{copy.menuTitle}</span>
+              <button
+                type="button"
+                className="site-mobile-drawer-close"
+                aria-label={copy.menuClose}
+                onClick={() => {
+                  setMobileOpen(false);
+                  menuToggleRef.current?.focus();
+                }}
+              >
+                <CloseMenuIcon />
+              </button>
+            </div>
+
+            <div className="site-mobile-links">
+              <Link
+                href="/venues"
+                className="site-mobile-link"
+                aria-current={isRouteActive(pathname, "/venues") ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
+              >
+                <span>{copy.catalog}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="/discover"
+                className="site-mobile-link"
+                aria-current={isRouteActive(pathname, "/discover") ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
+              >
+                <span>{copy.discover}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="/book"
+                className="site-mobile-link"
+                aria-current={isRouteActive(pathname, "/book") ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
+              >
+                <span>{copy.book}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="/#map"
+                className="site-mobile-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  goHomeSection("map");
+                }}
+              >
+                <span>{copy.map}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+              <Link
+                href="/#how"
+                className="site-mobile-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  goHomeSection("how");
+                }}
+              >
+                <span>{copy.how}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+
+            <div className="site-mobile-ctas">
+              <Link
+                href={authLink.href}
+                className="btn btn-gold site-mobile-cta"
+                aria-current={isRouteActive(pathname, authLink.href) ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
+              >
+                <UserIcon />
+                <span>{authLabel}</span>
+              </Link>
+              <Link
+                href={roleLink.href}
+                className="btn btn-outline site-mobile-cta"
+                aria-current={isRouteActive(pathname, roleLink.href) ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
+              >
+                <span>{roleLink.label}</span>
+              </Link>
+            </div>
+
+            <div className="site-mobile-prefs">
+              <div className="site-mobile-pref-row" role="group" aria-label={copy.language}>
+                {LOCALES.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`site-mobile-pill${locale === id ? " on" : ""}`}
+                    aria-pressed={locale === id}
+                    onClick={() => setLocale(id)}
+                  >
+                    {LOCALE_LABEL[id]}
+                  </button>
+                ))}
+              </div>
+              <div className="site-mobile-pref-row" role="group" aria-label={copy.currency}>
+                {currencies.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`site-mobile-pill${currency === id ? " on" : ""}`}
+                    aria-pressed={currency === id}
+                    onClick={() => setCurrency(id)}
+                  >
+                    {id}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </nav>
       </div>
     </header>

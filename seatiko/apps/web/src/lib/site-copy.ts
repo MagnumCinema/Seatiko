@@ -2,7 +2,7 @@ import type { Locale } from "@/components/locale-provider";
 
 const copy = {
   ru: {
-    header: { discover: "Подбор", catalog: "Каталог", map: "Карта", how: "Как работает", business: "Для ресторанов", book: "Быстрая бронь", login: "Войти", connect: "Подключить ресторан", nav: "Основная навигация", language: "Язык", currency: "Валюта", account: "Профиль", theme: "Тема", themeDark: "Тёмная", themeLight: "Светлая" },
+    header: { discover: "Подбор", catalog: "Каталог", map: "Карта", how: "Как работает", business: "Для ресторанов", book: "Быстрая бронь", login: "Войти", connect: "Подключить ресторан", nav: "Основная навигация", language: "Язык", currency: "Валюта", account: "Профиль", theme: "Тема", themeDark: "Тёмная", themeLight: "Светлая", menuOpen: "Открыть меню", menuClose: "Закрыть меню", menuTitle: "Навигация" },
     panel: { site: "На сайт", logout: "Выйти" },
     cabinet: {
       title: "Кабинет владельца",
@@ -743,7 +743,7 @@ const copy = {
     },
   },
   en: {
-    header: { discover: "Discover", catalog: "Catalog", map: "Map", how: "How it works", business: "For restaurants", book: "Quick booking", login: "Log in", connect: "Connect restaurant", nav: "Main navigation", language: "Language", currency: "Currency", account: "Account", theme: "Theme", themeDark: "Dark", themeLight: "Light" },
+    header: { discover: "Discover", catalog: "Catalog", map: "Map", how: "How it works", business: "For restaurants", book: "Quick booking", login: "Log in", connect: "Connect restaurant", nav: "Main navigation", language: "Language", currency: "Currency", account: "Account", theme: "Theme", themeDark: "Dark", themeLight: "Light", menuOpen: "Open menu", menuClose: "Close menu", menuTitle: "Navigation" },
     panel: { site: "Go to website", logout: "Log out" },
     cabinet: {
       title: "Owner workspace",
@@ -1479,7 +1479,7 @@ const copy = {
     },
   },
   ro: {
-    header: { discover: "Descoperă", catalog: "Catalog", map: "Hartă", how: "Cum funcționează", business: "Pentru restaurante", book: "Rezervare rapidă", login: "Autentificare", connect: "Conectează restaurant", nav: "Navigare principală", language: "Limbă", currency: "Valută", account: "Profil", theme: "Temă", themeDark: "Întunecat", themeLight: "Deschis" },
+    header: { discover: "Descoperă", catalog: "Catalog", map: "Hartă", how: "Cum funcționează", business: "Pentru restaurante", book: "Rezervare rapidă", login: "Autentificare", connect: "Conectează restaurant", nav: "Navigare principală", language: "Limbă", currency: "Valută", account: "Profil", theme: "Temă", themeDark: "Întunecat", themeLight: "Deschis", menuOpen: "Deschide meniul", menuClose: "Închide meniul", menuTitle: "Navigare" },
     panel: { site: "La site", logout: "Ieșire" },
     cabinet: {
       title: "Cabinetul proprietarului",

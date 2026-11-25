@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Manrope, Fraunces } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
@@ -26,6 +26,12 @@ export const metadata: Metadata = {
   title: "Seatiko · Bălți",
   description:
     "Seatiko — free tables in real time, live floor plans and online table booking in Bălți restaurants.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

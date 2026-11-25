@@ -365,32 +365,34 @@ export default function BusinessPage() {
                       <strong>{mock.shiftsTitle}</strong>
                       <span>{mock.waitersRole} · {mock.cooksRole}</span>
                     </div>
-                    <div className="dashboard-roster-grid">
-                      <span className="roster-h" />
-                      {mock.days.map((day) => (
-                        <span key={day} className="roster-h">{day}</span>
-                      ))}
+                    <div className="dashboard-roster-scroll" tabIndex={0} role="region" aria-label={mock.shiftsTitle}>
+                      <div className="dashboard-roster-grid">
+                        <span className="roster-h" />
+                        {mock.days.map((day) => (
+                          <span key={day} className="roster-h">{day}</span>
+                        ))}
 
-                      <span className="roster-name">Alex R. <em>W</em></span>
-                      <i className="shift-chip ok">10–18</i>
-                      <i className="shift-chip ok">10–18</i>
-                      <i className="shift-chip off">—</i>
-                      <i className="shift-chip warn">14–22</i>
-                      <i className="shift-chip ok">14–22</i>
+                        <span className="roster-name">Alex R. <em>W</em></span>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip off">—</i>
+                        <i className="shift-chip warn">14–22</i>
+                        <i className="shift-chip ok">14–22</i>
 
-                      <span className="roster-name">Elena M. <em>W</em></span>
-                      <i className="shift-chip off">—</i>
-                      <i className="shift-chip ok">12–22</i>
-                      <i className="shift-chip ok">10–18</i>
-                      <i className="shift-chip ok">10–18</i>
-                      <i className="shift-chip off">—</i>
+                        <span className="roster-name">Elena M. <em>W</em></span>
+                        <i className="shift-chip off">—</i>
+                        <i className="shift-chip ok">12–22</i>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip ok">10–18</i>
+                        <i className="shift-chip off">—</i>
 
-                      <span className="roster-name">Andrei C. <em>C</em></span>
-                      <i className="shift-chip cook">09–19</i>
-                      <i className="shift-chip off">—</i>
-                      <i className="shift-chip cook">09–19</i>
-                      <i className="shift-chip cook">09–19</i>
-                      <i className="shift-chip cook">12–22</i>
+                        <span className="roster-name">Andrei C. <em>C</em></span>
+                        <i className="shift-chip cook">09–19</i>
+                        <i className="shift-chip off">—</i>
+                        <i className="shift-chip cook">09–19</i>
+                        <i className="shift-chip cook">09–19</i>
+                        <i className="shift-chip cook">12–22</i>
+                      </div>
                     </div>
                   </div>
                 ) : (
