@@ -236,12 +236,9 @@ export function SiteHeader({ variant = "solid" }: Props) {
   const router = useRouter();
   const mobileNavId = useId();
   const menuToggleRef = useRef<HTMLButtonElement | null>(null);
-  const headerInnerRef = useRef<HTMLDivElement | null>(null);
-  const collapsedAtWidthRef = useRef<number | null>(null);
   const [headerUser, setHeaderUser] = useState<HeaderUser>(cachedHeaderUser);
   const [openPref, setOpenPref] = useState<PrefMenu>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState(false);
   const [syncedPath, setSyncedPath] = useState(pathname);
 
   if (syncedPath !== pathname) {
@@ -356,49 +353,17 @@ export function SiteHeader({ variant = "solid" }: Props) {
   }
 
   useEffect(() => {
-    const inner = headerInnerRef.current;
-    if (!inner || typeof ResizeObserver === "undefined") return;
-
-    const measure = () => {
-      if (window.matchMedia("(max-width: 1080px)").matches) {
-        collapsedAtWidthRef.current = null;
-        setNavCollapsed(false);
-        return;
-      }
-      const w = inner.clientWidth;
-      if (collapsedAtWidthRef.current !== null) {
-        if (w <= collapsedAtWidthRef.current + 12) return;
-        collapsedAtWidthRef.current = null;
-        setNavCollapsed(false);
-        setMobileOpen(false);
-        return;
-      }
-      if (inner.scrollWidth > inner.clientWidth + 1) {
-        collapsedAtWidthRef.current = w;
-        setNavCollapsed(true);
-      }
+    const mq = window.matchMedia("(min-width: 1081px)");
+    const onDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setMobileOpen(false);
     };
-
-    let raf2 = 0;
-    const raf1 = window.requestAnimationFrame(() => {
-      collapsedAtWidthRef.current = null;
-      setNavCollapsed(false);
-      raf2 = window.requestAnimationFrame(measure);
-    });
-    const observer = new ResizeObserver(measure);
-    observer.observe(inner);
-    return () => {
-      window.cancelAnimationFrame(raf1);
-      window.cancelAnimationFrame(raf2);
-      observer.disconnect();
-    };
-  }, [locale, currency, authLabel, roleLink.label]);
+    mq.addEventListener("change", onDesktop);
+    return () => mq.removeEventListener("change", onDesktop);
+  }, []);
 
   return (
-    <header
-      className={`site-header ${variant}${mobileOpen ? " mobile-nav-open" : ""}${navCollapsed ? " is-collapsed" : ""}`}
-    >
-      <div className="site-header-inner" ref={headerInnerRef}>
+    <header className={`site-header ${variant}${mobileOpen ? " mobile-nav-open" : ""}`}>
+      <div className="site-header-inner">
         <Link href="/" className="site-brand" onClick={() => setMobileOpen(false)}>
           <span className="site-brand-mark" aria-hidden>S</span>
           <span>Seatiko</span>
