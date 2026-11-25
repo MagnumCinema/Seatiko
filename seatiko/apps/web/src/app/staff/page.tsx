@@ -267,67 +267,104 @@ export default function StaffPage() {
         )}
       </section>
 
-      <label>
-        Заведение
-        <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
-          {venues.map((venue) => (
-            <option key={venue.id} value={venue.id}>
-              {venue.name.ru || venue.name.en || venue.id}
-            </option>
-          ))}
-        </select>
-      </label>
-      {error && <p>{error}</p>}
+      <section className="owner-card staff-venue-bar">
+        <label className="staff-venue-label">
+          <span>{locale === "ro" ? "Restaurant" : locale === "en" ? "Venue" : "Заведение"}</span>
+          <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
+            {venues.map((venue) => (
+              <option key={venue.id} value={venue.id}>
+                {venue.name.ru || venue.name.en || venue.id}
+              </option>
+            ))}
+          </select>
+        </label>
+        {error && <p className="owner-notice error">{error}</p>}
+      </section>
 
       {venueId && <StaffWaitlist venueId={venueId} />}
 
-      <h2>Вызовы официанта</h2>
-      <ul>
-        {calls.map((call) => (
-          <li key={call.id}>
-            {call.reason} · {call.status} · table {call.table_id}
-            {call.status !== "DONE" && (
-              <button
-                type="button"
-                onClick={async () => {
-                  await staffCompleteWaiterCall(call.id);
-                  const refreshed = await staffListWaiterCalls(venueId);
-                  setCalls(refreshed.waiter_calls ?? []);
-                }}
-              >
-                Done
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="staff-ops-grid">
+        <section className="owner-card staff-queue-card">
+          <div className="owner-card-head">
+            <div>
+              <span className="owner-kicker">{locale === "ro" ? "Sală" : locale === "en" ? "Hall" : "Зал"}</span>
+              <h3>{locale === "ro" ? "Apeluri ospătar" : locale === "en" ? "Waiter calls" : "Вызовы официанта"} ({calls.length})</h3>
+            </div>
+          </div>
+          {calls.length === 0 ? (
+            <p className="cabinet-ops-empty">{locale === "ro" ? "Niciun apel activ" : locale === "en" ? "No active calls" : "Активных вызовов нет"}</p>
+          ) : (
+            <ul className="staff-queue-list">
+              {calls.map((call) => (
+                <li key={call.id} className="staff-queue-item">
+                  <div>
+                    <strong>{locale === "ro" ? "Masa" : locale === "en" ? "Table" : "Стол"} {call.table_id}</strong>
+                    <small>{call.reason} · {call.status}</small>
+                  </div>
+                  {call.status !== "DONE" && (
+                    <button
+                      type="button"
+                      className="panel-btn primary sm"
+                      onClick={async () => {
+                        await staffCompleteWaiterCall(call.id);
+                        const refreshed = await staffListWaiterCalls(venueId);
+                        setCalls(refreshed.waiter_calls ?? []);
+                      }}
+                    >
+                      {locale === "ro" ? "Finalizat" : locale === "en" ? "Done" : "Выполнено"}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-      <h2>Заказы</h2>
-      <ul>
-        {orders.map((order) => (
-          <li key={order.id}>
-            {order.id.slice(0, 8)} · {order.status} · {order.total} MDL
-            <button
-              type="button"
-              onClick={async () => {
-                await staffUpdateOrder(order.id, venueId, "PREPARING");
-                setOrders(await staffListOrders(venueId));
-              }}
-            >
-              Preparing
-            </button>
-            <button
-              type="button"
-              onClick={async () => {
-                await staffUpdateOrder(order.id, venueId, "READY");
-                setOrders(await staffListOrders(venueId));
-              }}
-            >
-              Ready
-            </button>
-          </li>
-        ))}
-      </ul>
+        <section className="owner-card staff-queue-card">
+          <div className="owner-card-head">
+            <div>
+              <span className="owner-kicker">{locale === "ro" ? "Bucătărie" : locale === "en" ? "Kitchen" : "Кухня"}</span>
+              <h3>{locale === "ro" ? "Comenzi" : locale === "en" ? "Orders" : "Заказы"} ({orders.length})</h3>
+            </div>
+          </div>
+          {orders.length === 0 ? (
+            <p className="cabinet-ops-empty">{locale === "ro" ? "Nicio comandă activă" : locale === "en" ? "No active orders" : "Активных заказов нет"}</p>
+          ) : (
+            <ul className="staff-queue-list">
+              {orders.map((order) => (
+                <li key={order.id} className="staff-queue-item">
+                  <div>
+                    <strong>#{order.id.slice(0, 8)} · {order.total} MDL</strong>
+                    <small>{order.status}</small>
+                  </div>
+                  <div className="staff-queue-actions">
+                    <button
+                      type="button"
+                      className="panel-btn ghost sm"
+                      onClick={async () => {
+                        await staffUpdateOrder(order.id, venueId, "PREPARING");
+                        setOrders(await staffListOrders(venueId));
+                      }}
+                    >
+                      Preparing
+                    </button>
+                    <button
+                      type="button"
+                      className="panel-btn primary sm"
+                      onClick={async () => {
+                        await staffUpdateOrder(order.id, venueId, "READY");
+                        setOrders(await staffListOrders(venueId));
+                      }}
+                    >
+                      Ready
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
 
       {/* Staff Shift Swap Request Modal */}
       {swapModalShift && typeof document !== "undefined" && createPortal(

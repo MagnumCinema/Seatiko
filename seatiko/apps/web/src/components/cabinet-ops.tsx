@@ -98,18 +98,6 @@ export function CabinetFloorPanel({ venueId }: Props) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
-  const removeModalRef = useRef<HTMLElement>(null);
-  useDialogFocus(!!removingMember, removeModalRef, () => setRemovingMember(null));
-
-  useEffect(() => {
-    if (!removingMember) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [removingMember]);
 
   async function reload() {
     const qr = await listVenueQR(venueId);
@@ -321,6 +309,7 @@ export function CabinetStaffPanel({ venueId }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"waiter" | "cook">("waiter");
+  const [staffFilter, setStaffFilter] = useState<"all" | "waiter" | "cook" | "admin">("all");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
@@ -506,6 +495,38 @@ export function CabinetStaffPanel({ venueId }: Props) {
           </div>
         </form>
 
+        {staff.length > 0 && (
+          <div className="cabinet-category-pills cabinet-staff-filter-pills" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={staffFilter === "all"}
+              className={staffFilter === "all" ? "active" : ""}
+              onClick={() => setStaffFilter("all")}
+            >
+              {copy.opsScheduleTabAll} ({staff.length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={staffFilter === "waiter"}
+              className={staffFilter === "waiter" ? "active" : ""}
+              onClick={() => setStaffFilter("waiter")}
+            >
+              👤 {copy.opsScheduleTabWaiters} ({staff.filter((m) => (m.role || "waiter") === "waiter").length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={staffFilter === "cook"}
+              className={staffFilter === "cook" ? "active" : ""}
+              onClick={() => setStaffFilter("cook")}
+            >
+              👨‍🍳 {copy.opsScheduleTabCooks} ({staff.filter((m) => m.role === "cook").length})
+            </button>
+          </div>
+        )}
+
         <ul className="cabinet-staff-cards-list">
           {staff.length === 0 ? (
             <li className="cabinet-staff-empty fa-muted">
@@ -516,7 +537,9 @@ export function CabinetStaffPanel({ venueId }: Props) {
                 : "Сотрудники пока не добавлены"}
             </li>
           ) : (
-            staff.map((member) => {
+            staff
+              .filter((m) => staffFilter === "all" || (m.role || "waiter") === staffFilter)
+              .map((member) => {
               const displayName = member.name?.trim() || member.email.split("@")[0];
               const isOnShift = member.on_shift ?? (member.status === "ACTIVE");
               const isCook = member.role === "cook";
@@ -687,18 +710,6 @@ export function CabinetMenuPanel({ venueId }: Props) {
   const [deletingDish, setDeletingDish] = useState<MenuItem | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
-  const removeModalRef = useRef<HTMLElement>(null);
-  useDialogFocus(!!removingMember, removeModalRef, () => setRemovingMember(null));
-
-  useEffect(() => {
-    if (!removingMember) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [removingMember]);
 
   const modalRef = useRef<HTMLElement>(null);
   const deleteModalRef = useRef<HTMLElement>(null);
