@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:mobile/api.dart';
+import 'package:mobile/errors.dart';
 import 'package:mobile/screens/order_choice_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
@@ -13,8 +15,8 @@ class QrScreen extends StatefulWidget {
   State<QrScreen> createState() => _QrScreenState();
 }
 
-class _QrScreenState extends State<QrScreen> {
-  final tokenCtrl = TextEditingController(text: 'venue-1:t1');
+class _QrScreenState extends State<QrScreen> with WidgetsBindingObserver {
+  final tokenCtrl = TextEditingController();
   final controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     formats: const [BarcodeFormat.qrCode],
@@ -24,7 +26,28 @@ class _QrScreenState extends State<QrScreen> {
   String? cameraError;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!controller.value.hasCameraPermission) return;
+    switch (state) {
+      case AppLifecycleState.resumed:
+        controller.start();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        controller.stop();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     tokenCtrl.dispose();
     controller.dispose();
     super.dispose();
@@ -32,8 +55,13 @@ class _QrScreenState extends State<QrScreen> {
 
   Future<void> _open(String raw) async {
     if (busy) return;
+    await controller.stop();
+    if (!mounted) return;
     final ok = await ensureAuth(context);
-    if (!ok || !mounted) return;
+    if (!ok || !mounted) {
+      await controller.start();
+      return;
+    }
     setState(() => busy = true);
     try {
       final parts = parseQrToken(raw);
@@ -59,11 +87,12 @@ class _QrScreenState extends State<QrScreen> {
           ),
         ),
       );
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('scan.invalid'.tr())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorText(e))),
+        );
+        await controller.start();
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -99,42 +128,45 @@ class _QrScreenState extends State<QrScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _viewfinder()),
-            const SizedBox(height: 16),
-            Text(
-              cameraError ?? 'scan.hint'.tr(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: cameraError == null ? FaColors.muted : FaColors.occupied,
-              ),
-            ),
-            if (manual) ...[
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _viewfinder()),
               const SizedBox(height: 16),
-              TextField(
-                controller: tokenCtrl,
-                decoration: InputDecoration(
-                  labelText: 'scan.token_placeholder'.tr(),
-                  hintText: 'venue-1:t1',
+              Text(
+                cameraError ?? 'scan.hint'.tr(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: cameraError == null ? FaColors.muted : FaColors.occupied,
                 ),
               ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: busy ? null : () => _open(tokenCtrl.text),
-                child: busy
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text('scan.simulate'.tr()),
-              ),
+              if (manual) ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: tokenCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'scan.manual'.tr(),
+                    hintText: 'scan.token_placeholder'.tr(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: busy ? null : () => _open(tokenCtrl.text),
+                  child: busy
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text('scan.simulate'.tr()),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -150,6 +182,12 @@ class _QrScreenState extends State<QrScreen> {
             controller: controller,
             onDetect: _onDetect,
             errorBuilder: (context, error) {
+              final msg = error.errorDetails?.message ?? error.errorCode.name;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && cameraError != msg) {
+                  setState(() => cameraError = msg);
+                }
+              });
               return Container(
                 color: FaColors.surface2,
                 alignment: Alignment.center,
@@ -169,9 +207,18 @@ class _QrScreenState extends State<QrScreen> {
                       style: const TextStyle(color: FaColors.muted),
                     ),
                     const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () => setState(() => manual = true),
-                      child: Text('scan.manual'.tr()),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: () => setState(() => manual = true),
+                          child: Text('scan.manual'.tr()),
+                        ),
+                        TextButton(
+                          onPressed: Geolocator.openAppSettings,
+                          child: Text('common.settings'.tr()),
+                        ),
+                      ],
                     ),
                   ],
                 ),

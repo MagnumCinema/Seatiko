@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/theme.dart';
@@ -9,6 +10,7 @@ class RestaurantFloorPlan extends StatefulWidget {
     required this.tables,
     required this.onTableTap,
     this.selectedTableId,
+    this.yoursTableIds = const {},
     this.compact = false,
     this.locale = 'ru',
   });
@@ -16,6 +18,7 @@ class RestaurantFloorPlan extends StatefulWidget {
   final List<VenueTable> tables;
   final ValueChanged<VenueTable> onTableTap;
   final String? selectedTableId;
+  final Set<String> yoursTableIds;
   final bool compact;
   final String locale;
 
@@ -51,8 +54,11 @@ class _RestaurantFloorPlanState extends State<RestaurantFloorPlan> {
     }
   }
 
-  Color _tableFill(String status) {
-    switch (status) {
+  Color _tableFill(VenueTable t) {
+    if (widget.yoursTableIds.contains(t.id)) {
+      return FaColors.yours;
+    }
+    switch (t.status) {
       case 'RESERVED':
         return RestaurantFloorPlan.tableReserved;
       case 'OCCUPIED':
@@ -67,8 +73,7 @@ class _RestaurantFloorPlanState extends State<RestaurantFloorPlan> {
   @override
   Widget build(BuildContext context) {
     final zones = zonesFromTables(widget.tables);
-    final visible =
-        widget.tables.where((t) => t.zone == _zone).toList();
+    final visible = widget.tables.where((t) => t.zone == _zone).toList();
     final outdoor = _zone == 'street' || _zone == 'terrace';
 
     return Column(
@@ -121,60 +126,78 @@ class _RestaurantFloorPlanState extends State<RestaurantFloorPlan> {
               builder: (context, constraints) {
                 final roomWidth = constraints.maxWidth;
                 final roomHeight = constraints.maxHeight;
-                return Stack(
-                  children: [
-                    Positioned(
-                      left: 10,
-                      top: roomHeight * .14,
-                      bottom: roomHeight * .18,
-                      child: const _ZoneBar(),
-                    ),
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: _ZoneChip(outdoor ? 'Снаружи' : 'Кухня'),
-                    ),
-                    const Positioned(
-                      right: 14,
-                      bottom: 12,
-                      child: Text(
-                        'Вход ↑',
-                        style: TextStyle(
-                          color: RestaurantFloorPlan.zoneText,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
+                final room = SizedBox(
+                  width: roomWidth,
+                  height: roomHeight,
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 10,
+                        top: roomHeight * .14,
+                        bottom: roomHeight * .18,
+                        child: const _ZoneBar(),
+                      ),
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: _ZoneChip(
+                          outdoor
+                              ? 'floor.zone_outside'.tr()
+                              : 'floor.zone_kitchen'.tr(),
                         ),
                       ),
-                    ),
-                    for (final table in visible)
                       Positioned(
-                        left: (table.x.clamp(.12, .88) * roomWidth),
-                        top: (table.y.clamp(.16, .84) * roomHeight),
-                        child: FractionalTranslation(
-                          translation: const Offset(-.5, -.5),
-                          child: _SchematicTable(
-                            table: table,
-                            fill: _tableFill(table.status),
-                            selected: widget.selectedTableId == table.id,
-                            compact: widget.compact,
-                            onTap: () => widget.onTableTap(table),
+                        right: 14,
+                        bottom: 12,
+                        child: Text(
+                          'floor.entrance'.tr(),
+                          style: const TextStyle(
+                            color: RestaurantFloorPlan.zoneText,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
                           ),
                         ),
                       ),
-                    if (visible.isEmpty)
-                      Positioned.fill(
-                        child: Center(
-                          child: Text(
-                            'В зоне «${zoneLabel(_zone, widget.locale)}» пока нет столов',
-                            style: const TextStyle(
-                              color: RestaurantFloorPlan.zoneText,
-                              fontSize: 13,
+                      for (final table in visible)
+                        Positioned(
+                          left: table.x.clamp(.12, .88) * roomWidth,
+                          top: table.y.clamp(.16, .84) * roomHeight,
+                          child: FractionalTranslation(
+                            translation: const Offset(-.5, -.5),
+                            child: _SchematicTable(
+                              table: table,
+                              fill: _tableFill(table),
+                              selected: widget.selectedTableId == table.id,
+                              isYours: widget.yoursTableIds.contains(table.id),
+                              compact: widget.compact,
+                              onTap: () => widget.onTableTap(table),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                      if (visible.isEmpty)
+                        Positioned.fill(
+                          child: Center(
+                            child: Text(
+                              'floor.zone_empty'.tr(
+                                args: [zoneLabel(_zone, widget.locale)],
+                              ),
+                              style: const TextStyle(
+                                color: RestaurantFloorPlan.zoneText,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+                if (widget.compact) return room;
+                return InteractiveViewer(
+                  minScale: 1.0,
+                  maxScale: 2.5,
+                  boundaryMargin: const EdgeInsets.all(24),
+                  child: room,
                 );
               },
             ),
@@ -195,14 +218,17 @@ class _ZoneBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0x1FD2B48C),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: RestaurantFloorPlan.zoneBorder, style: BorderStyle.solid),
+        border: Border.all(
+          color: RestaurantFloorPlan.zoneBorder,
+          style: BorderStyle.solid,
+        ),
       ),
-      child: const RotatedBox(
+      child: RotatedBox(
         quarterTurns: 3,
         child: Center(
           child: Text(
-            'BAR',
-            style: TextStyle(
+            'floor.zone_bar'.tr().toUpperCase(),
+            style: const TextStyle(
               color: RestaurantFloorPlan.zoneText,
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -255,6 +281,7 @@ class _SchematicTable extends StatelessWidget {
     required this.table,
     required this.fill,
     required this.selected,
+    required this.isYours,
     required this.compact,
     required this.onTap,
   });
@@ -262,6 +289,7 @@ class _SchematicTable extends StatelessWidget {
   final VenueTable table;
   final Color fill;
   final bool selected;
+  final bool isYours;
   final bool compact;
   final VoidCallback onTap;
 
@@ -292,11 +320,11 @@ class _SchematicTable extends StatelessWidget {
     }
 
     final pad = 18.0 * scale;
-    final freeRing = table.status == 'FREE' && !selected;
+    final freeRing = table.status == 'FREE' && !selected && !isYours;
 
     return Semantics(
       button: true,
-      label: 'Стол ${table.number}, ${table.seats} мест',
+      label: 'floor.table_semantics'.tr(args: ['${table.number}', '${table.seats}']),
       child: GestureDetector(
         onTap: onTap,
         child: SizedBox(
@@ -323,6 +351,12 @@ class _SchematicTable extends StatelessWidget {
                     if (selected)
                       const BoxShadow(
                         color: Color(0xFF6F8F3D),
+                        blurRadius: 0,
+                        spreadRadius: 3,
+                      )
+                    else if (isYours)
+                      BoxShadow(
+                        color: FaColors.yours.withValues(alpha: 0.4),
                         blurRadius: 0,
                         spreadRadius: 3,
                       )

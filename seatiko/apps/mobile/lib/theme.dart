@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class FaColors {
@@ -29,6 +30,13 @@ ThemeData buildFaTheme() {
     useMaterial3: true,
     brightness: Brightness.light,
     scaffoldBackgroundColor: FaColors.bg,
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+      },
+    ),
     colorScheme: base.copyWith(
       primary: FaColors.green,
       secondary: FaColors.clay,

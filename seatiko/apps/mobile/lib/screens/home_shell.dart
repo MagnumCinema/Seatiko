@@ -67,7 +67,7 @@ class HomeShellState extends State<HomeShell> {
       if (i == 2) ordersKey.currentState?.reload();
       if (i == 3) profileKey.currentState?.reload();
     }
-    setState(() => tab = i);
+    if (mounted) setState(() => tab = i);
   }
 
   void openQr() {
@@ -77,112 +77,120 @@ class HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: tab,
-        children: [
-          MapTab(
-            key: mapKey,
-            cityId: cityId,
-            cityName: cityName.isEmpty ? 'map.city'.tr() : cityName,
-            onCityChanged: _loadCity,
-          ),
-          DiscoverTab(cityId: cityId),
-          OrdersTab(key: ordersKey),
-          ProfileTab(
-            key: profileKey,
-            onOpenOrders: () {
-              setState(() => tab = 2);
-              ordersKey.currentState?.reload();
-            },
-          ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        child: Container(
-          height: 72,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: FaColors.surface.withValues(alpha: .96),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: FaColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x24203E32),
-                blurRadius: 30,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              _NavItem(
-                icon: Icons.map_outlined,
-                activeIcon: Icons.map_rounded,
-                label: 'nav.map'.tr(),
-                active: tab == 0,
-                onTap: () => _onTab(0),
-              ),
-              _NavItem(
-                icon: Icons.auto_awesome_outlined,
-                activeIcon: Icons.auto_awesome_rounded,
-                label: 'nav.discover'.tr(),
-                active: tab == 1,
-                onTap: () => _onTab(1),
-              ),
-              Expanded(
-                child: Center(
-                  child: Semantics(
-                    button: true,
-                    label: 'nav.scan_qr'.tr(),
-                    child: InkWell(
-                      onTap: openQr,
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: FaColors.clay,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(18),
-                            topRight: Radius.circular(18),
-                            bottomRight: Radius.circular(18),
-                            bottomLeft: Radius.circular(6),
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x42D77B48),
-                              blurRadius: 18,
-                              offset: Offset(0, 7),
+    return PopScope(
+      canPop: tab == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && tab != 0) {
+          setState(() => tab = 0);
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: IndexedStack(
+          index: tab,
+          children: [
+            MapTab(
+              key: mapKey,
+              cityId: cityId,
+              cityName: cityName.isEmpty ? 'map.city'.tr() : cityName,
+              onCityChanged: _loadCity,
+            ),
+            DiscoverTab(cityId: cityId),
+            OrdersTab(key: ordersKey),
+            ProfileTab(
+              key: profileKey,
+              onOpenOrders: () {
+                setState(() => tab = 2);
+                ordersKey.currentState?.reload();
+              },
+            ),
+          ],
+        ),
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          child: Container(
+            height: 72,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: FaColors.surface.withValues(alpha: .96),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: FaColors.border),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x24203E32),
+                  blurRadius: 30,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _NavItem(
+                  icon: Icons.map_outlined,
+                  activeIcon: Icons.map_rounded,
+                  label: 'nav.map'.tr(),
+                  active: tab == 0,
+                  onTap: () => _onTab(0),
+                ),
+                _NavItem(
+                  icon: Icons.auto_awesome_outlined,
+                  activeIcon: Icons.auto_awesome_rounded,
+                  label: 'nav.discover'.tr(),
+                  active: tab == 1,
+                  onTap: () => _onTab(1),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Semantics(
+                      button: true,
+                      label: 'nav.scan_qr'.tr(),
+                      child: InkWell(
+                        onTap: openQr,
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: const BoxDecoration(
+                            color: FaColors.clay,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(18),
+                              topRight: Radius.circular(18),
+                              bottomRight: Radius.circular(18),
+                              bottomLeft: Radius.circular(6),
                             ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x42D77B48),
+                                blurRadius: 18,
+                                offset: Offset(0, 7),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.qr_code_scanner_rounded,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              _NavItem(
-                icon: Icons.receipt_long_outlined,
-                activeIcon: Icons.receipt_long_rounded,
-                label: 'nav.orders'.tr(),
-                active: tab == 2,
-                onTap: () => _onTab(2),
-              ),
-              _NavItem(
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-                label: 'nav.profile'.tr(),
-                active: tab == 3,
-                onTap: () => _onTab(3),
-              ),
-            ],
+                _NavItem(
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  label: 'nav.orders'.tr(),
+                  active: tab == 2,
+                  onTap: () => _onTab(2),
+                ),
+                _NavItem(
+                  icon: Icons.person_outline_rounded,
+                  activeIcon: Icons.person_rounded,
+                  label: 'nav.profile'.tr(),
+                  active: tab == 3,
+                  onTap: () => _onTab(3),
+                ),
+              ],
+            ),
           ),
         ),
       ),

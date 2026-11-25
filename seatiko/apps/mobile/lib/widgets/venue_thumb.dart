@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/api.dart';
 import 'package:mobile/theme.dart';
 
-/// Restaurant photo thumb with gradient/cutlery fallback.
+/// Restaurant photo thumb with gradient/cutlery fallback and relative URL resolution.
 class VenueThumb extends StatelessWidget {
   const VenueThumb({
     super.key,
@@ -19,15 +20,18 @@ class VenueThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = _Fallback(size: size, radius: radius, priceLevel: priceLevel);
-    final url = imageUrl.trim();
+    final url = mediaUrl(imageUrl);
     if (url.isEmpty) return fallback;
 
+    final cachePx = (size * 2.5).round();
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: Image.network(
         url,
         width: size,
         height: size,
+        cacheWidth: cachePx,
+        cacheHeight: cachePx,
         fit: BoxFit.cover,
         gaplessPlayback: true,
         errorBuilder: (_, error, stackTrace) => fallback,
@@ -98,7 +102,7 @@ class VenueHeroImage extends StatelessWidget {
   const VenueHeroImage({
     super.key,
     required this.imageUrl,
-    this.height = 180,
+    this.height = 200,
   });
 
   final String imageUrl;
@@ -106,7 +110,7 @@ class VenueHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = imageUrl.trim();
+    final url = mediaUrl(imageUrl);
     if (url.isEmpty) {
       return Container(
         height: height,
@@ -127,6 +131,7 @@ class VenueHeroImage extends StatelessWidget {
       height: height,
       width: double.infinity,
       fit: BoxFit.cover,
+      gaplessPlayback: true,
       errorBuilder: (_, error, stackTrace) => Container(
         height: height,
         color: const Color(0xFF1A2218),
