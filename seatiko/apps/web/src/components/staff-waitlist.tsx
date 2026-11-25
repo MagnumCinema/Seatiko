@@ -12,6 +12,7 @@ import {
   type WaitlistEntry,
 } from "@/lib/api";
 import { zoneLabel } from "@/lib/floor-zones";
+import { SelectMenu } from "@/components/ui/select-menu";
 
 const POLL_MS = 15000;
 
@@ -153,22 +154,21 @@ export function StaffWaitlist({ venueId }: { venueId: string }) {
               </div>
               <div className="host-waitlist-actions">
                 {entry.status === "WAITING" && (
-                  <select
-                    defaultValue=""
+                  <SelectMenu
+                    size="compact"
+                    fullWidth={false}
+                    value=""
+                    placeholder="Позвать на стол…"
                     disabled={busy}
-                    onChange={(e) => {
-                      const tableId = e.target.value;
+                    onChange={(tableId) => {
                       if (!tableId) return;
                       void run(() => staffNotifyWaitlist(entry.id, tableId));
                     }}
-                  >
-                    <option value="">Позвать на стол…</option>
-                    {freeTables.map((table) => (
-                      <option key={table.id} value={table.id}>
-                        №{table.number} · {table.seats} мест
-                      </option>
-                    ))}
-                  </select>
+                    options={freeTables.map((table) => ({
+                      value: table.id,
+                      label: `№${table.number} · ${table.seats} мест`,
+                    }))}
+                  />
                 )}
                 <button
                   type="button"

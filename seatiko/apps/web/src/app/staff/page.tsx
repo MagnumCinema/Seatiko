@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { PanelShell } from "@/components/panel-shell";
 import { StaffWaitlist } from "@/components/staff-waitlist";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { RoleBadge } from "@/components/cabinet-roles";
 import { shiftRoleLabel } from "@/lib/venue-roles";
 import { useLocale } from "@/components/locale-provider";
@@ -269,13 +270,15 @@ export default function StaffPage() {
       <section className="owner-card staff-venue-bar">
         <label className="staff-venue-label">
           <span>{locale === "ro" ? "Restaurant" : locale === "en" ? "Venue" : "Заведение"}</span>
-          <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
-            {venues.map((venue) => (
-              <option key={venue.id} value={venue.id}>
-                {venue.name.ru || venue.name.en || venue.id}
-              </option>
-            ))}
-          </select>
+          <SelectMenu
+            className="staff-venue-select"
+            value={venueId}
+            onChange={setVenueId}
+            options={venues.map((venue) => ({
+              value: venue.id,
+              label: venue.name.ru || venue.name.en || venue.id,
+            }))}
+          />
         </label>
         {error && <p className="owner-notice error">{error}</p>}
       </section>

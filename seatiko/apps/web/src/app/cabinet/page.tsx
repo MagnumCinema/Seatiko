@@ -17,6 +17,7 @@ import {
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
 import {
   filterReservations,
@@ -608,7 +609,7 @@ function initials(user: User) {
 export default function CabinetPage() {
   const router = useRouter();
   const { locale } = useLocale();
-  const siteCopy = getSiteCopy(locale);
+  const siteCopy = useMemo(() => getSiteCopy(locale), [locale]);
   const cabinetCopy = siteCopy.cabinet;
   const ui = cabinetCopy.ui;
   const [user, setUser] = useState<User | null>(null);
@@ -1545,20 +1546,21 @@ export default function CabinetPage() {
                         </div>
                         <div className="field">
                           <label htmlFor="venue-type">{cabinetCopy.roles.typeLabel}</label>
-                          <select
+                          <SelectMenu
                             id="venue-type"
                             disabled={!canEdit}
                             value={draft.venue_type}
-                            onChange={(event) => updateDraft("venue_type", event.target.value)}
-                            aria-describedby="venue-type-hint"
-                          >
-                            <option value="">{cabinetCopy.roles.typePlaceholder}</option>
-                            {VENUE_TYPE_IDS.map((type) => (
-                              <option key={type} value={type}>
-                                {siteCopy.discover.chips[type]}
-                              </option>
-                            ))}
-                          </select>
+                            placeholder={cabinetCopy.roles.typePlaceholder}
+                            onChange={(value) => updateDraft("venue_type", value)}
+                            ariaDescribedBy="venue-type-hint"
+                            options={[
+                              { value: "", label: cabinetCopy.roles.typePlaceholder },
+                              ...VENUE_TYPE_IDS.map((type) => ({
+                                value: type,
+                                label: siteCopy.discover.chips[type],
+                              })),
+                            ]}
+                          />
                           <p id="venue-type-hint" className="owner-field-hint">
                             {selected?.status === "PUBLISHED" ? cabinetCopy.roles.typeChangeModerated : cabinetCopy.roles.typeHint}
                           </p>
@@ -1601,22 +1603,23 @@ export default function CabinetPage() {
                           <label htmlFor="venue-city">
                             {ui.city}
                           </label>
-                          <select
+                          <SelectMenu
                             id="venue-city"
                             disabled={!canEdit}
                             value={draft.city_id}
-                            onChange={(event) => {
-                              const cityId = event.target.value;
+                            onChange={(cityId) => {
                               setDraft((current) => current ? { ...current, city_id: cityId, lat: "", lng: "" } : current);
                             }}
-                          >
-                            {!locations.some((city) => city.id === draft.city_id) && (
-                              <option value={draft.city_id}>{draft.city_id === "city-balti" ? "Bălți" : draft.city_id}</option>
-                            )}
-                            {locations.map((city) => (
-                              <option key={city.id} value={city.id}>{pickLocale(city.name, locale)}</option>
-                            ))}
-                          </select>
+                            options={[
+                              ...(!locations.some((city) => city.id === draft.city_id)
+                                ? [{ value: draft.city_id, label: draft.city_id === "city-balti" ? "Bălți" : draft.city_id }]
+                                : []),
+                              ...locations.map((city) => ({
+                                value: city.id,
+                                label: pickLocale(city.name, locale),
+                              })),
+                            ]}
+                          />
                         </div>
                         <div className="field owner-field-wide">
                           <label htmlFor="venue-address">{cabinetCopy.address}</label>
@@ -1745,16 +1748,17 @@ export default function CabinetPage() {
                         </div>
                         <div className="field">
                           <label htmlFor="venue-price">{cabinetCopy.price}</label>
-                          <select
+                          <SelectMenu
                             id="venue-price"
                             disabled={!canEdit}
                             value={draft.price_level}
-                            onChange={(event) => updateDraft("price_level", event.target.value)}
-                          >
-                            <option value="1">{cabinetCopy.price1}</option>
-                            <option value="2">{cabinetCopy.price2}</option>
-                            <option value="3">{cabinetCopy.price3}</option>
-                          </select>
+                            onChange={(value) => updateDraft("price_level", value)}
+                            options={[
+                              { value: "1", label: cabinetCopy.price1 },
+                              { value: "2", label: cabinetCopy.price2 },
+                              { value: "3", label: cabinetCopy.price3 },
+                            ]}
+                          />
                         </div>
                         <div className="field">
                           <label htmlFor="venue-check">{cabinetCopy.average}</label>

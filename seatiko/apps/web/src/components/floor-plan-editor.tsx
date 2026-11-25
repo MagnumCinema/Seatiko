@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SeatingMarks, seatingClass, tableStatusClass } from "@/components/table-floor-plan";
 import { useLocale } from "@/components/locale-provider";
+import { SelectMenu } from "@/components/ui/select-menu";
 import type { Table } from "@/lib/api";
 import {
   FLOOR_ZONE_PRESETS,
@@ -414,17 +415,15 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
               </label>
               <label>
                 {copy.zoneLabel}
-                <select
+                <SelectMenu
                   value={normalizeZone(selected.zone)}
                   disabled={busy}
-                  onChange={(e) => updateSelected({ zone: e.target.value })}
-                >
-                  {FLOOR_ZONE_PRESETS.map((z) => (
-                    <option key={z.id} value={z.id}>
-                      {zoneLabel(z.id, locale)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => updateSelected({ zone: value })}
+                  options={FLOOR_ZONE_PRESETS.map((z) => ({
+                    value: z.id,
+                    label: zoneLabel(z.id, locale),
+                  }))}
+                />
               </label>
               <div className="floor-editor-xy">
                 <span>X {(selected.x * 100).toFixed(0)}%</span>

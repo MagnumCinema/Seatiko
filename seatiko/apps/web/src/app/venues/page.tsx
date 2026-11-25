@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { useLocale, type Locale } from "@/components/locale-provider";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
@@ -383,17 +384,18 @@ function VenuesCatalogContent() {
             <div className="catalog-meta-actions">
               <div className="catalog-sort-wrap">
                 <label htmlFor="catalog-sort">{copy.sortLabel}</label>
-                <select
+                <SelectMenu
                   id="catalog-sort"
+                  size="compact"
+                  fullWidth={false}
+                  align="end"
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                >
-                  {SORT_IDS.map((id) => (
-                    <option key={id} value={id}>
-                      {copy.sort[id]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setSortBy(value as SortOption)}
+                  options={SORT_IDS.map((id) => ({
+                    value: id,
+                    label: copy.sort[id],
+                  }))}
+                />
               </div>
 
               <div className="catalog-view-switch" role="group" aria-label={copy.viewAria}>

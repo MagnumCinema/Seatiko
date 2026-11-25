@@ -13,6 +13,7 @@ import { BookingRulesForm } from "@/components/booking-rules-form";
 import { useLocale } from "@/components/locale-provider";
 import { LeafIcon, FlameIcon } from "@/components/venue-icons";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
@@ -546,18 +547,17 @@ export function CabinetStaffPanel({ venueId }: Props) {
           }}
         >
           <div className="cabinet-ops-inputs-grid cabinet-staff-invite-grid">
-            <select
+            <SelectMenu
               value={inviteRole || (plannerRoles(roles)[0] ?? orderedRoles[0])?.key || ""}
-              onChange={(e) => setInviteRole(e.target.value)}
-              className="cabinet-staff-input cabinet-staff-role-select"
-              aria-label={copy.opsStaffRoleLabel}
-            >
-              {orderedRoles.map((r) => (
-                <option key={r.id} value={r.key}>
-                  {roleLabel(r, presetNames)}
-                </option>
-              ))}
-            </select>
+              onChange={setInviteRole}
+              className="cabinet-staff-role-select"
+              ariaLabel={copy.opsStaffRoleLabel}
+              options={orderedRoles.map((r) => ({
+                value: r.key,
+                label: roleLabel(r, presetNames),
+                color: r.color || "#64748b",
+              }))}
+            />
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -656,26 +656,30 @@ export function CabinetStaffPanel({ venueId }: Props) {
                   </div>
 
                   <div className="cabinet-staff-card-actions">
-                    <select
-                      className="cabinet-staff-input cabinet-staff-role-assign"
+                    <SelectMenu
+                      className="cabinet-staff-role-assign"
+                      size="compact"
+                      fullWidth={false}
                       value={member.role}
                       disabled={busy}
-                      aria-label={`${copy.roles.assignLabel}: ${displayName}`}
-                      onChange={(e) => {
-                        const next = e.target.value;
+                      ariaLabel={`${copy.roles.assignLabel}: ${displayName}`}
+                      onChange={(next) => {
                         void run(async () => {
                           const updated = await assignVenueStaffRole(venueId, member.id, next);
                           setStaff((prev) => prev.map((s) => (s.id === member.id ? { ...s, role: updated.role } : s)));
                         }, copy.roles.assigned);
                       }}
-                    >
-                      {!roles.some((r) => r.key === member.role) && <option value={member.role}>{member.role}</option>}
-                      {orderedRoles.map((r) => (
-                        <option key={r.id} value={r.key}>
-                          {roleLabel(r, presetNames)}
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                        ...(!roles.some((r) => r.key === member.role)
+                          ? [{ value: member.role, label: member.role, color: roleColor(member.role, roles) }]
+                          : []),
+                        ...orderedRoles.map((r) => ({
+                          value: r.key,
+                          label: roleLabel(r, presetNames),
+                          color: r.color || "#64748b",
+                        })),
+                      ]}
+                    />
                     <button
                       type="button"
                       className={`panel-btn ghost sm ${isOnShift ? "shift-active" : ""}`}
@@ -1254,17 +1258,15 @@ export function CabinetMenuPanel({ venueId }: Props) {
                     <div className="cabinet-dish-meta-grid">
                       <div className="cabinet-dish-field-wrap">
                         <label htmlFor="edit-dish-cat">{copy.opsMenuCategoryLabel}</label>
-                        <select
+                        <SelectMenu
                           id="edit-dish-cat"
                           value={form.category}
-                          onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                        >
-                          {categoryOptions.map((option) => (
-                            <option key={option.key} value={option.key}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => setForm((f) => ({ ...f, category: value }))}
+                          options={categoryOptions.map((option) => ({
+                            value: option.key,
+                            label: option.label,
+                          }))}
+                        />
                       </div>
                       <div className="cabinet-dish-field-wrap">
                         <label htmlFor="edit-dish-weight">{copy.opsMenuWeight}</label>

@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { SelectMenu } from "@/components/ui/select-menu";
 import {
   deleteState,
   nextRoleColor,
@@ -385,20 +386,18 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                 {deletingState.blocked === "in_use" && (
                   <div className="field cabinet-role-reassign">
                     <label htmlFor="cabinet-role-reassign">{copy.reassignLabel}</label>
-                    <select
+                    <SelectMenu
                       id="cabinet-role-reassign"
-                      className="cabinet-staff-input"
                       value={reassignTo}
-                      onChange={(e) => setReassignTo(e.target.value)}
-                    >
-                      {ordered
+                      onChange={setReassignTo}
+                      options={ordered
                         .filter((r) => r.id !== deleting.id)
-                        .map((r) => (
-                          <option key={r.id} value={r.key}>
-                            {roleLabel(r, presetNames)}
-                          </option>
-                        ))}
-                    </select>
+                        .map((r) => ({
+                          value: r.key,
+                          label: roleLabel(r, presetNames),
+                          color: r.color || "#64748b",
+                        }))}
+                    />
                   </div>
                 )}
                 <div className="cabinet-delete-actions">

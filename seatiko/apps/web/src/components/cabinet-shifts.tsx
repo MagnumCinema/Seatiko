@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { createPortal } from "react-dom";
 import { useLocale } from "@/components/locale-provider";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
   calcDurationMinutes,
@@ -1711,15 +1712,15 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                   <div className="cabinet-shift-field-group">
                     <label htmlFor="rec-period">{copy.plannerPeriod}</label>
-                    <select
+                    <SelectMenu
                       id="rec-period"
-                      value={recurringPeriodWeeks}
-                      onChange={(e) => setRecurringPeriodWeeks(Number(e.target.value))}
-                      className="cabinet-shift-input"
-                    >
-                      <option value={2}>{copy.planner2Weeks}</option>
-                      <option value={4}>{copy.planner1Month}</option>
-                    </select>
+                      value={String(recurringPeriodWeeks)}
+                      onChange={(value) => setRecurringPeriodWeeks(Number(value))}
+                      options={[
+                        { value: "2", label: copy.planner2Weeks },
+                        { value: "4", label: copy.planner1Month },
+                      ]}
+                    />
                   </div>
                 </div>
 

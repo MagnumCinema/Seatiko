@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
+import { SelectMenu } from "@/components/ui/select-menu";
 
 const MAX_GUESTS = 20;
 
@@ -80,21 +81,21 @@ export function QuickBookFilters({
 
       <label className="qb-field">
         <span className="booking-field-label">{t("res.time")}</span>
-        <select
-          className="qb-select"
+        <SelectMenu
+          buttonClassName="qb-select-trigger"
           value={time}
-          onChange={(e) => onChange({ time: e.target.value })}
-        >
-          <option value="asap">{t("qb.time_asap")}</option>
-          {timeOptions.map((opt) => {
-            const [h, m] = opt.split(":").map(Number);
-            return (
-              <option key={opt} value={opt}>
-                {clock(new Date(2000, 0, 1, h, m))}
-              </option>
-            );
-          })}
-        </select>
+          onChange={(nextTime) => onChange({ time: nextTime })}
+          options={[
+            { value: "asap", label: t("qb.time_asap") },
+            ...timeOptions.map((opt) => {
+              const [h, m] = opt.split(":").map(Number);
+              return {
+                value: opt,
+                label: clock(new Date(2000, 0, 1, h, m)),
+              };
+            }),
+          ]}
+        />
       </label>
 
       <div className="qb-field">

@@ -17,6 +17,7 @@ import {
   type WaitlistSummary,
 } from "@/lib/api";
 import { FLOOR_ZONE_PRESETS, zoneLabel } from "@/lib/floor-zones";
+import { SelectMenu } from "@/components/ui/select-menu";
 
 const POLL_MS = 20000;
 
@@ -250,14 +251,17 @@ export function WaitlistPanel({
         </label>
         <label>
           {t("waitlist.label_zone")}
-          <select value={zone} onChange={(e) => setZone(e.target.value)}>
-            <option value="">{t("waitlist.zone_any")}</option>
-            {zoneOptions.map((id) => (
-              <option key={id} value={id}>
-                {zoneLabel(id, locale)}
-              </option>
-            ))}
-          </select>
+          <SelectMenu
+            value={zone}
+            onChange={setZone}
+            options={[
+              { value: "", label: t("waitlist.zone_any") },
+              ...zoneOptions.map((id) => ({
+                value: id,
+                label: zoneLabel(id, locale),
+              })),
+            ]}
+          />
         </label>
       </div>
       {error && <p className="waitlist-error">{error}</p>}

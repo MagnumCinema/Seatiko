@@ -14903,7 +14903,8 @@ html[data-theme="light"] .login-forgot-hint {
     white-space: nowrap;
   }
 
-  .catalog-sort-wrap select {
+  .catalog-sort-wrap select,
+  .catalog-sort-wrap .select-menu {
     flex: 1;
     min-width: 0;
     width: 100%;
@@ -20176,7 +20177,7 @@ html[data-theme="light"] .menu-dish-popup-x {
   min-width: min(100%, 11.5rem);
 }
 
-.venue-map-select-wrap::after {
+.venue-map-select-wrap:has(> select)::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -22236,4 +22237,270 @@ html[data-theme="light"] .booking-rules-form .booking-rules-status.error { color
 .owner-form-footer {
   z-index: 25;
   background: linear-gradient(var(--site-surface), var(--site-surface)), var(--site-bg);
+}
+
+/* =========================================================================
+   Custom SelectMenu Component (replaces native <select>)
+   ========================================================================= */
+.select-menu {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.select-menu.is-full {
+  display: flex;
+  width: 100%;
+}
+.select-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px 9px 14px;
+  border: 1px solid var(--input-border, var(--site-border));
+  border-radius: 10px;
+  background-color: var(--input-bg, color-mix(in srgb, var(--site-fg) 4%, var(--site-surface)));
+  color: var(--input-fg, var(--site-fg));
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.select-menu.is-compact .select-menu-trigger {
+  min-height: 34px;
+  padding: 5px 10px 5px 11px;
+  border-radius: 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  gap: 8px;
+}
+.select-menu-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--site-fg) 26%, var(--input-border, var(--site-border)));
+}
+.select-menu-trigger:focus-visible,
+.select-menu.is-open .select-menu-trigger {
+  outline: none;
+  border-color: var(--site-accent, #e9b96e);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--site-accent, #e9b96e) 22%, transparent);
+}
+.select-menu-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.select-menu-trigger.is-placeholder .select-menu-value {
+  color: var(--site-muted);
+}
+.select-menu-value-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.select-menu-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-menu-chevron {
+  flex: none;
+  color: var(--site-muted);
+  transition: transform 0.16s ease, color 0.15s ease;
+}
+.select-menu.is-open .select-menu-chevron {
+  transform: rotate(180deg);
+  color: var(--site-accent, #e9b96e);
+}
+.select-menu-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--select-dot-color, #64748b);
+}
+.select-menu-icon {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.select-menu-popover {
+  z-index: 10050;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--site-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--site-bg, #0d1612) 94%, var(--site-surface, #16221c));
+  box-shadow: 0 16px 40px color-mix(in srgb, #000 32%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.select-menu-popover:focus {
+  outline: none;
+}
+.select-menu-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--site-fg);
+  font-size: 0.82rem;
+  font-weight: 550;
+  line-height: 1.35;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.select-menu-option + .select-menu-option {
+  margin-top: 2px;
+}
+.select-menu-option-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.select-menu-option-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.select-menu-option.is-active:not(.is-disabled),
+.select-menu-option:hover:not(.is-disabled) {
+  background: color-mix(in srgb, var(--site-fg) 9%, transparent);
+}
+.select-menu-option.is-selected {
+  color: var(--site-accent, #e9b96e);
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 15%, transparent);
+  font-weight: 700;
+}
+.select-menu-option.is-selected.is-active {
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 22%, transparent);
+}
+.select-menu-option.is-disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.select-menu-check {
+  flex: none;
+  color: var(--site-accent, #e9b96e);
+}
+
+html[data-theme="light"] .select-menu-trigger {
+  background-color: #ffffff;
+  border-color: #d1ddd6;
+  color: #1a2420;
+}
+html[data-theme="light"] .select-menu-trigger:hover:not(:disabled) {
+  border-color: #9cb2a5;
+}
+html[data-theme="light"] .select-menu-trigger:focus-visible,
+html[data-theme="light"] .select-menu.is-open .select-menu-trigger {
+  border-color: #246046;
+  box-shadow: 0 0 0 3px rgba(36, 96, 70, 0.18);
+}
+html[data-theme="light"] .select-menu.is-open .select-menu-chevron {
+  color: #246046;
+}
+html[data-theme="light"] .select-menu-popover {
+  background: #ffffff;
+  border-color: #d1ddd6;
+  box-shadow: 0 14px 36px rgba(20, 42, 32, 0.16);
+}
+html[data-theme="light"] .select-menu-option {
+  color: #1a2420;
+}
+html[data-theme="light"] .select-menu-option.is-active:not(.is-disabled),
+html[data-theme="light"] .select-menu-option:hover:not(.is-disabled) {
+  background: #f1f6f3;
+}
+html[data-theme="light"] .select-menu-option.is-selected {
+  color: #175f43;
+  background: #e4efe8;
+}
+html[data-theme="light"] .select-menu-option.is-selected.is-active {
+  background: #d7e7dd;
+}
+html[data-theme="light"] .select-menu-check {
+  color: #175f43;
+}
+
+/* Specific select-menu context adapters */
+.select-menu.cabinet-staff-role-assign {
+  flex: 1 1 130px;
+  width: auto;
+  min-width: 120px;
+  padding: 0;
+}
+@media (max-width: 520px) {
+  .select-menu.cabinet-staff-role-assign {
+    flex: 1 1 100%;
+  }
+}
+.select-menu.cabinet-staff-role-select {
+  max-width: 240px;
+}
+@media (max-width: 768px) {
+  .select-menu.cabinet-staff-role-select {
+    max-width: none;
+  }
+}
+.select-menu.staff-venue-select {
+  max-width: 340px;
+}
+.select-menu-trigger.qb-select-trigger {
+  min-height: 44px;
+  border-radius: 12px;
+  border-color: var(--fa-border);
+  background-color: var(--fa-surface);
+  color: var(--fa-text);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+.select-menu-trigger.venue-map-select-trigger {
+  min-height: 40px;
+  border-radius: 12px;
+  border-color: var(--site-border);
+  background-color: color-mix(in srgb, var(--site-bg) 55%, var(--site-surface));
+  color: var(--site-fg);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+html[data-theme="light"] .select-menu-trigger.venue-map-select-trigger {
+  background-color: #ffffff;
+  color: #1a2420;
+  border-color: #d1ddd6;
+}
+.cabinet-dish-field-wrap .select-menu-trigger {
+  border-color: rgba(255, 255, 255, 0.14);
+  background-color: #1c2620;
+  color: var(--site-fg);
+}
+html[data-theme="light"] .cabinet-dish-field-wrap .select-menu-trigger {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #1a2420;
+}
+.venue-page .waitlist-form .select-menu-trigger {
+  min-height: 40px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-color: var(--fa-border);
+  color: var(--fa-text);
+}
+html[data-theme="light"] .venue-page .waitlist-form .select-menu-trigger {
+  background-color: #ffffff;
+  color: #17362c;
 }
