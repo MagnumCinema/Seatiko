@@ -336,10 +336,15 @@ class MapTabState extends State<MapTab> {
     if (id != null) widget.onCityChanged();
   }
 
-  void _openVenue(Venue venue) {
+  void _openVenue(Venue venue, {String? heroTag}) {
     HapticFeedback.selectionClick();
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => VenueDetailScreen(venueId: venue.id)),
+      MaterialPageRoute(
+        builder: (_) => VenueDetailScreen(
+          venueId: venue.id,
+          heroTag: heroTag ?? 'map-venue-cover-${venue.id}',
+        ),
+      ),
     );
   }
 
@@ -841,7 +846,11 @@ class MapTabState extends State<MapTab> {
                                     HapticFeedback.selectionClick();
                                     setState(() => _selectedVenueId = venue.id);
                                   },
-                                  onOpen: _openVenue,
+                                  onOpen: (venue) => _openVenue(
+                                    venue,
+                                    heroTag:
+                                        'map-overlay-venue-cover-${venue.id}',
+                                  ),
                                   onOpenPlace: (p) => _openPlaceSheet(p, locale),
                                 ),
                                 if (_bundle != null &&
@@ -1353,6 +1362,8 @@ class _RestaurantMapState extends State<_RestaurantMap> {
                                 size: 42,
                                 radius: 12,
                                 priceLevel: widget.selected!.priceLevel,
+                                heroTag:
+                                    'map-overlay-venue-cover-${widget.selected!.id}',
                               ),
                               const SizedBox(width: 11),
                               Expanded(
@@ -1448,7 +1459,7 @@ class _VenueCard extends StatelessWidget {
                 VenueThumb(
                   imageUrl: venue.imageUrl,
                   priceLevel: venue.priceLevel,
-                  heroTag: 'venue-cover-${venue.id}',
+                  heroTag: 'map-venue-cover-${venue.id}',
                 ),
                 const SizedBox(width: 13),
                 Expanded(

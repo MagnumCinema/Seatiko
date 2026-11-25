@@ -14,9 +14,10 @@ import 'package:mobile/widgets/waitlist_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class VenueDetailScreen extends StatefulWidget {
-  const VenueDetailScreen({super.key, required this.venueId});
+  const VenueDetailScreen({super.key, required this.venueId, this.heroTag});
 
   final String venueId;
+  final String? heroTag;
 
   @override
   State<VenueDetailScreen> createState() => _VenueDetailScreenState();
@@ -247,7 +248,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               itemBuilder: (_, i) => VenueHeroImage(
                                 imageUrl: photos[i],
                                 height: 220,
-                                heroTag: i == 0 ? 'venue-cover-${v.id}' : null,
+                                heroTag: i == 0
+                                    ? (widget.heroTag ?? 'venue-cover-${v.id}')
+                                    : null,
                               ),
                             ),
                             Positioned(
@@ -277,7 +280,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       : VenueHeroImage(
                           imageUrl: v.imageUrl,
                           height: 220,
-                          heroTag: 'venue-cover-${v.id}',
+                          heroTag: widget.heroTag ?? 'venue-cover-${v.id}',
                         ),
                 ),
               ),

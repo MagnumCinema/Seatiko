@@ -13,10 +13,12 @@ import 'package:mobile/screens/notifications_sheet.dart';
 import 'package:mobile/screens/onboarding_screen.dart';
 import 'package:mobile/screens/order_choice_screen.dart';
 import 'package:mobile/screens/payment_screen.dart';
+import 'package:mobile/screens/profile_screen.dart';
 import 'package:mobile/screens/session_screen.dart';
 import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/screens/waiter_screens.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/widgets/venue_thumb.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 http.Response _jsonRes(Object data, [int status = 200]) => http.Response.bytes(
@@ -617,4 +619,135 @@ void main() {
     await tester.pumpAndSettle();
     expect(markReadCalled, isTrue);
   });
+
+  testWidgets(
+    'IndexedStack tabs with same venue have unique Hero tags and navigate to VenueDetailScreen cleanly',
+    (tester) async {
+      await ApiClient.instance.setToken('tok-hero');
+      ApiClient.testHttpClient = MockClient((req) async {
+        switch (req.url.path) {
+          case '/api/v1/collections':
+            return _jsonRes({
+              'collections': [
+                {
+                  'id': 'col-1',
+                  'slug': 'date',
+                  'title': {'en': 'Date Night'},
+                  'venue_ids': ['v1'],
+                },
+              ],
+            });
+          case '/api/v1/discover/ai':
+            return _jsonRes({
+              'venues': [_venueMap('v1')],
+              'explanation': {'en': 'Top choice'},
+              'exact': true,
+            });
+          case '/api/v1/me':
+            return _jsonRes({
+              'user': {
+                'id': 'u1',
+                'email': 'u@seatiko.md',
+                'first_name': 'Ion',
+                'last_name': 'Popa',
+                'display_name': 'Ion',
+                'locale': 'en',
+                'favorite_venues': ['v1'],
+              },
+            });
+          case '/api/v1/orders':
+            return _jsonRes({'orders': []});
+          case '/api/v1/reservations':
+            return _jsonRes({'reservations': []});
+          case '/api/v1/venues/v1':
+            return _jsonRes({'venue': _venueMap('v1')});
+          case '/api/v1/venues/v1/places':
+            return _jsonRes({'source': 'local', 'rating': 4.8, 'review_count': 1, 'photo_urls': [], 'reviews': []});
+          case '/api/v1/venues/v1/menu':
+            return _jsonRes({'menu': []});
+          case '/api/v1/venues/v1/waitlist/summary':
+            return _jsonRes({'summary': {'waiting': 0, 'quoted_wait_min': 0, 'free_tables': 3}});
+          case '/api/v1/waitlist':
+            return _jsonRes({'waitlist': []});
+          default:
+            return _jsonRes({});
+        }
+      });
+
+      var stackIndex = 1;
+      late StateSetter setStackState;
+      await _pumpScreen(
+        tester,
+        Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setLocalState) {
+              setStackState = setLocalState;
+              return IndexedStack(
+                index: stackIndex,
+                children: const [
+                  Column(
+                    children: [
+                      VenueThumb(
+                        imageUrl: '',
+                        heroTag: 'map-overlay-venue-cover-v1',
+                      ),
+                      VenueThumb(
+                        imageUrl: '',
+                        heroTag: 'map-venue-cover-v1',
+                      ),
+                    ],
+                  ),
+                  DiscoverTab(cityId: 'city-balti'),
+                  ProfileTab(),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+
+      // Scroll ProfileTab Favorites into ListView cache and verify Discover + Map + Profile Hero tags all coexist cleanly.
+      setStackState(() => stackIndex = 2);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Oscar'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(ProfileTab),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      setStackState(() => stackIndex = 1);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('discover.chip_budget'.tr()));
+      await tester.pumpAndSettle();
+
+      // Verify all mounted Hero tags for v1 (including offstage tabs) are strictly unique across IndexedStack.
+      final heroes = tester
+          .widgetList<Hero>(find.byType(Hero, skipOffstage: false))
+          .toList();
+      final tags = heroes.map((h) => h.tag).toList();
+      expect(tags.toSet().length, tags.length);
+      expect(
+        tags,
+        containsAll([
+          'map-overlay-venue-cover-v1',
+          'map-venue-cover-v1',
+          'discover-venue-cover-v1',
+          'fav-venue-cover-v1',
+        ]),
+      );
+
+      // Navigate into VenueDetailScreen from DiscoverTab without Hero exception.
+      await tester.tap(find.text('Oscar').first);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      final detailHero = tester.widget<Hero>(find.byType(Hero).first);
+      expect(detailHero.tag, 'discover-venue-cover-v1');
+    },
+  );
 }

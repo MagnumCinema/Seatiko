@@ -8,6 +8,7 @@ import 'package:mobile/screens/venue_detail_screen.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/widgets/auth_sheet.dart';
 import 'package:mobile/widgets/shimmer.dart';
+import 'package:mobile/widgets/venue_thumb.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key, this.onOpenOrders});
@@ -706,6 +707,13 @@ class ProfileTabState extends State<ProfileTab> {
               (v) => Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
+                  leading: VenueThumb(
+                    imageUrl: v.imageUrl,
+                    size: 48,
+                    radius: 12,
+                    priceLevel: v.priceLevel,
+                    heroTag: 'fav-venue-cover-${v.id}',
+                  ),
                   title: Text(v.name.pick(locale)),
                   subtitle: Text(v.address.pick(locale)),
                   trailing: IconButton(
@@ -730,7 +738,10 @@ class ProfileTabState extends State<ProfileTab> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => VenueDetailScreen(venueId: v.id),
+                        builder: (_) => VenueDetailScreen(
+                          venueId: v.id,
+                          heroTag: 'fav-venue-cover-${v.id}',
+                        ),
                       ),
                     );
                   },

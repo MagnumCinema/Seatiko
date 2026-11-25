@@ -594,7 +594,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
                         size: 48,
                         radius: 12,
                         priceLevel: v.priceLevel,
-                        heroTag: 'venue-cover-${v.id}',
+                        heroTag: 'discover-venue-cover-${v.id}',
                       ),
                       title: Text(v.name.pick(locale)),
                       subtitle: Text(
@@ -605,7 +605,10 @@ class _DiscoverTabState extends State<DiscoverTab> {
                         HapticFeedback.selectionClick();
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => VenueDetailScreen(venueId: v.id),
+                            builder: (_) => VenueDetailScreen(
+                              venueId: v.id,
+                              heroTag: 'discover-venue-cover-${v.id}',
+                            ),
                           ),
                         );
                       },
