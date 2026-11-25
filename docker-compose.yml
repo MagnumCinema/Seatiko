@@ -34,6 +34,8 @@ services:
       args:
         # Browser calls same origin via nginx :80 → /api/...
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        # Demo sign-in buttons: only for a demo database (the site uses real data).
+        NEXT_PUBLIC_DEMO_LOGIN: ${NEXT_PUBLIC_DEMO_LOGIN:-false}
     expose:
       - "3001"
     environment:

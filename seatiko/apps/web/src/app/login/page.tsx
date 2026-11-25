@@ -1,5 +1,6 @@
 "use client";
 
+import { DEMO_LOGIN } from "@/lib/demo";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
@@ -535,15 +536,17 @@ function LoginForm() {
             </button>
           </div>
 
-          <div className="login-quick-switch-section">
-            <span className="login-quick-switch-title">{copy.quickSwitchTitle}</span>
-            <DemoPresetsRow
-              copy={copy}
-              busy={busy}
-              busyPreset={busyPreset}
-              onSelect={(k) => void handleQuickDemo(k)}
-            />
-          </div>
+          {DEMO_LOGIN && (
+            <div className="login-quick-switch-section">
+              <span className="login-quick-switch-title">{copy.quickSwitchTitle}</span>
+              <DemoPresetsRow
+                copy={copy}
+                busy={busy}
+                busyPreset={busyPreset}
+                onSelect={(k) => void handleQuickDemo(k)}
+              />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -764,8 +767,8 @@ function LoginForm() {
           {!busy && <ArrowRightIcon />}
         </button>
 
-        {/* 1-Click Fast Demo Credentials (4 Roles) */}
-        {!isRegisteringGuest && (
+        {/* 1-Click Fast Demo Credentials (4 Roles), development only */}
+        {DEMO_LOGIN && !isRegisteringGuest && (
           <DemoPresetsRow
             copy={copy}
             busy={busy}
@@ -775,8 +778,8 @@ function LoginForm() {
         )}
       </form>
 
-      {/* Demo Credentials Info Strip (only in Login mode) */}
-      {!isRegisteringGuest && (
+      {/* Demo Credentials Info Strip (only in Login mode, development only) */}
+      {DEMO_LOGIN && !isRegisteringGuest && (
         <div className="login-demo-details">
           <span>
             {copy.demoGuestChip}: <code>guest@seatiko.local</code> (guest123)
