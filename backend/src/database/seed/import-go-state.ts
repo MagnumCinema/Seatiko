@@ -181,7 +181,10 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
       id: n.id, userId: n.user_id, kind: n.kind, venueId: n.venue_id ?? '', reservationId: n.reservation_id ?? '', orderId: n.order_id ?? '',
       at: t(n.at), createdAt: tReq(n.created_at), readAt: t(n.read_at),
     })));
-    await ins('app_meta', schema.appMeta, [{ key: 'demo_menu_version', value: String(state.demo_menu_version ?? 0) }]);
+    await ins('app_meta', schema.appMeta, [
+      { key: 'demo_menu_version', value: String(state.demo_menu_version ?? 0) },
+      { key: 'demo_seed_version', value: String(state.demo_seed_version ?? 0) },
+    ]);
   });
   return report;
 }
