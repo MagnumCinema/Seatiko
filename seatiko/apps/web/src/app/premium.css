@@ -21914,3 +21914,180 @@ html[data-theme="light"] .cabinet-role-switch-track::after { box-shadow: 0 1px 3
   .cabinet-role-actions { gap: 10px; }
 }
 .owner-profile .field > .owner-field-hint { margin: 6px 0 0; color: var(--site-muted); font-size: .7rem; line-height: 1.4; }
+
+/* ── /cabinet tabs polish: overview, profile, bookings, history, floor, menu, rules ── */
+
+/* Feedback stays visible while scrolling long forms (save is at the bottom). */
+.owner-content > .owner-notice {
+  position: sticky;
+  top: 84px;
+  z-index: 30;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+}
+.owner-content > .owner-notice.success { background: color-mix(in srgb, var(--site-surface) 82%, #3b825c 18%); }
+.owner-content > .owner-notice.error { background: color-mix(in srgb, var(--site-surface) 82%, #bd5b49 18%); }
+html[data-theme="light"] .owner-content > .owner-notice { box-shadow: 0 10px 24px rgba(26, 36, 32, .1); }
+.cabinet-ops > .owner-notice { margin-bottom: 0; }
+
+/* Destructive buttons read as destructive inside the cabinet too. */
+.panel-page:has(.owner-dashboard) .panel-btn.ghost.danger,
+.panel-page:has(.owner-dashboard) .panel-btn.danger {
+  color: #e07a66 !important;
+  border-color: rgba(224, 122, 102, .42) !important;
+  background: rgba(189, 91, 73, .1) !important;
+  box-shadow: none !important;
+}
+.panel-page:has(.owner-dashboard) .panel-btn.ghost.danger:hover:not(:disabled),
+.panel-page:has(.owner-dashboard) .panel-btn.danger:hover:not(:disabled) {
+  color: #f08d79 !important;
+  border-color: rgba(224, 122, 102, .7) !important;
+  background: rgba(189, 91, 73, .2) !important;
+}
+html[data-theme="light"] .panel-page:has(.owner-dashboard) .panel-btn.ghost.danger,
+html[data-theme="light"] .panel-page:has(.owner-dashboard) .panel-btn.danger {
+  color: #b3412c !important;
+  border-color: rgba(179, 65, 44, .32) !important;
+  background: #fff6f3 !important;
+}
+/* Confirm dialogs are portaled outside the dashboard: same primary/danger look there. */
+.cabinet-delete-card .panel-btn { min-height: 42px; border-radius: 10px; font-weight: 700; }
+.cabinet-delete-card .panel-btn:not(.ghost):not(.danger) {
+  color: #0d241c;
+  border: 1px solid rgba(255, 230, 160, .45);
+  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
+}
+html[data-theme="light"] .cabinet-delete-card .panel-btn:not(.ghost):not(.danger) {
+  color: #fff;
+  border-color: rgba(26, 36, 32, .2);
+  background: linear-gradient(135deg, #246046 0%, #1a4835 100%);
+}
+.cabinet-delete-card.warning .cabinet-delete-icon { color: #d49a46; background: rgba(233, 185, 110, .16); }
+html[data-theme="light"] .cabinet-delete-card.warning .cabinet-delete-icon { color: #246046; background: rgba(36, 96, 70, .1); }
+
+/* Load failure screen */
+.owner-load-failed strong { color: var(--site-fg); font-family: var(--font-display), Georgia, serif; font-size: 1.5rem; font-weight: 560; }
+.owner-load-failed p { margin: 0; max-width: 360px; text-align: center; }
+
+/* Profile: field errors and hints sit under the input, not inside it. */
+.owner-profile .field > small.owner-field-error {
+  position: static;
+  display: block;
+  margin: 6px 0 0;
+  color: #e07a66;
+  font-size: .7rem;
+  line-height: 1.4;
+}
+html[data-theme="light"] .owner-profile .field > small.owner-field-error { color: #b3412c; }
+.owner-profile .field input[aria-invalid="true"] {
+  border-color: rgba(224, 122, 102, .75) !important;
+  box-shadow: 0 0 0 3px rgba(189, 91, 73, .16) !important;
+}
+.owner-form-footer-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.owner-photo-thumb button:disabled { opacity: .5; cursor: wait; }
+
+.owner-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 28px;
+  padding: 18px 20px;
+  border: 1px dashed rgba(189, 91, 73, .38);
+  border-radius: 14px;
+  background: rgba(189, 91, 73, .05);
+}
+.owner-danger-zone strong { color: var(--site-fg); font-size: .84rem; }
+.owner-danger-zone p { margin: 4px 0 0; max-width: 560px; color: var(--site-muted); font-size: .74rem; line-height: 1.5; }
+.owner-danger-zone .panel-btn { flex-shrink: 0; white-space: nowrap; }
+
+/* Bookings: counters on the filter tabs, clickable guest email. */
+.owner-filters button { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.owner-filters button b {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--site-fg) 10%, transparent);
+  color: inherit;
+  font-size: .64rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.owner-booking-guest a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--site-muted);
+  font-size: .72rem;
+  text-decoration: none;
+}
+.owner-booking-guest a:hover { color: var(--site-accent, #e9b96e); text-decoration: underline; }
+html[data-theme="light"] .owner-booking-guest a:hover { color: #246046; }
+
+/* Empty / loading states: calmer than a full-height hero. */
+.owner-section-empty {
+  min-height: 300px;
+  border: 1px dashed var(--site-border);
+  border-radius: 16px;
+}
+.owner-section-empty > span:first-child:not(.owner-inline-spinner) {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--site-accent, #e9b96e);
+  background: color-mix(in srgb, var(--site-fg) 7%, transparent);
+}
+html[data-theme="light"] .owner-section-empty > span:first-child:not(.owner-inline-spinner) { color: #246046; }
+.owner-section-empty h3 { font-size: 1.45rem; margin: 14px 0 6px; }
+.owner-section-empty p { margin-bottom: 0; font-size: .8rem; }
+.owner-activity .owner-section-empty,
+.owner-reservations .owner-section-empty { margin-top: 4px; }
+.owner-inline-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--site-border);
+  border-top-color: var(--site-accent, #e9b96e);
+  border-radius: 50%;
+  animation: owner-spin .7s linear infinite;
+}
+.owner-activity { display: grid; gap: 16px; }
+
+/* Venue switcher: long names don't wrap into two lines. */
+.owner-venue-switcher [role="group"] button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  .owner-booking-row { grid-template-columns: 52px 75px minmax(150px, 1fr) 70px; }
+  .owner-booking-party { display: grid; }
+  .owner-reservation-status { grid-column: 2 / -1; justify-self: start; }
+}
+@media (max-width: 700px) {
+  .owner-content > .owner-notice { top: 72px; }
+  .owner-booking-row,
+  .owner-booking-list.compact .owner-booking-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "date guest party"
+      "date time status";
+    row-gap: 8px;
+    column-gap: 12px;
+    padding: 12px;
+  }
+  .owner-booking-date { grid-area: date; align-self: start; }
+  .owner-booking-guest { grid-area: guest; grid-template-columns: minmax(0, 1fr); }
+  .owner-booking-guest > span { display: none; }
+  .owner-booking-time { grid-area: time; display: flex; align-items: baseline; gap: 8px; }
+  .owner-booking-party { grid-area: party; display: flex; align-items: baseline; gap: 4px; justify-self: end; }
+  .owner-reservation-status { grid-area: status; grid-column: auto; justify-self: end; align-self: center; }
+  .owner-recent-card .owner-card-head > button { white-space: nowrap; }
+  .owner-danger-zone { flex-direction: column; align-items: stretch; }
+  .owner-filters { width: 100%; }
+  .owner-filters button { flex: 1; justify-content: center; padding-inline: 8px; }
+}
