@@ -155,7 +155,8 @@ function getVenueHours(place: MapPlace, locale: LocaleCode): string {
   if (place.venue_id) {
     return getVenueHoursById(place.venue_id, locale);
   }
-  return getVenueHoursById("", locale);
+  // Open-data places: only what OpenStreetMap knows, never a made-up default.
+  return place.opening_hours ?? "";
 }
 
 function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
@@ -367,7 +368,8 @@ function VenueMapArea({
   const [retry, setRetry] = useState(0);
   const googleKey = config?.google_maps_key;
   const useGoogle = Boolean(googleKey) && !googleFailed;
-  const includeGoogle = useGoogle && googleReady && !bookableOnly;
+  // Without a Google key the API still adds open-data places (OpenStreetMap, Overture).
+  const includeGoogle = (useGoogle ? googleReady : true) && !bookableOnly;
   const validViewport = useGoogle && viewport &&
     viewport.south < viewport.north && viewport.west < viewport.east ? viewport : undefined;
   const filters = preferences ? encodePreferences(preferences) : "";
@@ -402,14 +404,13 @@ function VenueMapArea({
   }, [bounds]);
 
   const ranked = useMemo(() => {
-    const allPlaces = data?.places ?? [];
-    const visible = useGoogle ? allPlaces : allPlaces.filter((place) => place.in_database);
+    const visible = data?.places ?? [];
     if (!preferences) return visible.map((place) => ({ place, score: 0 }));
     return filterAndRankPlaces(visible, preferences, {
       userLat: userGeo?.lat,
       userLng: userGeo?.lng,
     });
-  }, [data, preferences, userGeo, useGoogle]);
+  }, [data, preferences, userGeo]);
 
   const places = useMemo(() => ranked.map((r) => r.place), [ranked]);
 
@@ -472,25 +473,29 @@ function VenueMapArea({
     }
     root.appendChild(head);
 
-    // Schedule & open status row
+    // Schedule & open status row (open-data places: hours only, when known)
     const schedule = document.createElement("div");
     schedule.className = "venue-map-popup-schedule";
 
-    const dot = document.createElement("span");
-    dot.className = `status-dot ${place.open_now ? "open" : "closed"}`;
-    schedule.appendChild(dot);
+    if (venueId) {
+      const dot = document.createElement("span");
+      dot.className = `status-dot ${place.open_now ? "open" : "closed"}`;
+      schedule.appendChild(dot);
 
-    const status = document.createElement("span");
-    status.className = "popup-status-text";
-    status.textContent = place.open_now ? labels.open : labels.closed;
-    schedule.appendChild(status);
+      const status = document.createElement("span");
+      status.className = "popup-status-text";
+      status.textContent = place.open_now ? labels.open : labels.closed;
+      schedule.appendChild(status);
+    }
 
-    const hoursSpan = document.createElement("span");
-    hoursSpan.className = "popup-hours-text";
-    hoursSpan.textContent = `· ${hours}`;
-    schedule.appendChild(hoursSpan);
+    if (hours) {
+      const hoursSpan = document.createElement("span");
+      hoursSpan.className = "popup-hours-text";
+      hoursSpan.textContent = venueId ? `· ${hours}` : hours;
+      schedule.appendChild(hoursSpan);
+    }
 
-    root.appendChild(schedule);
+    if (schedule.childElementCount > 0) root.appendChild(schedule);
 
     if (venueId) {
       if (place.bookable && typeof place.free_tables === "number") {
@@ -535,6 +540,14 @@ function VenueMapArea({
       address.className = "venue-map-popup-address";
       address.textContent = pickLocale(place.address, localeRef.current);
       root.appendChild(address);
+
+      if (place.phone) {
+        const phone = document.createElement("a");
+        phone.className = "venue-map-popup-address";
+        phone.href = `tel:${place.phone.replace(/[^+\d]/g, "")}`;
+        phone.textContent = place.phone;
+        root.appendChild(phone);
+      }
 
       const comingSoon = document.createElement("div");
       comingSoon.className = "venue-map-popup-comingsoon";
@@ -582,7 +595,8 @@ function VenueMapArea({
         minZoom: 5,
         maxZoom: 19,
         cooperativeGestures: true,
-        attributionControl: false,
+        // ODbL: OpenStreetMap data (tiles and places) must be credited on the map.
+        attributionControl: { compact: true, customAttribution: "Places: © OpenStreetMap contributors, Overture Maps Foundation" },
         locale: getMapLibreLocale(localeRef.current),
       });
     } catch {
@@ -1038,6 +1052,13 @@ function VenueMapArea({
                   </span>
                 </div>
                 <strong>{selected.free_tables ?? 0} {formatFreeTablesLabel(locale, selected.free_tables ?? 0)}</strong>
+              </div>
+            ) : null}
+
+            {!selected.in_database && (selected.opening_hours || selected.phone) ? (
+              <div className="venue-map-meta">
+                {selected.opening_hours && <span>{selected.opening_hours}</span>}
+                {selected.phone && <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>}
               </div>
             ) : null}
 

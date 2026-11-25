@@ -3,6 +3,7 @@ import { badRequest, notFound } from '../../core/errors/domain-error.js';
 import { MOLDOVA_BOUNDS } from '../../database/reference/cities.js';
 import { GoogleMapsConfig } from '../../integrations/google/google-maps.config.js';
 import { CatalogService } from '../catalog/catalog.service.js';
+import { countFilters, parsePrefs, prefsEmpty } from '../discover/domain/prefs.js';
 import type { VenueRecord } from '../catalog/catalog.repository.js';
 import type { OpenPlaceRecord } from '../open-places/open-places.repository.js';
 import { OpenPlacesService } from '../open-places/open-places.service.js';
@@ -15,6 +16,9 @@ export type MapPlacesQuery = {
   include_google?: string;
   bookable_only?: string;
   q?: string;
+  lat?: string;
+  lng?: string;
+  [filter: string]: string | undefined;
 };
 
 /** Attribution the map must show for the open data it draws. */
@@ -92,7 +96,7 @@ export class MapService {
     const bookableOnly = parseBool(query.bookable_only, false);
     if (bookableOnly === undefined) throw badRequest('invalid_bookable_only');
     const q = (query.q ?? '').trim();
-    if ([...q].length > 100) throw badRequest('invalid_map_query');
+    if (Array.from(q).length > 100) throw badRequest('invalid_map_query');
     const terms = searchTerms(q);
 
     const [venues, bookable] = await Promise.all([this.catalog.venueRecords(venueCity), this.catalog.bookableVenueIds()]);
@@ -103,12 +107,23 @@ export class MapService {
 
     const others = includeOthers && !bookableOnly ? (await this.openPlaces.listInBounds(bounds)).filter((p) => !terms.length || matchesSearch(p, terms)).map(openPlace) : [];
 
+    const places = [...partners, ...others];
+    // "Найдено: N" for /discover: counts with the same hard filters as the web.
+    const prefs = parsePrefs(query);
+    let filters: ReturnType<typeof countFilters> | undefined;
+    if (!prefsEmpty(prefs)) {
+      const lat = Number(query.lat);
+      const lng = Number(query.lng);
+      const origin = query.lat && query.lng && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined;
+      filters = countFilters(places, prefs, origin);
+    }
+
     return {
       city_id: cityId,
       country: 'MD',
       center: centerOf(bounds),
       bounds,
-      places: [...partners, ...others],
+      places,
       source: {
         // Google Places is not queried live (cost and storage terms); places come from open data.
         google_enabled: false,
@@ -119,6 +134,7 @@ export class MapService {
         open_data_updated_at: (await this.openPlaces.lastUpdated()) ?? null,
         attribution: OPEN_DATA_ATTRIBUTION,
       },
+      ...(filters ? { filters } : {}),
     };
   }
 

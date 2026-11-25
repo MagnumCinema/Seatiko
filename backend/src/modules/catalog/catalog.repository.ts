@@ -13,7 +13,8 @@ export type ApplicationRecord = typeof applications.$inferSelect;
 /** Active booking of a table: the window it blocks, from reservation_tables. */
 export type TableBlock = { reservationId: string; tableId: string; from: string; until: string };
 
-const freeTables = sql<number>`(select count(*)::int from ${tables} where ${tables.venueId} = ${venues.id} and ${tables.status} = 'FREE')`;
+// Qualified by hand: Drizzle drops table names inside select fields, and "id" would be ambiguous.
+const freeTables = sql<number>`(select count(*)::int from "tables" ft where ft.venue_id = "venues"."id" and ft.status = 'FREE')`.as('free_tables');
 
 /** Read queries of the public catalog. No rules here. */
 @Injectable()

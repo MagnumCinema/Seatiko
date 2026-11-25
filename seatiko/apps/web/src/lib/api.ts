@@ -104,6 +104,11 @@ export type MapPlace = {
   price_level?: number;
   average_check?: number;
   website?: string;
+  /** Open-data places (not partners yet): phone, OSM opening_hours, kind and datasets. */
+  phone?: string;
+  opening_hours?: string;
+  category?: string;
+  sources?: string[];
 };
 
 export type MapPlacesResponse = {
@@ -117,6 +122,10 @@ export type MapPlacesResponse = {
     google_status: "ready" | "disabled" | "unavailable" | "not_requested";
     google_count: number;
     database_count: number;
+    /** Places from OpenStreetMap / Overture (Nest API). */
+    open_data_count?: number;
+    open_data_updated_at?: string | null;
+    attribution?: string;
   };
   /** Set when /discover filters are sent: places in the area, matches, and which filter to loosen at 0. */
   filters?: {
