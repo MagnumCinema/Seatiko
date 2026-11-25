@@ -37,7 +37,6 @@ type PlacePointProperties = {
   placeId: string;
   venueId: string;
   inDatabase: boolean;
-  index: string;
   name: string;
   selected: boolean;
 };
@@ -47,7 +46,6 @@ const BALTI_BOUNDS: MapBounds = { south: 47.70, west: 27.84, north: 47.82, east:
 const MOLDOVA_BOUNDS: MapBounds = { south: 45.45, west: 26.60, north: 48.55, east: 30.20 };
 const OPEN_FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const SOURCE_ID = "seatiko-venues";
-const CLUSTER_LAYER_ID = "seatiko-clusters";
 const VENUE_LAYER_ID = "seatiko-venue-pins";
 
 const mapCopy = {
@@ -178,7 +176,7 @@ function placeCollection(
 ): GeoJSON.FeatureCollection<GeoJSON.Point, PlacePointProperties> {
   return {
     type: "FeatureCollection",
-    features: places.map((place, index) => ({
+    features: places.map((place) => ({
       type: "Feature",
       id: place.id,
       geometry: {
@@ -189,7 +187,6 @@ function placeCollection(
         placeId: place.id,
         venueId: place.venue_id ?? "",
         inDatabase: place.in_database,
-        index: String(index + 1),
         name: pickLocale(place.name, locale),
         selected: place.id === selectedId,
       },
@@ -595,8 +592,7 @@ function VenueMapArea({
         minZoom: 5,
         maxZoom: 19,
         cooperativeGestures: true,
-        // ODbL: OpenStreetMap data (tiles and places) must be credited on the map.
-        attributionControl: { compact: true, customAttribution: "Places: © OpenStreetMap contributors, Overture Maps Foundation" },
+        attributionControl: false,
         locale: getMapLibreLocale(localeRef.current),
       });
     } catch {
@@ -605,26 +601,27 @@ function VenueMapArea({
     }
     mapRef.current = map;
 
-    map.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      "top-right",
-    );
     if (!compact) {
       map.addControl(new maplibregl.FullscreenControl(), "top-right");
     }
+    // Bottom right, as on Google Maps: credits strip, zoom +/−, then "my location" above.
+    map.addControl(
+      // ODbL: OpenStreetMap data (tiles and places) must be credited; folded into an (i) button.
+      new maplibregl.AttributionControl({ compact: true, customAttribution: "Places: © OpenStreetMap contributors, Overture Maps Foundation" }),
+      "bottom-right",
+    );
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(
       new maplibregl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
       }),
-      "top-right",
-    );
-    map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
       "bottom-right",
     );
 
     map.once("load", () => {
+      // Start with the credits folded; the (i) button opens them.
+      map.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((el) => el.classList.remove("maplibregl-compact-show"));
       applyMapLibreLocalization(map, localeRef.current);
       setMapState("ready");
     });
@@ -655,75 +652,19 @@ function VenueMapArea({
       map.addSource(SOURCE_ID, {
         type: "geojson",
         data,
-        cluster: true,
-        clusterMaxZoom: 13,
-        clusterRadius: 46,
       });
 
-      map.addLayer({
-        id: "seatiko-cluster-halo",
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": "rgba(255, 253, 248, 0.92)",
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            23,
-            10,
-            28,
-            30,
-            33,
-          ],
-          "circle-blur": 0.08,
-        },
-      });
-      map.addLayer({
-        id: CLUSTER_LAYER_ID,
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": "#173f31",
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            18,
-            10,
-            23,
-            30,
-            28,
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fffdf8",
-          "circle-opacity": 0.96,
-        },
-      });
-      map.addLayer({
-        id: "seatiko-cluster-count",
-        type: "symbol",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-size": 11,
-          "text-font": ["Noto Sans Regular"],
-        },
-        paint: { "text-color": "#ffffff" },
-      });
       map.addLayer({
         id: "seatiko-venue-halo",
         type: "circle",
         source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
+                paint: {
           "circle-color": "rgba(255, 253, 248, 0.94)",
           "circle-radius": [
             "case",
             ["boolean", ["get", "selected"], false],
-            21,
-            18,
+            13,
+            9,
           ],
           "circle-blur": 0.12,
           "circle-stroke-width": 1,
@@ -734,8 +675,7 @@ function VenueMapArea({
         id: VENUE_LAYER_ID,
         type: "circle",
         source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
+                paint: {
           "circle-color": [
             "case",
             ["boolean", ["get", "selected"], false],
@@ -747,37 +687,24 @@ function VenueMapArea({
           "circle-radius": [
             "case",
             ["boolean", ["get", "selected"], false],
-            16,
-            13.5,
+            10,
+            6.5,
           ],
-          "circle-stroke-width": 2.5,
+          "circle-stroke-width": 2,
           "circle-stroke-color": "#fffdf8",
           "circle-opacity": 0.98,
         },
       });
       map.addLayer({
-        id: "seatiko-venue-index",
-        type: "symbol",
-        source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        layout: {
-          "text-field": ["get", "index"],
-          "text-size": 10,
-          "text-font": ["Noto Sans Regular"],
-        },
-        paint: { "text-color": "#ffffff" },
-      });
-      map.addLayer({
         id: "seatiko-venue-name",
         type: "symbol",
         source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        minzoom: 13.4,
+                minzoom: 13.4,
         layout: {
           "text-field": ["get", "name"],
           "text-size": 11,
           "text-font": ["Noto Sans Regular"],
-          "text-offset": [0, 2.1],
+          "text-offset": [0, 1.2],
           "text-anchor": "top",
           "text-optional": true,
           "text-padding": 5,
@@ -800,19 +727,7 @@ function VenueMapArea({
         map.easeTo({ center: [place.lng, place.lat], zoom: 15.2, duration: 520 });
         showVenuePopup(place, map);
       });
-      map.on("click", CLUSTER_LAYER_ID, async (event) => {
-        const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
-        const clusterId = Number(feature?.properties?.cluster_id);
-        if (!Number.isFinite(clusterId) || !feature) return;
-        const source = map.getSource(SOURCE_ID) as GeoJSONSource;
-        const zoom = await source.getClusterExpansionZoom(clusterId);
-        const coordinates = (feature.geometry as GeoJSON.Point).coordinates as [
-          number,
-          number,
-        ];
-        map.easeTo({ center: coordinates, zoom, duration: 500 });
-      });
-      [VENUE_LAYER_ID, CLUSTER_LAYER_ID].forEach((layerId) => {
+      [VENUE_LAYER_ID].forEach((layerId) => {
         map.on("mouseenter", layerId, () => {
           map.getCanvas().style.cursor = "pointer";
         });
@@ -882,7 +797,7 @@ function VenueMapArea({
           .join(" ")}
         onClick={() => selectPlace(place)}
       >
-        <b className={`venue-num ${isSelected ? "active" : ""}`}>{index + 1}</b>
+        <b aria-hidden="true" className={`venue-num venue-dot ${place.in_database ? "is-partner" : ""} ${isSelected ? "active" : ""}`} />
         <span className="venue-name">{pickLocale(place.name, locale)}</span>
         <small className="venue-status-pill">
           {place.in_database && place.bookable && place.venue_id ? (
@@ -949,7 +864,7 @@ function VenueMapArea({
             </div>
             <div className="venue-map-legend" aria-label={copy.legendAria}>
               <span><i className="legend-dot legend-dot-ours" /> {copy.legendOurs}</span>
-              {useGoogle && !bookableOnly && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
+              {!bookableOnly && places.some((place) => !place.in_database) && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
             </div>
           </>
         )}

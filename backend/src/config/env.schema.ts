@@ -47,6 +47,11 @@ export const envSchema = z.object({
   /** Overture places below this confidence are often closed or wrong. */
   OVERTURE_MIN_CONFIDENCE: z.coerce.number().min(0).max(1).default(0.6),
 
+  /**
+   * Hand the Google Maps browser key to the site. Off by default: Google needs a
+   * billing account, the free map (OpenFreeMap) is used instead.
+   */
+  GOOGLE_MAPS_ENABLED: z.stringbool().default(false),
   GOOGLE_CONFIG_FILE: z.string().optional(),
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_MAPS_BROWSER_KEY: z.string().optional(),

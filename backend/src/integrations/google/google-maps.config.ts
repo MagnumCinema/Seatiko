@@ -17,7 +17,7 @@ function parseEnvFile(text: string): Record<string, string> {
 }
 
 /**
- * Browser key and map id for the optional Google map on the site. GOOGLE_CONFIG_FILE
+ * Browser key and map id for the optional Google map on the site (GOOGLE_MAPS_ENABLED). GOOGLE_CONFIG_FILE
  * (mounted read-only) overrides the environment and is re-read on each call, so keys
  * change without a restart, as in the Go API.
  */
@@ -26,6 +26,7 @@ export class GoogleMapsConfig {
   constructor(private readonly config: ConfigService<Env, true>) {}
 
   current(): GoogleMapsKeys {
+    if (!this.config.get('GOOGLE_MAPS_ENABLED', { infer: true })) return { browserKey: '', mapId: '' };
     const keys = {
       browserKey: this.config.get('GOOGLE_MAPS_BROWSER_KEY', { infer: true }) ?? '',
       mapId: this.config.get('GOOGLE_MAPS_MAP_ID', { infer: true }) ?? '',

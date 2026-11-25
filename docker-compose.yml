@@ -133,6 +133,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
       DATABASE_URL: postgres://seatiko:${SEATIKO_DB_PASSWORD:-seatiko-dev-password}@seatiko-db:5432/seatiko
       GOOGLE_CONFIG_FILE: /run/seatiko/local/google.env
+      # Google map on the site needs a billing account; off = free OpenFreeMap map.
+      GOOGLE_MAPS_ENABLED: ${GOOGLE_MAPS_ENABLED:-false}
       # Cafes and restaurants from OpenStreetMap + Overture, imported at start and refreshed weekly.
       OPEN_PLACES_CITIES: ${OPEN_PLACES_CITIES:-balti}
       S3_ENDPOINT: http://minio:9000
