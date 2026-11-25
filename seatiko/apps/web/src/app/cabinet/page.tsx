@@ -47,6 +47,7 @@ import {
   type VenueApplication,
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
+import { VENUE_TYPE_IDS } from "@/lib/venue-roles";
 
 type Section =
   | "overview"
@@ -70,6 +71,7 @@ type Draft = {
   address: string;
   city_id: string;
   cuisine: string;
+  venue_type: string;
   phone: string;
   hours_text: string;
   email: string;
@@ -222,6 +224,7 @@ function toDraft(app: VenueApplication, locale: LocaleCode): Draft {
     address: pickLocale(app.address, locale) || pickLocale(app.address, "ru") || "",
     city_id: app.city_id,
     cuisine: (app.cuisine || []).join(", "),
+    venue_type: app.venue_type || "",
     phone: app.phone || "",
     hours_text: app.hours_text || "",
     email: app.email || "",
@@ -243,6 +246,7 @@ function toPayload(draft: Draft): ApplicationUpdate {
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean),
+    venue_type: draft.venue_type,
     phone: draft.phone.trim(),
     hours_text: draft.hours_text.trim(),
     email: draft.email.trim(),
@@ -265,6 +269,7 @@ function storedDraft(applicationId: string, cityId: string): Draft | null {
       address: value.address ?? "",
       city_id: value.city_id ?? cityId,
       cuisine: value.cuisine ?? "",
+      venue_type: value.venue_type ?? "",
       phone: value.phone ?? "",
       hours_text: value.hours_text ?? "",
       email: value.email ?? "",
@@ -598,7 +603,8 @@ function initials(user: User) {
 export default function CabinetPage() {
   const router = useRouter();
   const { locale } = useLocale();
-  const cabinetCopy = getSiteCopy(locale).cabinet;
+  const siteCopy = getSiteCopy(locale);
+  const cabinetCopy = siteCopy.cabinet;
   const [user, setUser] = useState<User | null>(null);
   const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
 
@@ -1514,6 +1520,26 @@ export default function CabinetPage() {
                             rows={3}
                           />
                           <small aria-live="polite">{draft.description.length}/400</small>
+                        </div>
+                        <div className="field">
+                          <label htmlFor="venue-type">{cabinetCopy.roles.typeLabel}</label>
+                          <select
+                            id="venue-type"
+                            disabled={!canEdit}
+                            value={draft.venue_type}
+                            onChange={(event) => updateDraft("venue_type", event.target.value)}
+                            aria-describedby="venue-type-hint"
+                          >
+                            <option value="">{cabinetCopy.roles.typePlaceholder}</option>
+                            {VENUE_TYPE_IDS.map((type) => (
+                              <option key={type} value={type}>
+                                {siteCopy.discover.chips[type]}
+                              </option>
+                            ))}
+                          </select>
+                          <p id="venue-type-hint" className="owner-field-hint">
+                            {selected?.status === "PUBLISHED" ? cabinetCopy.roles.typeChangeModerated : cabinetCopy.roles.typeHint}
+                          </p>
                         </div>
                         <div className="field">
                           <label htmlFor="venue-cuisine">{cabinetCopy.cuisine}</label>

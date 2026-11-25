@@ -21673,3 +21673,210 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   opacity: 0.6;
   pointer-events: none;
 }
+
+/* ===== Cabinet: team roles (venue roles, badges, planner coverage) ===== */
+.cabinet-role-badge {
+  --role-color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--role-color) 42%, transparent);
+  background: color-mix(in srgb, var(--role-color) 14%, transparent);
+  color: color-mix(in srgb, var(--role-color) 70%, var(--site-fg));
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cabinet-role-badge-dot,
+.cabinet-role-pill-dot,
+.cabinet-coverage-chip i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--role-color, #64748b);
+}
+.cabinet-role-pill-dot {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+.cabinet-roles-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+.cabinet-roles-suggest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border: 1px dashed color-mix(in srgb, var(--site-accent, #e9b96e) 55%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 8%, transparent);
+}
+.cabinet-roles-suggest strong { display: block; font-size: 0.86rem; color: var(--site-fg); }
+.cabinet-roles-suggest p { margin: 2px 0 0; font-size: 0.8rem; color: var(--site-muted); }
+.cabinet-roles-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.cabinet-role-row {
+  --role-color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--site-border);
+  border-left: 4px solid var(--role-color);
+  border-radius: 12px;
+  background: var(--site-surface);
+}
+.cabinet-role-swatch {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 4px;
+  background: var(--role-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-color) 22%, transparent);
+}
+.cabinet-role-info { flex: 1; min-width: 0; }
+.cabinet-role-name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cabinet-role-name-row strong { color: var(--site-fg); font-size: 0.92rem; overflow-wrap: anywhere; }
+.cabinet-role-info small { color: var(--site-muted); font-size: 0.76rem; }
+.cabinet-role-kind {
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--site-border);
+  color: var(--site-muted);
+}
+.cabinet-role-kind.custom {
+  color: var(--site-accent, #e9b96e);
+  border-color: color-mix(in srgb, var(--site-accent, #e9b96e) 45%, transparent);
+}
+.cabinet-role-kind.off { border-style: dashed; }
+.cabinet-role-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.cabinet-role-buttons { display: flex; align-items: center; gap: 6px; }
+.cabinet-role-buttons .panel-btn.icon { min-width: 32px; padding: 4px 8px; }
+.cabinet-role-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.76rem;
+  color: var(--site-muted);
+  user-select: none;
+}
+.cabinet-role-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cabinet-role-switch-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--site-muted) 35%, transparent);
+  transition: background 0.15s ease;
+}
+.cabinet-role-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+.cabinet-role-switch input:checked + .cabinet-role-switch-track { background: #22c55e; }
+.cabinet-role-switch input:checked + .cabinet-role-switch-track::after { transform: translateX(14px); }
+.cabinet-role-switch input:focus-visible + .cabinet-role-switch-track { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 2px; }
+.cabinet-role-switch input:disabled + .cabinet-role-switch-track { opacity: 0.55; }
+.cabinet-role-switch.block { display: flex; margin: 4px 0 8px; }
+.cabinet-role-switch-label { display: grid; gap: 2px; color: var(--site-fg); font-weight: 600; }
+.cabinet-role-switch-label small { color: var(--site-muted); font-weight: 400; font-size: 0.74rem; }
+.cabinet-role-actions .cabinet-role-switch-label { color: var(--site-muted); font-weight: 600; }
+.cabinet-role-editor { display: grid; gap: 14px; text-align: left; }
+.cabinet-role-editor h3 { margin: 0; padding-right: 32px; }
+.cabinet-role-editor .field { display: grid; gap: 6px; }
+.cabinet-role-editor .field label { font-size: 0.8rem; font-weight: 600; color: var(--site-fg); }
+.cabinet-role-error { min-height: 1em; color: #ef4444; font-size: 0.74rem; }
+.cabinet-role-link {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--site-accent, #e9b96e);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cabinet-role-colors { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; border: 0; }
+.cabinet-role-colors legend { width: 100%; margin-bottom: 8px; font-size: 0.8rem; font-weight: 600; color: var(--site-fg); }
+.cabinet-role-color { position: relative; cursor: pointer; }
+.cabinet-role-color input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cabinet-role-color span {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--role-color);
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--role-color) 50%, transparent);
+  transition: transform 0.12s ease;
+}
+.cabinet-role-color input:checked + span {
+  border-color: var(--site-surface, #fff);
+  box-shadow: 0 0 0 2px var(--role-color);
+  transform: scale(1.08);
+}
+.cabinet-role-color input:focus-visible + span { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 3px; }
+.cabinet-role-reassign { display: grid; gap: 6px; margin: 4px 0 12px; text-align: left; }
+.cabinet-role-reassign label { font-size: 0.8rem; font-weight: 600; color: var(--site-fg); }
+.cabinet-staff-role-assign { flex: 0 1 170px; min-height: 32px; padding: 4px 10px; font-size: 0.76rem; }
+.cabinet-roster-coverage { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; }
+.cabinet-coverage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.cabinet-planner-day-counts { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 6px; }
+.cabinet-roster-group-head .cabinet-role-badge { margin-right: 4px; }
+.cabinet-shift-staff-header label { display: inline-flex; align-items: center; gap: 6px; }
+.cabinet-planner-col-title-wrap h5 { margin: 0; }
+html[data-theme="light"] .cabinet-role-badge { color: color-mix(in srgb, var(--role-color) 78%, #111); }
+html[data-theme="light"] .cabinet-role-switch-track::after { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+@media (max-width: 700px) {
+  .cabinet-roles-head { flex-direction: column; }
+  .cabinet-roles-head .panel-btn { width: 100%; }
+  .cabinet-roles-suggest { flex-direction: column; align-items: stretch; }
+  .cabinet-role-row { flex-wrap: wrap; align-items: flex-start; }
+  .cabinet-role-info { flex-basis: calc(100% - 30px); }
+  .cabinet-role-actions { width: 100%; justify-content: space-between; }
+  .cabinet-staff-role-assign { flex: 1 1 100%; }
+}
+/* Cards in the ops panels never grow past the column (long rows wrap instead). */
+.cabinet-ops { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 700px) {
+  .cabinet-role-buttons { flex-wrap: wrap; justify-content: flex-end; }
+  .cabinet-role-actions { gap: 10px; }
+}
+.owner-profile .field > .owner-field-hint { margin: 6px 0 0; color: var(--site-muted); font-size: .7rem; line-height: 1.4; }

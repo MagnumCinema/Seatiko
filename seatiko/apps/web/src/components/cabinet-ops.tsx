@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { CabinetRolesCard, RoleBadge } from "@/components/cabinet-roles";
 import { QRCodeSVG } from "qrcode.react";
 import {
   FloorPlanEditor,
@@ -14,12 +15,22 @@ import { LeafIcon, FlameIcon } from "@/components/venue-icons";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
+  groupStaffByRole,
+  plannerRoles,
+  roleColor,
+  roleLabel,
+  roleNameByKey,
+  sortRoles,
+} from "@/lib/venue-roles";
+import {
+  assignVenueStaffRole,
   deleteOwnerMenuItem,
   emptyLocalized,
   fetchVenueAnalytics,
   inviteVenueStaff,
   listOwnerMenu,
   listVenueQR,
+  listVenueRoles,
   listVenueStaff,
   mediaUrl,
   pickLocale,
@@ -34,6 +45,7 @@ import {
   type StaffMember,
   type Table,
   type VenueAnalytics,
+  type VenueRole,
 } from "@/lib/api";
 
 type Props = { venueId: string };
@@ -308,8 +320,13 @@ export function CabinetStaffPanel({ venueId }: Props) {
   const [analytics, setAnalytics] = useState<VenueAnalytics | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"waiter" | "cook">("waiter");
-  const [staffFilter, setStaffFilter] = useState<"all" | "waiter" | "cook" | "admin">("all");
+  const [roles, setRoles] = useState<VenueRole[]>([]);
+  const [venueType, setVenueType] = useState("");
+  const [suggestedRoles, setSuggestedRoles] = useState<string[]>([]);
+  const [inviteRole, setInviteRole] = useState("");
+  const [staffFilter, setStaffFilter] = useState("all");
+  const presetNames = copy.roles.presets as Record<string, string>;
+  const orderedRoles = useMemo(() => sortRoles(roles), [roles]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [removingMember, setRemovingMember] = useState<StaffMember | null>(null);
@@ -326,12 +343,25 @@ export function CabinetStaffPanel({ venueId }: Props) {
   }, [removingMember]);
 
   async function reload() {
-    const [members, stats] = await Promise.all([
+    const [members, stats, roleData] = await Promise.all([
       listVenueStaff(venueId),
-      fetchVenueAnalytics(venueId),
+      // A draft has no live floor yet (analytics 404); the team and roles still load.
+      fetchVenueAnalytics(venueId).catch(() => null),
+      listVenueRoles(venueId),
     ]);
     setStaff(members);
     setAnalytics(stats);
+    setRoles(roleData.roles);
+    setVenueType(roleData.venue_type);
+    setSuggestedRoles(roleData.suggested);
+  }
+
+  async function reloadTeam() {
+    const [members, roleData] = await Promise.all([listVenueStaff(venueId), listVenueRoles(venueId)]);
+    setStaff(members);
+    setRoles(roleData.roles);
+    setVenueType(roleData.venue_type);
+    setSuggestedRoles(roleData.suggested);
   }
 
   useEffect(() => {
@@ -429,6 +459,15 @@ export function CabinetStaffPanel({ venueId }: Props) {
         </section>
       )}
 
+      <CabinetRolesCard
+        venueId={venueId}
+        roles={roles}
+        staff={staff}
+        venueType={venueType}
+        suggested={suggestedRoles}
+        onChanged={reloadTeam}
+      />
+
       {/* Staff Management Section */}
       <section className="owner-card cabinet-ops-card">
         <div className="owner-card-head">
@@ -437,10 +476,10 @@ export function CabinetStaffPanel({ venueId }: Props) {
             <h3>{copy.opsStaffTitle}</h3>
             <p className="cabinet-ops-sub">
               {locale === "ro"
-                ? "Invitați chelneri și bucătari pentru acces la comenzile din sală și bucătărie"
+                ? "Invitați angajați și atribuiți-le un rol al localului"
                 : locale === "en"
-                ? "Invite waitstaff and cooks for access to floor orders and kitchen"
-                : "Приглашайте официантов и поваров для работы с заказами в зале и на кухне"}
+                ? "Invite team members and give each a venue role"
+                : "Приглашайте сотрудников и назначайте каждому роль заведения"}
             </p>
           </div>
         </div>
@@ -455,19 +494,22 @@ export function CabinetStaffPanel({ venueId }: Props) {
               setStaff((prev) => [...prev, created]);
               setEmail("");
               setName("");
-              setInviteRole("waiter");
+              setInviteRole("");
             }, locale === "ro" ? "Invitația a fost expediată" : locale === "en" ? "Invitation sent" : "Приглашение отправлено");
           }}
         >
           <div className="cabinet-ops-inputs-grid cabinet-staff-invite-grid">
             <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as "waiter" | "cook")}
+              value={inviteRole || (plannerRoles(roles)[0] ?? orderedRoles[0])?.key || ""}
+              onChange={(e) => setInviteRole(e.target.value)}
               className="cabinet-staff-input cabinet-staff-role-select"
               aria-label={copy.opsStaffRoleLabel}
             >
-              <option value="waiter">{copy.opsStaffRoleWaiter}</option>
-              <option value="cook">{copy.opsStaffRoleCook}</option>
+              {orderedRoles.map((r) => (
+                <option key={r.id} value={r.key}>
+                  {roleLabel(r, presetNames)}
+                </option>
+              ))}
             </select>
             <input
               value={name}
@@ -506,24 +548,19 @@ export function CabinetStaffPanel({ venueId }: Props) {
             >
               {copy.opsScheduleTabAll} ({staff.length})
             </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={staffFilter === "waiter"}
-              className={staffFilter === "waiter" ? "active" : ""}
-              onClick={() => setStaffFilter("waiter")}
-            >
-              👤 {copy.opsScheduleTabWaiters} ({staff.filter((m) => (m.role || "waiter") === "waiter").length})
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={staffFilter === "cook"}
-              className={staffFilter === "cook" ? "active" : ""}
-              onClick={() => setStaffFilter("cook")}
-            >
-              👨‍🍳 {copy.opsScheduleTabCooks} ({staff.filter((m) => m.role === "cook").length})
-            </button>
+            {groupStaffByRole(staff, roles).map(({ role, members }) => (
+              <button
+                key={role.key}
+                type="button"
+                role="tab"
+                aria-selected={staffFilter === role.key}
+                className={staffFilter === role.key ? "active" : ""}
+                onClick={() => setStaffFilter(role.key)}
+              >
+                <span className="cabinet-role-pill-dot" style={{ "--role-color": role.color } as CSSProperties} aria-hidden="true" />
+                {roleLabel(role, presetNames)} ({members.length})
+              </button>
+            ))}
           </div>
         )}
 
@@ -538,12 +575,10 @@ export function CabinetStaffPanel({ venueId }: Props) {
             </li>
           ) : (
             staff
-              .filter((m) => staffFilter === "all" || (m.role || "waiter") === staffFilter)
+              .filter((m) => staffFilter === "all" || m.role === staffFilter)
               .map((member) => {
               const displayName = member.name?.trim() || member.email.split("@")[0];
               const isOnShift = member.on_shift ?? (member.status === "ACTIVE");
-              const isCook = member.role === "cook";
-              const isAdmin = member.role === "admin";
               return (
                 <li key={member.id} className="cabinet-staff-card">
                   <div className="cabinet-staff-card-left">
@@ -553,9 +588,10 @@ export function CabinetStaffPanel({ venueId }: Props) {
                     <div className="cabinet-staff-info">
                       <div className="cabinet-staff-name-row">
                         <strong className="cabinet-staff-name">{displayName}</strong>
-                        <span className={`cabinet-staff-role-tag role-${member.role || "waiter"}`}>
-                          {isCook ? copy.opsStaffRoleCook : isAdmin ? copy.opsStaffRoleAdmin : copy.opsStaffRoleWaiter}
-                        </span>
+                        <RoleBadge
+                          label={roleNameByKey(member.role, roles, presetNames)}
+                          color={roleColor(member.role, roles)}
+                        />
                         <span className={`cabinet-staff-shift-pill ${isOnShift ? "on-shift" : "off-shift"}`}>
                           <span className="cabinet-staff-shift-dot" />
                           {isOnShift
@@ -573,6 +609,26 @@ export function CabinetStaffPanel({ venueId }: Props) {
                   </div>
 
                   <div className="cabinet-staff-card-actions">
+                    <select
+                      className="cabinet-staff-input cabinet-staff-role-assign"
+                      value={member.role}
+                      disabled={busy}
+                      aria-label={`${copy.roles.assignLabel}: ${displayName}`}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        void run(async () => {
+                          const updated = await assignVenueStaffRole(venueId, member.id, next);
+                          setStaff((prev) => prev.map((s) => (s.id === member.id ? { ...s, role: updated.role } : s)));
+                        }, copy.roles.assigned);
+                      }}
+                    >
+                      {!roles.some((r) => r.key === member.role) && <option value={member.role}>{member.role}</option>}
+                      {orderedRoles.map((r) => (
+                        <option key={r.id} value={r.key}>
+                          {roleLabel(r, presetNames)}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       className={`panel-btn ghost sm ${isOnShift ? "shift-active" : ""}`}
