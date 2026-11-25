@@ -22341,7 +22341,7 @@ html[data-theme="light"] .booking-rules-form .booking-rules-status.error { color
   overscroll-behavior: contain;
   border: 1px solid var(--site-border);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--site-bg, #0d1612) 94%, var(--site-surface, #16221c));
+  background: #141c17; /* solid: --site-surface is translucent in dark theme */
   box-shadow: 0 16px 40px color-mix(in srgb, #000 32%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
