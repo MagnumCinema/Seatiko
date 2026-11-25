@@ -9,6 +9,7 @@ import { HttpErrorFilter } from './core/http/http-error.filter.js';
 import { TimeModule } from './core/time/time.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 import { ApplicationsModule } from './modules/applications/applications.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DocsModule } from './modules/docs/docs.module.js';
@@ -55,6 +56,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ApplicationsModule,
     VenueAdminModule,
     StaffTeamModule,
+    AdminModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },
