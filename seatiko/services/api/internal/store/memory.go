@@ -105,6 +105,10 @@ type MemoryStore struct {
 	profileChanges map[string]models.ProfileChangeRequest
 	waitlist       map[string]models.WaitlistEntry
 	eventInquiries map[string]models.EventInquiry
+	adultLog       []models.AdultPermissionLogEntry
+	notifications  []models.Notification
+	pendingPush    []models.Notification
+	hub            notificationHub
 	demoMenuVer    int
 }
 
@@ -151,8 +155,8 @@ func (s *MemoryStore) seed() {
 				RO: "Bucătărie moldovenească și plăcinte în centrul Bălțiului",
 			},
 			Cuisine: []string{"moldovan", "bakery"}, Rating: 4.8, ReviewCount: 214, PriceLevel: 2,
-			Address: models.LocalizedString{RU: "ул. Независимости 45", EN: "Independenței 45", RO: "Independenței 45"},
-			Lat:     47.7617, Lng: 27.9288, AverageCheck: 250, OpenNow: true,
+			Address: models.LocalizedString{RU: "ул. Штефан чел Маре 57", EN: "Ștefan cel Mare și Sfânt St 57", RO: "Strada Ștefan cel Mare și Sfânt 57"},
+			Lat:     47.762358, Lng: 27.926732, AverageCheck: 250, OpenNow: true,
 			ImageURL: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
 			PhotoURLs: []string{
 				"https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
@@ -177,8 +181,8 @@ func (s *MemoryStore) seed() {
 				RO: "Cafea, mic dejun și prânz ușor",
 			},
 			Cuisine: []string{"cafe", "european"}, Rating: 4.5, ReviewCount: 128, PriceLevel: 1,
-			Address: models.LocalizedString{RU: "пл. Василия Лупу 1", EN: "Vasile Lupu Sq 1", RO: "Piața Vasile Lupu 1"},
-			Lat:     47.7631, Lng: 27.9299, AverageCheck: 180, OpenNow: true,
+			Address: models.LocalizedString{RU: "пл. Василе Александри", EN: "Vasile Alecsandri Sq", RO: "Piața Vasile Alecsandri"},
+			Lat:     47.759536, Lng: 27.926160, AverageCheck: 180, OpenNow: true,
 			ImageURL: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
 			PhotoURLs: []string{
 				"https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
@@ -229,7 +233,7 @@ func (s *MemoryStore) seed() {
 			},
 			Cuisine: []string{"italian", "mediterranean", "pizza"}, Rating: 4.7, ReviewCount: 185, PriceLevel: 2,
 			Address: models.LocalizedString{RU: "ул. Независимости 15A", EN: "Strada Independenței 15A", RO: "Strada Independenței 15A"},
-			Lat:     47.7612, Lng: 27.9275, AverageCheck: 280, OpenNow: true,
+			Lat:     47.761273, Lng: 27.928449, AverageCheck: 280, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
@@ -244,7 +248,7 @@ func (s *MemoryStore) seed() {
 			},
 			Cuisine: []string{"pub", "grill", "european"}, Rating: 4.8, ReviewCount: 310, PriceLevel: 2,
 			Address: models.LocalizedString{RU: "ул. Михаила Садовяну 37/A", EN: "Strada Mihail Sadoveanu 37/A", RO: "Strada Mihail Sadoveanu 37/A"},
-			Lat:     47.7640, Lng: 27.9230, AverageCheck: 260, OpenNow: true,
+			Lat:     47.749825, Lng: 27.922631, AverageCheck: 260, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
@@ -259,7 +263,7 @@ func (s *MemoryStore) seed() {
 			},
 			Cuisine: []string{"moldovan", "traditional", "wine"}, Rating: 4.6, ReviewCount: 142, PriceLevel: 2,
 			Address: models.LocalizedString{RU: "ул. Дечебал 131", EN: "Strada Decebal 131", RO: "Strada Decebal 131"},
-			Lat:     47.7715, Lng: 27.9180, AverageCheck: 240, OpenNow: true,
+			Lat:     47.780231, Lng: 27.891054, AverageCheck: 240, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
@@ -274,7 +278,7 @@ func (s *MemoryStore) seed() {
 			},
 			Cuisine: []string{"burgers", "grill", "american"}, Rating: 4.7, ReviewCount: 165, PriceLevel: 1,
 			Address: models.LocalizedString{RU: "ул. Стрый 3", EN: "Strada Strîi 3", RO: "Strada Strîi 3"},
-			Lat:     47.7550, Lng: 27.9210, AverageCheck: 190, OpenNow: true,
+			Lat:     47.770476, Lng: 27.939163, AverageCheck: 190, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
@@ -289,7 +293,7 @@ func (s *MemoryStore) seed() {
 			},
 			Cuisine: []string{"european", "lounge", "dessert"}, Rating: 4.5, ReviewCount: 98, PriceLevel: 3,
 			Address: models.LocalizedString{RU: "ул. Михаила Садовяну 1", EN: "Strada Mihail Sadoveanu 1", RO: "Strada Mihail Sadoveanu 1"},
-			Lat:     47.7625, Lng: 27.9245, AverageCheck: 340, OpenNow: true,
+			Lat:     47.756725, Lng: 27.925983, AverageCheck: 340, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
@@ -304,7 +308,7 @@ func (s *MemoryStore) seed() {
 			},
 			Cuisine: []string{"wine", "european"}, Rating: 4.9, ReviewCount: 112, PriceLevel: 3,
 			Address: models.LocalizedString{RU: "ул. Александру чел Бун 5", EN: "Strada Alexandru cel Bun 5", RO: "Strada Alexandru cel Bun 5"},
-			Lat:     47.7580, Lng: 27.9290, AverageCheck: 380, OpenNow: true,
+			Lat:     47.784387, Lng: 27.896517, AverageCheck: 380, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
@@ -318,14 +322,17 @@ func (s *MemoryStore) seed() {
 				RO: "Pizza populară, paste, salate proaspete și meniu pentru copii",
 			},
 			Cuisine: []string{"pizza", "family", "european"}, Rating: 4.4, ReviewCount: 420, PriceLevel: 1,
-			Address: models.LocalizedString{RU: "ул. Штефан чел Маре 57", EN: "Strada Ștefan cel Mare 57", RO: "Strada Ștefan cel Mare 57"},
-			Lat:     47.7605, Lng: 27.9265, AverageCheck: 160, OpenNow: true,
+			Address: models.LocalizedString{RU: "ул. Независимости 39", EN: "Independenței St 39", RO: "Strada Independenței 39"},
+			Lat:     47.756138, Lng: 27.921709, AverageCheck: 160, OpenNow: true,
 			ImageURL:       "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80",
 			AlcoholLicense: true, SessionStartBeforeMin: 15, ReleaseBeforeMin: 10,
 			BookingIntervalMin: 30, HoldMinutes: 15, AllowPreorder: true,
 		},
 	}
 	for _, v := range venues {
+		if v.HoursText == "" {
+			v.HoursText = seedVenueHours[v.ID]
+		}
 		s.venues[v.ID] = v
 	}
 
@@ -1679,6 +1686,8 @@ func (s *MemoryStore) CancelReservation(userID, reservationID string) (models.Re
 	r.Status = models.ReservationCancelled
 	r.UpdatedAt = time.Now().UTC()
 	s.reservations[reservationID] = r
+	s.cancelPreorderForReservationLocked(reservationID, r.UpdatedAt)
+	defer s.flushPushLocked()
 
 	if t, ok := s.tables[r.TableID]; ok {
 		if t.ReservationID != nil && *t.ReservationID == reservationID {
@@ -1799,6 +1808,10 @@ func (s *MemoryStore) ListReservations(userID string) []models.Reservation {
 		}
 		if len(nums) > 0 {
 			r.TableNumbers = nums
+		}
+		if o, ok := s.activePreorderLocked(r.ID); ok {
+			po := s.decorateOrderLocked(o, time.Now().UTC())
+			r.Preorder = &po
 		}
 		out = append(out, r)
 	}
@@ -1968,6 +1981,9 @@ func (s *MemoryStore) ScanQR(userID, venueID, tableID, token string) (models.Ses
 		StartedAt:     now,
 	}
 	s.sessions[sess.ID] = sess
+	if reservationID != nil {
+		s.linkPreorderToSessionLocked(*reservationID, sess.ID)
+	}
 
 	t.Status = models.TableOccupied
 	t.OccupiedSince = &now
@@ -2119,10 +2135,7 @@ func (s *MemoryStore) ListOrders(userID string) []models.Order {
 		if o.UserID != userID {
 			continue
 		}
-		if venue, ok := s.venues[o.VenueID]; ok {
-			o.VenueName = venue.Name
-		}
-		out = append(out, o)
+		out = append(out, s.decorateOrderLocked(o, time.Now().UTC()))
 	}
 	sort.Slice(out, func(i, j int) bool {
 		return out[i].CreatedAt.After(out[j].CreatedAt)
@@ -2137,7 +2150,7 @@ func (s *MemoryStore) GetOrder(id string) (models.Order, error) {
 	if !ok {
 		return models.Order{}, ErrNotFound
 	}
-	return o, nil
+	return s.decorateOrderLocked(o, time.Now().UTC()), nil
 }
 
 func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, error) {
@@ -2158,6 +2171,10 @@ func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, er
 	if o.Status == models.OrderPaid {
 		return o, nil
 	}
+	// 18+ items of a preorder are sold only after the in-person ID check (APP_LOGIC §8.4).
+	if hasPendingAgeCheck(o) {
+		return models.Order{}, ErrAgeCheckPending
+	}
 
 	now := time.Now().UTC()
 	method = strings.ToLower(strings.TrimSpace(method))
@@ -2168,7 +2185,8 @@ func (s *MemoryStore) PayOrder(userID, orderID, method string) (models.Order, er
 		o.PaidAt = &now
 	case "venue", "cash", "at_venue":
 		o.PaymentMethod = "venue"
-		if o.Status == models.OrderSubmitted || o.Status == models.OrderPreparing || o.Status == models.OrderReady {
+		// A preorder is served when the guest arrives, not when they choose to pay there.
+		if !o.Preorder && (o.Status == models.OrderSubmitted || o.Status == models.OrderPreparing || o.Status == models.OrderReady) {
 			o.Status = models.OrderServed
 		}
 	default:
@@ -2196,6 +2214,9 @@ func (s *MemoryStore) UpdateOrderStatus(orderID string, status models.OrderStatu
 		models.OrderReady, models.OrderServed, models.OrderPaid, models.OrderCancelled:
 	default:
 		return models.Order{}, ErrInvalidStatus
+	}
+	if (status == models.OrderServed || status == models.OrderPaid) && hasPendingAgeCheck(o) {
+		return models.Order{}, ErrAgeCheckPending
 	}
 	o.Status = status
 	now := time.Now().UTC()
@@ -2285,40 +2306,6 @@ func (s *MemoryStore) ListCollections() []models.HolidayCollection {
 	out := make([]models.HolidayCollection, 0, len(s.collections))
 	for _, c := range s.collections {
 		out = append(out, c)
-	}
-	return out
-}
-
-func (s *MemoryStore) AIRecommend(query string) []models.Venue {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	q := strings.ToLower(strings.TrimSpace(query))
-	if q == "" {
-		out := make([]models.Venue, 0, len(s.venues))
-		for _, v := range s.venues {
-			out = append(out, v)
-		}
-		return out
-	}
-
-	out := make([]models.Venue, 0)
-	for _, v := range s.venues {
-		blob := strings.ToLower(strings.Join([]string{
-			v.Name.RU, v.Name.EN, v.Name.RO,
-			v.Description.RU, v.Description.EN, v.Description.RO,
-			strings.Join(v.Cuisine, " "),
-		}, " "))
-		if strings.Contains(blob, q) {
-			out = append(out, v)
-			continue
-		}
-		for _, word := range strings.Fields(q) {
-			if len(word) >= 3 && strings.Contains(blob, word) {
-				out = append(out, v)
-				break
-			}
-		}
 	}
 	return out
 }
@@ -2643,6 +2630,7 @@ func (s *MemoryStore) ListRestaurantReservations(ownerID string) ([]models.Resta
 			Status:             reservation.Status,
 			ArrivalConfirmedAt: reservation.ArrivalConfirmedAt,
 			CreatedAt:          reservation.CreatedAt,
+			Preorder:           s.preorderViewLocked(reservation.ID),
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ReservedFor.After(out[j].ReservedFor) })
@@ -3005,6 +2993,7 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		ImageURL:              imageURL,
 		PhotoURLs:             photos,
 		Website:               app.Website,
+		HoursText:             app.HoursText,
 		AlcoholLicense:        false,
 		SessionStartBeforeMin: sessionStartBefore,
 		ReleaseBeforeMin:      releaseBefore,

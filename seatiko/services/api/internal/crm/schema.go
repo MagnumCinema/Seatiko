@@ -50,6 +50,8 @@ var requiredSchema = []struct {
 		field("seatikoId", "Seatiko ID", "TEXT"),
 		field("restaurantDescription", "Restaurant Description", "TEXT"),
 		field("cityId", "Seatiko City ID", "TEXT"),
+		field("cityName", "Город", "TEXT"),
+		field("submittedAt", "Заявка отправлена", "DATE_TIME"),
 		field("priceLevel", "Price Level", "NUMBER"),
 		field("photoUrls", "Photo URLs", "TEXT"),
 		field("venueId", "Seatiko Venue ID", "TEXT"),
@@ -63,6 +65,11 @@ var requiredSchema = []struct {
 		field("latitude", "Latitude", "NUMBER"),
 		field("longitude", "Longitude", "NUMBER"),
 		{Name: "restaurantStatus", Label: "Restaurant Status", Type: "SELECT", Options: []string{"DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "PUBLISHED"}},
+	}},
+	{"task", []requiredField{
+		field("seatikoTaskKey", "Seatiko Task Key", "TEXT"),
+		field("seatikoApplicationId", "Seatiko Application ID", "TEXT"),
+		field("seatikoAutoResolved", "Seatiko Auto Resolved", "BOOLEAN"),
 	}},
 	{"reservation", []requiredField{
 		field("seatikoReservationId", "Seatiko Reservation ID", "TEXT"),

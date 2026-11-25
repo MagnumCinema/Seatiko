@@ -31,6 +31,7 @@ type MenuItemInput struct {
 	VolumeML        *int                    `json:"volume_ml"`
 	ImageURL        *string                 `json:"image_url"`
 	ContainsAlcohol bool                    `json:"contains_alcohol"`
+	RequiresAge18   bool                    `json:"requires_age_18"`
 	Tags            []string                `json:"tags"`
 	Stopped         bool                    `json:"stopped"`
 }
@@ -39,6 +40,7 @@ type BookingRulesInput struct {
 	BookingIntervalMin    *int  `json:"booking_interval_min"`
 	HoldMinutes           *int  `json:"hold_minutes"`
 	AllowPreorder         *bool `json:"allow_preorder"`
+	PreorderLeadMin       *int  `json:"preorder_lead_min"`
 	SessionStartBeforeMin *int  `json:"session_start_before_min"`
 	ReleaseBeforeMin      *int  `json:"release_before_min"`
 	MaxLateArrivalMin     *int  `json:"max_late_arrival_min"`
@@ -210,6 +212,7 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 		VolumeML:        existing.VolumeML,
 		ImageURL:        existing.ImageURL,
 		ContainsAlcohol: input.ContainsAlcohol,
+		RequiresAge18:   input.RequiresAge18,
 		Tags:            existing.Tags,
 		Position:        existing.Position,
 		Stopped:         input.Stopped,
@@ -232,6 +235,7 @@ func (s *MemoryStore) UpsertMenuItem(ownerID, venueID string, input MenuItemInpu
 	if input.Tags != nil {
 		item.Tags = input.Tags
 	}
+	item = normalizeAgeRestriction(item)
 	s.menuItems[id] = item
 	return item, nil
 }
@@ -395,6 +399,12 @@ func (s *MemoryStore) UpdateVenueBookingRules(ownerID, venueID string, input Boo
 	if input.HoldMinutes != nil {
 		draftVenue.HoldMinutes = *input.HoldMinutes
 		app.HoldMinutes = *input.HoldMinutes
+	}
+	if input.PreorderLeadMin != nil {
+		if !preorderLeadLimit.ok(*input.PreorderLeadMin) {
+			return models.Venue{}, ErrBadRequest
+		}
+		venue.PreorderLeadMin = *input.PreorderLeadMin
 	}
 	if input.AllowPreorder != nil {
 		draftVenue.AllowPreorder = *input.AllowPreorder
@@ -1083,9 +1093,10 @@ func (s *MemoryStore) ListVenueOrders(venueID string) ([]models.Order, error) {
 		return nil, ErrNotFound
 	}
 	out := make([]models.Order, 0)
+	now := time.Now().UTC()
 	for _, order := range s.orders {
 		if order.VenueID == venueID {
-			out = append(out, order)
+			out = append(out, s.decorateOrderLocked(order, now))
 		}
 	}
 	return out, nil
@@ -1100,6 +1111,7 @@ func (s *MemoryStore) ListVenueReservationsStaff(venueID string) ([]models.Reser
 	out := make([]models.Reservation, 0)
 	for _, reservation := range s.reservations {
 		if reservation.VenueID == venueID {
+			reservation.Preorder = s.preorderViewLocked(reservation.ID)
 			out = append(out, reservation)
 		}
 	}
@@ -1247,6 +1259,7 @@ func (s *MemoryStore) AdminReviewProfileChange(adminID, requestID, status, note 
 				venue.Lng = app.Lng
 				venue.PriceLevel = app.PriceLevel
 				venue.AverageCheck = app.AverageCheck
+				venue.HoursText = app.HoursText
 				s.venues[venue.ID] = venue
 			}
 		}

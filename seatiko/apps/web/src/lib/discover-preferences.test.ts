@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   emptyPreferences,
+  relaxPreference,
   encodePreferences,
   decodePreferences,
   filterAndRankPlaces,
@@ -261,5 +262,14 @@ describe("filterAndRankPlaces", () => {
       expect.arrayContaining(["e", "a"]),
     );
     expect(ranked).toHaveLength(2);
+  });
+});
+
+describe("relaxPreference", () => {
+  it("drops exactly the filter the server suggests", () => {
+    const prefs = { ...emptyPreferences(), cuisine: ["grill" as const], budget: { min: 50, max: 200 }, practical: ["open_now" as const, "partners" as const] };
+    expect(relaxPreference(prefs, "cuisine").cuisine).toEqual([]);
+    expect(relaxPreference(prefs, "budget").budget).toBeNull();
+    expect(relaxPreference(prefs, "open_now").practical).toEqual(["partners"]);
   });
 });

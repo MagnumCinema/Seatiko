@@ -118,6 +118,12 @@ export type MapPlacesResponse = {
     google_count: number;
     database_count: number;
   };
+  /** Set when /discover filters are sent: places in the area, matches, and which filter to loosen at 0. */
+  filters?: {
+    total: number;
+    matched: number;
+    relax?: { filter: string; matched: number };
+  };
 };
 
 export type TableStatus = "FREE" | "RESERVED" | "OCCUPIED" | "CLEANING";
@@ -148,7 +154,26 @@ export type User = {
   role?: UserRole | string;
   diet_preferences?: string[];
   favorite_venues?: string[];
+  /** Profile photo (POST /me/avatar), absolute or `/media/...`; load it through `mediaUrl`. */
+  avatar_url?: string;
+  deleted_at?: string;
+  /** Read-only: staff confirmed 18+ in person (APP_LOGIC §8.4). */
+  adult_preorder_allowed?: boolean;
+  adult_verification?: AdultVerification;
   created_at: string;
+};
+
+/** Who confirmed the guest is 18+, where and when (shown read-only in the account). */
+export type AdultVerification = {
+  verified_at: string;
+  verified_by_staff_id: string;
+  verified_by_staff_role: "waiter" | "manager" | "admin" | string;
+  verified_by_staff_display_name: string;
+  verified_at_venue_id: string;
+  id_document_checked: boolean;
+  id_document_type: "id_card" | "passport" | "other" | string;
+  revoked_at?: string;
+  revoked_by_staff_id?: string;
 };
 
 export type AuthResponse = { token: string; user: User };
@@ -229,6 +254,8 @@ export type Reservation = {
   arrival_confirmed_at?: string | null;
   expected_arrival?: string | null;
   created_at: string;
+  /** Active preorder of this reservation, if any. */
+  preorder?: Order;
   venue_name?: LocalizedString;
   table_number?: number;
 };
@@ -296,6 +323,8 @@ export type MenuItem = {
   /** Dish photo (absolute URL or path under the API). */
   image_url?: string;
   contains_alcohol: boolean;
+  /** 18+ item: preorder needs `adult_preorder_allowed`; always true for alcohol. */
+  requires_age_18?: boolean;
   /** `popular` | `vegetarian` | `spicy`. */
   tags?: string[];
   position?: number;
@@ -306,7 +335,14 @@ export type OrderItem = {
   menu_item_id: string;
   name: LocalizedString;
   qty: number;
+  /** Per unit, fixed when ordered. */
   price: number;
+  requires_age_18?: boolean;
+  contains_alcohol?: boolean;
+  /** 18+ items of a preorder: staff check an ID in person before serving. */
+  age_check?: "PENDING_AGE_CHECK" | "CONFIRMED";
+  /** The dish was deleted or stopped after ordering. */
+  unavailable?: boolean;
 };
 
 export type Order = {
@@ -323,6 +359,13 @@ export type Order = {
   payment_method?: string;
   paid_at?: string | null;
   venue_name?: LocalizedString;
+  /** Dishes ordered ahead for a reservation (`PUT /reservations/:id/preorder`). */
+  preorder?: boolean;
+  reservation_id?: string;
+  /** Kitchen starts at this time; the guest can change or cancel until then. */
+  kitchen_at?: string;
+  kitchen_due?: boolean;
+  adult_items_removed_at?: string;
 };
 
 export type HolidayCollection = {
@@ -368,8 +411,24 @@ export type WaitlistSummary = {
   free_tables: number;
 };
 
+export type DiscoverAiPrefs = {
+  cuisine: string[];
+  restaurant_type: string[];
+  budget?: { min: number; max: number } | null;
+  occasion: string[];
+  practical: string[];
+};
+
 export type DiscoverResult = {
+  /** Ranked venues (same order as `ranked`). */
   venues: Venue[];
+  ranked?: { venue_id: string; score: number; reasons: string[] }[];
+  prefs?: DiscoverAiPrefs;
+  /** Ready for `/?${query_string}#map`. */
+  query_string?: string;
+  /** false when nothing passes the filters and the ranking is approximate. */
+  exact?: boolean;
+  source?: "groq" | "rules";
   explanation?: LocalizedString | string;
 };
 
@@ -496,10 +555,14 @@ export async function fetchMapPlaces(
     bounds?: MapBounds;
     query?: string;
     bookableOnly?: boolean;
+    /** Encoded /discover preferences (encodePreferences) for server-side match counts. */
+    filters?: string;
+    /** Guest position for the "nearby" filter. */
+    near?: { lat: number; lng: number } | null;
     signal?: AbortSignal;
   },
 ): Promise<MapPlacesResponse> {
-  const { bounds, includeGoogle, locale, query, bookableOnly, signal } = options;
+  const { bounds, includeGoogle, locale, query, bookableOnly, filters, near, signal } = options;
   return apiFetch<MapPlacesResponse>("/api/v1/map/places", {
     auth: false,
     signal,
@@ -510,6 +573,9 @@ export async function fetchMapPlaces(
       bounds: bounds && [bounds.south, bounds.west, bounds.north, bounds.east].join(","),
       q: query?.trim(),
       bookable_only: bookableOnly ? "true" : undefined,
+      ...(filters ? Object.fromEntries(new URLSearchParams(filters)) : {}),
+      lat: near ? near.lat : undefined,
+      lng: near ? near.lng : undefined,
     },
   });
 }
@@ -556,6 +622,47 @@ export async function fetchVenueSchedule(
   return data.slots ?? [];
 }
 
+export type ApiAvailabilitySlot = { starts_at: string; table_id: string; table_number: number };
+
+/** One venue's answer from GET /availability (server-side free table search). */
+export type ApiVenueAvailability = {
+  venue_id: string;
+  duration_min: number;
+  fits: boolean;
+  exact: boolean;
+  slots: ApiAvailabilitySlot[];
+  later_today?: ApiAvailabilitySlot[];
+};
+
+/** Venues with a free table for `guests` around `at` (or the earliest that `date`), best match first. */
+export async function fetchAvailability(
+  params: {
+    cityId?: string;
+    /** Wanted start; omit for "as soon as possible". */
+    at?: Date | null;
+    /** Local day YYYY-MM-DD, used when `at` is omitted. */
+    date?: string;
+    guests: number;
+    durationMin: number;
+    limit?: number;
+  },
+  signal?: AbortSignal,
+): Promise<ApiVenueAvailability[]> {
+  const data = await apiFetch<{ venues: ApiVenueAvailability[] }>("/api/v1/availability", {
+    auth: false,
+    signal,
+    query: {
+      city_id: params.cityId ?? "city-balti",
+      at: params.at ? params.at.toISOString() : undefined,
+      date: params.at ? undefined : params.date,
+      guests: params.guests,
+      duration_min: params.durationMin,
+      limit: params.limit,
+    },
+  });
+  return data.venues ?? [];
+}
+
 export async function fetchMenu(venueId: string): Promise<MenuItem[]> {
   const data = await apiFetch<{ items?: MenuItem[]; menu?: MenuItem[] }>(
     `/api/v1/venues/${venueId}/menu`,
@@ -575,6 +682,8 @@ export async function fetchCollections(): Promise<HolidayCollection[]> {
 export async function discoverAi(input: {
   query: string;
   city_id?: string;
+  locale?: string;
+  prefs?: DiscoverAiPrefs;
   filters?: string[];
 }): Promise<DiscoverResult> {
   return apiFetch<DiscoverResult>("/api/v1/discover/ai", {
@@ -1585,3 +1694,165 @@ export async function adminReviewChangeRequest(
 }
 
 
+
+/** The reservation's active preorder (404 when there is none). */
+export async function fetchPreorder(reservationId: string): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/reservations/${reservationId}/preorder`);
+  return data.order;
+}
+
+/** Creates or replaces the preorder for the guest's reservation; prices are fixed when saved. */
+export async function savePreorder(
+  reservationId: string,
+  items: { menu_item_id: string; qty: number }[],
+): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/reservations/${reservationId}/preorder`, {
+    method: "PUT",
+    body: { items },
+  });
+  return data.order;
+}
+
+/** Cancels the preorder before the kitchen starts it. */
+export async function cancelPreorder(reservationId: string): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/reservations/${reservationId}/preorder`, {
+    method: "DELETE",
+  });
+  return data.order;
+}
+
+export type NotificationKind =
+  | "PREORDER_CREATED"
+  | "PREORDER_UPDATED"
+  | "PREORDER_CANCELLED"
+  | "PREORDER_PREPARING"
+  | "PREORDER_ADULT_REMOVED"
+  | "PREORDER_AGE_REFUSED"
+  | "ADULT_GRANTED"
+  | "ADULT_REVOKED";
+
+/** In-app notification (GET /me/notifications, live via /me/notifications/stream). */
+export type AppNotification = {
+  id: string;
+  user_id: string;
+  kind: NotificationKind | string;
+  venue_id?: string;
+  venue_name?: LocalizedString;
+  reservation_id?: string;
+  order_id?: string;
+  at?: string;
+  created_at: string;
+  read_at?: string;
+};
+
+export async function fetchNotifications(limit = 30): Promise<{ notifications: AppNotification[]; unread: number }> {
+  const data = await apiFetch<{ notifications: AppNotification[]; unread: number }>("/api/v1/me/notifications", {
+    query: { limit },
+  });
+  return { notifications: data.notifications ?? [], unread: data.unread ?? 0 };
+}
+
+/** Marks the given notifications read (all when `ids` is omitted); returns the new unread count. */
+export async function markNotificationsRead(ids?: string[]): Promise<number> {
+  const data = await apiFetch<{ unread: number }>("/api/v1/me/notifications/read", {
+    method: "POST",
+    body: ids ? { ids } : {},
+  });
+  return data.unread ?? 0;
+}
+
+/**
+ * Opens the live notification stream (Server-Sent Events over fetch, so the Bearer
+ * token goes in a header). Resolves when the stream ends; rejects on HTTP errors.
+ */
+export async function openNotificationStream(
+  onEvent: (event: string, data: string) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const token = getToken();
+  if (!token) throw new ApiError(401, "unauthorized");
+  const url = new URL(`${API_URL}/api/v1/me/notifications/stream`, window.location.origin);
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "text/event-stream", Authorization: `Bearer ${token}` },
+    cache: "no-store",
+    signal,
+  });
+  if (!res.ok || !res.body) throw new ApiError(res.status, `http_${res.status}`);
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  const parser = createSseParser(onEvent);
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    parser(value);
+  }
+}
+
+/** Incremental text/event-stream parser: feed it chunks, it calls `onEvent` per complete event. */
+export function createSseParser(onEvent: (event: string, data: string) => void): (chunk: string) => void {
+  let buffer = "";
+  return (chunk) => {
+    buffer += chunk.replace(/\r\n/g, "\n");
+    let end = buffer.indexOf("\n\n");
+    while (end !== -1) {
+      const block = buffer.slice(0, end);
+      buffer = buffer.slice(end + 2);
+      let event = "message";
+      const data: string[] = [];
+      for (const line of block.split("\n")) {
+        if (!line || line.startsWith(":")) continue;
+        const colon = line.indexOf(":");
+        const field = colon === -1 ? line : line.slice(0, colon);
+        const value = colon === -1 ? "" : line.slice(colon + 1).replace(/^ /, "");
+        if (field === "event") event = value;
+        else if (field === "data") data.push(value);
+      }
+      if (data.length) onEvent(event, data.join("\n"));
+      end = buffer.indexOf("\n\n");
+    }
+  };
+}
+
+export type PreorderMenuItem = MenuItem & {
+  orderable: boolean;
+  blocked_reason?: "stopped" | "age_verification_required" | string;
+};
+
+/** Venue menu as the current guest may preorder it (18+ blocked without verification). */
+export async function fetchPreorderMenu(venueId: string): Promise<PreorderMenuItem[]> {
+  const data = await apiFetch<{ menu: PreorderMenuItem[] }>(`/api/v1/me/venues/${venueId}/preorder-menu`);
+  return data.menu ?? [];
+}
+
+/** Uploads a profile photo (JPEG/PNG/WebP ≤ 5 MB); the server stores a 512 px square JPEG. */
+export async function uploadAvatar(file: File): Promise<User> {
+  const token = getToken();
+  const form = new FormData();
+  form.append("file", file);
+  const url = new URL(`${API_URL}/api/v1/me/avatar`, window.location.origin);
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    let code = `http_${res.status}`;
+    try {
+      const err = (await res.json()) as { error?: string };
+      if (err.error) code = err.error;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, code);
+  }
+  return ((await res.json()) as { user: User }).user;
+}
+
+export async function deleteAvatar(): Promise<User> {
+  const data = await apiFetch<{ user: User }>("/api/v1/me/avatar", { method: "DELETE" });
+  return data.user;
+}
+
+/** GDPR account deletion (guests). Errors: wrong_password, role_not_allowed. */
+export async function deleteAccount(password: string): Promise<{ deleted: boolean; cancelled_reservations: number }> {
+  return apiFetch("/api/v1/me", { method: "DELETE", body: { password } });
+}

@@ -359,6 +359,8 @@ func writeOpsResult(c *gin.Context, err error, okBody gin.H, okStatus int) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "bad_request"})
 	case store.ErrConflict:
 		c.JSON(http.StatusConflict, gin.H{"error": "conflict"})
+	case store.ErrAgeCheckPending:
+		c.JSON(http.StatusConflict, gin.H{"error": "age_check_pending"})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal_error"})
 	}

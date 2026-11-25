@@ -1,6 +1,6 @@
 module github.com/seatiko/api
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/gin-gonic/gin v1.12.0
@@ -10,7 +10,8 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/swaggo/files/v2 v2.0.2
 	golang.org/x/crypto v0.55.0
-	golang.org/x/text v0.41.0
+	golang.org/x/image v0.48.0
+	golang.org/x/text v0.44.0
 )
 
 require (
@@ -38,6 +39,6 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	golang.org/x/arch v0.22.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )

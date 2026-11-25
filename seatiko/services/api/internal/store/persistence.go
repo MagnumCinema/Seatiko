@@ -32,12 +32,15 @@ type persistedState struct {
 	WorkShifts     map[string]models.WorkShift             `json:"work_shifts"`
 	ProfileChanges map[string]models.ProfileChangeRequest  `json:"profile_changes"`
 	Waitlist       map[string]models.WaitlistEntry         `json:"waitlist"`
+	AdultLog       []models.AdultPermissionLogEntry        `json:"adult_permission_log,omitempty"`
+	Notifications  []models.Notification                   `json:"notifications,omitempty"`
 	DemoMenuVer    int                                     `json:"demo_menu_version"`
 }
 
 type persistedUser struct {
 	models.User
 	PasswordHash string `json:"password_hash"`
+	AvatarKey    string `json:"avatar_key,omitempty"`
 }
 
 // NewPersistent creates the same store used by the API, but keeps all mutable
@@ -129,6 +132,9 @@ func (s *MemoryStore) backfillVenueMediaLocked() {
 	defer s.mu.Unlock()
 	changed := s.dropLegacyPlacesPhotosLocked()
 	demo := NewMemory()
+	if s.backfillVenueGeoLocked(demo.venues) {
+		changed = true
+	}
 	for id, fresh := range demo.venues {
 		current, ok := s.venues[id]
 		if !ok {
@@ -137,6 +143,10 @@ func (s *MemoryStore) backfillVenueMediaLocked() {
 		if len(current.PhotoURLs) == 0 && len(fresh.PhotoURLs) > 0 {
 			current.PhotoURLs = append([]string(nil), fresh.PhotoURLs...)
 			current.ImageURL = fresh.ImageURL
+			changed = true
+		}
+		if current.HoursText == "" && fresh.HoursText != "" {
+			current.HoursText = fresh.HoursText
 			changed = true
 		}
 		if len(current.Reviews) == 0 && len(fresh.Reviews) > 0 {
@@ -357,6 +367,7 @@ func (s *MemoryStore) applyState(state persistedState) {
 		for id, persisted := range state.Users {
 			user := persisted.User
 			user.PasswordHash = persisted.PasswordHash
+			user.AvatarKey = persisted.AvatarKey
 			s.users[id] = user
 		}
 	}
@@ -410,13 +421,18 @@ func (s *MemoryStore) applyState(state persistedState) {
 	if state.Waitlist != nil {
 		s.waitlist = state.Waitlist
 	}
+	s.adultLog = state.AdultLog
+	s.notifications = state.Notifications
+	for id, item := range s.menuItems {
+		s.menuItems[id] = normalizeAgeRestriction(item)
+	}
 	s.demoMenuVer = state.DemoMenuVer
 }
 
 func (s *MemoryStore) stateLocked() persistedState {
 	users := make(map[string]persistedUser, len(s.users))
 	for id, user := range s.users {
-		users[id] = persistedUser{User: user, PasswordHash: user.PasswordHash}
+		users[id] = persistedUser{User: user, PasswordHash: user.PasswordHash, AvatarKey: user.AvatarKey}
 	}
 	return persistedState{
 		Cities:         s.cities,
@@ -436,6 +452,8 @@ func (s *MemoryStore) stateLocked() persistedState {
 		WorkShifts:     s.shifts,
 		ProfileChanges: s.profileChanges,
 		Waitlist:       s.waitlist,
+		AdultLog:       s.adultLog,
+		Notifications:  s.notifications,
 		DemoMenuVer:    s.demoMenuVer,
 	}
 }

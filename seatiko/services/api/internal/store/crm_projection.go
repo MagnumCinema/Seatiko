@@ -63,7 +63,8 @@ func (s *MemoryStore) UpdateUserFromCRM(id, firstName, lastName, email, phone, l
 	defer s.persistBestEffortLocked()
 
 	user, ok := s.users[id]
-	if !ok {
+	if !ok || user.DeletedAt != nil {
+		// A deleted account must not get its personal data back from the CRM.
 		return models.User{}, ErrNotFound
 	}
 	if email != "" {

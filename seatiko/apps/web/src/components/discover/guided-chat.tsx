@@ -1,10 +1,32 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type AnimationEvent } from "react";
+import { discoverAi, pickLocale, type DiscoverResult } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useLocale } from "@/components/locale-provider";
 
-type Msg = { role: "assistant" | "user"; text: string };
+type Msg = {
+  role: "assistant" | "user";
+  text: string;
+  venues?: { id: string; name: string }[];
+  mapHref?: string;
+  pending?: boolean;
+};
+
+/** Human summary of the understood filters, from the same chip labels as the stepper. */
+function summarize(
+  result: DiscoverResult,
+  chips: Record<string, string>,
+  budgetLabel: (min: number, max: number) => string,
+): string {
+  const p = result.prefs;
+  if (!p) return "";
+  const ids = [...p.cuisine, ...p.restaurant_type, ...p.occasion, ...p.practical];
+  const parts = ids.map((id) => chips[id] ?? id);
+  if (p.budget) parts.push(budgetLabel(p.budget.min, p.budget.max));
+  return parts.join(", ");
+}
 
 type Props = {
   /** Prefer true to avoid SSR/client matchMedia mismatches; expand via toggle or CSS. */
@@ -64,8 +86,9 @@ function scrollToFilters() {
 }
 
 export function GuidedChat({ collapsedDefault = true }: Props) {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = getSiteCopy(locale).discover;
+  const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(!collapsedDefault);
   const [closing, setClosing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -99,15 +122,41 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
     setClosing(false);
   }
 
-  function send(text: string) {
+  async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || busy) return;
+    setBusy(true);
+    setDraft("");
     setMessages((m) => [
       ...m,
       { role: "user", text: trimmed },
-      { role: "assistant", text: copy.chatStubReply },
+      { role: "assistant", text: t("discover_ai.thinking"), pending: true },
     ]);
-    setDraft("");
+    let reply: Msg;
+    try {
+      const result = await discoverAi({ query: trimmed, locale, city_id: "city-balti" });
+      const summary = summarize(result, copy.chips as Record<string, string>, (min, max) =>
+        t("discover_ai.budget", { min, max }),
+      );
+      if (!summary) {
+        reply = { role: "assistant", text: t("discover_ai.not_understood") };
+      } else {
+        const explanation =
+          typeof result.explanation === "string" && result.explanation
+            ? result.explanation
+            : t("discover_ai.understood", { filters: summary });
+        reply = {
+          role: "assistant",
+          text: result.exact === false ? `${explanation} ${t("discover_ai.approx")}` : explanation,
+          venues: result.venues.slice(0, 3).map((v) => ({ id: v.id, name: pickLocale(v.name, locale) })),
+          mapHref: result.query_string ? `/?${result.query_string}#map` : "/#map",
+        };
+      }
+    } catch {
+      reply = { role: "assistant", text: t("discover_ai.error") };
+    }
+    setMessages((m) => [...m.filter((msg) => !msg.pending), reply]);
+    setBusy(false);
   }
 
   return (
@@ -176,7 +225,26 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
                     A
                   </span>
                 ) : null}
-                <p className={`discover-chat-msg ${msg.role}`}>{msg.text}</p>
+                <div className={`discover-chat-msg ${msg.role}${msg.pending ? " pending" : ""}`}>
+                  <p>{msg.text}</p>
+                  {msg.venues?.length ? (
+                    <>
+                      <span className="discover-chat-top">{t("discover_ai.top")}</span>
+                      <ul className="discover-chat-venues">
+                        {msg.venues.map((v) => (
+                          <li key={v.id}>
+                            <Link href={`/venues/${encodeURIComponent(v.id)}`}>{v.name}</Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                  {msg.mapHref ? (
+                    <Link className="discover-chat-map-link" href={msg.mapHref}>
+                      {t("discover_ai.show_map")} →
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
@@ -214,7 +282,7 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
               className="discover-chat-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                send(draft);
+                void send(draft);
               }}
             >
               <input
@@ -225,7 +293,7 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
                 placeholder={copy.chatPlaceholder}
                 aria-label={copy.chatPlaceholder}
               />
-              <button type="submit" className="btn btn-gold discover-chat-send">
+              <button type="submit" className="btn btn-gold discover-chat-send" disabled={busy}>
                 {copy.chatSend}
               </button>
             </form>

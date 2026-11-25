@@ -170,6 +170,92 @@ paths:
                     type: string
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/availability:
+    get:
+      operationId: SearchAvailability
+      summary: Search Availability
+      tags:
+        - Map and venues
+      description: Free tables across a city's venues for a party around the wanted time. A start is free when a
+        reservation for that table and duration would be accepted, it lies inside the venue opening hours (Europe/Chisinau)
+        and at least 15 minutes from now. The smallest fitting table is picked. Venues are sorted by exact match, then
+        the closest free start, then rating; every venue of the city is returned so clients can show too-small or full
+        venues. Rate limited to 60 requests per minute.
+      parameters:
+        - name: city_id
+          in: query
+          required: false
+          schema:
+            type: string
+            default: city-balti
+          description: A city ID returned by GET /api/v1/cities, or all.
+        - name: at
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Wanted start (RFC 3339). Omit for the earliest free starts of the day.
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Local day (YYYY-MM-DD, Europe/Chisinau) when at is omitted. Defaults to today.
+        - name: guests
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 2
+        - name: duration_min
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 480
+            default: 0
+          description: Wanted booking length; each venue answers with its longest allowed length not above it. 0 is
+            the venue default.
+        - name: window_min
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 360
+            default: 90
+          description: How far from at a free start still matches.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            default: 4
+          description: Free starts per venue.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timezone:
+                    type: string
+                    example: Europe/Chisinau
+                  venues:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueAvailability'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/map/places:
     get:
       operationId: ListMapPlaces
@@ -192,6 +278,13 @@ paths:
           schema:
             type: string
           description: Optional viewport in south,west,north,east order. Example 46.92,28.72,47.12,29.02.
+        - name: cuisine
+          in: query
+          required: false
+          schema:
+            type: string
+          description: /discover filters (cuisine, type, budget=MIN-MAX, occasion, practical, lat, lng). When present the
+            response has `filters` {total, matched, relax}; the place list is not filtered.
         - name: lang
           in: query
           required: false
@@ -216,7 +309,7 @@ paths:
             type: string
             maxLength: 100
           description: Search by venue name or street address in the selected area.
-          example: Independenței 45
+          example: Ștefan cel Mare 57
         - name: bookable_only
           in: query
           required: false
@@ -453,6 +546,9 @@ paths:
       summary: AI Discover
       tags:
         - Map and venues
+      description: Reads a free-text request (RU/RO/EN, up to 300 characters) into /discover filters with Groq when
+        GROQ_API_KEY is set, else (or on any model error) with keyword rules; merges them with `prefs` and ranks the city's
+        venues. `query_string` is ready for /?{query_string}#map. 20 requests per minute per IP.
       requestBody:
         required: true
         content:
@@ -469,8 +565,38 @@ paths:
                 properties:
                   venues:
                     type: array
+                    description: Ranked venues (legacy shape for older clients).
                     items:
                       $ref: '#/components/schemas/Venue'
+                  ranked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        venue_id:
+                          type: string
+                        score:
+                          type: number
+                        reasons:
+                          type: array
+                          description: cuisine, budget, type, occasion:<id>, open_now, free_tables, partners
+                          items:
+                            type: string
+                  prefs:
+                    $ref: '#/components/schemas/DiscoverPrefs'
+                  query_string:
+                    type: string
+                  exact:
+                    type: boolean
+                    description: false when nothing passes the filters and the ranking is approximate.
+                  source:
+                    type: string
+                    enum:
+                      - groq
+                      - rules
+                  explanation:
+                    type: string
+                    description: One sentence from the model in the request language; empty for rules.
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/auth/register:
@@ -572,6 +698,99 @@ paths:
                     $ref: '#/components/schemas/User'
         default:
           $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteMe
+      summary: Delete Me
+      tags:
+        - Accounts
+      description: GDPR account deletion for guests. Requires the current password. Personal data is anonymised
+        (name, email, phone, diet, favourites, avatar, reservation notes, waitlist and event contacts); upcoming
+        reservations and their preorders are cancelled; orders stay for accounting without personal data. Tokens issued
+        before stop working (401 account_deleted). Errors wrong_password (403), role_not_allowed (403, non-guests).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                  cancelled_reservations:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/avatar:
+    post:
+      operationId: UploadAvatar
+      summary: Upload Avatar
+      tags:
+        - Accounts
+      description: Profile photo. JPEG, PNG or WebP by magic bytes (SVG and anything else refused), up to 5 MB, at most
+        10 uploads per minute per user. Stored as a 512×512 JPEG (centre crop, metadata removed) in S3-compatible storage
+        (S3_BUCKET) or the local upload dir. The previous photo is deleted.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '413':
+          description: file_too_large
+        '415':
+          description: unsupported_image
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteAvatar
+      summary: Delete Avatar
+      tags:
+        - Accounts
+      description: Removes the photo from storage and the profile.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/me/email:
     patch:
       operationId: UpdateEmail
@@ -622,6 +841,132 @@ paths:
                 properties:
                   status:
                     type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/notifications:
+    get:
+      operationId: ListNotifications
+      summary: List Notifications
+      tags:
+        - Accounts
+      description: In-app notifications of the current user, newest first, with the unread count. Kinds
+        PREORDER_CREATED, PREORDER_UPDATED, PREORDER_CANCELLED (venue staff and owner), PREORDER_PREPARING (kitchen and
+        guest, when kitchen_at comes), PREORDER_ADULT_REMOVED, PREORDER_AGE_REFUSED, ADULT_GRANTED, ADULT_REVOKED (guest).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unread
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - '1'
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread:
+                    type: integer
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/notifications/read:
+    post:
+      operationId: MarkNotificationsRead
+      summary: Mark Notifications Read
+      tags:
+        - Accounts
+      description: Marks the given notifications as read; without ids, all of them.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  marked:
+                    type: integer
+                  unread:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/notifications/stream:
+    get:
+      operationId: StreamNotifications
+      summary: Stream Notifications
+      tags:
+        - Accounts
+      description: Server-Sent Events. First a `ready` event with the unread count, then a `notification` event (JSON
+        Notification) for every new message, and a comment ping every 25 s. Send the Bearer token in the
+        Authorization header (read the stream with fetch, not EventSource).
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/me/venues/{id}/preorder-menu:
+    get:
+      operationId: MyPreorderMenu
+      summary: My Preorder Menu
+      tags:
+        - Accounts
+      description: The venue menu for preordering to a booking as the current guest. requires_age_18 items are not
+        orderable (blocked_reason age_verification_required) until staff grant adult_preorder_allowed.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  menu:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PreorderMenuItem'
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/staff/invites/{id}/accept:
@@ -788,6 +1133,102 @@ paths:
                 properties:
                   reservation:
                     $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/reservations/{id}/preorder:
+    get:
+      operationId: GetPreorder
+      summary: Get Preorder
+      tags:
+        - Reservations
+      description: The reservation's active preorder, for its guest or for staff, the owner of the venue or an admin.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+    put:
+      operationId: SavePreorder
+      summary: Save Preorder
+      tags:
+        - Reservations
+      description: Creates or replaces the guest's preorder for their CONFIRMED reservation. Allowed until kitchen_at
+        (reserved_for minus the venue's preorder_lead_min, default 30). Prices are fixed when saved. requires_age_18
+        items need adult_preorder_allowed and stay PENDING_AGE_CHECK until staff check an ID when serving. Errors
+        invalid_items (400), age_verification_required (403), preorder_disabled, preorder_closed, item_unavailable (409).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  maxItems: 30
+                  items:
+                    $ref: '#/components/schemas/OrderItemInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: CancelPreorder
+      summary: Cancel Preorder
+      tags:
+        - Reservations
+      description: Cancels the guest's preorder before kitchen_at. Cancelling the reservation also cancels it.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/reservations/{id}/cancel:
@@ -1315,6 +1756,48 @@ paths:
                       $ref: '#/components/schemas/Order'
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/staff/orders/{id}/age-check:
+    post:
+      operationId: StaffPreorderAgeCheck
+      summary: Staff Preorder Age Check
+      tags:
+        - Staff
+      description: In-person ID check before serving 18+ items of a preorder. approved=true (needs id_document_checked)
+        marks them CONFIRMED; approved=false removes them from the order. Until then the order cannot be marked SERVED
+        or PAID (age_check_pending, 409).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - approved
+              properties:
+                id_document_checked:
+                  type: boolean
+                approved:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    $ref: '#/components/schemas/Order'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/staff/orders/{id}:
     patch:
       operationId: StaffUpdateOrderStatus
@@ -1385,6 +1868,96 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Reservation'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/reservations/{id}/adult-verification:
+    post:
+      operationId: StaffGrantAdultPreorder
+      summary: Staff Grant Adult Preorder
+      tags:
+        - Staff
+      description: Venue staff confirm in person that the checked-in guest of this reservation is 18+, after seeing an
+        ID document. Opens preorder of all requires_age_18 items. Recorded on the caller's staff account and in the
+        audit log. The reservation must be CHECKED_IN within the last 12 hours.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_document_checked
+                - id_document_type
+              properties:
+                id_document_checked:
+                  type: boolean
+                  description: Must be true; the staff member saw an ID document with a photo.
+                id_document_type:
+                  type: string
+                  enum:
+                    - id_card
+                    - passport
+                    - other
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdultStatus'
+        '400':
+          description: id_document_required or invalid_id_document_type
+        '403':
+          description: Not staff of this venue, or granting to yourself
+        '409':
+          description: visit_required (reservation not checked in recently)
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/venues/{venueId}/guests/{userId}/adult-verification/revoke:
+    post:
+      operationId: StaffRevokeAdultPreorder
+      summary: Staff Revoke Adult Preorder
+      tags:
+        - Staff
+      description: The venue owner or a platform admin withdraws the guest's 18+ preorder permission. Waiters cannot
+        revoke. The guest must have a reservation at this venue (admins excepted).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdultStatus'
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/staff/waitlist:
@@ -2749,6 +3322,35 @@ paths:
                       $ref: '#/components/schemas/AdminOrderRow'
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/admin/adult-permission-log:
+    get:
+      operationId: AdminAdultPermissionLog
+      summary: Admin Adult Permission Log
+      tags:
+        - Administration
+      description: Audit of every 18+ grant and revoke, newest first.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdultPermissionLogEntry'
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/admin/crm/status:
     get:
       operationId: AdminCRMStatus
@@ -3192,6 +3794,11 @@ components:
           type: integer
         allow_preorder:
           type: boolean
+        preorder_lead_min:
+          type: integer
+          minimum: 0
+          maximum: 180
+          description: Minutes before the booking the kitchen gets a preorder (0 = default 30).
         session_start_before_min:
           type: integer
         release_before_min:
@@ -3431,6 +4038,9 @@ components:
           type: string
         contains_alcohol:
           type: boolean
+        requires_age_18:
+          type: boolean
+          description: 18+ item; preorder needs adult_preorder_allowed. Always true when contains_alcohol is.
         tags:
           type: array
           items:
@@ -3466,6 +4076,9 @@ components:
           type: string
         contains_alcohol:
           type: boolean
+        requires_age_18:
+          type: boolean
+          description: 18+ item; preorder needs adult_preorder_allowed. Always true when contains_alcohol is.
         tags:
           type: array
           items:
@@ -3506,6 +4119,22 @@ components:
           format: date-time
         venue_name:
           $ref: '#/components/schemas/LocalizedString'
+        preorder:
+          type: boolean
+          description: Ordered ahead for a reservation.
+        reservation_id:
+          type: string
+        kitchen_at:
+          type: string
+          format: date-time
+          description: When the kitchen starts a preorder; the guest can change it until then.
+        kitchen_due:
+          type: boolean
+          description: Computed. A submitted preorder whose kitchen_at has passed.
+        adult_items_removed_at:
+          type: string
+          format: date-time
+          description: 18+ items were removed because the guest's 18+ permission was revoked.
     OrderItem:
       type: object
       properties:
@@ -3517,6 +4146,19 @@ components:
           type: integer
         price:
           type: integer
+          description: Per unit, fixed when ordered.
+        requires_age_18:
+          type: boolean
+        contains_alcohol:
+          type: boolean
+        age_check:
+          type: string
+          enum:
+            - PENDING_AGE_CHECK
+            - CONFIRMED
+        unavailable:
+          type: boolean
+          description: Computed. The dish was deleted or stopped after ordering.
     OrderItemInput:
       type: object
       properties:
@@ -3590,6 +4232,8 @@ components:
           type: array
           items:
             type: integer
+        preorder:
+          $ref: '#/components/schemas/Order'
     RestaurantReservation:
       type: object
       properties:
@@ -3621,6 +4265,8 @@ components:
         created_at:
           type: string
           format: date-time
+        preorder:
+          $ref: '#/components/schemas/Order'
     Session:
       type: object
       properties:
@@ -3748,6 +4394,17 @@ components:
           type: array
           items:
             type: string
+        avatar_url:
+          type: string
+          description: Profile photo URL (POST /me/avatar).
+        deleted_at:
+          type: string
+          format: date-time
+        adult_preorder_allowed:
+          type: boolean
+          description: Read-only. Granted by venue staff after an in-person ID check (APP_LOGIC 8.4).
+        adult_verification:
+          $ref: '#/components/schemas/AdultVerification'
         created_at:
           type: string
           format: date-time
@@ -3821,6 +4478,11 @@ components:
           type: integer
         allow_preorder:
           type: boolean
+        preorder_lead_min:
+          type: integer
+        hours_text:
+          type: string
+          description: Opening hours line in venue local time, e.g. "Пн–Вс 10:00–22:00".
     VenueAnalytics:
       type: object
       properties:
@@ -3906,6 +4568,155 @@ components:
           type: string
         profile_url:
           type: string
+    AdultVerification:
+      type: object
+      description: Who confirmed the guest is 18+, where and when; read-only for the guest.
+      properties:
+        verified_at:
+          type: string
+          format: date-time
+        verified_by_staff_id:
+          type: string
+        verified_by_staff_role:
+          type: string
+          enum:
+            - waiter
+            - manager
+            - admin
+        verified_by_staff_display_name:
+          type: string
+        verified_at_venue_id:
+          type: string
+        id_document_checked:
+          type: boolean
+        id_document_type:
+          type: string
+        revoked_at:
+          type: string
+          format: date-time
+        revoked_by_staff_id:
+          type: string
+    AdultStatus:
+      type: object
+      properties:
+        user_id:
+          type: string
+        adult_preorder_allowed:
+          type: boolean
+        adult_verification:
+          $ref: '#/components/schemas/AdultVerification'
+    AdultPermissionLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        action:
+          type: string
+          enum:
+            - GRANT
+            - REVOKE
+        staff_id:
+          type: string
+        staff_role:
+          type: string
+        staff_display_name:
+          type: string
+        venue_id:
+          type: string
+        reservation_id:
+          type: string
+        id_document_checked:
+          type: boolean
+        id_document_type:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    PreorderMenuItem:
+      allOf:
+        - $ref: '#/components/schemas/MenuItem'
+        - type: object
+          properties:
+            orderable:
+              type: boolean
+            blocked_reason:
+              type: string
+              enum:
+                - stopped
+                - age_verification_required
+    VenueAvailability:
+      type: object
+      properties:
+        venue_id:
+          type: string
+        duration_min:
+          type: integer
+          description: Booking length the venue accepts closest to the requested one.
+        fits:
+          type: boolean
+          description: Some table seats the whole party.
+        exact:
+          type: boolean
+          description: One of the slots starts exactly at the requested time.
+        slots:
+          type: array
+          description: Up to limit free starts nearest the requested time, chronological.
+          items:
+            $ref: '#/components/schemas/AvailabilitySlot'
+        later_today:
+          type: array
+          description: The day's first free starts when none are near the requested time.
+          items:
+            $ref: '#/components/schemas/AvailabilitySlot'
+    AvailabilitySlot:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        table_id:
+          type: string
+        table_number:
+          type: integer
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - PREORDER_CREATED
+            - PREORDER_UPDATED
+            - PREORDER_CANCELLED
+            - PREORDER_PREPARING
+            - PREORDER_ADULT_REMOVED
+            - PREORDER_AGE_REFUSED
+            - ADULT_GRANTED
+            - ADULT_REVOKED
+        venue_id:
+          type: string
+        venue_name:
+          $ref: '#/components/schemas/LocalizedString'
+        reservation_id:
+          type: string
+        order_id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
     VenueScheduleSlot:
       type: object
       properties:
@@ -4028,6 +4839,45 @@ components:
       properties:
         query:
           type: string
+          maxLength: 300
+        city_id:
+          type: string
+          default: city-balti
+        locale:
+          type: string
+          enum:
+            - ru
+            - en
+            - ro
+          description: Language of the explanation.
+        prefs:
+          $ref: '#/components/schemas/DiscoverPrefs'
+    DiscoverPrefs:
+      type: object
+      properties:
+        cuisine:
+          type: array
+          items:
+            type: string
+        restaurant_type:
+          type: array
+          items:
+            type: string
+        budget:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        occasion:
+          type: array
+          items:
+            type: string
+        practical:
+          type: array
+          items:
+            type: string
     createEventInquiryReq:
       type: object
       required:

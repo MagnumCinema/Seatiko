@@ -48,6 +48,10 @@ type Venue struct {
 	VisitDurationMin      int             `json:"visit_duration_min"`
 	MaxVisitDurationMin   int             `json:"max_visit_duration_min"`
 	AllowPreorder         bool            `json:"allow_preorder"`
+	// PreorderLeadMin: the kitchen gets a preorder this many minutes before the booking (0 = default 30).
+	PreorderLeadMin int `json:"preorder_lead_min"`
+	// HoursText is the opening hours line, e.g. "Пн–Вс 10:00–22:00" (venue local time).
+	HoursText string `json:"hours_text,omitempty"`
 }
 
 // VenueReview is a guest-facing review shown on the venue page (seeded or from Google Places).
@@ -180,19 +184,28 @@ type VenueAnalytics struct {
 }
 
 type User struct {
-	ID              string    `json:"id"`
-	Email           string    `json:"email"`
-	Phone           string    `json:"phone,omitempty"`
-	PasswordHash    string    `json:"-"`
-	FirstName       string    `json:"first_name"`
-	LastName        string    `json:"last_name"`
-	DisplayName     string    `json:"display_name"`
-	Locale          string    `json:"locale"`
-	Role            string    `json:"role"`
-	DietPreferences []string  `json:"diet_preferences,omitempty"`
-	FavoriteVenues  []string  `json:"favorite_venues,omitempty"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID              string   `json:"id"`
+	Email           string   `json:"email"`
+	Phone           string   `json:"phone,omitempty"`
+	PasswordHash    string   `json:"-"`
+	FirstName       string   `json:"first_name"`
+	LastName        string   `json:"last_name"`
+	DisplayName     string   `json:"display_name"`
+	Locale          string   `json:"locale"`
+	Role            string   `json:"role"`
+	DietPreferences []string `json:"diet_preferences,omitempty"`
+	FavoriteVenues  []string `json:"favorite_venues,omitempty"`
+	// AdultPreorderAllowed lets the guest preorder requires_age_18 items. Only staff can
+	// grant it after checking an ID in person (APP_LOGIC §8.4); guests cannot set it.
+	// AvatarURL is the public URL of the profile photo (POST /me/avatar); AvatarKey is its storage key.
+	AvatarURL string `json:"avatar_url,omitempty"`
+	AvatarKey string `json:"-"`
+	// DeletedAt: the guest deleted the account (DELETE /me); personal data is anonymised.
+	DeletedAt            *time.Time         `json:"deleted_at,omitempty"`
+	AdultPreorderAllowed bool               `json:"adult_preorder_allowed"`
+	AdultVerification    *AdultVerification `json:"adult_verification,omitempty"`
+	CreatedAt            time.Time          `json:"created_at"`
+	UpdatedAt            time.Time          `json:"updated_at"`
 }
 
 type ApplicationStatus string
@@ -287,6 +300,7 @@ type Reservation struct {
 	CreatedAt          time.Time         `json:"created_at"`
 	UpdatedAt          time.Time         `json:"updated_at"`
 	// Guest list enrichment (filled on read, not persisted separately).
+	Preorder     *Order          `json:"preorder,omitempty"`
 	VenueName    LocalizedString `json:"venue_name,omitempty"`
 	TableNumber  int             `json:"table_number,omitempty"`
 	TableNumbers []int           `json:"table_numbers,omitempty"`
@@ -327,6 +341,7 @@ type RestaurantReservation struct {
 	Status             ReservationStatus `json:"status"`
 	ArrivalConfirmedAt *time.Time        `json:"arrival_confirmed_at,omitempty"`
 	CreatedAt          time.Time         `json:"created_at"`
+	Preorder           *Order            `json:"preorder,omitempty"`
 }
 
 // VenueScheduleSlot is the public busy window for a table — no guest PII.
@@ -393,32 +408,59 @@ type MenuItem struct {
 	VolumeML        int      `json:"volume_ml,omitempty"`
 	ImageURL        string   `json:"image_url,omitempty"`
 	ContainsAlcohol bool     `json:"contains_alcohol"`
-	Tags            []string `json:"tags,omitempty"`
-	Position        int      `json:"position,omitempty"`
-	Stopped         bool     `json:"stopped"`
+	// RequiresAge18: guests may preorder it only with adult_preorder_allowed (APP_LOGIC §8.4).
+	// Always true when ContainsAlcohol is.
+	RequiresAge18 bool     `json:"requires_age_18"`
+	Tags          []string `json:"tags,omitempty"`
+	Position      int      `json:"position,omitempty"`
+	Stopped       bool     `json:"stopped"`
 }
 
 type OrderItem struct {
 	MenuItemID string          `json:"menu_item_id"`
 	Name       LocalizedString `json:"name"`
 	Qty        int             `json:"qty"`
-	Price      int             `json:"price"`
+	// Price is per unit at the moment of ordering; later menu price changes do not affect it.
+	Price int `json:"price"`
+	// RequiresAge18 / ContainsAlcohol are copied from the menu item when ordered.
+	RequiresAge18   bool `json:"requires_age_18,omitempty"`
+	ContainsAlcohol bool `json:"contains_alcohol,omitempty"`
+	// AgeCheck tracks the in-person ID check for 18+ items of a preorder:
+	// PENDING_AGE_CHECK until staff confirm it when serving (APP_LOGIC §8.4).
+	AgeCheck string `json:"age_check,omitempty"`
+	// Unavailable is computed on read: the dish was deleted or put on the stop list after ordering.
+	Unavailable bool `json:"unavailable,omitempty"`
 }
 
+const (
+	AgeCheckPending   = "PENDING_AGE_CHECK"
+	AgeCheckConfirmed = "CONFIRMED"
+)
+
 type Order struct {
-	ID            string          `json:"id"`
-	SessionID     string          `json:"session_id"`
-	UserID        string          `json:"user_id"`
-	VenueID       string          `json:"venue_id"`
-	Items         []OrderItem     `json:"items"`
-	Status        OrderStatus     `json:"status"`
-	Total         int             `json:"total"`
-	CheckNumber   string          `json:"check_number,omitempty"`
-	PaymentMethod string          `json:"payment_method,omitempty"`
-	PaidAt        *time.Time      `json:"paid_at,omitempty"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	VenueName     LocalizedString `json:"venue_name,omitempty"`
+	ID        string `json:"id"`
+	SessionID string `json:"session_id"`
+	// Preorder: dishes ordered ahead for a reservation (BACKEND_TASKS №1).
+	Preorder      bool   `json:"preorder,omitempty"`
+	ReservationID string `json:"reservation_id,omitempty"`
+	// KitchenAt is when the kitchen should start a preorder (reserved_for − preorder_lead_min);
+	// the guest can change or cancel it until then.
+	KitchenAt *time.Time `json:"kitchen_at,omitempty"`
+	// KitchenDue is computed on read: a submitted preorder whose KitchenAt has passed.
+	KitchenDue bool `json:"kitchen_due,omitempty"`
+	// AdultItemsRemovedAt: 18+ items were taken out because the guest's 18+ permission was revoked.
+	AdultItemsRemovedAt *time.Time      `json:"adult_items_removed_at,omitempty"`
+	UserID              string          `json:"user_id"`
+	VenueID             string          `json:"venue_id"`
+	Items               []OrderItem     `json:"items"`
+	Status              OrderStatus     `json:"status"`
+	Total               int             `json:"total"`
+	CheckNumber         string          `json:"check_number,omitempty"`
+	PaymentMethod       string          `json:"payment_method,omitempty"`
+	PaidAt              *time.Time      `json:"paid_at,omitempty"`
+	CreatedAt           time.Time       `json:"created_at"`
+	UpdatedAt           time.Time       `json:"updated_at"`
+	VenueName           LocalizedString `json:"venue_name,omitempty"`
 }
 
 type WaiterCallReason string
@@ -505,4 +547,105 @@ type WaitlistSummary struct {
 	Waiting    int    `json:"waiting"`
 	QuotedWait int    `json:"quoted_wait_min"`
 	FreeTables int    `json:"free_tables"`
+}
+
+const (
+	AdultActionGrant  = "GRANT"
+	AdultActionRevoke = "REVOKE"
+
+	IDDocumentIDCard   = "id_card"
+	IDDocumentPassport = "passport"
+	IDDocumentOther    = "other"
+
+	AdultStaffRoleWaiter  = "waiter"
+	AdultStaffRoleManager = "manager"
+	AdultStaffRoleAdmin   = "admin"
+)
+
+// AdultVerification records who confirmed the guest is 18+, where and when,
+// and who revoked it. The guest sees it read-only.
+type AdultVerification struct {
+	VerifiedAt        time.Time  `json:"verified_at"`
+	StaffID           string     `json:"verified_by_staff_id"`
+	StaffRole         string     `json:"verified_by_staff_role"`
+	StaffDisplayName  string     `json:"verified_by_staff_display_name"`
+	VenueID           string     `json:"verified_at_venue_id"`
+	IDDocumentChecked bool       `json:"id_document_checked"`
+	IDDocumentType    string     `json:"id_document_type"`
+	RevokedAt         *time.Time `json:"revoked_at,omitempty"`
+	RevokedByStaffID  string     `json:"revoked_by_staff_id,omitempty"`
+}
+
+// AdultPermissionLogEntry is the append-only audit of every 18+ grant and revoke.
+type AdultPermissionLogEntry struct {
+	ID                string    `json:"id"`
+	UserID            string    `json:"user_id"`
+	Action            string    `json:"action"`
+	StaffID           string    `json:"staff_id"`
+	StaffRole         string    `json:"staff_role"`
+	StaffDisplayName  string    `json:"staff_display_name"`
+	VenueID           string    `json:"venue_id"`
+	ReservationID     string    `json:"reservation_id,omitempty"`
+	IDDocumentChecked bool      `json:"id_document_checked"`
+	IDDocumentType    string    `json:"id_document_type,omitempty"`
+	Reason            string    `json:"reason,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
+// PreorderMenuItem is a menu item as seen by one guest when preordering to a booking.
+type PreorderMenuItem struct {
+	MenuItem
+	// Orderable: the guest may add it to a preorder now.
+	Orderable bool `json:"orderable"`
+	// BlockedReason is set when not orderable: "stopped" or "age_verification_required".
+	BlockedReason string `json:"blocked_reason,omitempty"`
+}
+
+// AvailabilitySlot is a free booking start and the table it would use.
+type AvailabilitySlot struct {
+	StartsAt    time.Time `json:"starts_at"`
+	TableID     string    `json:"table_id"`
+	TableNumber int       `json:"table_number"`
+}
+
+// VenueAvailability is one venue's answer in GET /availability.
+type VenueAvailability struct {
+	VenueID string `json:"venue_id"`
+	// DurationMin is the booking length the venue accepts closest to the requested one.
+	DurationMin int `json:"duration_min"`
+	// Fits: some table seats the whole party.
+	Fits bool `json:"fits"`
+	// Exact: one of the slots starts exactly at the requested time.
+	Exact bool `json:"exact"`
+	// Slots are up to `limit` free starts nearest the requested time, chronological.
+	Slots []AvailabilitySlot `json:"slots"`
+	// LaterToday lists the day's first free starts when none are near the requested time.
+	LaterToday []AvailabilitySlot `json:"later_today,omitempty"`
+}
+
+// Notification kinds (APP_LOGIC §13).
+const (
+	NotifyPreorderCreated      = "PREORDER_CREATED"
+	NotifyPreorderUpdated      = "PREORDER_UPDATED"
+	NotifyPreorderCancelled    = "PREORDER_CANCELLED"
+	NotifyPreorderPreparing    = "PREORDER_PREPARING"
+	NotifyPreorderAdultRemoved = "PREORDER_ADULT_REMOVED"
+	NotifyPreorderAgeRefused   = "PREORDER_AGE_REFUSED"
+	NotifyAdultGranted         = "ADULT_GRANTED"
+	NotifyAdultRevoked         = "ADULT_REVOKED"
+)
+
+// Notification is an in-app message for one user; clients localise it by Kind.
+type Notification struct {
+	ID            string          `json:"id"`
+	UserID        string          `json:"user_id"`
+	Kind          string          `json:"kind"`
+	VenueID       string          `json:"venue_id,omitempty"`
+	VenueName     LocalizedString `json:"venue_name,omitempty"`
+	ReservationID string          `json:"reservation_id,omitempty"`
+	OrderID       string          `json:"order_id,omitempty"`
+	// At is the reservation or kitchen time the message is about, if any.
+	At        *time.Time `json:"at,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
 }

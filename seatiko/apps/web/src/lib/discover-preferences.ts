@@ -587,3 +587,10 @@ export function filterAndRankPlaces(
   });
   return scored;
 }
+
+/** Drops one filter by the server's relax hint ("cuisine", "budget" or a practical id). */
+export function relaxPreference(prefs: DiscoverPreferences, filter: string): DiscoverPreferences {
+  if (filter === "cuisine") return { ...prefs, cuisine: [] };
+  if (filter === "budget") return { ...prefs, budget: null };
+  return { ...prefs, practical: prefs.practical.filter((id) => id !== filter) };
+}

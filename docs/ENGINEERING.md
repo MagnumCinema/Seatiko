@@ -406,20 +406,30 @@ API=http://localhost/api/v1
 | `GET` | `/integrations/twenty/status` | состояние CRM sync |
 | `POST` | `/integrations/twenty/webhook` | подписанный webhook Twenty |
 
-### Поиск свободных столов (TODO: перенести на сервер)
+### Поиск свободных столов
 
-Очередь бэкенд-задач: [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) №2.
+Очередь бэкенд-задач: [`BACKEND_TASKS.md`](./BACKEND_TASKS.md) №2 (сделано).
 
-Сейчас (пилот, 10 ресторанов) страница `/book` загружает `GET /venues`, затем для каждого ресторана `GET /venues/:id/tables` и `GET /venues/:id/schedule` и считает свободные времена в браузере (`apps/web/src/lib/venue-availability.ts`, тесты рядом). Это 1 + 2·N запросов и логика, продублированная на клиенте.
-
-Целевой вариант — один публичный маршрут:
+Страница `/book` делает один запрос `GET /api/v1/availability` (плюс `GET /venues` для карточек). Столы ресторана подгружаются только при открытии формы брони.
 
 | Метод | Маршрут | Назначение |
 |---|---|---|
-| `GET` | `/availability?city_id=&at=<ISO>&guests=N&duration_min=M&window_min=90&limit=4` | рестораны, где есть стол на `guests` на `duration_min` около `at`; для каждого — ближайшие свободные начала и подходящий стол |
+| `GET` | `/availability?city_id=&at=<RFC3339>&date=YYYY-MM-DD&guests=N&duration_min=M&window_min=90&limit=4` | все рестораны города; для каждого — подходит ли стол на `guests`, ближайшие свободные начала около `at` и стол для каждого |
 
-Ответ: `{ "venues": [{ "venue_id", "duration_min", "exact": bool, "slots": [{ "starts_at", "table_id" }] }] }`, отсортировано: точное совпадение → ближе по времени → рейтинг.
-Требования: та же проверка пересечений, что в `CreateReservationWithDuration` (`tableBusyAtLocked`, окна броней, занятые столы, `booking_interval_min`, `max_visit_duration_min`, часы работы); тесты в `store` на совпадение с созданием брони. После внедрения `venue-availability.ts` остаётся только для отображения.
+Параметры: `city_id` (по умолчанию `city-balti`, `all` — все города), `at` — желаемое начало; без него берутся первые свободные начала дня `date` (по умолчанию сегодня). `guests` 1–50 (по умолчанию 2), `duration_min` 0–480 (0 — длительность ресторана по умолчанию), `window_min` 0–360, `limit` 1–12. Не дальше 90 дней вперёд. Лимит 60 запросов в минуту.
+
+Ответ: `{ "timezone": "Europe/Chisinau", "venues": [{ "venue_id", "duration_min", "fits", "exact", "slots": [{ "starts_at", "table_id", "table_number" }], "later_today"? }] }`. Сортировка: точное совпадение → ближе по времени → рейтинг. `later_today` — первые свободные начала дня, если около `at` ничего нет.
+
+Правила (`internal/store/availability.go`):
+
+- свободен = `CreateReservationWithDuration` примет этот стол в это время (`tableBusyAtLocked`: брони, их окна, занятые и убираемые столы);
+- шаг — `booking_interval_min`; длительность — самая длинная из предлагаемых ресторану, не больше запрошенной (как `durationOptions` во фронте);
+- только в часы работы (`hours_text` ресторана, время `Europe/Chisinau`, закрытие после полуночи поддерживается; без часов — 10:00–23:00) и не раньше чем через 15 минут от текущего момента;
+- выбирается самый маленький подходящий стол.
+
+Часы работы теперь хранятся на сервере: поле `hours_text` у `Venue` (сид в `internal/store/venue_hours.go`, backfill старых снапшотов, копируется из анкеты при публикации и одобрении изменений профиля). Тесты: `internal/store/availability_test.go` (в том числе каждое предложенное время реально бронируется) и `TestAvailabilityEndpoint`.
+
+`apps/web/src/lib/venue-availability.ts`: `fromApiAvailability` переводит ответ сервера в формат карточек; браузерный расчёт `venueAvailability` остался для тестов и экранов одного ресторана. Отображаемые часы по локалям по-прежнему в `apps/web/src/lib/venue-hours.ts`.
 
 ### Маршруты пользователя с JWT
 
@@ -436,6 +446,58 @@ API=http://localhost/api/v1
 | `GET` | `/orders` | свои заказы |
 | `GET` | `/staff/waiter-calls?venue_id=...` | вызовы по ресторану |
 | `POST` | `/staff/waiter-calls/:id/accept` | принять вызов |
+| `GET` | `/me/venues/:id/preorder-menu` | меню для предзаказа от лица гостя: у каждой позиции `orderable` и `blocked_reason` (`age_verification_required` для 18+ без разрешения) |
+| `POST` | `/staff/reservations/:id/adult-verification` | официант / владелец / админ подтверждает 18+ гостя этой брони (тело: `id_document_checked: true`, `id_document_type`: `id_card` / `passport` / `other`) |
+| `POST` | `/staff/venues/:venueId/guests/:userId/adult-verification/revoke` | владелец или админ отзывает 18+ (тело: `reason`, необязательно) |
+
+| `GET/PUT/DELETE` | `/reservations/:id/preorder` | предзаказ блюд к своей брони: получить / создать или заменить (`items: [{menu_item_id, qty}]`) / отменить |
+| `POST` | `/staff/orders/:id/age-check` | проверка документа перед подачей 18+ из предзаказа (`id_document_checked`, `approved`) |
+
+#### Предзаказ к брони (`internal/store/preorder.go`, APP_LOGIC §5.3, §7)
+
+- Предзаказ — это `Order` с `preorder: true` и `reservation_id`; персонал видит его в `GET /staff/orders`, гость — в `GET /orders` и в `preorder` своей брони, владелец и персонал — в списках броней.
+- Создать или изменить можно только для своей брони в статусе `CONFIRMED`, если у ресторана включён `allow_preorder`, и до `kitchen_at` = `reserved_for` − `preorder_lead_min` (правило ресторана 0–180 мин, по умолчанию 30). После `kitchen_at` у заказа `kitchen_due: true` — кухне пора начинать.
+- Цена фиксируется при сохранении; блюдо, позже удалённое или в стоп-листе, отмечается `unavailable: true`. Стоп-лист при сохранении — `item_unavailable` (409), чужое блюдо — 404, пустой список или `qty` вне 1–20 — `invalid_items` (400).
+- 18+: без `adult_preorder_allowed` — `age_verification_required` (403); алкоголь только у ресторана с лицензией. Позиции 18+ сохраняются с `age_check: PENDING_AGE_CHECK`; пока персонал не проверил документ (`/staff/orders/:id/age-check`), заказ нельзя отметить `SERVED` / `PAID` и оплатить (`age_check_pending`, 409). Отказ убирает позиции 18+ из заказа. Отзыв 18+ убирает их из ещё не начатых предзаказов гостя (`adult_items_removed_at`).
+- Отмена брони отменяет её предзаказ; при check-in по QR предзаказ привязывается к сессии стола.
+- В `kitchen_at` фоновый планировщик API (раз в 30 с, `StartPreorderKitchen`) переводит предзаказ в `PREPARING` и уведомляет кухню и гостя.
+- Веб: ссылка «Предзаказать еду к приходу» после брони и кнопка в кабинете гостя ведут в `/venues/:id/menu?preorder=<reservation id>`; там «Ваш выбор» отправляется в ресторан (`PUT`), меняется и отменяется до `kitchen_at`; позиции 18+ без разрешения помечены и не отправляются (`GET /me/venues/:id/preorder-menu`). Без `?preorder=<id>` список по-прежнему только на устройстве.
+
+#### Уведомления (`internal/store/notifications.go`, APP_LOGIC §13)
+
+| Метод | Маршрут | Назначение |
+|---|---|---|
+| `GET` | `/me/notifications?unread=1&limit=50` | свои уведомления (новые сверху) и `unread` |
+| `POST` | `/me/notifications/read` | прочитать `ids` или все |
+| `GET` | `/me/notifications/stream` | Server-Sent Events: `ready` (`unread`), затем `notification` на каждое новое; ping каждые 25 с |
+
+- События: `PREORDER_CREATED` / `UPDATED` / `CANCELLED` — владельцу и активному персоналу ресторана; `PREORDER_PREPARING` — кухне и гостю; `PREORDER_ADULT_REMOVED`, `PREORDER_AGE_REFUSED`, `ADULT_GRANTED`, `ADULT_REVOKED` — гостю. Хранятся в снапшоте, до 200 на пользователя.
+- Поток читается через `fetch` (токен в заголовке `Authorization`, `EventSource` не умеет); nginx отдаёт `/api/v1/me/notifications/stream` без буферизации (`config/nginx/nginx.conf`).
+- Веб: колокольчик в шапке (`components/notifications-bell.tsx`) — счётчик, список, «прочитать все»; переподключение с паузой 3–60 с и опрос раз в минуту, пока поток недоступен.
+- Push на телефон / в закрытый браузер (Web Push, FCM) пока нет: уведомления приходят, когда сайт открыт, и ждут в списке.
+
+#### 18+ и предзаказ (`internal/store/adult.go`, APP_LOGIC §8.4)
+
+- `requires_age_18` у позиции меню; для `contains_alcohol` всегда `true` (при сохранении, в сиде и при загрузке снапшота).
+- `adult_preorder_allowed` и `adult_verification` у `User` (кто, с какой ролью, где, когда, какой документ, кто отозвал). Гость видит их только для чтения: `PATCH /me` их не меняет.
+- Выдать можно только по брони в статусе `CHECKED_IN` не старше 12 часов, только с `id_document_checked: true`, только сотрудником этого заведения (роль `waiter`), владельцем (`manager`) или админом; себе выдать нельзя. Ошибки: `id_document_required` (400), `invalid_id_document_type` (400), `visit_required` (409), `forbidden` (403).
+- Отозвать может владелец заведения, где у гостя была бронь, или админ платформы; официант — нет.
+- Каждая выдача и отзыв пишутся в журнал (`adult_permission_log` в снапшоте, `GET /admin/adult-permission-log?user_id=`).
+- Предзаказ (BACKEND_TASKS №1) проверяет каждую позицию так же, как `CanPreorderItem`.
+
+#### Аккаунт: удаление и аватар
+
+| Метод | Маршрут | Назначение |
+|---|---|---|
+| `DELETE` | `/me` | удалить аккаунт гостя (`password`), обезличивание по GDPR — [BACKEND_TASKS](./BACKEND_TASKS.md) №17 |
+| `POST/DELETE` | `/me/avatar` | фото профиля (multipart `file`) — №18 |
+
+Хранилище файлов (`internal/media`): `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_URL`, `S3_PATH_STYLE` (по умолчанию path-style). Пустой `S3_BUCKET` — локальная папка `UPLOAD_DIR` (`/uploads/...`). В docker-compose: сервис `minio` (`cgr.dev/chainguard/minio`, логин/пароль `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`), `minio-init` создаёт бакет с публичным чтением, nginx отдаёт файлы по `/media/`.
+
+#### /discover: счётчик и AI
+
+- `GET /map/places?...&cuisine=&type=&budget=MIN-MAX&occasion=&practical=&lat=&lng=` → `filters: {total, matched, relax}` (№11).
+- `POST /discover/ai` `{query, locale, city_id, prefs}` → фильтры и места (№10). Groq: `GROQ_API_KEY` (кладите в `.env.integration.local`, он не в git), `GROQ_MODEL` (по умолчанию `openai/gpt-oss-120b`); без ключа — правила. 20 запросов/мин с IP.
 
 ### Маршруты владельца
 
@@ -457,6 +519,7 @@ API=http://localhost/api/v1
 | `POST` | `/admin/applications/:id/review` | review/approve/reject |
 | `POST` | `/admin/applications/:id/publish` | публикация |
 | `POST` | `/admin/integrations/twenty/reconcile` | немедленная CRM-сверка |
+| `GET` | `/admin/adult-permission-log?user_id=` | журнал выдачи и отзыва 18+ |
 
 ## Примеры полного сценария
 

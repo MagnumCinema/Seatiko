@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/seatiko/api/internal/auth"
 	"github.com/seatiko/api/internal/crm"
+	"github.com/seatiko/api/internal/discover"
+	"github.com/seatiko/api/internal/media"
 	"github.com/seatiko/api/internal/models"
 	"github.com/seatiko/api/internal/places"
 	"github.com/seatiko/api/internal/store"
@@ -25,6 +27,10 @@ type API struct {
 	Maps         *places.Integration
 	JWTSecret    string
 	UploadDir    string
+	// Media stores avatars (S3 or local UploadDir); nil disables uploads.
+	Media media.Store
+	// Groq reads /discover AI requests; nil or no key = rule-based only.
+	Groq *discover.Groq
 }
 
 func (a *API) triggerCRM() {
@@ -230,19 +236,6 @@ func (a *API) ListMenu(c *gin.Context) {
 
 func (a *API) ListCollections(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"collections": a.Store.ListCollections()})
-}
-
-type aiDiscoverReq struct {
-	Query string `json:"query"`
-}
-
-func (a *API) AIDiscover(c *gin.Context) {
-	var req aiDiscoverReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"venues": a.Store.AIRecommend(req.Query)})
 }
 
 type registerReq struct {
@@ -746,6 +739,8 @@ func (a *API) PayOrder(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "order_not_found"})
 	case store.ErrForbidden:
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+	case store.ErrAgeCheckPending:
+		c.JSON(http.StatusConflict, gin.H{"error": "age_check_pending"})
 	case store.ErrConflict:
 		c.JSON(http.StatusConflict, gin.H{"error": "conflict"})
 	case store.ErrBadRequest:

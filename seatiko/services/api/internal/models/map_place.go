@@ -47,4 +47,20 @@ type MapPlacesResponse struct {
 		GoogleCount   int    `json:"google_count"`
 		DatabaseCount int    `json:"database_count"`
 	} `json:"source"`
+	// Filters is set when /discover filters are passed (cuisine, budget, practical, …).
+	Filters *MapFilterCounts `json:"filters,omitempty"`
+}
+
+// MapFilterCounts: places in the area (total), how many pass the /discover filters
+// (matched) and, when none do, which single filter to loosen.
+type MapFilterCounts struct {
+	Total   int             `json:"total"`
+	Matched int             `json:"matched"`
+	Relax   *MapFilterRelax `json:"relax,omitempty"`
+}
+
+// MapFilterRelax: removing Filter ("cuisine", "budget" or a practical id) gives Matched places.
+type MapFilterRelax struct {
+	Filter  string `json:"filter"`
+	Matched int    `json:"matched"`
 }

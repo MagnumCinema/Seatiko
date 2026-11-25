@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCurrency } from "@/components/currency-provider";
 import { useLocale, type Locale } from "@/components/locale-provider";
 import { useTheme } from "@/components/theme-provider";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { ApiError, fetchMe, getToken } from "@/lib/api";
 import {
   AUTH_CHANGE_EVENT,
@@ -343,6 +344,9 @@ export function SiteHeader({ variant = "solid" }: Props) {
           >
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
           </button>
+          {headerUser.kind === "user" && cachedUser ? (
+            <NotificationsBell token={cachedUser.token} role={headerUser.role} />
+          ) : null}
           <Link
             href={authLink.href}
             className="site-nav-login site-nav-primary"
