@@ -27,7 +27,7 @@ async function main() {
       console.log('imported Go snapshot:', await importGoState(db, state, { replace: true }));
       return;
     }
-    const demo = JSON.parse(readFileSync(join(import.meta.dirname, 'demo-state.json'), 'utf8')) as { generated_at: string; state: unknown };
+    const demo = JSON.parse(readFileSync(join(__dirname, 'demo-state.json'), 'utf8')) as { generated_at: string; state: unknown };
     const shiftMs = Date.now() - new Date(demo.generated_at).getTime();
     console.log('demo seed:', await importGoState(db, demo.state as never, { replace: true, shiftMs }));
   } finally {
@@ -35,4 +35,7 @@ async function main() {
   }
 }
 
-await main();
+void main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

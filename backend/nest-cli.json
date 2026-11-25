@@ -10,6 +10,10 @@
         "outDir": "dist"
       },
       {
+        "include": "database/migrations-snapshot.json",
+        "outDir": "dist"
+      },
+      {
         "include": "database/migrations/**/*",
         "outDir": "dist"
       }

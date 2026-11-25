@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 
 /** The API contract (copied from the Go service until it is removed; a test keeps them equal). */
-export const OPENAPI_FILE = join(import.meta.dirname, '../../../contract/openapi.yaml');
+export const OPENAPI_FILE = join(__dirname, '../../../contract/openapi.yaml');
 
 const FALLBACK_OPENAPI = 'openapi: 3.0.3\ninfo:\n  title: Seatiko API\n  version: 0.0.1\npaths: {}\n';
 
@@ -18,9 +18,7 @@ function resolveOpenApiFile(): string | undefined {
 
 export const openApiYaml = (): string => {
   const file = resolveOpenApiFile();
-  if (file) return readFileSync(file, 'utf8');
-  const bundled = (globalThis as { __SEATIKO_BUNDLED_ASSETS__?: { openapiYaml?: string } }).__SEATIKO_BUNDLED_ASSETS__?.openapiYaml;
-  return bundled ?? FALLBACK_OPENAPI;
+  return file ? readFileSync(file, 'utf8') : FALLBACK_OPENAPI;
 };
 
 export const openApiDocument = (): Record<string, unknown> => parse(openApiYaml()) as Record<string, unknown>;

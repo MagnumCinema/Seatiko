@@ -7,12 +7,19 @@ import { OpenPlacesService } from '../modules/open-places/open-places.service.js
  *   npm run places:import            (local)
  *   docker compose exec nest-api node dist/cli/import-open-places.js
  */
-process.env.OPEN_PLACES_IMPORT = 'false'; // no second, background run from the scheduler
-const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
-try {
-  const result = await app.get(OpenPlacesService).runImport();
-  console.log(JSON.stringify(result));
-  process.exitCode = result.status === 'failed' ? 1 : 0;
-} finally {
-  await app.close();
+async function main() {
+  process.env.OPEN_PLACES_IMPORT = 'false'; // no second, background run from the scheduler
+  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['log', 'warn', 'error'] });
+  try {
+    const result = await app.get(OpenPlacesService).runImport();
+    console.log(JSON.stringify(result));
+    process.exitCode = result.status === 'failed' ? 1 : 0;
+  } finally {
+    await app.close();
+  }
 }
+
+void main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
