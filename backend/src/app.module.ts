@@ -17,6 +17,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
 import { FloorModule } from './modules/floor/floor.module.js';
+import { StaffTeamModule } from './modules/staff-team/staff-team.module.js';
 import { VenueAdminModule } from './modules/venue-admin/venue-admin.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { VenueAccessModule } from './modules/venue-access/venue-access.service.js';
@@ -53,6 +54,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     FloorModule,
     ApplicationsModule,
     VenueAdminModule,
+    StaffTeamModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },

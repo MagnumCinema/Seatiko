@@ -27,6 +27,18 @@ export class VenueAccessService {
     return Boolean(row);
   }
 
+  /** An application id stands for its published venue (resolveVenueIDLocked). */
+  async resolveVenueId(id: string): Promise<string> {
+    const [app] = await this.db.select({ venueId: applications.venueId }).from(applications).where(eq(applications.id, id));
+    return app?.venueId || id;
+  }
+
+  /** Owner check that returns the venue id behind an application id, else 403. */
+  async requireOwner(ownerId: string, venueOrAppId: string): Promise<string> {
+    if (!(await this.ownerCanManage(ownerId, venueOrAppId))) throw forbidden();
+    return this.resolveVenueId(venueOrAppId);
+  }
+
   async isActiveStaff(user: { id: string; email: string }, venueId: string): Promise<boolean> {
     const [row] = await this.db
       .select({ id: staffMembers.id })
