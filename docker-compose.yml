@@ -96,6 +96,9 @@ services:
       TWENTY_API_KEY: ${TWENTY_API_KEY:-}
       TWENTY_WEBHOOK_SECRET: ${TWENTY_WEBHOOK_SECRET:-}
       TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
+      # NestJS Observe telemetry (traces, errors, logs); nothing is sent while the key is empty.
+      OBSERVE_APP_KEY: ${OBSERVE_APP_KEY:-}
+      OBSERVE_APP_SECRET: ${OBSERVE_APP_SECRET:-}
       # Cafes and restaurants from OpenStreetMap + Overture, imported at start and refreshed weekly.
       OPEN_PLACES_CITIES: ${OPEN_PLACES_CITIES:-balti}
       S3_ENDPOINT: http://minio:9000
