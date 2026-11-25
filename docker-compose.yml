@@ -176,6 +176,28 @@ services:
       # Private hosts Twenty may call (webhooks to the Seatiko API on the Docker network);
       # every other private address stays blocked (SSRF protection).
       OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS: ${TWENTY_OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS:-api.seatiko.local}
+      # AI (chat, workflows) through Groq, an OpenAI-compatible endpoint, via the Seatiko API
+      # (/internal/groq: drops the reasoning_content Groq refuses between steps). Twenty never
+      # fills {{VAR}} templates in custom providers, so Docker puts GROQ_API_KEY from .env in here.
+      AI_PROVIDERS: >-
+        {"groq": {"npm": "@ai-sdk/openai-compatible", "label": "Groq",
+        "baseUrl": "http://api.seatiko.local:8080/internal/groq/openai/v1", "apiKey": "${GROQ_API_KEY:-}",
+        "models": [
+        {"name": "openai/gpt-oss-120b", "label": "GPT-OSS 120B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536},
+        {"name": "openai/gpt-oss-20b", "label": "GPT-OSS 20B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536}]},
+        "openrouter": {"npm": "@ai-sdk/openai-compatible", "label": "OpenRouter (free)",
+        "baseUrl": "https://openrouter.ai/api/v1", "apiKey": "${OPENROUTER_API_KEY:-}",
+        "models": [
+        {"name": "nvidia/nemotron-3-ultra-550b-a55b:free", "label": "Nemotron 3 Ultra (free)", "contextWindowTokens": 1000000, "maxOutputTokens": 32768},
+        {"name": "nvidia/nemotron-3.5-lightning:free", "label": "Nemotron 3.5 Lightning (free)", "contextWindowTokens": 1000000, "maxOutputTokens": 32768},
+        {"name": "google/gemma-4-31b-it:free", "label": "Gemma 4 31B (free)", "contextWindowTokens": 262144, "maxOutputTokens": 32768},
+        {"name": "openrouter/free", "label": "Any free model (OpenRouter router)", "contextWindowTokens": 200000, "maxOutputTokens": 32768}]}}
+      # Free OpenRouter models first (the first one with a key is used); Groq as a fallback.
+      AI_MODELS_DEFAULT_EXTRA_FAST: openrouter/nvidia/nemotron-3.5-lightning:free,groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_FAST: openrouter/nvidia/nemotron-3.5-lightning:free,groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_BALANCED: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free,groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_SMART: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free,groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_EXTRA_SMART: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free,groq/openai/gpt-oss-120b
     depends_on:
       twenty-db:
         condition: service_healthy
@@ -214,6 +236,28 @@ services:
       LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-LOCAL}
       # Must match twenty-server so queued webhook jobs can reach the local API.
       OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS: ${TWENTY_OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS:-api.seatiko.local}
+      # AI (chat, workflows) through Groq, an OpenAI-compatible endpoint, via the Seatiko API
+      # (/internal/groq: drops the reasoning_content Groq refuses between steps). Twenty never
+      # fills {{VAR}} templates in custom providers, so Docker puts GROQ_API_KEY from .env in here.
+      AI_PROVIDERS: >-
+        {"groq": {"npm": "@ai-sdk/openai-compatible", "label": "Groq",
+        "baseUrl": "http://api.seatiko.local:8080/internal/groq/openai/v1", "apiKey": "${GROQ_API_KEY:-}",
+        "models": [
+        {"name": "openai/gpt-oss-120b", "label": "GPT-OSS 120B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536},
+        {"name": "openai/gpt-oss-20b", "label": "GPT-OSS 20B (Groq)", "contextWindowTokens": 131072, "maxOutputTokens": 65536}]},
+        "openrouter": {"npm": "@ai-sdk/openai-compatible", "label": "OpenRouter (free)",
+        "baseUrl": "https://openrouter.ai/api/v1", "apiKey": "${OPENROUTER_API_KEY:-}",
+        "models": [
+        {"name": "nvidia/nemotron-3-ultra-550b-a55b:free", "label": "Nemotron 3 Ultra (free)", "contextWindowTokens": 1000000, "maxOutputTokens": 32768},
+        {"name": "nvidia/nemotron-3.5-lightning:free", "label": "Nemotron 3.5 Lightning (free)", "contextWindowTokens": 1000000, "maxOutputTokens": 32768},
+        {"name": "google/gemma-4-31b-it:free", "label": "Gemma 4 31B (free)", "contextWindowTokens": 262144, "maxOutputTokens": 32768},
+        {"name": "openrouter/free", "label": "Any free model (OpenRouter router)", "contextWindowTokens": 200000, "maxOutputTokens": 32768}]}}
+      # Free OpenRouter models first (the first one with a key is used); Groq as a fallback.
+      AI_MODELS_DEFAULT_EXTRA_FAST: openrouter/nvidia/nemotron-3.5-lightning:free,groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_FAST: openrouter/nvidia/nemotron-3.5-lightning:free,groq/openai/gpt-oss-20b
+      AI_MODELS_DEFAULT_BALANCED: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free,groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_SMART: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free,groq/openai/gpt-oss-120b
+      AI_MODELS_DEFAULT_EXTRA_SMART: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free,groq/openai/gpt-oss-120b
     depends_on:
       twenty-db:
         condition: service_healthy

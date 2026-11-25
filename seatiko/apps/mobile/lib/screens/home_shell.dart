@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile/api.dart';
 import 'package:mobile/screens/discover_screen.dart';
 import 'package:mobile/screens/map_screen.dart';
@@ -20,6 +21,7 @@ class HomeShell extends StatefulWidget {
 
 class HomeShellState extends State<HomeShell> {
   late int tab;
+  late final Set<int> _mountedTabs;
   String cityId = 'city-balti';
   String cityName = '';
   final mapKey = GlobalKey<MapTabState>();
@@ -30,6 +32,7 @@ class HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     tab = widget.initialTab;
+    _mountedTabs = {widget.initialTab};
     _loadCity();
   }
 
@@ -61,131 +64,183 @@ class HomeShellState extends State<HomeShell> {
   }
 
   Future<void> _onTab(int i) async {
+    HapticFeedback.selectionClick();
     if (i == 2 || i == 3) {
       final ok = await ensureAuth(context);
       if (!ok) return;
-      if (i == 2) ordersKey.currentState?.reload();
-      if (i == 3) profileKey.currentState?.reload();
     }
-    setState(() => tab = i);
+    if (!mounted) return;
+    setState(() {
+      _mountedTabs.add(i);
+      tab = i;
+    });
+    if (i == 2) ordersKey.currentState?.reload();
+    if (i == 3) profileKey.currentState?.reload();
   }
 
   void openQr() {
+    HapticFeedback.mediumImpact();
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => const QrScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: tab,
-        children: [
-          MapTab(
-            key: mapKey,
-            cityId: cityId,
-            cityName: cityName.isEmpty ? 'map.city'.tr() : cityName,
-            onCityChanged: _loadCity,
-          ),
-          DiscoverTab(cityId: cityId),
-          OrdersTab(key: ordersKey),
-          ProfileTab(
-            key: profileKey,
-            onOpenOrders: () {
-              setState(() => tab = 2);
-              ordersKey.currentState?.reload();
-            },
-          ),
-        ],
+    final children = <Widget>[
+      _TabSlideFade(
+        active: tab == 0,
+        child: _mountedTabs.contains(0)
+            ? MapTab(
+                key: mapKey,
+                cityId: cityId,
+                cityName: cityName.isEmpty ? 'map.city'.tr() : cityName,
+                onCityChanged: _loadCity,
+              )
+            : const SizedBox.shrink(),
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        child: Container(
-          height: 72,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: FaColors.surface.withValues(alpha: .96),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: FaColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x24203E32),
-                blurRadius: 30,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              _NavItem(
-                icon: Icons.map_outlined,
-                activeIcon: Icons.map_rounded,
-                label: 'nav.map'.tr(),
-                active: tab == 0,
-                onTap: () => _onTab(0),
-              ),
-              _NavItem(
-                icon: Icons.auto_awesome_outlined,
-                activeIcon: Icons.auto_awesome_rounded,
-                label: 'nav.discover'.tr(),
-                active: tab == 1,
-                onTap: () => _onTab(1),
-              ),
-              Expanded(
-                child: Center(
-                  child: Semantics(
-                    button: true,
-                    label: 'nav.scan_qr'.tr(),
-                    child: InkWell(
-                      onTap: openQr,
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: FaColors.clay,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(18),
-                            topRight: Radius.circular(18),
-                            bottomRight: Radius.circular(18),
-                            bottomLeft: Radius.circular(6),
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x42D77B48),
-                              blurRadius: 18,
-                              offset: Offset(0, 7),
+      _TabSlideFade(
+        active: tab == 1,
+        child: _mountedTabs.contains(1)
+            ? DiscoverTab(cityId: cityId)
+            : const SizedBox.shrink(),
+      ),
+      _TabSlideFade(
+        active: tab == 2,
+        child: _mountedTabs.contains(2)
+            ? OrdersTab(key: ordersKey)
+            : const SizedBox.shrink(),
+      ),
+      _TabSlideFade(
+        active: tab == 3,
+        child: _mountedTabs.contains(3)
+            ? ProfileTab(
+                key: profileKey,
+                onOpenOrders: () {
+                  setState(() {
+                    _mountedTabs.add(2);
+                    tab = 2;
+                  });
+                  ordersKey.currentState?.reload();
+                },
+              )
+            : const SizedBox.shrink(),
+      ),
+    ];
+
+    return PopScope(
+      canPop: tab == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && tab != 0) {
+          setState(() => tab = 0);
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: IndexedStack(index: tab, children: children),
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          child: Container(
+            height: 72,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: FaColors.surface.withValues(alpha: .96),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: FaColors.border),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x24203E32),
+                  blurRadius: 30,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _NavItem(
+                  icon: Icons.map_outlined,
+                  activeIcon: Icons.map_rounded,
+                  label: 'nav.map'.tr(),
+                  active: tab == 0,
+                  onTap: () => _onTab(0),
+                ),
+                _NavItem(
+                  icon: Icons.auto_awesome_outlined,
+                  activeIcon: Icons.auto_awesome_rounded,
+                  label: 'nav.discover'.tr(),
+                  active: tab == 1,
+                  onTap: () => _onTab(1),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Semantics(
+                      button: true,
+                      label: 'nav.scan_qr'.tr(),
+                      child: InkWell(
+                        onTap: openQr,
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: const BoxDecoration(
+                            color: FaColors.clay,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(18),
+                              topRight: Radius.circular(18),
+                              bottomRight: Radius.circular(18),
+                              bottomLeft: Radius.circular(6),
                             ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x42C8683B),
+                                blurRadius: 18,
+                                offset: Offset(0, 7),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.qr_code_scanner_rounded,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              _NavItem(
-                icon: Icons.receipt_long_outlined,
-                activeIcon: Icons.receipt_long_rounded,
-                label: 'nav.orders'.tr(),
-                active: tab == 2,
-                onTap: () => _onTab(2),
-              ),
-              _NavItem(
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-                label: 'nav.profile'.tr(),
-                active: tab == 3,
-                onTap: () => _onTab(3),
-              ),
-            ],
+                _NavItem(
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  label: 'nav.orders'.tr(),
+                  active: tab == 2,
+                  onTap: () => _onTab(2),
+                ),
+                _NavItem(
+                  icon: Icons.person_outline_rounded,
+                  activeIcon: Icons.person_rounded,
+                  label: 'nav.profile'.tr(),
+                  active: tab == 3,
+                  onTap: () => _onTab(3),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TabSlideFade extends StatelessWidget {
+  const _TabSlideFade({required this.active, required this.child});
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      opacity: active ? 1.0 : 0.0,
+      child: IgnorePointer(ignoring: !active, child: child),
     );
   }
 }
@@ -214,10 +269,14 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              active ? activeIcon : icon,
-              color: active ? FaColors.green : FaColors.muted,
-              size: 22,
+            AnimatedScale(
+              scale: active ? 1.08 : 1.0,
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
+                active ? activeIcon : icon,
+                color: active ? FaColors.green : FaColors.muted,
+                size: 22,
+              ),
             ),
             const SizedBox(height: 4),
             Text(

@@ -5,7 +5,7 @@ import { type Observable, tap } from 'rxjs';
 import { SEATIKO_CHANGED } from './crm.service.js';
 
 /** Requests that change nothing the CRM mirrors. */
-const IGNORED = [/^\/api\/v1\/discover\//, /^\/api\/v1\/me\/notifications\//, /^\/api\/v1\/integrations\//, /^\/api\/v1\/auth\/login$/];
+const IGNORED = [/^\/api\/v1\/discover\//, /^\/api\/v1\/me\/notifications\//, /^\/api\/v1\/integrations\//, /^\/api\/v1\/auth\/login$/, /^\/internal\//];
 
 /**
  * After a successful POST / PUT / PATCH / DELETE, tells the CRM sync that Seatiko

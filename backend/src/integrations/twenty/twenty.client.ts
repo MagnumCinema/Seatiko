@@ -4,13 +4,34 @@ import { randomUUID } from 'node:crypto';
 export type TwentyRecord = Record<string, unknown>;
 type MetadataField = { id: string; name: string; type: string; options?: Array<Record<string, unknown>> };
 export type MetadataObject = { id: string; nameSingular: string; fields: MetadataField[] };
-type RequiredField = { name: string; label: string; type: string; options?: string[]; target?: string };
+/** target: the related object; targetLabel / targetIcon: how the reverse field shows on it. */
+type RequiredField = { name: string; label: string; type: string; options?: string[]; target?: string; targetLabel?: string; targetIcon?: string };
+type CustomObject = { nameSingular: string; namePlural: string; labelSingular: string; labelPlural: string; description: string; icon: string };
+
+/** Objects Seatiko adds to Twenty (created when missing). */
+const CUSTOM_OBJECTS: CustomObject[] = [
+  { nameSingular: 'reservation', namePlural: 'reservations', labelSingular: 'Reservation', labelPlural: 'Reservations', description: 'Reservations synchronized from Seatiko', icon: 'IconCalendarEvent' },
+  { nameSingular: 'staffShift', namePlural: 'staffShifts', labelSingular: 'Смена', labelPlural: 'Смены', description: 'Staff shifts from the Seatiko schedule', icon: 'IconClockHour4' },
+  { nameSingular: 'eventRequest', namePlural: 'eventRequests', labelSingular: 'Банкет', labelPlural: 'Банкеты', description: 'Banquet and event requests from Seatiko guests', icon: 'IconConfetti' },
+];
 
 const f = (name: string, label: string, type: string): RequiredField => ({ name, label, type });
 
 /** Custom fields Seatiko keeps on Twenty objects (EnsureSeatikoSchema). */
 const REQUIRED_SCHEMA: Array<{ object: string; fields: RequiredField[] }> = [
-  { object: 'person', fields: [f('seatikoUserId', 'Seatiko User ID', 'TEXT'), f('seatikoRole', 'Seatiko Role', 'TEXT'), f('seatikoLocale', 'Seatiko Locale', 'TEXT'), f('seatikoUpdatedAt', 'Seatiko Updated At', 'DATE_TIME')] },
+  {
+    object: 'person',
+    fields: [
+      f('seatikoUserId', 'Seatiko User ID', 'TEXT'),
+      f('seatikoRole', 'Seatiko Role', 'TEXT'),
+      f('seatikoLocale', 'Seatiko Locale', 'TEXT'),
+      f('seatikoUpdatedAt', 'Seatiko Updated At', 'DATE_TIME'),
+      // Staff time from the schedule (declined shifts excluded, as on the site).
+      f('shiftsThisWeek', 'Смен на этой неделе', 'NUMBER'),
+      f('hoursThisWeek', 'Часов на этой неделе', 'NUMBER'),
+      f('hoursThisMonth', 'Часов в этом месяце', 'NUMBER'),
+    ],
+  },
   {
     object: 'company',
     fields: [
@@ -32,6 +53,15 @@ const REQUIRED_SCHEMA: Array<{ object: string; fields: RequiredField[] }> = [
       f('latitude', 'Latitude', 'NUMBER'),
       f('longitude', 'Longitude', 'NUMBER'),
       { name: 'restaurantStatus', label: 'Restaurant Status', type: 'SELECT', options: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'PUBLISHED'] },
+      // Restaurant figures from Seatiko (read-only in the CRM; the sync repairs edits).
+      f('staffCount', 'Сотрудников', 'NUMBER'),
+      f('staffHoursThisWeek', 'Часов персонала на неделе', 'NUMBER'),
+      f('tablesCount', 'Столов', 'NUMBER'),
+      f('seatsCount', 'Мест', 'NUMBER'),
+      f('menuItemsCount', 'Блюд в меню', 'NUMBER'),
+      f('reservations30d', 'Броней за 30 дней', 'NUMBER'),
+      f('orders30d', 'Заказов за 30 дней', 'NUMBER'),
+      f('revenue30dMdl', 'Выручка за 30 дней, MDL', 'NUMBER'),
     ],
   },
   { object: 'task', fields: [f('seatikoTaskKey', 'Seatiko Task Key', 'TEXT'), f('seatikoApplicationId', 'Seatiko Application ID', 'TEXT'), f('seatikoAutoResolved', 'Seatiko Auto Resolved', 'BOOLEAN')] },
@@ -51,6 +81,40 @@ const REQUIRED_SCHEMA: Array<{ object: string; fields: RequiredField[] }> = [
       { name: 'source', label: 'Booking Source', type: 'SELECT', options: ['WEB', 'ANDROID', 'IOS', 'PHONE', 'WALK_IN'] },
       { name: 'restaurant', label: 'Restaurant', type: 'RELATION', target: 'company' },
       { name: 'guest', label: 'Guest', type: 'RELATION', target: 'person' },
+    ],
+  },
+  {
+    object: 'staffShift',
+    fields: [
+      f('seatikoShiftId', 'Seatiko Shift ID', 'TEXT'),
+      f('seatikoUpdatedAt', 'Seatiko Updated At', 'DATE_TIME'),
+      f('shiftDate', 'Дата', 'DATE'),
+      f('startTime', 'Начало', 'TEXT'),
+      f('endTime', 'Конец', 'TEXT'),
+      f('hours', 'Часов', 'NUMBER'),
+      f('note', 'Заметка', 'TEXT'),
+      f('reason', 'Причина (отказ / замена)', 'TEXT'),
+      { name: 'staffRole', label: 'Роль', type: 'SELECT', options: ['WAITER', 'COOK'] },
+      { name: 'shiftStatus', label: 'Статус смены', type: 'SELECT', options: ['PENDING', 'CONFIRMED', 'DECLINED', 'SWAP_REQUESTED'] },
+      { name: 'employee', label: 'Сотрудник', type: 'RELATION', target: 'person', targetLabel: 'Staff Shifts', targetIcon: 'IconClockHour4' },
+      { name: 'restaurant', label: 'Ресторан', type: 'RELATION', target: 'company', targetLabel: 'Staff Shifts', targetIcon: 'IconClockHour4' },
+    ],
+  },
+  {
+    object: 'eventRequest',
+    fields: [
+      f('seatikoInquiryId', 'Seatiko Inquiry ID', 'TEXT'),
+      f('seatikoUpdatedAt', 'Seatiko Updated At', 'DATE_TIME'),
+      f('eventType', 'Повод', 'TEXT'),
+      f('guests', 'Гостей', 'NUMBER'),
+      f('preferredDate', 'Желаемая дата', 'DATE_TIME'),
+      f('contactMethod', 'Способ связи', 'TEXT'),
+      f('contactName', 'Контакт', 'TEXT'),
+      f('contactPhone', 'Телефон', 'TEXT'),
+      f('notes', 'Пожелания', 'TEXT'),
+      { name: 'requestStatus', label: 'Статус заявки', type: 'SELECT', options: ['PENDING', 'CONTACTED', 'CONFIRMED'] },
+      { name: 'guest', label: 'Гость', type: 'RELATION', target: 'person', targetLabel: 'Event Requests', targetIcon: 'IconConfetti' },
+      { name: 'restaurant', label: 'Ресторан', type: 'RELATION', target: 'company', targetLabel: 'Event Requests', targetIcon: 'IconConfetti' },
     ],
   },
 ];
@@ -125,6 +189,10 @@ export class TwentyClient {
     await this.request('PATCH', `/rest/${plural}/${encodeURIComponent(id)}?depth=0`, payload);
   }
 
+  async delete(plural: string, id: string): Promise<void> {
+    await this.request('DELETE', `/rest/${plural}/${encodeURIComponent(id)}`);
+  }
+
   /** Update the single match (skipped when seatikoUpdatedAt is unchanged) or create. */
   async upsert(plural: string, records: TwentyRecord[], payload: TwentyRecord, match: (r: TwentyRecord) => boolean): Promise<string> {
     const matches = records.filter(match);
@@ -163,17 +231,9 @@ export class TwentyClient {
   async ensureSchema(): Promise<void> {
     let objects = await this.metadataObjects();
     const byName = () => new Map(objects.map((o) => [o.nameSingular, o]));
-    if (!byName().has('reservation')) {
-      await this.request('POST', '/rest/metadata/objects', {
-        nameSingular: 'reservation',
-        namePlural: 'reservations',
-        labelSingular: 'Reservation',
-        labelPlural: 'Reservations',
-        description: 'Reservations synchronized from Seatiko',
-        icon: 'IconCalendarEvent',
-      });
-      objects = await this.metadataObjects();
-    }
+    const missing = CUSTOM_OBJECTS.filter((o) => !byName().has(o.nameSingular));
+    for (const o of missing) await this.request('POST', '/rest/metadata/objects', o);
+    if (missing.length) objects = await this.metadataObjects();
     const map = byName();
     for (const spec of REQUIRED_SCHEMA) {
       const object = map.get(spec.object);
@@ -205,8 +265,9 @@ export class TwentyClient {
     };
     if (field.target) {
       if (!target?.id) throw new Error(`relation target "${field.target}" is missing`);
-      payload.icon = 'IconCalendarEvent';
-      payload.relationCreationPayload = { type: 'MANY_TO_ONE', targetObjectMetadataId: target.id, targetFieldLabel: 'Reservations', targetFieldIcon: 'IconCalendarEvent' };
+      const icon = field.targetIcon ?? 'IconCalendarEvent';
+      payload.icon = icon;
+      payload.relationCreationPayload = { type: 'MANY_TO_ONE', targetObjectMetadataId: target.id, targetFieldLabel: field.targetLabel ?? 'Reservations', targetFieldIcon: icon };
     }
     await this.request('POST', '/rest/metadata/fields', payload);
   }
