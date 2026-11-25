@@ -198,6 +198,14 @@ export type VenueApplication = {
   hours_text: string;
   reject_reason?: string;
   venue_id?: string | null;
+  booking_interval_min?: number;
+  hold_minutes?: number;
+  allow_preorder?: boolean;
+  session_start_before_min?: number;
+  release_before_min?: number;
+  max_late_arrival_min?: number;
+  visit_duration_min?: number;
+  max_visit_duration_min?: number;
   created_at: string;
   updated_at: string;
   submitted_at?: string | null;
@@ -809,6 +817,12 @@ export async function createApplication(): Promise<VenueApplication> {
   return data.application;
 }
 
+export async function deleteApplication(id: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>(`/api/v1/restaurant/applications/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function updateApplication(
   id: string,
   input: ApplicationUpdate,
@@ -1204,10 +1218,28 @@ export type StaffMember = {
   id: string;
   venue_id: string;
   user_id?: string;
+  name?: string;
   email: string;
-  role: string;
+  role: "waiter" | "cook" | "admin" | string;
   status: string;
+  on_shift?: boolean;
   created_at: string;
+};
+
+export type WorkShift = {
+  id: string;
+  venue_id: string;
+  staff_id: string;
+  staff_name: string;
+  role: "waiter" | "cook" | string;
+  date: string; // YYYY-MM-DD
+  start_time: string; // HH:MM
+  end_time: string; // HH:MM
+  status: "PENDING" | "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED";
+  note?: string;
+  reason?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export async function replaceVenueTables(
@@ -1320,12 +1352,113 @@ export async function fetchVenueAnalytics(
 export async function inviteVenueStaff(
   venueId: string,
   email: string,
+  name?: string,
+  role?: string,
 ): Promise<StaffMember> {
   const data = await apiFetch<{ staff: StaffMember }>(
     `/api/v1/restaurant/venues/${venueId}/staff/invite`,
-    { method: "POST", body: { email } },
+    { method: "POST", body: { email, name, role } },
   );
   return data.staff;
+}
+
+export async function listVenueWorkShifts(
+  venueId: string,
+  role?: string,
+): Promise<WorkShift[]> {
+  const data = await apiFetch<{ shifts: WorkShift[] }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts`,
+    { query: role ? { role } : undefined },
+  );
+  return data.shifts ?? [];
+}
+
+export async function createVenueWorkShift(
+  venueId: string,
+  input: {
+    staff_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    note?: string;
+  },
+): Promise<WorkShift> {
+  const data = await apiFetch<{ shift: WorkShift }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts`,
+    { method: "POST", body: input },
+  );
+  return data.shift;
+}
+
+export async function deleteVenueWorkShift(
+  venueId: string,
+  shiftId: string,
+): Promise<void> {
+  await apiFetch<{ ok: boolean }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/${shiftId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function batchCreateVenueWorkShifts(
+  venueId: string,
+  input: {
+    staff_ids: string[];
+    dates: string[];
+    start_time: string;
+    end_time: string;
+    note?: string;
+  },
+): Promise<WorkShift[]> {
+  const data = await apiFetch<{ shifts: WorkShift[] }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/batch`,
+    { method: "POST", body: input },
+  );
+  return data.shifts ?? [];
+}
+
+export async function copyVenueWorkShiftsWeek(
+  venueId: string,
+  input: {
+    source_start_date: string;
+    target_start_date: string;
+  },
+): Promise<{ shifts: WorkShift[]; created_count: number; skipped_count: number }> {
+  return apiFetch<{ shifts: WorkShift[]; created_count: number; skipped_count: number }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/copy-week`,
+    { method: "POST", body: input },
+  );
+}
+
+export async function swapVenueWorkShiftStaff(
+  venueId: string,
+  shiftId: string,
+  newStaffId: string,
+): Promise<WorkShift> {
+  const data = await apiFetch<{ shift: WorkShift }>(
+    `/api/v1/restaurant/venues/${venueId}/shifts/${shiftId}/swap`,
+    { method: "POST", body: { new_staff_id: newStaffId } },
+  );
+  return data.shift;
+}
+
+export async function listMyStaffShifts(): Promise<WorkShift[]> {
+  const data = await apiFetch<{ shifts: WorkShift[] }>(
+    `/api/v1/staff/shifts`,
+  );
+  return data.shifts ?? [];
+}
+
+export async function respondStaffShift(
+  shiftId: string,
+  status: "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED",
+  reason?: string,
+): Promise<WorkShift> {
+  const data = await apiFetch<{ shift: WorkShift }>(
+    `/api/v1/staff/shifts/${shiftId}/respond`,
+    { method: "POST", body: { status, reason } },
+  );
+  return data.shift;
 }
 
 export async function listVenueStaff(venueId: string): Promise<StaffMember[]> {
@@ -1333,6 +1466,28 @@ export async function listVenueStaff(venueId: string): Promise<StaffMember[]> {
     `/api/v1/restaurant/venues/${venueId}/staff`,
   );
   return data.staff ?? [];
+}
+
+export async function removeVenueStaff(
+  venueId: string,
+  staffId: string,
+): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>(
+    `/api/v1/restaurant/venues/${venueId}/staff/${staffId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function toggleVenueStaffShift(
+  venueId: string,
+  staffId: string,
+  onShift?: boolean,
+): Promise<StaffMember> {
+  const data = await apiFetch<{ staff: StaffMember }>(
+    `/api/v1/restaurant/venues/${venueId}/staff/${staffId}/shift`,
+    { method: "POST", body: { on_shift: onShift } },
+  );
+  return data.staff;
 }
 
 export async function staffListWaiterCalls(venueId: string) {

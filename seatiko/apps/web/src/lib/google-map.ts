@@ -1,11 +1,11 @@
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
-import type { MapCoordinates } from "@/lib/api";
+import type { LocaleCode, MapCoordinates } from "@/lib/api";
 
 let googleLibraries: Promise<[google.maps.MapsLibrary, google.maps.MarkerLibrary]> | undefined;
 
-export function loadGoogleMaps(key: string) {
+export function loadGoogleMaps(key: string, language?: LocaleCode) {
   if (!googleLibraries) {
-    setOptions({ key, v: "quarterly", region: "MD" });
+    setOptions({ key, v: "quarterly", region: "MD", ...(language ? { language } : {}) });
     googleLibraries = Promise.all([importLibrary("maps"), importLibrary("marker")]);
   }
   return googleLibraries;

@@ -50,7 +50,7 @@ func IsDemoGuestID(id string) bool {
 }
 
 func IsDemoUserID(id string) bool {
-	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID || id == demoStaffID
+	return id == demoGuestID || id == demoCalendarGuestID || id == demoOwnerID || id == demoStaffID || strings.HasPrefix(id, "user-demo-")
 }
 
 func IsDemoApplicationID(id string) bool {
@@ -101,6 +101,7 @@ type MemoryStore struct {
 	applications   map[string]models.VenueApplication
 	activities     map[string][]models.ApplicationActivity
 	staffMembers   map[string]models.StaffMember
+	shifts         map[string]models.WorkShift
 	profileChanges map[string]models.ProfileChangeRequest
 	waitlist       map[string]models.WaitlistEntry
 	eventInquiries map[string]models.EventInquiry
@@ -128,6 +129,7 @@ func NewMemory() *MemoryStore {
 		applications:   make(map[string]models.VenueApplication),
 		activities:     make(map[string][]models.ApplicationActivity),
 		staffMembers:   make(map[string]models.StaffMember),
+		shifts:         make(map[string]models.WorkShift),
 		profileChanges: make(map[string]models.ProfileChangeRequest),
 		waitlist:       make(map[string]models.WaitlistEntry),
 		eventInquiries: make(map[string]models.EventInquiry),
@@ -537,8 +539,8 @@ func (s *MemoryStore) seed() {
 			Email:        "owner@seatiko.local",
 			PasswordHash: string(ownerHash),
 			FirstName:    "Дмитрий",
-			LastName:     "Владелец",
-			DisplayName:  "Дмитрий (Владелец)",
+			LastName:     "Волков",
+			DisplayName:  "Дмитрий Волков",
 			Phone:        "+373 69 987 654",
 			Locale:       "ru",
 			Role:         models.RoleRestaurant,
@@ -576,29 +578,439 @@ func (s *MemoryStore) seed() {
 
 	staffHash, err := bcrypt.GenerateFromPassword([]byte("staff123"), bcrypt.DefaultCost)
 	if err == nil {
+		now := time.Now().UTC()
+
 		staff := models.User{
 			ID:           demoStaffID,
 			Email:        "staff@seatiko.local",
 			PasswordHash: string(staffHash),
 			FirstName:    "Анна",
-			LastName:     "Официант",
-			DisplayName:  "Анна (Персонал)",
+			LastName:     "Коваленко",
+			DisplayName:  "Анна Коваленко",
 			Phone:        "+373 68 555 444",
 			Locale:       "ru",
 			Role:         models.RoleStaff,
-			CreatedAt:    time.Now().UTC(),
-			UpdatedAt:    time.Now().UTC(),
+			CreatedAt:    now,
+			UpdatedAt:    now,
 		}
 		s.users[staff.ID] = staff
 
+		waiter2User := models.User{
+			ID:           "user-demo-waiter-2",
+			Email:        "alex.rusu@seatiko.local",
+			PasswordHash: string(staffHash),
+			FirstName:    "Alexandru",
+			LastName:     "Rusu",
+			DisplayName:  "Alexandru Rusu",
+			Phone:        "+373 69 210 345",
+			Locale:       "ro",
+			Role:         models.RoleStaff,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		s.users[waiter2User.ID] = waiter2User
+
+		cook1User := models.User{
+			ID:           "user-demo-cook-1",
+			Email:        "elena.moraru@seatiko.local",
+			PasswordHash: string(staffHash),
+			FirstName:    "Elena",
+			LastName:     "Moraru",
+			DisplayName:  "Elena Moraru",
+			Phone:        "+373 68 777 888",
+			Locale:       "ru",
+			Role:         models.RoleStaff,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		s.users[cook1User.ID] = cook1User
+
+		// 5 test waiters
 		s.staffMembers[demoStaffMemberID] = models.StaffMember{
 			ID:        demoStaffMemberID,
 			VenueID:   "venue-1",
 			UserID:    staff.ID,
+			Name:      staff.DisplayName,
 			Email:     staff.Email,
 			Role:      models.StaffRoleWaiter,
 			Status:    models.StaffStatusActive,
-			CreatedAt: time.Now().UTC(),
+			OnShift:   true,
+			CreatedAt: now,
+		}
+
+		demoStaffMemberID2 := "staff-member-demo-2"
+		s.staffMembers[demoStaffMemberID2] = models.StaffMember{
+			ID:        demoStaffMemberID2,
+			VenueID:   "venue-1",
+			UserID:    waiter2User.ID,
+			Name:      "Alexandru Rusu",
+			Email:     waiter2User.Email,
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-24 * time.Hour),
+		}
+
+		demoStaffMemberID5 := "staff-member-demo-5"
+		s.staffMembers[demoStaffMemberID5] = models.StaffMember{
+			ID:        demoStaffMemberID5,
+			VenueID:   "venue-1",
+			Name:      "Мария Иванова",
+			Email:     "maria.ivanova@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   true,
+			CreatedAt: now.Add(-36 * time.Hour),
+		}
+
+		demoStaffMemberID6 := "staff-member-demo-6"
+		s.staffMembers[demoStaffMemberID6] = models.StaffMember{
+			ID:        demoStaffMemberID6,
+			VenueID:   "venue-1",
+			Name:      "Дмитрий Орлов",
+			Email:     "dmitry.orlov@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-40 * time.Hour),
+		}
+
+		demoStaffMemberID7 := "staff-member-demo-7"
+		s.staffMembers[demoStaffMemberID7] = models.StaffMember{
+			ID:        demoStaffMemberID7,
+			VenueID:   "venue-1",
+			Name:      "София Мельник",
+			Email:     "sofia.melnik@seatiko.local",
+			Role:      models.StaffRoleWaiter,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-44 * time.Hour),
+		}
+
+		// 4 test cooks
+		demoStaffMemberID3 := "staff-member-demo-3"
+		s.staffMembers[demoStaffMemberID3] = models.StaffMember{
+			ID:        demoStaffMemberID3,
+			VenueID:   "venue-1",
+			UserID:    cook1User.ID,
+			Name:      "Elena Moraru",
+			Email:     cook1User.Email,
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   true,
+			CreatedAt: now.Add(-48 * time.Hour),
+		}
+
+		demoStaffMemberID4 := "staff-member-demo-4"
+		s.staffMembers[demoStaffMemberID4] = models.StaffMember{
+			ID:        demoStaffMemberID4,
+			VenueID:   "venue-1",
+			Name:      "Mihail Ceban",
+			Email:     "mihail.ceban@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-72 * time.Hour),
+		}
+
+		demoStaffMemberID8 := "staff-member-demo-8"
+		s.staffMembers[demoStaffMemberID8] = models.StaffMember{
+			ID:        demoStaffMemberID8,
+			VenueID:   "venue-1",
+			Name:      "Артём Гроссу",
+			Email:     "artem.grossu@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   true,
+			CreatedAt: now.Add(-84 * time.Hour),
+		}
+
+		demoStaffMemberID9 := "staff-member-demo-9"
+		s.staffMembers[demoStaffMemberID9] = models.StaffMember{
+			ID:        demoStaffMemberID9,
+			VenueID:   "venue-1",
+			Name:      "Наталья Сырбу",
+			Email:     "natalia.sirbu@seatiko.local",
+			Role:      models.StaffRoleCook,
+			Status:    models.StaffStatusActive,
+			OnShift:   false,
+			CreatedAt: now.Add(-96 * time.Hour),
+		}
+
+		todayStr := now.Format("2006-01-02")
+		tomorrowStr := now.Add(24 * time.Hour).Format("2006-01-02")
+		day2Str := now.Add(48 * time.Hour).Format("2006-01-02")
+		day3Str := now.Add(72 * time.Hour).Format("2006-01-02")
+
+		s.shifts["shift-demo-1"] = models.WorkShift{
+			ID:        "shift-demo-1",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID,
+			StaffName: staff.DisplayName,
+			Role:      models.StaffRoleWaiter,
+			Date:      todayStr,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-2"] = models.WorkShift{
+			ID:        "shift-demo-2",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID2,
+			StaffName: "Alexandru Rusu",
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Вечерняя смена / терраса",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-3"] = models.WorkShift{
+			ID:        "shift-demo-3",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID3,
+			StaffName: "Elena Moraru",
+			Role:      models.StaffRoleCook,
+			Date:      todayStr,
+			StartTime: "09:00",
+			EndTime:   "18:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Шеф / горячий цех",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-4"] = models.WorkShift{
+			ID:        "shift-demo-4",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID4,
+			StaffName: "Mihail Ceban",
+			Role:      models.StaffRoleCook,
+			Date:      tomorrowStr,
+			StartTime: "12:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Холодный цех / заготовки",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-5"] = models.WorkShift{
+			ID:        "shift-demo-5",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID,
+			StaffName: staff.DisplayName,
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-6"] = models.WorkShift{
+			ID:        "shift-demo-6",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID5,
+			StaffName: "Мария Иванова",
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "08:00",
+			EndTime:   "16:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Утренний сервис",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-7"] = models.WorkShift{
+			ID:        "shift-demo-7",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID6,
+			StaffName: "Дмитрий Орлов",
+			Role:      models.StaffRoleWaiter,
+			Date:      tomorrowStr,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusSwapRequested,
+			Reason:    "Заболел, высокая температура — прошу найти замену",
+			Note:      "Терраса и бар",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-8"] = models.WorkShift{
+			ID:        "shift-demo-8",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID3,
+			StaffName: "Elena Moraru",
+			Role:      models.StaffRoleCook,
+			Date:      tomorrowStr,
+			StartTime: "09:00",
+			EndTime:   "18:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Шеф / горячий цех",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-9"] = models.WorkShift{
+			ID:        "shift-demo-9",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID8,
+			StaffName: "Артём Гроссу",
+			Role:      models.StaffRoleCook,
+			Date:      tomorrowStr,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Гриль и мангал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-10"] = models.WorkShift{
+			ID:        "shift-demo-10",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID,
+			StaffName: staff.DisplayName,
+			Role:      models.StaffRoleWaiter,
+			Date:      day2Str,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-11"] = models.WorkShift{
+			ID:        "shift-demo-11",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID7,
+			StaffName: "София Мельник",
+			Role:      models.StaffRoleWaiter,
+			Date:      day2Str,
+			StartTime: "08:00",
+			EndTime:   "16:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Завтраки и бизнес-ланчи",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-12"] = models.WorkShift{
+			ID:        "shift-demo-12",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID5,
+			StaffName: "Мария Иванова",
+			Role:      models.StaffRoleWaiter,
+			Date:      day2Str,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Вечерний сервис",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-13"] = models.WorkShift{
+			ID:        "shift-demo-13",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID9,
+			StaffName: "Наталья Сырбу",
+			Role:      models.StaffRoleCook,
+			Date:      day2Str,
+			StartTime: "08:00",
+			EndTime:   "16:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Кондитерский цех и выпечка",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-14"] = models.WorkShift{
+			ID:        "shift-demo-14",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID8,
+			StaffName: "Артём Гроссу",
+			Role:      models.StaffRoleCook,
+			Date:      day2Str,
+			StartTime: "12:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusDeclined,
+			Note:      "Горячий цех",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-15"] = models.WorkShift{
+			ID:        "shift-demo-15",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID2,
+			StaffName: "Alexandru Rusu",
+			Role:      models.StaffRoleWaiter,
+			Date:      day3Str,
+			StartTime: "10:00",
+			EndTime:   "22:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Основной зал",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-16"] = models.WorkShift{
+			ID:        "shift-demo-16",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID7,
+			StaffName: "София Мельник",
+			Role:      models.StaffRoleWaiter,
+			Date:      day3Str,
+			StartTime: "14:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusPending,
+			Note:      "Терраса",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-17"] = models.WorkShift{
+			ID:        "shift-demo-17",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID3,
+			StaffName: "Elena Moraru",
+			Role:      models.StaffRoleCook,
+			Date:      day3Str,
+			StartTime: "09:00",
+			EndTime:   "18:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Шеф-повар",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		s.shifts["shift-demo-18"] = models.WorkShift{
+			ID:        "shift-demo-18",
+			VenueID:   "venue-1",
+			StaffID:   demoStaffMemberID4,
+			StaffName: "Mihail Ceban",
+			Role:      models.StaffRoleCook,
+			Date:      day3Str,
+			StartTime: "12:00",
+			EndTime:   "23:00",
+			Status:    models.ShiftStatusConfirmed,
+			Note:      "Холодный цех",
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 	}
 }
@@ -659,14 +1071,99 @@ func (s *MemoryStore) listVenuesLocked(cityID string) []models.Venue {
 	return out
 }
 
+func (s *MemoryStore) venueFromApplicationLocked(app models.VenueApplication) models.Venue {
+	imageURL := ""
+	if len(app.PhotoURLs) > 0 {
+		imageURL = app.PhotoURLs[0]
+	}
+	cityID := app.CityID
+	if cityID == "" {
+		cityID = DefaultCityID
+	}
+	cuisine := app.Cuisine
+	if cuisine == nil {
+		cuisine = []string{}
+	}
+	interval := app.BookingIntervalMin
+	if interval == 0 {
+		interval = DefaultBookingIntervalMin
+	}
+	hold := app.HoldMinutes
+	if hold == 0 {
+		hold = DefaultHoldMinutes
+	}
+	startBefore := app.SessionStartBeforeMin
+	if startBefore == 0 {
+		startBefore = DefaultSessionStartBeforeMin
+	}
+	relBefore := app.ReleaseBeforeMin
+	if relBefore == 0 {
+		relBefore = DefaultReleaseBeforeMin
+	}
+	visitDur := app.VisitDurationMin
+	if visitDur == 0 {
+		visitDur = DefaultVisitDurationMin
+	}
+	maxVisitDur := app.MaxVisitDurationMin
+	if maxVisitDur == 0 {
+		maxVisitDur = DefaultMaxVisitDurationMin
+	}
+	lateArrival := app.MaxLateArrivalMin
+	if lateArrival == 0 {
+		lateArrival = DefaultMaxLateArrivalMin
+	}
+	return models.Venue{
+		ID:                    app.ID,
+		CityID:                cityID,
+		Name:                  app.Name,
+		Description:           app.Description,
+		Cuisine:               cuisine,
+		Rating:                0,
+		ReviewCount:           0,
+		PriceLevel:            app.PriceLevel,
+		Address:               app.Address,
+		Lat:                   app.Lat,
+		Lng:                   app.Lng,
+		AverageCheck:          app.AverageCheck,
+		OpenNow:               true,
+		ImageURL:              imageURL,
+		PhotoURLs:             app.PhotoURLs,
+		Website:               app.Website,
+		AlcoholLicense:        false,
+		SessionStartBeforeMin: startBefore,
+		ReleaseBeforeMin:      relBefore,
+		BookingIntervalMin:    interval,
+		HoldMinutes:           hold,
+		MaxLateArrivalMin:     lateArrival,
+		VisitDurationMin:      visitDur,
+		MaxVisitDurationMin:   maxVisitDur,
+		AllowPreorder:         app.AllowPreorder,
+	}
+}
+
+func (s *MemoryStore) resolveVenueIDLocked(venueID string) string {
+	if app, ok := s.applications[venueID]; ok && app.VenueID != nil && *app.VenueID != "" {
+		return *app.VenueID
+	}
+	return venueID
+}
+
 func (s *MemoryStore) GetVenue(id string) (models.Venue, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	v, ok := s.venues[id]
-	if !ok {
-		return models.Venue{}, ErrNotFound
+	if ok {
+		return v, nil
 	}
-	return v, nil
+	if app, ok := s.applications[id]; ok {
+		if app.VenueID != nil && *app.VenueID != "" {
+			if pv, ok := s.venues[*app.VenueID]; ok {
+				return pv, nil
+			}
+		}
+		return s.venueFromApplicationLocked(app), nil
+	}
+	return models.Venue{}, ErrNotFound
 }
 
 func (s *MemoryStore) ApplyVenuePlaces(
@@ -716,6 +1213,7 @@ func (s *MemoryStore) ListTables(venueID string) []models.Table {
 			out = append(out, t)
 		}
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Number < out[j].Number })
 	return out
 }
 
@@ -1877,6 +2375,70 @@ func (s *MemoryStore) CreateApplication(ownerID string) (models.VenueApplication
 	return app, nil
 }
 
+func (s *MemoryStore) DeleteApplication(requesterID, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	defer s.persistBestEffortLocked()
+
+	app, ok := s.applications[id]
+	if !ok {
+		return ErrNotFound
+	}
+	requester, ok := s.users[requesterID]
+	if !ok {
+		return ErrNotFound
+	}
+	if app.OwnerUserID != requesterID && requester.Role != models.RoleAdmin {
+		return ErrForbidden
+	}
+
+	targetIDs := map[string]struct{}{id: {}}
+	if app.VenueID != nil && *app.VenueID != "" {
+		targetIDs[*app.VenueID] = struct{}{}
+		delete(s.venues, *app.VenueID)
+	}
+
+	delete(s.applications, id)
+	delete(s.activities, id)
+
+	for tableID, table := range s.tables {
+		if _, match := targetIDs[table.VenueID]; match {
+			delete(s.tables, tableID)
+		}
+	}
+	for itemID, item := range s.menuItems {
+		if _, match := targetIDs[item.VenueID]; match {
+			delete(s.menuItems, itemID)
+		}
+	}
+	for staffID, member := range s.staffMembers {
+		if _, match := targetIDs[member.VenueID]; match {
+			delete(s.staffMembers, staffID)
+		}
+	}
+	for shiftID, shift := range s.shifts {
+		if _, match := targetIDs[shift.VenueID]; match {
+			delete(s.shifts, shiftID)
+		}
+	}
+	for callID, call := range s.waiterCalls {
+		if _, match := targetIDs[call.VenueID]; match {
+			delete(s.waiterCalls, callID)
+		}
+	}
+	for reqID, change := range s.profileChanges {
+		if change.ApplicationID == id {
+			delete(s.profileChanges, reqID)
+		}
+	}
+	for wlID, entry := range s.waitlist {
+		if _, match := targetIDs[entry.VenueID]; match {
+			delete(s.waitlist, wlID)
+		}
+	}
+	return nil
+}
+
 func (s *MemoryStore) GetApplication(id string) (models.VenueApplication, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -2386,6 +2948,34 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 	}
 
 	venueID := "venue-" + uuid.NewString()
+	bookingInterval := app.BookingIntervalMin
+	if bookingInterval == 0 {
+		bookingInterval = DefaultBookingIntervalMin
+	}
+	holdMinutes := app.HoldMinutes
+	if holdMinutes == 0 {
+		holdMinutes = DefaultHoldMinutes
+	}
+	sessionStartBefore := app.SessionStartBeforeMin
+	if sessionStartBefore == 0 {
+		sessionStartBefore = DefaultSessionStartBeforeMin
+	}
+	releaseBefore := app.ReleaseBeforeMin
+	if releaseBefore == 0 {
+		releaseBefore = DefaultReleaseBeforeMin
+	}
+	visitDuration := app.VisitDurationMin
+	if visitDuration == 0 {
+		visitDuration = DefaultVisitDurationMin
+	}
+	maxVisitDuration := app.MaxVisitDurationMin
+	if maxVisitDuration == 0 {
+		maxVisitDuration = DefaultMaxVisitDurationMin
+	}
+	maxLateArrival := app.MaxLateArrivalMin
+	if maxLateArrival == 0 {
+		maxLateArrival = DefaultMaxLateArrivalMin
+	}
 	venue := models.Venue{
 		ID:                    venueID,
 		CityID:                cityID,
@@ -2405,47 +2995,91 @@ func (s *MemoryStore) PublishApplication(adminID, id string) (models.VenueApplic
 		Website:               app.Website,
 		HoursText:             app.HoursText,
 		AlcoholLicense:        false,
-		SessionStartBeforeMin: 15,
-		ReleaseBeforeMin:      10,
-		BookingIntervalMin:    30,
-		HoldMinutes:           15,
-		AllowPreorder:         true,
+		SessionStartBeforeMin: sessionStartBefore,
+		ReleaseBeforeMin:      releaseBefore,
+		BookingIntervalMin:    bookingInterval,
+		HoldMinutes:           holdMinutes,
+		MaxLateArrivalMin:     maxLateArrival,
+		VisitDurationMin:      visitDuration,
+		MaxVisitDurationMin:   maxVisitDuration,
+		AllowPreorder:         app.AllowPreorder,
 	}
 	s.venues[venueID] = venue
 
-	// Start every published restaurant with an editable, booking-ready floor
-	// layout. Positions are normalized so web and mobile render the same room.
-	defaultLayout := []struct {
-		x, y  float64
-		seats int
-		zone  string
-	}{
-		{x: 0.18, y: 0.22, seats: 2, zone: "hall"},
-		{x: 0.43, y: 0.22, seats: 4, zone: "hall"},
-		{x: 0.72, y: 0.22, seats: 4, zone: "hall"},
-		{x: 0.22, y: 0.5, seats: 4, zone: "hall"},
-		{x: 0.52, y: 0.5, seats: 6, zone: "hall"},
-		{x: 0.28, y: 0.35, seats: 2, zone: "terrace"},
-		{x: 0.55, y: 0.4, seats: 4, zone: "terrace"},
-		{x: 0.78, y: 0.55, seats: 4, zone: "street"},
-		{x: 0.42, y: 0.7, seats: 6, zone: "street"},
-	}
-	for index, position := range defaultLayout {
-		tID := uuid.NewString()
-		t := models.Table{
-			ID:      tID,
-			VenueID: venueID,
-			Number:  index + 1,
-			Seats:   position.seats,
-			Status:  models.TableFree,
-			X:       position.x,
-			Y:       position.y,
-			Zone:    position.zone,
-			QRToken: qr.Sign(s.qrSecret, venueID, tID),
+	// If the owner configured tables for this application during onboarding, migrate them
+	hasExistingTables := false
+	for _, t := range s.tables {
+		if t.VenueID == id {
+			hasExistingTables = true
+			break
 		}
-		s.tables[t.ID] = t
+	}
+	if hasExistingTables {
+		for tID, t := range s.tables {
+			if t.VenueID == id {
+				t.VenueID = venueID
+				t.QRToken = qr.Sign(s.qrSecret, venueID, t.ID)
+				s.tables[tID] = t
+			}
+		}
+	} else {
+		// Start every published restaurant without pre-set tables with an editable, booking-ready layout
+		defaultLayout := []struct {
+			x, y  float64
+			seats int
+			zone  string
+		}{
+			{x: 0.18, y: 0.22, seats: 2, zone: "hall"},
+			{x: 0.43, y: 0.22, seats: 4, zone: "hall"},
+			{x: 0.72, y: 0.22, seats: 4, zone: "hall"},
+			{x: 0.22, y: 0.5, seats: 4, zone: "hall"},
+			{x: 0.52, y: 0.5, seats: 6, zone: "hall"},
+			{x: 0.28, y: 0.35, seats: 2, zone: "terrace"},
+			{x: 0.55, y: 0.4, seats: 4, zone: "terrace"},
+			{x: 0.78, y: 0.55, seats: 4, zone: "street"},
+			{x: 0.42, y: 0.7, seats: 6, zone: "street"},
+		}
+		for index, position := range defaultLayout {
+			tID := uuid.NewString()
+			t := models.Table{
+				ID:      tID,
+				VenueID: venueID,
+				Number:  index + 1,
+				Seats:   position.seats,
+				Status:  models.TableFree,
+				X:       position.x,
+				Y:       position.y,
+				Zone:    position.zone,
+				QRToken: qr.Sign(s.qrSecret, venueID, tID),
+			}
+			s.tables[t.ID] = t
+		}
 	}
 	s.refreshFreeTablesLocked(venueID)
+
+	// Migrate any menu items created under this application during onboarding
+	for mID, item := range s.menuItems {
+		if item.VenueID == id {
+			item.VenueID = venueID
+			s.menuItems[mID] = item
+		}
+	}
+
+	// Migrate any staff members invited under this application during onboarding
+	for sID, member := range s.staffMembers {
+		if member.VenueID == id {
+			member.VenueID = venueID
+			s.staffMembers[sID] = member
+		}
+	}
+
+	// Migrate any work shifts scheduled under this application during onboarding
+	for shID, shift := range s.shifts {
+		if shift.VenueID == id {
+			shift.VenueID = venueID
+			s.shifts[shID] = shift
+		}
+	}
 
 	now := time.Now().UTC()
 	app.Status = models.AppPublished

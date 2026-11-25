@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:3000:80"
     depends_on:
       api:
         condition: service_healthy

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SeatingMarks, seatingClass, tableStatusClass } from "@/components/table-floor-plan";
+import { useLocale } from "@/components/locale-provider";
 import type { Table } from "@/lib/api";
 import {
   FLOOR_ZONE_PRESETS,
@@ -38,7 +39,60 @@ function nextNumber(tables: FloorDraftTable[]) {
   return n;
 }
 
+const floorCopy = {
+  ru: {
+    zonesLabel: "Зоны",
+    planPrefix: "План",
+    bar: "Бар",
+    outside: "Снаружи",
+    kitchen: "Кухня",
+    entrance: "Вход ↑",
+    emptyZone: (zone: string) => `В зоне «${zone}» пока нет столов — добавьте или перенесите стол сюда`,
+    settingsTitle: "Настройки стола",
+    clickTable: "Кликните стол на плане",
+    numberLabel: "Номер",
+    seatsLabel: "Мест",
+    zoneLabel: "Зона",
+    lockedHint: "Стол занят/в брони — позицию можно менять, удаление недоступно",
+    zonesHint: "Зоны (зал / улица / терраса) гости увидят вкладками на сайте и в приложении. Новый стол добавляется в текущую вкладку.",
+  },
+  en: {
+    zonesLabel: "Zones",
+    planPrefix: "Floor plan",
+    bar: "Bar",
+    outside: "Outside",
+    kitchen: "Kitchen",
+    entrance: "Entrance ↑",
+    emptyZone: (zone: string) => `No tables in “${zone}” yet — add or move a table here`,
+    settingsTitle: "Table settings",
+    clickTable: "Click a table on the floor plan",
+    numberLabel: "Number",
+    seatsLabel: "Seats",
+    zoneLabel: "Zone",
+    lockedHint: "Table is occupied or reserved — position can be changed, deletion is disabled",
+    zonesHint: "Guests will see zones (hall / street / terrace) as tabs on the website and in the app. New tables are added to the active tab.",
+  },
+  ro: {
+    zonesLabel: "Zone",
+    planPrefix: "Plan",
+    bar: "Bar",
+    outside: "Exterior",
+    kitchen: "Bucătărie",
+    entrance: "Intrare ↑",
+    emptyZone: (zone: string) => `Nu există încă mese în zona „${zone}” — adaugă sau mută o masă aici`,
+    settingsTitle: "Setările mesei",
+    clickTable: "Fă clic pe o masă de pe plan",
+    numberLabel: "Număr",
+    seatsLabel: "Locuri",
+    zoneLabel: "Zonă",
+    lockedHint: "Masa este ocupată sau rezervată — poziția poate fi mutată, ștergerea este dezactivată",
+    zonesHint: "Oaspeții vor vedea zonele (sală / stradă / terasă) ca file pe site și în aplicație. Mesele noi se adaugă în fila curentă.",
+  },
+} as const;
+
 export function FloorPlanEditor({ tables, onChange, busy }: Props) {
+  const { locale } = useLocale();
+  const copy = floorCopy[locale];
   const roomRef = useRef<HTMLDivElement | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
@@ -176,7 +230,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
   return (
     <div className={`floor-editor ${busy ? "busy" : ""}`}>
       <div className="floor-editor-toolbar">
-        <div className="floor-zone-tabs" role="tablist" aria-label="Зоны">
+        <div className="floor-zone-tabs" role="tablist" aria-label={copy.zonesLabel}>
           {zones.map((zone) => (
             <button
               key={zone}
@@ -186,7 +240,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
               className={activeZone === zone ? "on" : ""}
               onClick={() => setActiveZone(zone)}
             >
-              {zoneLabel(zone)}
+              {zoneLabel(zone, locale)}
               <small>
                 {tables.filter((t) => normalizeZone(t.zone) === zone).length}
               </small>
@@ -194,24 +248,85 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
           ))}
         </div>
         <div className="floor-editor-actions">
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => addTable(2)}>
-            + 2 места
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => addTable(4)}>
-            + 4 места
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => addTable(6)}>
-            + 6 мест
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => applyTemplate("small")}>
-            Шаблон S
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => applyTemplate("cafe")}>
-            Кафе
-          </button>
-          <button type="button" className="fa-btn fa-btn-outline" disabled={busy} onClick={() => applyTemplate("hall")}>
-            Зал+улица
-          </button>
+          <div className="floor-actions-group">
+            <span className="floor-actions-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              {locale === "ro" ? "Adaugă masă:" : locale === "en" ? "Add table:" : "Добавить стол:"}
+            </span>
+            <div className="floor-actions-pills">
+              <button
+                type="button"
+                className="floor-add-pill"
+                disabled={busy}
+                onClick={() => addTable(2)}
+                title={locale === "ro" ? "Adaugă masă pentru 2 persoane" : locale === "en" ? "Add table for 2" : "Добавить двухместный стол"}
+              >
+                <span className="floor-pill-seats-icon" aria-hidden="true">2</span>
+                <span>{locale === "ro" ? "+ 2 locuri" : locale === "en" ? "+ 2 seats" : "+ 2 места"}</span>
+              </button>
+              <button
+                type="button"
+                className="floor-add-pill"
+                disabled={busy}
+                onClick={() => addTable(4)}
+                title={locale === "ro" ? "Adaugă masă pentru 4 persoane" : locale === "en" ? "Add table for 4" : "Добавить четырёхместный стол"}
+              >
+                <span className="floor-pill-seats-icon" aria-hidden="true">4</span>
+                <span>{locale === "ro" ? "+ 4 locuri" : locale === "en" ? "+ 4 seats" : "+ 4 места"}</span>
+              </button>
+              <button
+                type="button"
+                className="floor-add-pill"
+                disabled={busy}
+                onClick={() => addTable(6)}
+                title={locale === "ro" ? "Adaugă masă pentru 6 persoane" : locale === "en" ? "Add table for 6" : "Добавить шестиместный стол"}
+              >
+                <span className="floor-pill-seats-icon" aria-hidden="true">6</span>
+                <span>{locale === "ro" ? "+ 6 locuri" : locale === "en" ? "+ 6 seats" : "+ 6 мест"}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="floor-actions-group templates">
+            <span className="floor-actions-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+              {locale === "ro" ? "Șabloane:" : locale === "en" ? "Presets:" : "Шаблоны:"}
+            </span>
+            <div className="floor-actions-pills">
+              <button
+                type="button"
+                className="floor-template-pill"
+                disabled={busy}
+                onClick={() => applyTemplate("small")}
+              >
+                {locale === "ro" ? "Compact S" : locale === "en" ? "Compact S" : "Компактный S"}
+              </button>
+              <button
+                type="button"
+                className="floor-template-pill"
+                disabled={busy}
+                onClick={() => applyTemplate("cafe")}
+              >
+                {locale === "ro" ? "Cafenea" : locale === "en" ? "Cafe" : "Кафе"}
+              </button>
+              <button
+                type="button"
+                className="floor-template-pill"
+                disabled={busy}
+                onClick={() => applyTemplate("hall")}
+              >
+                {locale === "ro" ? "Sală + stradă" : locale === "en" ? "Hall + street" : "Зал + улица"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -220,16 +335,16 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
           ref={roomRef}
           className="fa-floor-room schematic floor-editor-room"
           role="application"
-          aria-label={`План · ${zoneLabel(activeZone)}`}
+          aria-label={`${copy.planPrefix} · ${zoneLabel(activeZone, locale)}`}
         >
           <div className="fa-floor-zone bar" aria-hidden>
-            BAR
+            {copy.bar}
           </div>
           <div className="fa-floor-zone kitchen" aria-hidden>
-            {activeZone === "street" || activeZone === "terrace" ? "Снаружи" : "Кухня"}
+            {activeZone === "street" || activeZone === "terrace" ? copy.outside : copy.kitchen}
           </div>
           <div className="fa-floor-zone entrance" aria-hidden>
-            Вход ↑
+            {copy.entrance}
           </div>
 
           {visible.map((table) => (
@@ -264,18 +379,18 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
 
           {visible.length === 0 && (
             <div className="fa-floor-empty">
-              В зоне «{zoneLabel(activeZone)}» пока нет столов — добавьте или перенесите стол сюда
+              {copy.emptyZone(zoneLabel(activeZone, locale))}
             </div>
           )}
         </div>
 
         <aside className="floor-editor-side">
-          <h4>Настройки стола</h4>
-          {!selected && <p className="fa-muted">Кликните стол на плане</p>}
+          <h4>{copy.settingsTitle}</h4>
+          {!selected && <p className="fa-muted">{copy.clickTable}</p>}
           {selected && (
             <>
               <label>
-                Номер
+                {copy.numberLabel}
                 <input
                   type="number"
                   min={1}
@@ -285,7 +400,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 />
               </label>
               <label>
-                Мест
+                {copy.seatsLabel}
                 <input
                   type="number"
                   min={1}
@@ -298,7 +413,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 />
               </label>
               <label>
-                Зона
+                {copy.zoneLabel}
                 <select
                   value={normalizeZone(selected.zone)}
                   disabled={busy}
@@ -306,7 +421,7 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 >
                   {FLOOR_ZONE_PRESETS.map((z) => (
                     <option key={z.id} value={z.id}>
-                      {z.label}
+                      {zoneLabel(z.id, locale)}
                     </option>
                   ))}
                 </select>
@@ -316,17 +431,21 @@ export function FloorPlanEditor({ tables, onChange, busy }: Props) {
                 <span>Y {(selected.y * 100).toFixed(0)}%</span>
               </div>
               {selected.locked ? (
-                <p className="fa-muted">Стол занят/в брони — позицию можно менять, удаление недоступно</p>
+                <p className="fa-muted">{copy.lockedHint}</p>
               ) : (
-                <button type="button" className="floor-editor-danger" disabled={busy} onClick={removeSelected}>
-                  Удалить стол
+                <button
+                  type="button"
+                  className="panel-btn ghost sm danger floor-editor-danger"
+                  disabled={busy}
+                  onClick={removeSelected}
+                >
+                  {locale === "ro" ? "Elimină masa" : locale === "en" ? "Delete table" : "Удалить стол"}
                 </button>
               )}
             </>
           )}
           <p className="floor-editor-hint">
-            Зоны (зал / улица / терраса) гости увидят вкладками на сайте и в приложении. Новый стол
-            добавляется в текущую вкладку.
+            {copy.zonesHint}
           </p>
         </aside>
       </div>

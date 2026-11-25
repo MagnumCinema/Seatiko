@@ -95,19 +95,110 @@ func (a *API) GetVenueAnalytics(c *gin.Context) {
 
 func (a *API) InviteVenueStaff(c *gin.Context) {
 	var req struct {
+		Name  string `json:"name"`
 		Email string `json:"email" binding:"required"`
+		Role  string `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
 		return
 	}
-	member, err := a.Store.InviteStaff(a.userID(c), c.Param("venueId"), req.Email)
+	member, err := a.Store.InviteStaff(a.userID(c), c.Param("venueId"), req.Email, req.Name, req.Role)
 	writeOpsResult(c, err, gin.H{"staff": member}, http.StatusCreated)
+}
+
+func (a *API) CreateVenueWorkShift(c *gin.Context) {
+	var req store.WorkShiftInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shift, err := a.Store.CreateWorkShift(a.userID(c), c.Param("venueId"), req)
+	writeOpsResult(c, err, gin.H{"shift": shift}, http.StatusCreated)
+}
+
+func (a *API) BatchCreateVenueWorkShifts(c *gin.Context) {
+	var req store.BatchWorkShiftsInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shifts, err := a.Store.BatchCreateWorkShifts(a.userID(c), c.Param("venueId"), req)
+	writeOpsResult(c, err, gin.H{"shifts": shifts}, http.StatusCreated)
+}
+
+func (a *API) CopyVenueWorkShiftsWeek(c *gin.Context) {
+	var req store.CopyWeekShiftsInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shifts, skipped, err := a.Store.CopyWeekWorkShifts(a.userID(c), c.Param("venueId"), req)
+	writeOpsResult(c, err, gin.H{
+		"shifts":        shifts,
+		"created_count": len(shifts),
+		"skipped_count": skipped,
+	}, http.StatusCreated)
+}
+
+func (a *API) SwapVenueWorkShift(c *gin.Context) {
+	var req struct {
+		NewStaffID string `json:"new_staff_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shift, err := a.Store.SwapWorkShift(a.userID(c), c.Param("venueId"), c.Param("shiftId"), req.NewStaffID)
+	writeOpsResult(c, err, gin.H{"shift": shift}, http.StatusOK)
+}
+
+func (a *API) ListVenueWorkShifts(c *gin.Context) {
+	role := c.Query("role")
+	shifts, err := a.Store.ListWorkShifts(a.userID(c), c.Param("venueId"), role)
+	writeOpsResult(c, err, gin.H{"shifts": shifts}, http.StatusOK)
+}
+
+func (a *API) DeleteVenueWorkShift(c *gin.Context) {
+	err := a.Store.DeleteWorkShift(a.userID(c), c.Param("venueId"), c.Param("shiftId"))
+	writeOpsResult(c, err, gin.H{"ok": true}, http.StatusOK)
+}
+
+func (a *API) ListMyStaffShifts(c *gin.Context) {
+	shifts, err := a.Store.ListMyStaffShifts(a.userID(c))
+	writeOpsResult(c, err, gin.H{"shifts": shifts}, http.StatusOK)
+}
+
+func (a *API) RespondStaffShift(c *gin.Context) {
+	var req struct {
+		Status string `json:"status" binding:"required"`
+		Reason string `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body"})
+		return
+	}
+	shift, err := a.Store.RespondToWorkShift(a.userID(c), c.Param("shiftId"), req.Status, req.Reason)
+	writeOpsResult(c, err, gin.H{"shift": shift}, http.StatusOK)
 }
 
 func (a *API) ListVenueStaff(c *gin.Context) {
 	members, err := a.Store.ListStaff(a.userID(c), c.Param("venueId"))
 	writeOpsResult(c, err, gin.H{"staff": members}, http.StatusOK)
+}
+
+func (a *API) RemoveVenueStaff(c *gin.Context) {
+	err := a.Store.RemoveStaff(a.userID(c), c.Param("venueId"), c.Param("staffId"))
+	writeOpsResult(c, err, gin.H{"ok": true}, http.StatusOK)
+}
+
+func (a *API) ToggleStaffShift(c *gin.Context) {
+	var req struct {
+		OnShift *bool `json:"on_shift"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	member, err := a.Store.ToggleStaffShift(a.userID(c), c.Param("venueId"), c.Param("staffId"), req.OnShift)
+	writeOpsResult(c, err, gin.H{"staff": member}, http.StatusOK)
 }
 
 func (a *API) AcceptStaffInvite(c *gin.Context) {

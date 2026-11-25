@@ -29,6 +29,7 @@ type persistedState struct {
 	Applications   map[string]models.VenueApplication      `json:"applications"`
 	Activities     map[string][]models.ApplicationActivity `json:"activities"`
 	StaffMembers   map[string]models.StaffMember           `json:"staff_members"`
+	WorkShifts     map[string]models.WorkShift             `json:"work_shifts"`
 	ProfileChanges map[string]models.ProfileChangeRequest  `json:"profile_changes"`
 	Waitlist       map[string]models.WaitlistEntry         `json:"waitlist"`
 	AdultLog       []models.AdultPermissionLogEntry        `json:"adult_permission_log,omitempty"`
@@ -238,10 +239,33 @@ func (s *MemoryStore) ensureDemoUsersLocked() {
 	}
 
 	for staffID, member := range demo.staffMembers {
-		if _, exists := s.staffMembers[staffID]; !exists {
+		if existing, exists := s.staffMembers[staffID]; !exists {
 			s.staffMembers[staffID] = member
 			changed = true
 			log.Printf("seeded missing demo staff member %s for venue %s", staffID, member.VenueID)
+		} else {
+			updated := false
+			if existing.Name == "" && member.Name != "" {
+				existing.Name = member.Name
+				updated = true
+			}
+			if existing.UserID == "" && member.UserID != "" {
+				existing.UserID = member.UserID
+				updated = true
+			}
+			if updated {
+				s.staffMembers[staffID] = existing
+				changed = true
+				log.Printf("backfilled profile for demo staff member %s", staffID)
+			}
+		}
+	}
+
+	for shiftID, shift := range demo.shifts {
+		if _, exists := s.shifts[shiftID]; !exists {
+			s.shifts[shiftID] = shift
+			changed = true
+			log.Printf("seeded missing demo shift %s for venue %s", shiftID, shift.VenueID)
 		}
 	}
 
@@ -388,6 +412,9 @@ func (s *MemoryStore) applyState(state persistedState) {
 	if state.StaffMembers != nil {
 		s.staffMembers = state.StaffMembers
 	}
+	if state.WorkShifts != nil {
+		s.shifts = state.WorkShifts
+	}
 	if state.ProfileChanges != nil {
 		s.profileChanges = state.ProfileChanges
 	}
@@ -422,6 +449,7 @@ func (s *MemoryStore) stateLocked() persistedState {
 		Applications:   s.applications,
 		Activities:     s.activities,
 		StaffMembers:   s.staffMembers,
+		WorkShifts:     s.shifts,
 		ProfileChanges: s.profileChanges,
 		Waitlist:       s.waitlist,
 		AdultLog:       s.adultLog,

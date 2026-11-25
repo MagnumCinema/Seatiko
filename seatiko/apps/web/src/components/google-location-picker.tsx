@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MapCoordinates } from "@/lib/api";
+import type { LocaleCode, MapCoordinates } from "@/lib/api";
 import { loadGoogleMaps, onGoogleMapAuthFailure } from "@/lib/google-map";
 
-export function GoogleLocationPicker({ apiKey, mapId, center, point, disabled, onChange, onError }: {
+export function GoogleLocationPicker({ apiKey, mapId, center, point, disabled, locale, onChange, onError }: {
   apiKey: string;
   mapId: string;
   center: MapCoordinates;
   point: MapCoordinates | null;
   disabled: boolean;
+  locale: LocaleCode;
   onChange: (point: MapCoordinates) => void;
   onError: () => void;
 }) {
@@ -30,7 +31,7 @@ export function GoogleLocationPicker({ apiKey, mapId, center, point, disabled, o
     let click: google.maps.MapsEventListener | undefined;
     let ready: google.maps.MapsEventListener | undefined;
 
-    loadGoogleMaps(apiKey).then(([{ Map }]) => {
+    loadGoogleMaps(apiKey, locale).then(([{ Map }]) => {
       if (!active) return;
       const instance = new Map(node, {
         center: initialView.current,
@@ -59,7 +60,7 @@ export function GoogleLocationPicker({ apiKey, mapId, center, point, disabled, o
       ready?.remove();
       node.replaceChildren();
     };
-  }, [apiKey, mapId, disabled, onError]);
+  }, [apiKey, mapId, disabled, locale, onError]);
 
   useEffect(() => {
     if (!map || !point) return;

@@ -167,6 +167,8 @@ func newRouter(api *handlers.API) *gin.Engine {
 				staff.POST("/waitlist/:id/notify", api.StaffNotifyWaitlist)
 				staff.POST("/waitlist/:id/seat", api.StaffSeatWaitlist)
 				staff.POST("/waitlist/:id/close", api.StaffCloseWaitlist)
+				staff.GET("/shifts", api.ListMyStaffShifts)
+				staff.POST("/shifts/:shiftId/respond", api.RespondStaffShift)
 			}
 
 			restaurant := authed.Group("/restaurant")
@@ -176,6 +178,7 @@ func newRouter(api *handlers.API) *gin.Engine {
 				restaurant.GET("/applications", api.ListMyApplications)
 				restaurant.GET("/reservations", api.ListRestaurantReservations)
 				restaurant.GET("/applications/:id", api.GetMyApplication)
+				restaurant.DELETE("/applications/:id", api.DeleteRestaurantApplication)
 				restaurant.GET("/applications/:id/activity", api.ListApplicationActivity)
 				restaurant.PATCH("/applications/:id", api.UpdateRestaurantApplication)
 				restaurant.POST("/applications/:id/photos", api.UploadApplicationPhoto)
@@ -196,6 +199,14 @@ func newRouter(api *handlers.API) *gin.Engine {
 				restaurant.GET("/venues/:venueId/analytics", api.GetVenueAnalytics)
 				restaurant.POST("/venues/:venueId/staff/invite", api.InviteVenueStaff)
 				restaurant.GET("/venues/:venueId/staff", api.ListVenueStaff)
+				restaurant.DELETE("/venues/:venueId/staff/:staffId", api.RemoveVenueStaff)
+				restaurant.POST("/venues/:venueId/staff/:staffId/shift", api.ToggleStaffShift)
+				restaurant.GET("/venues/:venueId/shifts", api.ListVenueWorkShifts)
+				restaurant.POST("/venues/:venueId/shifts", api.CreateVenueWorkShift)
+				restaurant.POST("/venues/:venueId/shifts/batch", api.BatchCreateVenueWorkShifts)
+				restaurant.POST("/venues/:venueId/shifts/copy-week", api.CopyVenueWorkShiftsWeek)
+				restaurant.POST("/venues/:venueId/shifts/:shiftId/swap", api.SwapVenueWorkShift)
+				restaurant.DELETE("/venues/:venueId/shifts/:shiftId", api.DeleteVenueWorkShift)
 			}
 
 			admin := authed.Group("/admin")
