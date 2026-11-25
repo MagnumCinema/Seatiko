@@ -7538,7 +7538,9 @@ html[data-theme="light"] .cabinet-roster-group-head {
 }
 .cabinet-roster-day-cell {
   padding: 6px;
-  height: 58px;
+  min-height: 58px;
+  height: auto;
+  vertical-align: top;
 }
 .cabinet-roster-day-cell.today {
   background: color-mix(in srgb, var(--site-accent, #e9b96e) 5%, transparent);
@@ -7618,6 +7620,12 @@ html[data-theme="light"] .cabinet-roster-shift-chip.status-swap_requested {
   opacity: 0.38;
   transition: all 0.15s ease;
 }
+.cabinet-roster-cell-add.compact {
+  min-height: 22px;
+  font-size: 0.72rem;
+  opacity: 0.58;
+  border-color: color-mix(in srgb, var(--site-border) 70%, transparent);
+}
 .cabinet-roster-day-cell:hover .cabinet-roster-cell-add,
 .cabinet-roster-cell-add:focus-visible {
   opacity: 1;
@@ -7629,6 +7637,57 @@ html[data-theme="light"] .cabinet-roster-day-cell:hover .cabinet-roster-cell-add
   color: #246046;
   border-color: rgba(36, 96, 70, 0.45);
   background: #eef5f0;
+}
+.cabinet-shift-split-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--site-border);
+  background: color-mix(in srgb, var(--site-surface) 60%, transparent);
+  color: var(--site-fg);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cabinet-shift-split-toggle input {
+  accent-color: var(--site-accent, #e9b96e);
+  width: 15px;
+  height: 15px;
+}
+.cabinet-shift-split-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--site-accent, #e9b96e) 32%, var(--site-border));
+  background: color-mix(in srgb, var(--site-accent, #e9b96e) 6%, var(--site-surface));
+}
+.cabinet-shift-duration-summary {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--site-muted);
+}
+.cabinet-existing-shifts-note {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--site-border);
+  background: color-mix(in srgb, var(--site-surface) 80%, transparent);
+  font-size: 0.77rem;
+  color: var(--site-muted);
+}
+.cabinet-existing-shifts-note strong {
+  color: var(--site-fg);
+}
+.cabinet-shift-pill-existing {
+  display: block;
+  font-size: 0.69rem;
+  color: var(--site-accent, #e9b96e);
+}
+html[data-theme="light"] .cabinet-shift-pill-existing {
+  color: #246046;
 }
 .cabinet-roster-legend {
   display: flex;
