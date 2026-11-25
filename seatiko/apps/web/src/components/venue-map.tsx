@@ -169,6 +169,43 @@ function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
   });
 }
 
+/** Draws a map pin (teardrop with a white dot) once per map, at 2× for sharp screens. */
+function addPinImage(map: maplibregl.Map, id: string, color: string) {
+  if (map.hasImage(id)) return;
+  const ratio = 2;
+  const w = 26;
+  const h = 34;
+  const canvas = document.createElement("canvas");
+  canvas.width = w * ratio;
+  canvas.height = h * ratio;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(ratio, ratio);
+  const cx = w / 2;
+  const r = 11;
+  const cy = r + 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, h - 1);
+  ctx.bezierCurveTo(cx - 2, h - 8, cx - r, cy + 7, cx - r, cy);
+  ctx.arc(cx, cy, r, Math.PI, 0);
+  ctx.bezierCurveTo(cx + r, cy + 7, cx + 2, h - 8, cx, h - 1);
+  ctx.closePath();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.28)";
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4.2, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  map.addImage(id, ctx.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: ratio });
+}
+
 function placeCollection(
   places: MapPlace[],
   locale: LocaleCode,
@@ -654,65 +691,41 @@ function VenueMapArea({
         data,
       });
 
-      map.addLayer({
-        id: "seatiko-venue-halo",
-        type: "circle",
-        source: SOURCE_ID,
-        layout: {
-          // Partners and the selected place are drawn above the other dots.
-          "circle-sort-key": ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0],
-        },
-                paint: {
-          "circle-color": "rgba(255, 253, 248, 0.94)",
-          "circle-radius": [
-            "case",
-            ["boolean", ["get", "selected"], false],
-            13,
-            9,
-          ],
-          "circle-blur": 0.12,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "rgba(31, 80, 60, 0.08)",
-        },
-      });
+      // Location pins (teardrops) instead of dots: green partners, grey others, gold selected.
+      addPinImage(map, "seatiko-pin-partner", "#175f43");
+      addPinImage(map, "seatiko-pin-other", "#7d8380");
+      addPinImage(map, "seatiko-pin-selected", "#d99a3e");
       map.addLayer({
         id: VENUE_LAYER_ID,
-        type: "circle",
+        type: "symbol",
         source: SOURCE_ID,
         layout: {
-          // Partners and the selected place are drawn above the other dots.
-          "circle-sort-key": ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0],
-        },
-                paint: {
-          "circle-color": [
+          "icon-image": [
             "case",
             ["boolean", ["get", "selected"], false],
-            "#e9b96e",
+            "seatiko-pin-selected",
             ["boolean", ["get", "inDatabase"], false],
-            "#175f43",
-            "#8a8f8c",
+            "seatiko-pin-partner",
+            "seatiko-pin-other",
           ],
-          "circle-radius": [
-            "case",
-            ["boolean", ["get", "selected"], false],
-            10,
-            6.5,
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fffdf8",
-          "circle-opacity": 0.98,
+          "icon-size": ["case", ["boolean", ["get", "selected"], false], 1.25, 1],
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+          // Partners and the selected place are drawn above the other pins.
+          "symbol-sort-key": ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0],
         },
       });
       map.addLayer({
         id: "seatiko-venue-name",
         type: "symbol",
         source: SOURCE_ID,
-                minzoom: 13.4,
+        minzoom: 13.4,
         layout: {
           "text-field": ["get", "name"],
           "text-size": 11,
           "text-font": ["Noto Sans Regular"],
-          "text-offset": [0, 1.2],
+          "text-offset": [0, 0.3],
           "text-anchor": "top",
           "text-optional": true,
           "text-padding": 5,

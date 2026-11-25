@@ -1184,6 +1184,7 @@ html[data-theme="light"] .site-nav-primary:hover {
 }
 .live-map-surface .maplibregl-ctrl-group button { width: 40px; height: 40px; background-color: #fff; }
 .live-map-surface .maplibregl-ctrl-group button:hover { background-color: #fff; }
+.live-map-surface .maplibregl-ctrl button:focus:not(:focus-visible) { box-shadow: none; }
 .live-map-surface .maplibregl-ctrl-group button + button { border-top: 0; position: relative; }
 .live-map-surface .maplibregl-ctrl-group button + button::before {
   content: "";
