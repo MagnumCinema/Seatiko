@@ -1,60 +1,62 @@
 import { boolean, doublePrecision, index, integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
-import { localized, ts, type LocalizedString } from './columns.js';
+import { localized, textList, ts, type LocalizedString } from './columns.js';
 import { users } from './users.js';
-import { venues } from './venues.js';
 
-/** Restaurant onboarding application (owner's venue profile under moderation). */
+/** Restaurant onboarding application: the owner's venue profile under moderation. */
 export const applications = pgTable(
-  'venue_applications',
+  'applications',
   {
-    id: text('id').primaryKey(),
-    ownerUserId: text('owner_user_id').notNull().references(() => users.id),
-    status: text('status').notNull(),
+    id: text().primaryKey(),
+    ownerUserId: text().notNull().references(() => users.id),
+    /** DRAFT | SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED | PUBLISHED */
+    status: text().notNull(),
     name: localized('name').notNull(),
     description: localized('description').notNull(),
     address: localized('address').notNull(),
-    cuisine: text('cuisine').array().notNull().default([]),
-    phone: text('phone').notNull().default(''),
-    email: text('email').notNull().default(''),
-    website: text('website').notNull().default(''),
-    cityId: text('city_id').notNull().default(''),
-    lat: doublePrecision('lat').notNull().default(0),
-    lng: doublePrecision('lng').notNull().default(0),
-    priceLevel: integer('price_level').notNull().default(0),
-    averageCheck: integer('average_check').notNull().default(0),
-    photoUrls: text('photo_urls').array().notNull().default([]),
-    hoursText: text('hours_text').notNull().default(''),
-    rejectReason: text('reject_reason').notNull().default(''),
-    venueId: text('venue_id').references(() => venues.id, { onDelete: 'set null' }),
-    bookingIntervalMin: integer('booking_interval_min').notNull().default(0),
-    holdMinutes: integer('hold_minutes').notNull().default(0),
-    allowPreorder: boolean('allow_preorder').notNull().default(false),
-    sessionStartBeforeMin: integer('session_start_before_min').notNull().default(0),
-    releaseBeforeMin: integer('release_before_min').notNull().default(0),
-    maxLateArrivalMin: integer('max_late_arrival_min').notNull().default(0),
-    visitDurationMin: integer('visit_duration_min').notNull().default(0),
-    maxVisitDurationMin: integer('max_visit_duration_min').notNull().default(0),
+    cuisine: textList('cuisine'),
+    phone: text().notNull().default(''),
+    email: text().notNull().default(''),
+    website: text().notNull().default(''),
+    cityId: text().notNull().default(''),
+    lat: doublePrecision().notNull().default(0),
+    lng: doublePrecision().notNull().default(0),
+    priceLevel: integer().notNull().default(0),
+    averageCheck: integer().notNull().default(0),
+    photoUrls: textList('photo_urls'),
+    hoursText: text().notNull().default(''),
+    rejectReason: text().notNull().default(''),
+    /** Set when published. */
+    venueId: text(),
+    // Booking rules chosen during onboarding, copied to the venue on publish.
+    bookingIntervalMin: integer().notNull().default(0),
+    holdMinutes: integer().notNull().default(0),
+    allowPreorder: boolean().notNull().default(false),
+    sessionStartBeforeMin: integer().notNull().default(0),
+    releaseBeforeMin: integer().notNull().default(0),
+    maxLateArrivalMin: integer().notNull().default(0),
+    visitDurationMin: integer().notNull().default(0),
+    maxVisitDurationMin: integer().notNull().default(0),
     createdAt: ts('created_at').notNull().defaultNow(),
     updatedAt: ts('updated_at').notNull().defaultNow(),
     submittedAt: ts('submitted_at'),
   },
-  (t) => [index('venue_applications_owner_idx').on(t.ownerUserId), index('venue_applications_status_idx').on(t.status)],
+  (t) => [index().on(t.ownerUserId), index().on(t.status)],
 );
 
-/** Append-only journal of an application (moderation, edits). */
+/** Append-only journal of an application (moderation, edits, publication). */
 export const applicationActivities = pgTable(
   'application_activities',
   {
-    id: text('id').primaryKey(),
-    applicationId: text('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
-    actorUserId: text('actor_user_id').notNull(),
-    actorRole: text('actor_role').notNull(),
-    action: text('action').notNull(),
-    changedFields: text('changed_fields').array().notNull().default([]),
-    note: text('note').notNull().default(''),
+    id: text().primaryKey(),
+    applicationId: text().notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    actorUserId: text().notNull().default(''),
+    actorRole: text().notNull().default('system'),
+    action: text().notNull(),
+    changedFields: textList('changed_fields'),
+    note: text().notNull().default(''),
     createdAt: ts('created_at').notNull().defaultNow(),
   },
-  (t) => [index('application_activities_app_idx').on(t.applicationId)],
+  (t) => [index().on(t.applicationId, t.createdAt)],
 );
 
 export type ApplicationPatch = Partial<{
@@ -73,51 +75,59 @@ export type ApplicationPatch = Partial<{
   hours_text: string;
 }>;
 
-/** Changes to a published venue profile, approved by an admin. */
-export const profileChangeRequests = pgTable('profile_change_requests', {
-  id: text('id').primaryKey(),
-  applicationId: text('application_id').notNull().references(() => applications.id, { onDelete: 'cascade' }),
-  ownerUserId: text('owner_user_id').notNull(),
-  status: text('status').notNull(),
-  patch: jsonb('patch').$type<ApplicationPatch>().notNull(),
-  note: text('note').notNull().default(''),
-  createdAt: ts('created_at').notNull().defaultNow(),
-});
+/** Changes to a published venue profile, applied after admin approval. */
+export const profileChangeRequests = pgTable(
+  'profile_change_requests',
+  {
+    id: text().primaryKey(),
+    applicationId: text().notNull().references(() => applications.id, { onDelete: 'cascade' }),
+    ownerUserId: text().notNull(),
+    /** PENDING | APPROVED | REJECTED */
+    status: text().notNull(),
+    patch: jsonb().$type<ApplicationPatch>().notNull(),
+    note: text().notNull().default(''),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index().on(t.status)],
+);
 
 /** Venue team: invited or active waiters and cooks. */
 export const staffMembers = pgTable(
   'staff_members',
   {
-    id: text('id').primaryKey(),
-    venueId: text('venue_id').notNull().references(() => venues.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().default(''),
-    name: text('name').notNull().default(''),
-    email: text('email').notNull(),
-    role: text('role').notNull(),
-    status: text('status').notNull(),
-    onShift: boolean('on_shift').notNull().default(false),
+    id: text().primaryKey(),
+    venueId: text().notNull(),
+    userId: text().notNull().default(''),
+    name: text().notNull().default(''),
+    email: text().notNull(),
+    /** waiter | cook */
+    role: text().notNull().default('waiter'),
+    /** INVITED | ACTIVE | REVOKED */
+    status: text().notNull(),
+    onShift: boolean().notNull().default(false),
     createdAt: ts('created_at').notNull().defaultNow(),
   },
-  (t) => [index('staff_members_venue_idx').on(t.venueId), index('staff_members_user_idx').on(t.userId)],
+  (t) => [index().on(t.venueId), index().on(t.userId)],
 );
 
-/** Scheduled work shifts (date and local HH:MM times of the venue). */
+/** Scheduled work shifts: venue-local date (YYYY-MM-DD) and HH:MM times. */
 export const workShifts = pgTable(
   'work_shifts',
   {
-    id: text('id').primaryKey(),
-    venueId: text('venue_id').notNull().references(() => venues.id, { onDelete: 'cascade' }),
-    staffId: text('staff_id').notNull().references(() => staffMembers.id, { onDelete: 'cascade' }),
-    staffName: text('staff_name').notNull().default(''),
-    role: text('role').notNull(),
-    date: text('date').notNull(),
-    startTime: text('start_time').notNull(),
-    endTime: text('end_time').notNull(),
-    status: text('status').notNull(),
-    note: text('note').notNull().default(''),
-    reason: text('reason').notNull().default(''),
+    id: text().primaryKey(),
+    venueId: text().notNull(),
+    staffId: text().notNull(),
+    staffName: text().notNull().default(''),
+    role: text().notNull(),
+    date: text().notNull(),
+    startTime: text().notNull(),
+    endTime: text().notNull(),
+    /** PENDING | CONFIRMED | DECLINED | SWAP_REQUESTED */
+    status: text().notNull(),
+    note: text().notNull().default(''),
+    reason: text().notNull().default(''),
     createdAt: ts('created_at').notNull().defaultNow(),
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
-  (t) => [index('work_shifts_venue_date_idx').on(t.venueId, t.date), index('work_shifts_staff_idx').on(t.staffId)],
+  (t) => [index().on(t.venueId, t.date), index().on(t.staffId)],
 );

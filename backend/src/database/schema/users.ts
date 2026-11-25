@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { boolean, index, jsonb, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
-import { ts } from './columns.js';
+import { textList, ts } from './columns.js';
 
-/** Who confirmed the guest is 18+, where and when (APP_LOGIC §8.4). */
+/** Who confirmed the guest is 18+, where and when (APP_LOGIC §8.4); read-only for the guest. */
 export type AdultVerification = {
   verified_at: string;
   verified_by_staff_id: string;
@@ -18,24 +18,64 @@ export type AdultVerification = {
 export const users = pgTable(
   'users',
   {
-    id: text('id').primaryKey(),
-    email: text('email').notNull(),
-    phone: text('phone').notNull().default(''),
-    passwordHash: text('password_hash').notNull().default(''),
-    firstName: text('first_name').notNull().default(''),
-    lastName: text('last_name').notNull().default(''),
-    displayName: text('display_name').notNull().default(''),
-    locale: text('locale').notNull().default('ru'),
-    role: text('role').notNull(),
-    dietPreferences: text('diet_preferences').array().notNull().default([]),
-    favoriteVenues: text('favorite_venues').array().notNull().default([]),
-    avatarUrl: text('avatar_url'),
-    avatarKey: text('avatar_key'),
-    adultPreorderAllowed: boolean('adult_preorder_allowed').notNull().default(false),
-    adultVerification: jsonb('adult_verification').$type<AdultVerification>(),
+    id: text().primaryKey(),
+    email: text().notNull(),
+    passwordHash: text().notNull().default(''),
+    phone: text().notNull().default(''),
+    firstName: text().notNull().default(''),
+    lastName: text().notNull().default(''),
+    displayName: text().notNull().default(''),
+    locale: text().notNull().default('ru'),
+    /** guest | restaurant | staff | admin */
+    role: text().notNull().default('guest'),
+    dietPreferences: textList('diet_preferences'),
+    favoriteVenues: textList('favorite_venues'),
+    avatarUrl: text().notNull().default(''),
+    avatarKey: text().notNull().default(''),
+    adultPreorderAllowed: boolean().notNull().default(false),
+    adultVerification: jsonb().$type<AdultVerification>(),
+    /** GDPR deletion: the row stays as an anonymous stub. */
     deletedAt: ts('deleted_at'),
     createdAt: ts('created_at').notNull().defaultNow(),
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('users_email_lower_key').on(sql`lower(${t.email})`), index('users_role_idx').on(t.role)],
+  (t) => [uniqueIndex('users_email_lower_idx').using('btree', sql`lower(${t.email})`), index().on(t.role)],
+);
+
+/** Append-only audit of 18+ grants and revokes. */
+export const adultPermissionLog = pgTable(
+  'adult_permission_log',
+  {
+    id: text().primaryKey(),
+    userId: text().notNull(),
+    /** GRANT | REVOKE */
+    action: text().notNull(),
+    staffId: text().notNull(),
+    staffRole: text().notNull(),
+    staffDisplayName: text().notNull(),
+    venueId: text().notNull(),
+    reservationId: text().notNull().default(''),
+    idDocumentChecked: boolean().notNull().default(false),
+    idDocumentType: text().notNull().default(''),
+    reason: text().notNull().default(''),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [index().on(t.userId)],
+);
+
+/** In-app notifications (APP_LOGIC §13); live delivery goes through SSE. */
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: text().primaryKey(),
+    userId: text().notNull(),
+    kind: text().notNull(),
+    venueId: text().notNull().default(''),
+    reservationId: text().notNull().default(''),
+    orderId: text().notNull().default(''),
+    at: ts('at'),
+    createdAt: ts('created_at').notNull().defaultNow(),
+    readAt: ts('read_at'),
+  },
+  (t) => [index().on(t.userId, t.createdAt)],
 );

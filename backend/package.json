@@ -23,7 +23,7 @@
     "test:contract": "vitest run --config ./vitest.config.contract.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "node --env-file-if-exists=.env --import ./scripts/register-ts.mjs src/database/seed/seed.ts"
+    "db:seed": "node --env-file-if-exists=.env dist/database/seed/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
