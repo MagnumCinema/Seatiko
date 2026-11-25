@@ -2,7 +2,7 @@ import { Injectable, Logger, type OnApplicationBootstrap, type OnModuleDestroy }
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
 import type { Env } from '../../config/env.schema.js';
-import { Clock, dbDate, formatDbTime, formatTime } from '../../core/time/time.js';
+import { Clock, dbDate, formatDbTime, formatTime, venueLocalParts } from '../../core/time/time.js';
 import { compositeString, recordId, stringField, TwentyClient, type TwentyRecord } from '../../integrations/twenty/twenty.client.js';
 import { ensureDashboard, ensurePipeline } from '../../integrations/twenty/twenty-workspace.js';
 import { applyPatch, validPatch } from '../applications/domain/application-rules.js';
@@ -10,6 +10,7 @@ import type { ApplicationPatch } from '../../database/schema/restaurant.js';
 import { type ApplicationRow, CrmRepository, type UserRow } from './crm.repository.js';
 import { onboardingTasks, TASK_PREFIX } from './domain/onboarding-tasks.js';
 import { emailValue, isDemoApplication, isDemoGuest, isDemoUser, localizedValue, phoneFromTwenty, phoneValue } from './domain/projection.js';
+import { staffTime, shiftHours } from './domain/staff-time.js';
 import { JOB_TITLES, workplaces } from './domain/workplace.js';
 import { verifyWebhook } from './domain/webhook-signature.js';
 
@@ -30,6 +31,17 @@ export type CrmStatus = {
 
 const iso = (d: Date) => formatTime(d);
 const userUpdatedAt = (u: { updatedAt: string; createdAt: string }) => formatDbTime(u.updatedAt || u.createdAt);
+
+/** Whether a CRM record holds other values than Seatiko for these fields (numbers compared as numbers). */
+function differs(rec: TwentyRecord, want: TwentyRecord, keys: string[]): boolean {
+  return keys.some((k) => {
+    const a = rec[k] ?? null;
+    const b = want[k] ?? null;
+    if (typeof b === 'number' || typeof a === 'number') return Number(a ?? 0) !== Number(b ?? 0);
+    if (k === 'shiftDate' && typeof a === 'string' && typeof b === 'string') return a.slice(0, 10) !== b;
+    return (a ?? '') !== (b ?? '');
+  });
+}
 
 /**
  * Mirrors Seatiko into Twenty CRM (people, restaurant companies, reservations,
@@ -137,14 +149,22 @@ export class CrmService implements OnApplicationBootstrap, OnModuleDestroy {
       await client.ensureSchema();
       this.schemaReady = true;
     }
-    const [people, companies, reservations] = await Promise.all([client.listAll('people'), client.listAll('companies'), client.listAll('reservations')]);
-    const [users, apps, activities, cityRows, bookings, staff] = await Promise.all([
+    const [people, companies, reservations, crmShifts, crmEvents] = await Promise.all([
+      client.listAll('people'),
+      client.listAll('companies'),
+      client.listAll('reservations'),
+      client.listAll('staffShifts'),
+      client.listAll('eventRequests'),
+    ]);
+    const [users, apps, activities, cityRows, bookings, staff, shifts, inquiries] = await Promise.all([
       this.repo.users(),
       this.repo.applications(),
       this.repo.activities(),
       this.repo.cities(),
       this.repo.reservations(),
       this.repo.staff(),
+      this.repo.shifts(),
+      this.repo.eventInquiries(),
     ]);
     const userById = new Map(users.map((u) => [u.id, u]));
     const cityName = new Map(cityRows.map((c) => [c.id, c.name.ro]));
@@ -214,11 +234,163 @@ export class CrmService implements OnApplicationBootstrap, OnModuleDestroy {
       );
     }
 
+    // A restaurant that is not published yet is its application: its staff, shifts and
+    // requests point at the application id; after publishing, at the venue id.
+    const appOfVenue = new Map<string, ApplicationRow>();
+    for (const a of realApps) {
+      appOfVenue.set(a.id, a);
+      if (a.venueId) appOfVenue.set(a.venueId, a);
+    }
+    await this.syncStaffTime(client, people, crmShifts, companies, { users, realApps, staff, shifts, appOfVenue, personIds, companyIds });
+    await this.syncEventRequests(client, crmEvents, { inquiries, userById, appOfVenue, companyIds, person });
+
     await this.syncTasks(client, realApps, companyIds, activities);
     if (!this.workspaceReady) {
       await ensurePipeline(client);
       await ensureDashboard(client);
       this.workspaceReady = true;
+    }
+  }
+
+  /** Shifts as CRM records, staff hours on People, restaurant figures on Companies. */
+  private async syncStaffTime(
+    client: TwentyClient,
+    people: TwentyRecord[],
+    crmShifts: TwentyRecord[],
+    companies: TwentyRecord[],
+    ctx: {
+      users: UserRow[];
+      realApps: ApplicationRow[];
+      staff: Awaited<ReturnType<CrmRepository['staff']>>;
+      shifts: Awaited<ReturnType<CrmRepository['shifts']>>;
+      appOfVenue: Map<string, ApplicationRow>;
+      personIds: Map<string, string>;
+      companyIds: Map<string, string>;
+    },
+  ): Promise<void> {
+    const memberById = new Map(ctx.staff.map((m) => [m.id, m]));
+    const keep = new Set<string>();
+    for (const s of ctx.shifts) {
+      const app = ctx.appOfVenue.get(s.venueId);
+      if (!app) continue;
+      keep.add(s.id);
+      const member = memberById.get(s.staffId);
+      const hours = shiftHours(s.startTime, s.endTime);
+      const payload: TwentyRecord = {
+        name: `${s.staffName || member?.name || 'Сотрудник'} · ${s.date} ${s.startTime}–${s.endTime}`,
+        seatikoShiftId: s.id,
+        seatikoUpdatedAt: formatDbTime(s.updatedAt || s.createdAt),
+        shiftDate: s.date,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        hours,
+        note: s.note,
+        reason: s.reason,
+        staffRole: (s.role || 'waiter').toUpperCase(),
+        shiftStatus: s.status,
+        employeeId: (member?.userId && ctx.personIds.get(member.userId)) || null,
+        restaurantId: ctx.companyIds.get(app.id) ?? null,
+      };
+      const match = (rec: TwentyRecord) => stringField(rec, 'seatikoShiftId') === s.id;
+      const existing = crmShifts.find(match);
+      // Shifts are planned on the site: an edit made in the CRM is put back.
+      if (existing && differs(existing, payload, ['name', 'shiftDate', 'startTime', 'endTime', 'hours', 'note', 'reason', 'staffRole', 'shiftStatus', 'employeeId', 'restaurantId'])) {
+        await client.update('staffShifts', recordId(existing), payload);
+      } else {
+        await client.upsert('staffShifts', crmShifts, payload, match);
+      }
+    }
+    for (const rec of crmShifts) {
+      const sid = stringField(rec, 'seatikoShiftId');
+      if (sid && !keep.has(sid)) await client.delete('staffShifts', recordId(rec));
+    }
+
+    const p = venueLocalParts(this.clock.now());
+    const today = `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+    const { byStaff, venueHoursThisWeek } = staffTime(ctx.shifts, today);
+
+    // Hours on People: everyone who is (or was) staff somewhere; one person may work in several places.
+    const hoursByUser = new Map<string, { shiftsThisWeek: number; hoursThisWeek: number; hoursThisMonth: number }>();
+    for (const m of ctx.staff) {
+      if (!m.userId) continue;
+      const t = byStaff.get(m.id) ?? { shiftsThisWeek: 0, hoursThisWeek: 0, hoursThisMonth: 0 };
+      const sum = hoursByUser.get(m.userId) ?? { shiftsThisWeek: 0, hoursThisWeek: 0, hoursThisMonth: 0 };
+      hoursByUser.set(m.userId, {
+        shiftsThisWeek: sum.shiftsThisWeek + t.shiftsThisWeek,
+        hoursThisWeek: Math.round((sum.hoursThisWeek + t.hoursThisWeek) * 100) / 100,
+        hoursThisMonth: Math.round((sum.hoursThisMonth + t.hoursThisMonth) * 100) / 100,
+      });
+    }
+    const personById = new Map(people.map((r) => [recordId(r), r]));
+    for (const [userId, hours] of hoursByUser) {
+      const pid = ctx.personIds.get(userId);
+      const rec = pid ? personById.get(pid) : undefined;
+      if (pid && (!rec || differs(rec, hours, Object.keys(hours)))) await client.update('people', pid, hours);
+    }
+
+    // Restaurant figures on Companies.
+    const since = new Date(this.clock.now().getTime() - 30 * 24 * 3600_000).toISOString();
+    const venueIds = [...ctx.appOfVenue.keys()];
+    const stats = await this.repo.venueStats(venueIds, since);
+    const companyById = new Map(companies.map((r) => [recordId(r), r]));
+    for (const a of ctx.realApps) {
+      const cid = ctx.companyIds.get(a.id);
+      if (!cid) continue;
+      const ids = [a.id, a.venueId].filter((x): x is string => Boolean(x));
+      const total = (k: 'tables' | 'seats' | 'menuItems' | 'reservations30d' | 'orders30d' | 'revenue30d') => ids.reduce((n, id) => n + (stats.get(id)?.[k] ?? 0), 0);
+      const figures: TwentyRecord = {
+        staffCount: ctx.staff.filter((m) => m.status === 'ACTIVE' && ids.includes(m.venueId)).length,
+        staffHoursThisWeek: Math.round(ids.reduce((n, id) => n + (venueHoursThisWeek.get(id) ?? 0), 0) * 100) / 100,
+        tablesCount: total('tables'),
+        seatsCount: total('seats'),
+        menuItemsCount: total('menuItems'),
+        reservations30d: total('reservations30d'),
+        orders30d: total('orders30d'),
+        revenue30dMdl: total('revenue30d'),
+      };
+      const rec = companyById.get(cid);
+      if (!rec || differs(rec, figures, Object.keys(figures))) await client.update('companies', cid, figures);
+    }
+  }
+
+  /** Banquet requests; their status is managed in the CRM and written back (webhook). */
+  private async syncEventRequests(
+    client: TwentyClient,
+    crmEvents: TwentyRecord[],
+    ctx: {
+      inquiries: Awaited<ReturnType<CrmRepository['eventInquiries']>>;
+      userById: Map<string, UserRow>;
+      appOfVenue: Map<string, ApplicationRow>;
+      companyIds: Map<string, string>;
+      person: (u: UserRow) => Promise<string>;
+    },
+  ): Promise<void> {
+    const keep = new Set<string>();
+    for (const q of ctx.inquiries) {
+      const app = ctx.appOfVenue.get(q.venueId);
+      if (!app || isDemoGuest(q.userId)) continue;
+      keep.add(q.id);
+      const guest = ctx.userById.get(q.userId);
+      const payload: TwentyRecord = {
+        name: `${q.eventType || 'Банкет'} · ${q.guestCount} гостей · ${formatDbTime(q.preferredDate).slice(0, 10)}`,
+        seatikoInquiryId: q.id,
+        seatikoUpdatedAt: formatDbTime(q.updatedAt || q.createdAt),
+        eventType: q.eventType,
+        guests: q.guestCount,
+        preferredDate: formatDbTime(q.preferredDate),
+        contactMethod: q.contactMethod,
+        contactName: q.contactName,
+        contactPhone: q.contactPhone,
+        notes: q.notes,
+        requestStatus: q.status,
+        guestId: guest && !guest.deletedAt ? await ctx.person(guest) : null,
+        restaurantId: ctx.companyIds.get(app.id) ?? null,
+      };
+      await client.upsert('eventRequests', crmEvents, payload, (rec) => stringField(rec, 'seatikoInquiryId') === q.id);
+    }
+    for (const rec of crmEvents) {
+      const qid = stringField(rec, 'seatikoInquiryId');
+      if (qid && !keep.has(qid)) await client.delete('eventRequests', recordId(rec));
     }
   }
 
@@ -421,6 +593,22 @@ export class CrmService implements OnApplicationBootstrap, OnModuleDestroy {
       const result = await this.repo.setReservationStatusFromCrm(id, status, now);
       if (result === 'ok') this.trigger();
       return result === 'ok';
+    }
+
+    if (name === 'eventRequest.updated') {
+      const id = text(data, 'seatikoInquiryId');
+      const status = text(data, 'requestStatus');
+      if (!id || !status) return false;
+      if (!['PENDING', 'CONTACTED', 'CONFIRMED'].includes(status)) throw new Error('invalid_status');
+      const result = await this.repo.setInquiryStatusFromCrm(id, status, now);
+      if (result === 'ok') this.trigger();
+      return result === 'ok';
+    }
+
+    // Shifts are planned on the site: put back whatever was changed in the CRM.
+    if (name === 'staffShift.updated') {
+      this.trigger();
+      return false;
     }
     return false;
   }
