@@ -27,3 +27,14 @@ npm run build && node --env-file=.env dist/main.js
 ```
 
 Структура и правила слоёв — в PLAN.md, раздел «Архитектура и структура».
+
+## Какой бэкенд обслуживает сайт
+
+nginx отдаёт `/api/` бэкенду из `SEATIKO_API_UPSTREAM`:
+
+```bash
+docker compose up -d nginx                                                # Go (по умолчанию)
+SEATIKO_API_UPSTREAM=nest-api:8080 docker compose --profile nest up -d nginx   # NestJS
+```
+
+Пока Nest реализует не все маршруты, переключать стоит только для проверки.

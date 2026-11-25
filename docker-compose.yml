@@ -17,6 +17,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    environment:
+      # Which API serves /api/: api:8080 (Go, default) or nest-api:8080 (NestJS,
+      # start it with --profile nest). See backend/PLAN.md, cutover.
+      SEATIKO_API_UPSTREAM: ${SEATIKO_API_UPSTREAM:-api:8080}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
