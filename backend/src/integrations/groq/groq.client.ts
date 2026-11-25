@@ -29,7 +29,7 @@ export function parseAiContent(content: string): AiReading {
   const j = c.lastIndexOf('}');
   if (i >= 0 && j > i) c = c.slice(i, j + 1);
   const out = JSON.parse(c) as Partial<Prefs> & { budget?: { min: number; max: number } | null; explanation?: string };
-  return { prefs: cleanPrefs(out), explanation: [...(out.explanation ?? '').trim()].slice(0, 300).join('') };
+  return { prefs: cleanPrefs(out), explanation: Array.from((out.explanation ?? "").trim()).slice(0, 300).join("") };
 }
 
 /**

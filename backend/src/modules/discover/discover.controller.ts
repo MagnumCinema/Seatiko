@@ -44,7 +44,7 @@ export class DiscoverController {
   @HttpCode(200)
   async ai(@Body({ schema: body }) req: z.infer<typeof body>) {
     const query = req.query.trim();
-    if ([...query].length > MAX_QUERY) throw badRequest('invalid_query');
+    if (Array.from(query).length > MAX_QUERY) throw badRequest('invalid_query');
     const current = cleanPrefs((req.prefs ?? {}) as Parameters<typeof cleanPrefs>[0]);
 
     let next = parseText(query);

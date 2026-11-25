@@ -2,7 +2,8 @@ import { Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from '../../config/env.schema.js';
 import { Roles } from '../../core/auth/auth.decorators.js';
-import { unavailable } from '../../core/errors/domain-error.js';
+import { DomainError, unavailable } from '../../core/errors/domain-error.js';
+import { CrmService } from '../crm/crm.service.js';
 import { formatDbTime } from '../../core/time/time.js';
 import { OrdersRepository } from '../orders/orders.repository.js';
 import { AdminReportsRepository } from './admin-reports.repository.js';
@@ -18,6 +19,7 @@ export class AdminController {
     private readonly reports: AdminReportsRepository,
     private readonly orders: OrdersRepository,
     private readonly config: ConfigService<Env, true>,
+    private readonly crm: CrmService,
   ) {}
 
   @Get('overview')
@@ -117,7 +119,7 @@ export class AdminController {
     return { orders };
   }
 
-  /** Twenty CRM status; the sync itself arrives with stage 9, until then it reports disabled. */
+  /** Twenty CRM status for the admin console. */
   @Get('crm/status')
   crmStatus() {
     const raw = this.config.get('TWENTY_PUBLIC_URL', { infer: true }) ?? '';
@@ -128,12 +130,31 @@ export class AdminController {
     } catch {
       // keep /crm
     }
-    return { enabled: false, healthy: false, crm_url: crmUrl };
+    if (!this.crm.enabled) return { enabled: false, healthy: false, crm_url: crmUrl };
+    const s = this.crm.status();
+    return {
+      enabled: s.enabled,
+      healthy: s.healthy,
+      running: s.running,
+      last_success_at: s.last_success_at ?? null,
+      last_error_at: s.last_error_at ?? null,
+      last_error: s.last_error ?? '',
+      webhook_configured: s.webhook_configured,
+      last_webhook_at: s.last_webhook_at ?? null,
+      crm_url: crmUrl,
+      objects: ['People', 'Companies', 'Reservations'],
+    };
   }
 
   @Post('integrations/twenty/reconcile')
   @HttpCode(200)
-  reconcile() {
-    throw unavailable('crm_disabled');
+  async reconcile() {
+    if (!this.crm.enabled) throw unavailable('crm_disabled');
+    try {
+      await this.crm.reconcile();
+    } catch {
+      throw new DomainError('crm_sync_failed', 502);
+    }
+    return { status: 'synchronized' };
   }
 }
