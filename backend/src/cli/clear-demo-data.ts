@@ -21,7 +21,7 @@ try {
     TRUNCATE reservation_tables, reservations, table_watches, waitlist_entries, event_inquiries,
       order_items, orders, waiter_calls, sessions, notifications, adult_permission_log,
       work_shifts, staff_members, profile_change_requests, application_activities, applications,
-      menu_items, tables, collections, users, app_meta`);
+      menu_items, tables, collections, user_identities, users, app_meta`);
   await db.execute(sql`DELETE FROM venues`);
   console.log('demo data removed; cities and open places kept');
 } finally {

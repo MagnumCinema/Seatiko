@@ -169,8 +169,15 @@ export type User = {
   /** Read-only: staff confirmed 18+ in person (APP_LOGIC §8.4). */
   adult_preorder_allowed?: boolean;
   adult_verification?: AdultVerification;
+  /** false for an account created with Google until it sets a password. */
+  has_password?: boolean;
   created_at: string;
 };
+
+/** Sign-in options of the server (GET /auth/providers). */
+export type AuthProviders = { google: { enabled: boolean; client_id: string } };
+/** A Google account connected to the user (GET /me/identities). */
+export type ConnectedIdentity = { provider: "google"; email: string; created_at: string };
 
 /** Who confirmed the guest is 18+, where and when (shown read-only in the account). */
 export type AdultVerification = {
@@ -732,6 +739,48 @@ export async function login(input: {
   return data;
 }
 
+export async function fetchAuthProviders(): Promise<AuthProviders> {
+  return apiFetch<AuthProviders>("/api/v1/auth/providers", { auth: false });
+}
+
+/**
+ * Sign in or sign up with the ID token from the Google button. 409 link_required: an
+ * account with this email exists — sign in with its password, then connect Google.
+ */
+export async function googleSignIn(input: {
+  credential: string;
+  role?: UserRole;
+  locale?: string;
+}): Promise<AuthResponse & { created: boolean }> {
+  const data = await apiFetch<AuthResponse & { created: boolean }>("/api/v1/auth/google", {
+    method: "POST",
+    body: input,
+    auth: false,
+  });
+  setToken(data.token);
+  return data;
+}
+
+export async function listIdentities(): Promise<ConnectedIdentity[]> {
+  const data = await apiFetch<{ identities: ConnectedIdentity[] }>("/api/v1/me/identities");
+  return data.identities ?? [];
+}
+
+export async function connectGoogle(input: { credential: string; password?: string }): Promise<ConnectedIdentity[]> {
+  const data = await apiFetch<{ identities: ConnectedIdentity[] }>("/api/v1/me/identities/google", {
+    method: "POST",
+    body: input,
+  });
+  return data.identities ?? [];
+}
+
+export async function disconnectGoogle(): Promise<ConnectedIdentity[]> {
+  const data = await apiFetch<{ identities: ConnectedIdentity[] }>("/api/v1/me/identities/google", {
+    method: "DELETE",
+  });
+  return data.identities ?? [];
+}
+
 export function logout() {
   setToken(null);
 }
@@ -767,7 +816,8 @@ export async function updateEmail(email: string): Promise<User> {
 }
 
 export async function updatePassword(input: {
-  old_password: string;
+  /** Not needed when an account created with Google sets its first password. */
+  old_password?: string;
   new_password: string;
 }): Promise<void> {
   await apiFetch<{ status: string }>("/api/v1/me/password", {
@@ -1863,5 +1913,6 @@ export async function deleteAvatar(): Promise<User> {
 
 /** GDPR account deletion (guests). Errors: wrong_password, role_not_allowed. */
 export async function deleteAccount(password: string): Promise<{ deleted: boolean; cancelled_reservations: number }> {
-  return apiFetch("/api/v1/me", { method: "DELETE", body: { password } });
+  // An account created with Google without a password sends none.
+  return apiFetch("/api/v1/me", { method: "DELETE", body: password ? { password } : {} });
 }

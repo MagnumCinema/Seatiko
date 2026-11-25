@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { login, register } from "@/lib/api";
+import { googleSignIn, login, register } from "@/lib/api";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 import { apiErrorKey } from "@/lib/api-error-message";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
@@ -54,12 +55,30 @@ export function AuthForm({
     }
   }
 
+  /** Google's ID token → session; a first sign-in creates a guest account. */
+  async function google(credential: string) {
+    setBusy(true);
+    setErrorKey(null);
+    try {
+      await googleSignIn({ credential, locale, role: "guest" });
+      onSuccess();
+    } catch (error) {
+      setErrorKey(apiErrorKey(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const title = mode === "login" ? t("auth.login") : t("auth.register");
 
   return (
     <form className="booking-popup-auth" onSubmit={(e) => void submit(e)} noValidate>
       <h3 id={titleId}>{title}</h3>
       <p className="web-book-muted">{hint ?? t("res.auth_save")}</p>
+      <GoogleSignInButton
+        text={mode === "login" ? "continue_with" : "signup_with"}
+        onCredential={(credential) => void google(credential)}
+      />
       {mode === "register" && (
         <>
           <input

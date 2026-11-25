@@ -10,6 +10,7 @@ import {
   ApiError,
   fetchMe,
   getToken,
+  googleSignIn,
   login,
   logout,
   redirectPathForRole,
@@ -17,6 +18,8 @@ import {
   type User,
 } from "@/lib/api";
 import { useLocale } from "@/components/locale-provider";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
+import { apiErrorKey } from "@/lib/api-error-message";
 import { getSiteCopy } from "@/lib/site-copy";
 
 function BuildingIcon() {
@@ -340,7 +343,8 @@ function DemoPresetsRow({
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
+  const [googleOff, setGoogleOff] = useState(false);
   const copy = getSiteCopy(locale).login;
 
   const [isRegisteringGuest, setIsRegisteringGuest] = useState(false);
@@ -426,6 +430,25 @@ function LoginForm() {
   };
 
   const isPasswordValid = password.length >= 6;
+
+  /** Google's ID token → Seatiko session (a first sign-in creates a guest account). */
+  async function onGoogle(credential: string) {
+    setBusy(true);
+    setError(null);
+    setSocialNotice(null);
+    try {
+      const res = await googleSignIn({ credential, locale, role: "guest" });
+      const next = searchParams.get("next");
+      const target =
+        next && next.startsWith("/") && !next.startsWith("//")
+          ? next
+          : redirectPathForRole(res.user.role);
+      router.replace(target);
+    } catch (err) {
+      setError(t(apiErrorKey(err)));
+      setBusy(false);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -568,10 +591,19 @@ function LoginForm() {
         </p>
       </div>
 
-      {/* Social Logins Row for 1-Click Access */}
-      {!isRegisteringGuest && (
+      {/* Sign in with Google (Google's own button), then the providers still to come */}
+      {(!isRegisteringGuest || !googleOff) && (
         <>
-          <div className="auth-social-row">
+          {!googleOff && (
+            <GoogleSignInButton
+              text={isRegisteringGuest ? "signup_with" : "continue_with"}
+              onCredential={(credential) => void onGoogle(credential)}
+              onUnavailable={() => setGoogleOff(true)}
+            />
+          )}
+          {!isRegisteringGuest && (
+          <div className={`auth-social-row${googleOff ? "" : " auth-social-row-two"}`}>
+            {googleOff && (
             <button
               type="button"
               className="auth-social-btn google"
@@ -582,6 +614,7 @@ function LoginForm() {
               <GoogleIcon />
               <span>Google</span>
             </button>
+            )}
             <button
               type="button"
               className="auth-social-btn apple"
@@ -603,6 +636,7 @@ function LoginForm() {
               <span>Telegram</span>
             </button>
           </div>
+          )}
 
           {/* Social Notice Toast */}
           {socialNotice && (

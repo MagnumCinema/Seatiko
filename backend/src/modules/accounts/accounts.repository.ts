@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import { and, eq, gt, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, asc, eq, exists, gt, inArray, ne, or, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.module.js';
 import {
   eventInquiries,
@@ -10,11 +10,13 @@ import {
   reservationTables,
   tables,
   tableWatches,
+  userIdentities,
   users,
   waitlistEntries,
 } from '../../database/schema/index.js';
 
 export type UserRecord = typeof users.$inferSelect;
+export type ConnectedAccount = { provider: string; email: string; createdAt: string };
 export type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 /** Cancelled preorder of an erased account, for the staff notification. */
@@ -52,12 +54,75 @@ export class AccountsRepository {
     return row;
   }
 
+  /** The user a provider's account signs in (Sign in with Google). */
+  async byIdentity(provider: string, subject: string): Promise<UserRecord | undefined> {
+    const [row] = await this.db
+      .select({ user: users })
+      .from(userIdentities)
+      .innerJoin(users, eq(users.id, userIdentities.userId))
+      .where(and(eq(userIdentities.provider, provider), eq(userIdentities.subject, subject)));
+    return row?.user;
+  }
+
+  /** A new user without a password linked to a provider account, or undefined when the email is taken. */
+  createWithIdentity(row: typeof users.$inferInsert, identity: { provider: string; subject: string; email: string }): Promise<UserRecord | undefined> {
+    return this.db.transaction(async (tx) => {
+      // A concurrent insert of the same email waits for that transaction, then inserts nothing.
+      const [user] = await tx.insert(users).values(row).onConflictDoNothing().returning();
+      if (!user) return undefined;
+      await tx.insert(userIdentities).values({ ...identity, userId: user.id, createdAt: row.createdAt });
+      return user;
+    });
+  }
+
+  identities(userId: string): Promise<ConnectedAccount[]> {
+    return this.db
+      .select({ provider: userIdentities.provider, email: userIdentities.email, createdAt: userIdentities.createdAt })
+      .from(userIdentities)
+      .where(eq(userIdentities.userId, userId))
+      .orderBy(asc(userIdentities.provider));
+  }
+
+  async identityOwner(provider: string, subject: string): Promise<string | undefined> {
+    const [row] = await this.db
+      .select({ userId: userIdentities.userId })
+      .from(userIdentities)
+      .where(and(eq(userIdentities.provider, provider), eq(userIdentities.subject, subject)));
+    return row?.userId;
+  }
+
+  /** Whether the link was made; the constraints decide between concurrent links. */
+  async link(userId: string, identity: { provider: string; subject: string; email: string }, at: string): Promise<boolean> {
+    const linked = await this.db
+      .insert(userIdentities)
+      .values({ ...identity, userId, createdAt: at })
+      .onConflictDoNothing()
+      .returning({ provider: userIdentities.provider });
+    return linked.length > 0;
+  }
+
+  /** Whether the link was removed. Never the last way in: only for a user who has a password. */
+  async unlink(userId: string, provider: string): Promise<boolean> {
+    const hasPassword = this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), ne(users.passwordHash, '')));
+    // One statement, so the check and the delete cannot be split by another request.
+    const removed = await this.db
+      .delete(userIdentities)
+      .where(and(eq(userIdentities.userId, userId), eq(userIdentities.provider, provider), exists(hasPassword)))
+      .returning({ provider: userIdentities.provider });
+    return removed.length > 0;
+  }
+
   transaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
     return this.db.transaction(fn);
   }
 
   /** Clears every personal field of the user row; no password matches afterwards. */
   async anonymize(tx: Tx, userId: string, email: string, at: string): Promise<void> {
+    // The Google account may sign up again as a new user.
+    await tx.delete(userIdentities).where(eq(userIdentities.userId, userId));
     await tx
       .update(users)
       .set({

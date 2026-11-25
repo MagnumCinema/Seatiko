@@ -27,8 +27,14 @@ const profileBody = z.object({
   favorite_venues: z.array(z.string()).optional(),
 });
 const emailBody = z.object({ email: z.string('invalid_email').min(1, 'invalid_email') }, 'invalid_email');
-const passwordBody = z.object({ old_password: z.string().min(1), new_password: z.string().min(6) });
-const deleteBody = z.object({ password: z.string('password_required').min(1, 'password_required') }, 'password_required');
+// old_password: not for an account created with Google that sets its first password.
+const passwordBody = z.object({ old_password: z.string().optional(), new_password: z.string().min(6) });
+// password: required for accounts that have one (checked by the service).
+const deleteBody = z.object({ password: z.string('password_required').optional() }, 'password_required');
+// A Google ID token as Google's sign-in libraries hand it over (a signed JWT, ~1 KB).
+const credential = z.string().min(1).max(4096);
+const googleBody = z.object({ credential, role: z.string().optional(), locale: z.string().optional() });
+const connectGoogleBody = z.object({ credential, password: z.string().max(128).optional() });
 
 /** Sign-in limit per client address, as the Go API (40 per minute). */
 const AUTH_LIMIT = { default: { limit: 40, ttl: 60_000 } };
@@ -50,6 +56,40 @@ export class AccountsController {
   @HttpCode(200)
   login(@Body({ schema: loginBody }) body: z.infer<typeof loginBody>) {
     return this.accounts.login(body.email, body.password);
+  }
+
+  /** Which sign-in buttons the site and the app show (Google client ID). */
+  @Public()
+  @Get('auth/providers')
+  providers() {
+    return this.accounts.providers();
+  }
+
+  /** Sign in or sign up with a Google ID token; answers like /auth/login (+ created). */
+  @Public()
+  @Throttle(AUTH_LIMIT)
+  @Post('auth/google')
+  @HttpCode(200)
+  google(@Body({ schema: googleBody }) body: z.infer<typeof googleBody>) {
+    return this.accounts.signInWithGoogle(body);
+  }
+
+  @Get('me/identities')
+  identities(@CurrentUser() user: AuthUser) {
+    return this.accounts.identities(user.id);
+  }
+
+  /** It checks a password, so it is limited like sign-in. */
+  @Throttle({ default: { limit: 10, ttl: 15 * 60_000 } })
+  @Post('me/identities/google')
+  @HttpCode(200)
+  connectGoogle(@CurrentUser() user: AuthUser, @Body({ schema: connectGoogleBody }) body: z.infer<typeof connectGoogleBody>) {
+    return this.accounts.connectGoogle(user.id, body.credential, body.password);
+  }
+
+  @Delete('me/identities/google')
+  disconnectGoogle(@CurrentUser() user: AuthUser) {
+    return this.accounts.disconnectGoogle(user.id);
   }
 
   @Get('me')

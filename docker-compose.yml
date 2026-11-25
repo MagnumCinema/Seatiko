@@ -89,6 +89,8 @@ services:
       GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
       GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
       GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      # Sign in with Google (web client ID first); empty = no Google button.
+      GOOGLE_CLIENT_IDS: ${GOOGLE_CLIENT_IDS:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       TWENTY_BASE_URL: http://twenty-server:3000

@@ -55,7 +55,7 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
       await run.execute(sql`UPDATE open_places SET venue_id = NULL`);
       await run.execute(sql`TRUNCATE notifications, adult_permission_log, order_items, orders, waiter_calls, sessions,
         reservation_tables, reservations, table_watches, waitlist_entries, event_inquiries, work_shifts, staff_members,
-        profile_change_requests, application_activities, applications, menu_items, tables, collections, users, app_meta`);
+        profile_change_requests, application_activities, applications, menu_items, tables, collections, user_identities, users, app_meta`);
       await run.execute(sql`DELETE FROM venues`);
       await run.execute(sql`DELETE FROM cities`);
     }

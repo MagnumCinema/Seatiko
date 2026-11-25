@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, jsonb, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import { boolean, index, jsonb, pgTable, primaryKey, text, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { textList, ts } from './columns.js';
 
 /** Who confirmed the guest is 18+, where and when (APP_LOGIC §8.4); read-only for the guest. */
@@ -40,6 +40,32 @@ export const users = pgTable(
     updatedAt: ts('updated_at').notNull().defaultNow(),
   },
   (t) => [uniqueIndex('users_email_lower_idx').using('btree', sql`lower(${t.email})`), index().on(t.role)],
+);
+
+/**
+ * Accounts at other providers that sign a user in (Sign in with Google), found by the
+ * provider's id for the account (`sub`), never by email: emails change, `sub` does not.
+ */
+export const userIdentities = pgTable(
+  'user_identities',
+  {
+    /** google */
+    provider: text().notNull(),
+    /** Google's `sub`: stable for the life of the Google account. */
+    subject: text().notNull(),
+    userId: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Address the provider reported, shown to the user only. */
+    email: text().notNull().default(''),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    // One user per provider account: two first sign-ins cannot create two users.
+    primaryKey({ columns: [t.provider, t.subject] }),
+    // At most one account per provider for each user.
+    unique('user_identities_user_provider_key').on(t.userId, t.provider),
+  ],
 );
 
 /** Append-only audit of 18+ grants and revokes. */

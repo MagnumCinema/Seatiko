@@ -626,5 +626,22 @@
   "discover_ai.top": "Potrivite:",
   "discover_ai.show_map": "Arată pe hartă",
   "discover_ai.error": "Asistentul nu este disponibil acum. Folosiți filtrele din stânga.",
-  "discover_ai.budget": "{min}–{max} MDL"
+  "discover_ai.budget": "{min}–{max} MDL",
+  "auth.or": "sau",
+  "error.google_link_required": "Există deja un cont cu acest email. Autentificați-vă cu parola, apoi conectați Google din profil.",
+  "error.google_email_unverified": "Google nu a confirmat emailul acestui cont — alegeți alt cont Google.",
+  "error.google_unavailable": "Autentificarea prin Google nu este disponibilă acum. Încercați mai târziu sau folosiți emailul.",
+  "error.google_linked_elsewhere": "Acest cont Google este deja conectat la alt profil Seatiko.",
+  "error.google_already_connected": "Este conectat alt cont Google — deconectați-l mai întâi.",
+  "error.wrong_password": "Parolă greșită.",
+  "error.password_required": "Introduceți parola.",
+  "error.password_required_first": "Google este singura metodă de autentificare. Setați mai întâi o parolă.",
+  "google.section": "Autentificare cu Google",
+  "google.connected": "Conectat: {email}",
+  "google.not_connected": "Google nu este conectat. Conectați-l pentru autentificare dintr-un clic.",
+  "google.connect_password": "Confirmați parola actuală pentru conectare",
+  "google.disconnect": "Deconectați Google",
+  "google.disconnected": "Google deconectat",
+  "google.connected_ok": "Google conectat",
+  "google.no_password": "Contul nu are parolă: vă autentificați cu Google. Puteți seta una mai jos."
 }

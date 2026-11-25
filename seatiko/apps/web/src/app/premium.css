@@ -13572,6 +13572,20 @@ html[data-theme="light"] .btn-view-toggle.active {
   margin-bottom: 18px;
 }
 
+.auth-social-row.auth-social-row-two {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Google's own Sign in with Google button (Google Identity Services) */
+.google-signin-slot {
+  margin-bottom: 10px;
+}
+
+.google-signin-slot[data-state="loading"] {
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
 .auth-social-btn {
   display: inline-flex;
   align-items: center;
@@ -21190,4 +21204,20 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   .catalog-info-action {
     transition: none !important;
   }
+}
+
+/* Profile: Sign in with Google card */
+.google-connect-card .google-connect-password {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.google-connect-card .google-connect-action {
+  min-width: 220px;
+}
+
+.google-connect-card .google-connect-action[aria-busy="true"] {
+  opacity: 0.6;
+  pointer-events: none;
 }

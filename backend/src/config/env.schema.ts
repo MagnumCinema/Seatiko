@@ -62,6 +62,23 @@ export const envSchema = z.object({
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_MAPS_BROWSER_KEY: z.string().optional(),
   GOOGLE_MAPS_MAP_ID: z.string().optional(),
+
+  /**
+   * Sign in with Google: the OAuth client IDs whose ID tokens the API accepts,
+   * comma-separated, the web client first (the site's button uses it; Android asks
+   * for tokens issued to it too). Empty = Google sign-in is off.
+   */
+  GOOGLE_CLIENT_IDS: z
+    .string()
+    .default('')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ),
+  /** Google's signing keys; only tests change it. */
+  GOOGLE_JWKS_URL: z.url().default('https://www.googleapis.com/oauth2/v3/certs'),
 });
 
 export type Env = z.infer<typeof envSchema>;

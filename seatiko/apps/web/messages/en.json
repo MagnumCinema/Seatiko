@@ -626,5 +626,22 @@
   "discover_ai.top": "Good fits:",
   "discover_ai.show_map": "Show on the map",
   "discover_ai.error": "The assistant is unavailable right now. Use the filters on the left.",
-  "discover_ai.budget": "{min}–{max} MDL"
+  "discover_ai.budget": "{min}–{max} MDL",
+  "auth.or": "or",
+  "error.google_link_required": "An account with this email already exists. Sign in with your password, then connect Google in your profile.",
+  "error.google_email_unverified": "Google has not verified this account’s email — choose another Google account.",
+  "error.google_unavailable": "Google sign-in is unavailable right now. Try again later or use email.",
+  "error.google_linked_elsewhere": "This Google account is already connected to another Seatiko profile.",
+  "error.google_already_connected": "Another Google account is connected — disconnect it first.",
+  "error.wrong_password": "Wrong password.",
+  "error.password_required": "Enter your password.",
+  "error.password_required_first": "Google is your only way to sign in. Set a password first.",
+  "google.section": "Sign in with Google",
+  "google.connected": "Connected: {email}",
+  "google.not_connected": "Google is not connected. Connect it to sign in with one click.",
+  "google.connect_password": "Confirm your current password to connect",
+  "google.disconnect": "Disconnect Google",
+  "google.disconnected": "Google disconnected",
+  "google.connected_ok": "Google connected",
+  "google.no_password": "This account has no password: you sign in with Google. You can set one below."
 }

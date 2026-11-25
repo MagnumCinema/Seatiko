@@ -37,6 +37,7 @@ import {
   type GuestLocalPrefs,
 } from "@/lib/guest-local-prefs";
 import { venueBookingHref } from "@/lib/booking-link";
+import { GoogleConnectCard } from "@/components/google-connect-card";
 
 export type GuestProfileProps = {
   user: User | null;
@@ -437,6 +438,8 @@ export function GuestProfile({
 
   const isDemoGuest =
     user?.email === "guest@seatiko.local" || user?.id === "user-guest-demo";
+  /** Account created with Google that has not set a password yet. */
+  const noPassword = user?.has_password === false;
 
   /* Simulation toggle: defaults to true for demo guest so all data is instantly viewable */
   const [demoPopulated, setDemoPopulated] = useState<boolean>(true);
@@ -840,7 +843,7 @@ export function GuestProfile({
   }
 
   async function handleDeleteAccount() {
-    if (!deletePassword) return;
+    if (!deletePassword && !noPassword) return;
     setDeleteBusy(true);
     setDeleteError(null);
     try {
@@ -1119,7 +1122,7 @@ export function GuestProfile({
     e.preventDefault();
     setPasswordError(null);
 
-    if (!oldPasswordInput) {
+    if (!noPassword && !oldPasswordInput) {
       setPasswordError("Введите ваш текущий пароль");
       return;
     }
@@ -1140,9 +1143,10 @@ export function GuestProfile({
     try {
       if (!isDemoGuest) {
         await updatePassword({
-          old_password: oldPasswordInput,
+          old_password: noPassword ? undefined : oldPasswordInput,
           new_password: newPasswordInput,
         });
+        if (noPassword && user) onUserUpdated?.({ ...user, has_password: true });
       }
       setIsPasswordModalOpen(false);
       setOldPasswordInput("");
@@ -2267,6 +2271,9 @@ export function GuestProfile({
                     <span>{copy.changePassword}</span>
                   </button>
                 </div>
+
+                {/* Sign in with Google: connect / disconnect */}
+                {user && !isDemoGuest && <GoogleConnectCard user={user} onUserUpdated={onUserUpdated} onToast={toast} />}
               </div>
             </div>
           </div>
@@ -2575,6 +2582,7 @@ export function GuestProfile({
                   void handleDeleteAccount();
                 }}
               >
+                {!noPassword && (
                 <label>
                   <span>{t("account.delete_password")}</span>
                   <input
@@ -2586,6 +2594,7 @@ export function GuestProfile({
                     required
                   />
                 </label>
+                )}
                 {deleteError ? (
                   <p className="guest-delete-error" role="alert">
                     {deleteError}
@@ -2595,7 +2604,7 @@ export function GuestProfile({
                   <button type="button" className="btn btn-outline" disabled={deleteBusy} onClick={() => setShowDeleteAccount(false)}>
                     {t("common.cancel")}
                   </button>
-                  <button type="submit" className="btn guest-delete-confirm" disabled={deleteBusy || !deletePassword}>
+                  <button type="submit" className="btn guest-delete-confirm" disabled={deleteBusy || (!noPassword && !deletePassword)}>
                     {deleteBusy ? t("account.delete_progress") : t("account.delete_submit")}
                   </button>
                 </div>
@@ -2864,6 +2873,7 @@ export function GuestProfile({
                     </div>
                   )}
 
+                  {!noPassword && (
                   <div className="guest-modal-field">
                     <label htmlFor="modal-old-pass">
                       {copy.oldPassword} <span className="req">*</span>
@@ -2892,6 +2902,7 @@ export function GuestProfile({
                       </button>
                     </div>
                   </div>
+                  )}
 
                   <div className="guest-modal-field">
                     <label htmlFor="modal-new-pass">
@@ -2967,7 +2978,7 @@ export function GuestProfile({
                     className="btn btn-gold"
                     disabled={
                       passwordBusy ||
-                      !oldPasswordInput ||
+                      (!noPassword && !oldPasswordInput) ||
                       !newPasswordInput ||
                       !confirmPasswordInput
                     }

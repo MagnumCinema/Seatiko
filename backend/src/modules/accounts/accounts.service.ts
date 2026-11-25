@@ -3,8 +3,9 @@ import { Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { badRequest, conflict, forbidden, notFound, pgCode, unauthorized } from '../../core/errors/domain-error.js';
 import { TokenService } from '../../core/auth/token.service.js';
-import { Clock } from '../../core/time/time.js';
+import { Clock, formatDbTime } from '../../core/time/time.js';
 import { squareJpeg } from '../../integrations/storage/image.js';
+import { type GoogleAccount, GoogleIdTokenVerifier } from '../../integrations/google/google-id-token.verifier.js';
 import { MediaStorage } from '../../integrations/storage/media-storage.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { presentUser } from './accounts.presenter.js';
@@ -14,6 +15,7 @@ import { AccountsRepository, type UserRecord } from './accounts.repository.js';
 const BCRYPT_COST = 10;
 const EMAIL = /^[^\s@<>()[\],;:"]+@[^\s@<>()[\],;:"]+$/;
 
+export type GoogleSignInInput = { credential: string; role?: string; locale?: string };
 export type RegisterInput = { email: string; password: string; first_name?: string; last_name?: string; locale?: string; role?: string };
 export type ProfilePatch = {
   first_name?: string;
@@ -36,6 +38,7 @@ export class AccountsService {
     private readonly media: MediaStorage,
     private readonly notifications: NotificationsService,
     private readonly clock: Clock,
+    private readonly google: GoogleIdTokenVerifier,
   ) {}
 
   private now() {
@@ -81,6 +84,80 @@ export class AccountsService {
     return this.session(user);
   }
 
+  /** Sign-in options for the site and the app (which buttons to show). */
+  providers() {
+    return { google: { enabled: this.google.enabled, client_id: this.google.webClientId } };
+  }
+
+  /**
+   * Sign in (or sign up) with a Google ID token. The Google account is found by its
+   * `sub`; a first sign-in creates a guest (or restaurant) account without a password,
+   * only for an address Google verified. An existing password account with that address
+   * is never handed over (account pre-hijacking): 409 link_required — sign in with the
+   * password and connect Google in the profile.
+   */
+  async signInWithGoogle(input: GoogleSignInInput) {
+    const google = await this.google.verify(input.credential);
+    const linked = await this.repo.byIdentity('google', google.subject);
+    if (linked) return this.googleSession(linked);
+    if (!google.email || !google.emailVerified) throw forbidden('google_email_unverified');
+    const role = input.role || 'guest';
+    if (role !== 'guest' && role !== 'restaurant') throw badRequest('invalid_role');
+    const now = this.now();
+    const created = await this.repo.createWithIdentity(
+      {
+        id: randomUUID(),
+        email: google.email,
+        passwordHash: '',
+        firstName: google.givenName,
+        lastName: google.familyName,
+        displayName: `${google.givenName} ${google.familyName}`.trim() || google.email,
+        locale: ['ru', 'en', 'ro'].includes(input.locale ?? '') ? input.locale! : 'ru',
+        role,
+        createdAt: now,
+        updatedAt: now,
+      },
+      { provider: 'google', subject: google.subject, email: google.email },
+    );
+    if (created) return { ...(await this.session(created)), created: true };
+    // The address is taken: a concurrent first sign-in with this Google account may have
+    // just created the user, and then it is this one.
+    const raced = await this.repo.byIdentity('google', google.subject);
+    if (raced) return this.googleSession(raced);
+    throw conflict('link_required');
+  }
+
+  private async googleSession(user: UserRecord) {
+    if (user.deletedAt) throw unauthorized('invalid_credentials');
+    return { ...(await this.session(user)), created: false };
+  }
+
+  async identities(userId: string) {
+    return { identities: (await this.repo.identities(userId)).map((i) => ({ provider: i.provider, email: i.email, created_at: formatDbTime(i.createdAt) })) };
+  }
+
+  /** Connects a Google account to a signed-in user; a password account confirms its password. */
+  async connectGoogle(userId: string, credential: string, password: string | undefined) {
+    const user = await this.user(userId);
+    if (user.passwordHash) {
+      if (!password) throw badRequest('password_required');
+      if (!(await bcrypt.compare(password, user.passwordHash))) throw forbidden('wrong_password');
+    }
+    const google: GoogleAccount = await this.google.verify(credential);
+    if (await this.repo.link(userId, { provider: 'google', subject: google.subject, email: google.email }, this.now())) return this.identities(userId);
+    const owner = await this.repo.identityOwner('google', google.subject);
+    if (owner === userId) return this.identities(userId);
+    throw conflict(owner ? 'google_linked_elsewhere' : 'google_already_connected');
+  }
+
+  async disconnectGoogle(userId: string) {
+    if (await this.repo.unlink(userId, 'google')) return this.identities(userId);
+    const linked = (await this.repo.identities(userId)).some((i) => i.provider === 'google');
+    if (!linked) throw notFound('google_not_connected');
+    // Google is the only way in: set a password first.
+    throw conflict('password_required_first');
+  }
+
   /** For the auth guard: role and whether the account was erased. */
   async status(userId: string) {
     const user = await this.repo.byId(userId);
@@ -121,10 +198,11 @@ export class AccountsService {
     return presentUser(user);
   }
 
-  async updatePassword(userId: string, oldPassword: string, newPassword: string) {
+  /** Changes the password; an account created with Google sets its first one without an old one. */
+  async updatePassword(userId: string, oldPassword: string | undefined, newPassword: string) {
     const user = await this.user(userId);
     if (newPassword.length < 6) throw badRequest('password_too_short');
-    if (!(await bcrypt.compare(oldPassword, user.passwordHash))) throw badRequest('invalid_old_password');
+    if (user.passwordHash && !(oldPassword && (await bcrypt.compare(oldPassword, user.passwordHash)))) throw badRequest('invalid_old_password');
     await this.repo.update(userId, { passwordHash: await bcrypt.hash(newPassword, BCRYPT_COST), updatedAt: this.now() });
     return { status: 'ok' };
   }
@@ -133,11 +211,15 @@ export class AccountsService {
    * GDPR deletion (DELETE /me): guests only, with their password. The row stays as an
    * anonymous stub so orders and the 18+ audit keep a stable user id; sign-in is impossible.
    */
-  async deleteAccount(userId: string, password: string) {
+  async deleteAccount(userId: string, password: string | undefined) {
     const user = await this.repo.byId(userId);
     if (!user || user.deletedAt) throw notFound('user_not_found');
     if (user.role !== 'guest') throw forbidden('role_not_allowed');
-    if (!(await bcrypt.compare(password, user.passwordHash))) throw forbidden('wrong_password');
+    // An account created with Google has no password; its session is the proof.
+    if (user.passwordHash) {
+      if (!password) throw badRequest('password_required');
+      if (!(await bcrypt.compare(password, user.passwordHash))) throw forbidden('wrong_password');
+    }
 
     const now = this.clock.now();
     const publish: Array<() => void> = [];

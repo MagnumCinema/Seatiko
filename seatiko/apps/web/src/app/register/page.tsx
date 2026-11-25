@@ -10,10 +10,14 @@ import {
   ApiError,
   fetchMe,
   getToken,
+  googleSignIn,
   logout,
   register,
+  redirectPathForRole,
   type User,
 } from "@/lib/api";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
+import { apiErrorKey } from "@/lib/api-error-message";
 import { getSiteCopy } from "@/lib/site-copy";
 
 function EyeIcon() {
@@ -179,8 +183,9 @@ function UserIcon() {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = getSiteCopy(locale).register;
+  const [googleOff, setGoogleOff] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -232,6 +237,22 @@ export default function RegisterPage() {
             : err.code
           : copy.failed,
       );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Owner sign-up with Google: a new account is a restaurant owner; an existing one keeps its role. */
+  async function onGoogle(credential: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await googleSignIn({ credential, locale, role: "restaurant" });
+      if (res.user.role === "restaurant") router.replace("/cabinet");
+      else if (res.user.role === "guest") setCurrentUser(res.user);
+      else router.replace(redirectPathForRole(res.user.role));
+    } catch (err) {
+      setError(t(apiErrorKey(err)));
     } finally {
       setBusy(false);
     }
@@ -359,6 +380,19 @@ export default function RegisterPage() {
                     {copy.switchAccount}
                   </button>
                 </div>
+              )}
+
+              {!googleOff && !currentUser && (
+                <>
+                  <GoogleSignInButton
+                    text="signup_with"
+                    onCredential={(credential) => void onGoogle(credential)}
+                    onUnavailable={() => setGoogleOff(true)}
+                  />
+                  <div className="auth-divider">
+                    <span>{t("auth.or")}</span>
+                  </div>
+                </>
               )}
 
               <form className="auth-form" onSubmit={(e) => void onSubmit(e)}>
