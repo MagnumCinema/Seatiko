@@ -3,7 +3,7 @@
 Цель: переписать весь API Seatiko (сейчас Go, `seatiko/services/api`) на NestJS в папке `backend/`, без изменений для сайта, Android-приложения и Twenty CRM. `twenty/` не трогаем.
 
 Статус (ветка `feat/nest-backend`):
-- **этап 0 готов** — контрактные тесты: 45 тестов, 105/105 операций, зелёные на Go;
+- **этап 0 готов** — контрактные тесты: 50 тестов, 116/116 операций, зелёные на Go (включая смены из PR #18);
 - **этап 1 почти готов** — каркас: конфиг на Zod, ядро (ошибки `{"error": code}`, валидация, время как в Go, JWT совместимый с Go, guard ролей), Drizzle, `/healthz`, `/api/openapi.yaml`, `/api/docs`, Dockerfile, `seatiko-db` и `nest-api` в compose (профиль `nest`). Осталось: проверить `/healthz` с живой базой (нужен запущенный Docker).
 
 Анализ — по `main` @ `2516de34`.
@@ -18,7 +18,7 @@
 |---|---:|---:|---|
 | `internal/store` | 8 330 | 12 файлов | вся бизнес-логика + хранение в памяти со снапшотом в JSON |
 | `internal/crm` | 2 510 | 6 | синхронизация с Twenty, вебхук, схема, воронка, дашборд, задачи |
-| `internal/handlers` | 2 170 | — | 105 HTTP-маршрутов (gin) |
+| `internal/handlers` | 2 170 | — | 116 HTTP-маршрутов (gin) |
 | `internal/discover` | 840 | 3 | фильтры `/discover`, счётчик, AI (Groq + правила) |
 | `internal/places` | 750 | 4 | Google Places: поиск на карте, фото, отзывы |
 | `internal/models` | 620 | — | 39 типов (JSON-контракт) |
@@ -28,9 +28,9 @@
 | `cmd/*` (утилиты) | 370 | — | `crm-bootstrap`, `migrate-live-state`, `repair-state-passwords` |
 | **Итого** | **≈17 000** | **100 тестов** | |
 
-Контракт: `internal/apidocs/openapi.yaml` — 4 700 строк, 105 операций, тест сверяет его с роутером.
+Контракт: `internal/apidocs/openapi.yaml` — ≈5 100 строк, 116 операций (после PR #18: смены персонала, удаление анкеты и сотрудника), тест сверяет его с роутером.
 
-### Маршруты (105) по группам
+### Маршруты (116) по группам
 
 | Группа | Кол-во | Примеры |
 |---|---:|---|
@@ -40,9 +40,9 @@
 | Ресторан | 21 | `/restaurant/applications` (CRUD, фото, submit, change-requests), меню, столы, QR, правила брони, аналитика, персонал |
 | Админ | 13 | `/admin/{overview,people,companies,reservations,orders,applications,change-requests,crm,adult-permission-log}` |
 
-### Данные (19 коллекций в одном JSON-файле)
+### Данные (20 коллекций в одном JSON-файле)
 
-`cities, venues, tables, users, reservations, watches, sessions, menu_items, orders, waiter_calls, collections, applications, activities, staff_members, profile_changes, waitlist, adult_permission_log, notifications, demo_menu_version`.
+`work_shifts, cities, venues, tables, users, reservations, watches, sessions, menu_items, orders, waiter_calls, collections, applications, activities, staff_members, profile_changes, waitlist, adult_permission_log, notifications, demo_menu_version`.
 
 Всё в памяти под одним мьютексом, при каждой записи — атомарная перезапись `seatiko-state.json`.
 
@@ -71,6 +71,7 @@ Twenty (REST + GraphQL + метаданные, вебхук с подписью)
 3. Rate limit и подписки SSE живут в памяти процесса — не работают при двух репликах.
 4. Пересечения броней проверяются циклом по всем броням под глобальной блокировкой.
 5. `memory.go` — 2 460 строк, логика всех доменов в одном файле.
+6. Смены персонала (`/restaurant/venues/:id/shifts`): дата и время не проверяются на формат (принимается `"someday"`), начало может быть позже конца. В Nest — строгие `YYYY-MM-DD`, `HH:MM`, начало < конца.
 
 ---
 

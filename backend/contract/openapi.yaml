@@ -2118,6 +2118,68 @@ paths:
                     $ref: '#/components/schemas/WaitlistEntry'
         default:
           $ref: '#/components/responses/APIError'
+  /api/v1/staff/shifts:
+    get:
+      operationId: ListMyStaffShifts
+      summary: List Staff Member Shifts
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shifts:
+                    type: array
+                    items:
+                      type: object
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/staff/shifts/{shiftId}/respond:
+    post:
+      operationId: RespondStaffShift
+      summary: Accept or Decline Work Shift
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: shiftId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - CONFIRMED
+                    - DECLINED
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shift:
+                    type: object
+        default:
+          $ref: '#/components/responses/APIError'
   /api/v1/restaurant/applications:
     post:
       operationId: CreateRestaurantApplication
@@ -2236,6 +2298,31 @@ paths:
                 properties:
                   application:
                     $ref: '#/components/schemas/VenueApplication'
+        default:
+          $ref: '#/components/responses/APIError'
+    delete:
+      operationId: DeleteRestaurantApplication
+      summary: Delete Restaurant Application / Venue
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/restaurant/applications/{id}/activity:
@@ -2802,6 +2889,329 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/staff/{staffId}:
+    delete:
+      operationId: RemoveVenueStaff
+      summary: Remove Venue Staff
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/staff/{staffId}/shift:
+    post:
+      operationId: ToggleStaffShift
+      summary: Toggle Staff Shift Status
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: staffId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                on_shift:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  staff:
+                    $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts:
+    get:
+      operationId: ListVenueWorkShifts
+      summary: List Venue Work Shifts
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shifts:
+                    type: array
+                    items:
+                      type: object
+        default:
+          $ref: '#/components/responses/APIError'
+    post:
+      operationId: CreateVenueWorkShift
+      summary: Create Venue Work Shift
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - staff_id
+                - date
+                - start_time
+                - end_time
+              properties:
+                staff_id:
+                  type: string
+                date:
+                  type: string
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shift:
+                    type: object
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/{shiftId}:
+    delete:
+      operationId: DeleteVenueWorkShift
+      summary: Delete Venue Work Shift
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: shiftId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/batch:
+    post:
+      operationId: BatchCreateVenueWorkShifts
+      summary: Batch Create Venue Work Shifts
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - staff_ids
+                - dates
+                - start_time
+                - end_time
+              properties:
+                staff_ids:
+                  type: array
+                  items:
+                    type: string
+                dates:
+                  type: array
+                  items:
+                    type: string
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shifts:
+                    type: array
+                    items:
+                      type: object
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/copy-week:
+    post:
+      operationId: CopyVenueWorkShiftsWeek
+      summary: Copy Previous Week Work Shifts
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source_start_date
+                - target_start_date
+              properties:
+                source_start_date:
+                  type: string
+                target_start_date:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shifts:
+                    type: array
+                    items:
+                      type: object
+                  created_count:
+                    type: integer
+                  skipped_count:
+                    type: integer
+        default:
+          $ref: '#/components/responses/APIError'
+  /api/v1/restaurant/venues/{venueId}/shifts/{shiftId}/swap:
+    post:
+      operationId: SwapVenueWorkShift
+      summary: Swap Staff Member for Shift
+      tags:
+        - Restaurant owner
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: shiftId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_staff_id
+              properties:
+                new_staff_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shift:
+                    type: object
         default:
           $ref: '#/components/responses/APIError'
   /api/v1/admin/overview:
