@@ -4432,10 +4432,12 @@ html[data-theme="light"] .owner-venue-switcher button.active {
   padding-top: 18px;
 }
 .owner-nav button {
-  min-width: 0;
-  min-height: 44px;
+  position: relative;
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 44px;
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
@@ -4445,44 +4447,78 @@ html[data-theme="light"] .owner-venue-switcher button.active {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: all .15s ease;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
 .owner-nav button:hover {
   color: var(--site-fg);
   background: color-mix(in srgb, var(--site-fg) 6%, transparent);
 }
-.owner-nav button.active {
+.owner-nav button:focus-visible {
+  outline: 2.5px solid var(--site-accent);
+  outline-offset: 2px;
+}
+.owner-nav button.active,
+.owner-nav button[aria-selected="true"] {
   color: var(--site-fg);
   background: color-mix(in srgb, var(--site-accent) 15%, transparent);
-  border-color: color-mix(in srgb, var(--site-accent) 30%, transparent);
+  border-color: color-mix(in srgb, var(--site-accent) 36%, transparent);
   font-weight: 700;
 }
-html[data-theme="light"] .owner-nav button.active {
+.owner-nav button.active::after,
+.owner-nav button[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset-block: 8px;
+  inset-inline-start: 0;
+  border-inline-start: 3px solid var(--site-accent, #e9b96e);
+  border-radius: 2px;
+  pointer-events: none;
+}
+html[data-theme="light"] .owner-nav button.active,
+html[data-theme="light"] .owner-nav button[aria-selected="true"] {
   color: #1f593f;
   background: #e4ece5;
-  border-color: #d1ddd3;
+  border-color: #c2d4c6;
+}
+html[data-theme="light"] .owner-nav button.active::after,
+html[data-theme="light"] .owner-nav button[aria-selected="true"]::after {
+  border-inline-start-color: #1f593f;
 }
 .owner-nav .owner-nav-icon {
+  grid-column: 1;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
-.owner-nav button span {
-  font-size: .76rem;
+.owner-nav button > span:not(.owner-nav-icon) {
+  grid-column: 2;
+  min-inline-size: 0;
+  overflow: hidden;
+  font-size: .78rem;
   font-weight: 650;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
-.owner-nav button b {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  display: grid;
+.owner-nav button > b {
+  grid-column: 3;
+  justify-self: end;
+  flex-shrink: 0;
+  min-inline-size: 20px;
+  block-size: 20px;
+  padding-inline: 6px;
+  display: inline-grid;
   place-items: center;
   color: #0d241c;
-  border-radius: 10px;
+  border-radius: 999px;
   background: linear-gradient(135deg, #e9b96e, #d49a46);
-  font-size: .6rem;
+  font-size: .64rem;
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-html[data-theme="light"] .owner-nav button b {
+html[data-theme="light"] .owner-nav button > b {
   color: #ffffff;
   background: #246046;
 }
@@ -7246,7 +7282,7 @@ html[data-theme="light"] .cabinet-shift-status-badge.swap_requested {
 
 /* Sidebar alert badge on Shifts tab */
 .owner-nav-alert-badge {
-  background: #ef4444 !important;
+  background: #dc2626 !important;
   color: #fff !important;
 }
 
@@ -8678,8 +8714,37 @@ html[data-theme="light"] .owner-nav button.active {
   .owner-person,
   .owner-support { display: none; }
   .owner-venue-switcher { padding-top: 0; }
-  .owner-nav { overflow-x: auto; grid-template-columns: repeat(6, minmax(110px, 1fr)); padding-bottom: 3px; }
-  .owner-nav button { grid-template-columns: 20px minmax(0,1fr) auto; }
+  .owner-nav {
+    overflow-x: visible;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 14px;
+    padding-bottom: 0;
+  }
+  .owner-nav button {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 8px;
+    block-size: 100%;
+    padding: 10px 11px;
+    background: color-mix(in srgb, var(--site-fg) 3.5%, transparent);
+    border-color: color-mix(in srgb, var(--site-border) 85%, transparent);
+  }
+  .owner-nav button.active::after,
+  .owner-nav button[aria-selected="true"]::after {
+    inset-block: auto 0;
+    inset-inline: 12px;
+    border-inline-start: 0;
+    border-block-end: 2.5px solid var(--site-accent, #e9b96e);
+  }
+  html[data-theme="light"] .owner-nav button {
+    background: #ffffff;
+    border-color: rgba(31, 89, 63, 0.14);
+  }
+  html[data-theme="light"] .owner-nav button.active::after,
+  html[data-theme="light"] .owner-nav button[aria-selected="true"]::after {
+    border-inline-start: 0;
+    border-block-end-color: #1f593f;
+  }
   .owner-overview-grid { grid-template-columns: 1fr; }
   .owner-metrics { grid-template-columns: 1fr 1fr; }
   .owner-booking-row { grid-template-columns: 52px 75px minmax(150px,1fr) 90px; }
@@ -8695,8 +8760,13 @@ html[data-theme="light"] .owner-nav button.active {
   .panel-page:has(.owner-dashboard) .panel-top { align-items: flex-start; }
   .panel-page:has(.owner-dashboard) .panel-email { display: none; }
   .owner-dashboard { border-radius: 16px; }
-  .owner-sidebar { padding: 15px 10px 10px; }
-  .owner-nav { overflow-x: auto; grid-template-columns: repeat(6, minmax(115px, 1fr)); padding-bottom: 3px; }
+  .owner-sidebar { padding: 15px 10px 12px; }
+  .owner-nav {
+    overflow-x: visible;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding-bottom: 0;
+  }
   .owner-content { padding: 22px 15px 30px; }
   .owner-section-head { align-items: start; }
   .owner-section-status { flex-direction: column; align-items: end; gap: 4px; }
@@ -8723,6 +8793,24 @@ html[data-theme="light"] .owner-nav button.active {
   .owner-timeline-content > div { flex-direction: column; gap: 4px; }
 }
 
+@media (max-width: 580px) {
+  .owner-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .owner-nav button {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 9px 10px;
+  }
+  .owner-nav button > span:not(.owner-nav-icon) {
+    font-size: .75rem;
+  }
+  .owner-nav button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 430px) {
   .owner-register-story h1 { font-size: 2.75rem; }
   .owner-overview-hero { display: grid; }
@@ -8730,6 +8818,12 @@ html[data-theme="light"] .owner-nav button.active {
   .owner-metrics { grid-template-columns: 1fr; }
   .owner-photo-grid { grid-template-columns: 1fr; }
   .owner-filter-row { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 350px) {
+  .owner-nav {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Discover preference wizard + map filters bar */
