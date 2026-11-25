@@ -283,3 +283,284 @@ func TestProfileChangeRequest(t *testing.T) {
 		t.Fatalf("venue name = %#v, %v", venue.Name, err)
 	}
 }
+
+func TestDraftVenueOnboardingAndPublishMigration(t *testing.T) {
+	mem := NewMemory()
+	owner := registerTestUser(t, mem, "draft-owner@example.com", models.RoleRestaurant)
+	app, err := mem.CreateApplication(owner.ID)
+	if err != nil {
+		t.Fatalf("create app: %v", err)
+	}
+
+	// 1. Verify owner can configure tables on draft app before publishing
+	tables, err := mem.ReplaceTablesLayout(owner.ID, app.ID, []TableLayoutInput{
+		{Number: 1, Seats: 4, X: 0.2, Y: 0.3, Zone: "hall"},
+		{Number: 2, Seats: 2, X: 0.5, Y: 0.6, Zone: "terrace"},
+	})
+	if err != nil || len(tables) != 2 {
+		t.Fatalf("replace tables on draft failed: %v, tables: %#v", err, tables)
+	}
+
+	// 2. Verify owner can configure menu item on draft app
+	menuItem, err := mem.UpsertMenuItem(owner.ID, app.ID, MenuItemInput{
+		Name:     models.LocalizedString{RU: "Борщ", EN: "Borscht", RO: "Borș"},
+		Price:    120,
+		Category: models.LocalizedString{RU: "Супы", EN: "Soups", RO: "Supe"},
+	})
+	if err != nil || menuItem.ID == "" {
+		t.Fatalf("upsert menu on draft failed: %v", err)
+	}
+
+	// 3. Verify owner can configure booking rules on draft app
+	interval := 45
+	hold := 20
+	allow := false
+	rulesVenue, err := mem.UpdateVenueBookingRules(owner.ID, app.ID, BookingRulesInput{
+		BookingIntervalMin: &interval,
+		HoldMinutes:        &hold,
+		AllowPreorder:      &allow,
+	})
+	if err != nil || rulesVenue.BookingIntervalMin != 45 || rulesVenue.HoldMinutes != 20 || rulesVenue.AllowPreorder {
+		t.Fatalf("update rules on draft failed: %v, venue: %#v", err, rulesVenue)
+	}
+
+	// 4. Verify owner can invite staff on draft app
+	staffMember, err := mem.InviteStaff(owner.ID, app.ID, "waiter-draft@example.com", "Ion Popescu")
+	if err != nil || staffMember.Name != "Ion Popescu" {
+		t.Fatalf("invite staff on draft failed: %v", err)
+	}
+
+	// 5. Verify analytics on draft app returns zeroed metrics without 404
+	analytics, err := mem.VenueAnalytics(owner.ID, app.ID)
+	if err != nil || analytics.TotalTables != 2 {
+		t.Fatalf("analytics on draft failed: %v, analytics: %#v", err, analytics)
+	}
+
+	// 6. Fill required profile data, submit, approve and publish
+	name := models.LocalizedString{RU: "Draft Rest", EN: "Draft Rest", RO: "Draft Rest"}
+	desc := models.LocalizedString{RU: "Desc", EN: "Desc", RO: "Desc"}
+	addr := models.LocalizedString{RU: "Addr", EN: "Addr", RO: "Addr"}
+	cuisine := []string{"european"}
+	phone := "+37360000002"
+	email := "draft@example.com"
+	hours := "10-23"
+	lat, lng := 47.76, 27.92
+	priceLevel, averageCheck := 2, 250
+	app, err = mem.UpdateApplication(owner.ID, app.ID, ApplicationUpdate{
+		Name: &name, Description: &desc, Address: &addr, Cuisine: &cuisine,
+		Phone: &phone, Email: &email, HoursText: &hours, Lat: &lat, Lng: &lng,
+		PriceLevel: &priceLevel, AverageCheck: &averageCheck,
+	})
+	if err != nil {
+		t.Fatalf("update app: %v", err)
+	}
+	if _, err = mem.AddPhoto(owner.ID, app.ID, "/uploads/test.jpg"); err != nil {
+		t.Fatalf("add photo: %v", err)
+	}
+	if _, err = mem.SubmitApplication(owner.ID, app.ID); err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	if _, err = mem.AdminSetStatus("user-admin", app.ID, models.AppApproved, ""); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	publishedApp, err := mem.PublishApplication("user-admin", app.ID)
+	if err != nil || publishedApp.VenueID == nil {
+		t.Fatalf("publish failed: %v", err)
+	}
+	publishedVenueID := *publishedApp.VenueID
+
+	// 7. Verify tables, menu, rules, and staff were migrated to publishedVenueID
+	publishedTables := mem.ListTables(publishedVenueID)
+	if len(publishedTables) != 2 || publishedTables[0].Number != 1 || publishedTables[1].Number != 2 {
+		t.Fatalf("published tables not migrated properly: %#v", publishedTables)
+	}
+
+	publishedMenu, err := mem.ListMenuForOwner(owner.ID, publishedVenueID)
+	if err != nil || len(publishedMenu) != 1 || publishedMenu[0].Name.RU != "Борщ" {
+		t.Fatalf("published menu not migrated properly: %v, %#v", err, publishedMenu)
+	}
+
+	publishedStaff, err := mem.ListStaff(owner.ID, publishedVenueID)
+	if err != nil || len(publishedStaff) != 1 || publishedStaff[0].Name != "Ion Popescu" {
+		t.Fatalf("published staff not migrated properly: %v, %#v", err, publishedStaff)
+	}
+
+	publishedVenue, err := mem.GetVenue(publishedVenueID)
+	if err != nil || publishedVenue.BookingIntervalMin != 45 || publishedVenue.HoldMinutes != 20 || publishedVenue.AllowPreorder {
+		t.Fatalf("published rules not migrated properly: %v, %#v", err, publishedVenue)
+	}
+}
+
+func TestWorkShiftsAndSchedule(t *testing.T) {
+	mem := NewMemory()
+	owner, _, venueID := publishTestVenue(t, mem, "schedule-owner@example.com")
+	waiterUser := registerTestUser(t, mem, "waiter-schedule@example.com", models.RoleGuest)
+	cookUser := registerTestUser(t, mem, "cook-schedule@example.com", models.RoleGuest)
+
+	// Invite waiter
+	waiter, err := mem.InviteStaff(owner.ID, venueID, waiterUser.Email, "Vasile Chelner", models.StaffRoleWaiter)
+	if err != nil || waiter.Role != models.StaffRoleWaiter {
+		t.Fatalf("invite waiter: %v", err)
+	}
+
+	// Invite cook
+	cook, err := mem.InviteStaff(owner.ID, venueID, cookUser.Email, "Gheorghe Bucatar", models.StaffRoleCook)
+	if err != nil || cook.Role != models.StaffRoleCook {
+		t.Fatalf("invite cook: %v", err)
+	}
+
+	// Create waiter shift
+	waiterShift, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   waiter.ID,
+		Date:      "2026-11-25",
+		StartTime: "10:00",
+		EndTime:   "22:00",
+		Note:      "Зал 1",
+	})
+	if err != nil || waiterShift.Status != models.ShiftStatusPending || waiterShift.Role != models.StaffRoleWaiter {
+		t.Fatalf("create waiter shift: %v, %#v", err, waiterShift)
+	}
+
+	// Create cook shift
+	cookShift, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   cook.ID,
+		Date:      "2026-11-25",
+		StartTime: "09:00",
+		EndTime:   "18:00",
+		Note:      "Кухня / горячий цех",
+	})
+	if err != nil || cookShift.Role != models.StaffRoleCook {
+		t.Fatalf("create cook shift: %v, %#v", err, cookShift)
+	}
+
+	// Filter by role
+	waiterShifts, err := mem.ListWorkShifts(owner.ID, venueID, models.StaffRoleWaiter)
+	if err != nil || len(waiterShifts) != 1 || waiterShifts[0].ID != waiterShift.ID {
+		t.Fatalf("list waiter shifts: %v, %#v", err, waiterShifts)
+	}
+
+	cookShifts, err := mem.ListWorkShifts(owner.ID, venueID, models.StaffRoleCook)
+	if err != nil || len(cookShifts) != 1 || cookShifts[0].ID != cookShift.ID {
+		t.Fatalf("list cook shifts: %v, %#v", err, cookShifts)
+	}
+
+	allShifts, err := mem.ListWorkShifts(owner.ID, venueID)
+	if err != nil || len(allShifts) != 2 {
+		t.Fatalf("list all shifts: %v, count=%d", err, len(allShifts))
+	}
+
+	// Waiter views their shifts
+	myShifts, err := mem.ListMyStaffShifts(waiterUser.ID)
+	if err != nil || len(myShifts) != 1 {
+		t.Fatalf("list my staff shifts: %v, %#v", err, myShifts)
+	}
+
+	// Waiter responds to shift (confirms)
+	confirmedShift, err := mem.RespondToWorkShift(waiterUser.ID, waiterShift.ID, models.ShiftStatusConfirmed)
+	if err != nil || confirmedShift.Status != models.ShiftStatusConfirmed {
+		t.Fatalf("confirm shift: %v, %#v", err, confirmedShift)
+	}
+
+	// Cook responds to shift (requests swap with reason)
+	declinedShift, err := mem.RespondToWorkShift(cookUser.ID, cookShift.ID, models.ShiftStatusSwapRequested, "Заболел, не смогу выйти")
+	if err != nil || declinedShift.Status != models.ShiftStatusSwapRequested || declinedShift.Reason != "Заболел, не смогу выйти" {
+		t.Fatalf("swap request shift: %v, %#v", err, declinedShift)
+	}
+
+	// Trying to assign duplicate/overlapping shift for confirmed waiter must fail with ErrConflict
+	if _, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   waiter.ID,
+		Date:      "2026-11-25",
+		StartTime: "12:00",
+		EndTime:   "18:00",
+	}); err != ErrConflict {
+		t.Fatalf("expected ErrConflict for overlapping waiter shift, got %v", err)
+	}
+
+	// Non-overlapping shift later or earlier is allowed; overlapping swap must fail with ErrConflict
+	if _, err := mem.SwapWorkShift(owner.ID, venueID, cookShift.ID, waiter.ID); err != ErrConflict {
+		t.Fatalf("expected ErrConflict when swapping onto busy waiter, got %v", err)
+	}
+
+	// Invite a free second cook and swap cookShift to them
+	cook2User := registerTestUser(t, mem, "cook2-schedule@example.com", models.RoleGuest)
+	cook2, err := mem.InviteStaff(owner.ID, venueID, cook2User.Email, "Ion Bucatar", models.StaffRoleCook)
+	if err != nil {
+		t.Fatalf("invite cook2: %v", err)
+	}
+
+	swappedShift, err := mem.SwapWorkShift(owner.ID, venueID, cookShift.ID, cook2.ID)
+	if err != nil || swappedShift.StaffID != cook2.ID || swappedShift.Status != models.ShiftStatusPending {
+		t.Fatalf("swap shift staff: %v, %#v", err, swappedShift)
+	}
+
+	// Trying to assign another overlapping shift to cook2 (now PENDING) must also fail with ErrConflict
+	if _, err := mem.CreateWorkShift(owner.ID, venueID, WorkShiftInput{
+		StaffID:   cook2.ID,
+		Date:      "2026-11-25",
+		StartTime: "10:00",
+		EndTime:   "15:00",
+	}); err != ErrConflict {
+		t.Fatalf("expected ErrConflict for overlapping pending shift, got %v", err)
+	}
+
+	// Batch create shifts (skips any conflicting slots on 2026-11-25 and creates on 2026-11-26, 2026-11-27)
+	batchShifts, err := mem.BatchCreateWorkShifts(owner.ID, venueID, BatchWorkShiftsInput{
+		StaffIDs:  []string{waiter.ID, cook.ID},
+		Dates:     []string{"2026-11-25", "2026-11-26", "2026-11-27"},
+		StartTime: "10:00",
+		EndTime:   "22:00",
+		Note:      "Общая смена",
+	})
+	if err != nil || len(batchShifts) != 5 {
+		t.Fatalf("batch create shifts: %v, count=%d", err, len(batchShifts))
+	}
+
+	// Owner deletes a shift
+	if err := mem.DeleteWorkShift(owner.ID, venueID, cookShift.ID); err != nil {
+		t.Fatalf("delete shift: %v", err)
+	}
+
+	afterDelete, err := mem.ListWorkShifts(owner.ID, venueID)
+	if err != nil || len(afterDelete) != 6 {
+		t.Fatalf("after delete count = %d", len(afterDelete))
+	}
+
+	// Copy week from 2026-11-23..2026-11-29 to next week 2026-11-30..2026-12-06
+	copied, skipped, err := mem.CopyWeekWorkShifts(owner.ID, venueID, CopyWeekShiftsInput{
+		SourceStartDate: "2026-11-23",
+		TargetStartDate: "2026-11-30",
+	})
+	if err != nil || len(copied) != 6 || skipped != 0 {
+		t.Fatalf("copy week shifts: err=%v, copied=%d, skipped=%d", err, len(copied), skipped)
+	}
+}
+
+func TestDeleteApplicationCleanup(t *testing.T) {
+	mem := NewMemory()
+	owner, _, venueID := publishTestVenue(t, mem, "delete-owner@example.com")
+	other := registerTestUser(t, mem, "other-owner@example.com", models.RoleRestaurant)
+
+	apps := mem.ListApplicationsByOwner(owner.ID)
+	if len(apps) != 1 {
+		t.Fatalf("expected 1 app, got %d", len(apps))
+	}
+	appID := apps[0].ID
+
+	// Forbidden for non-owner
+	if err := mem.DeleteApplication(other.ID, appID); err != ErrForbidden {
+		t.Fatalf("expected ErrForbidden for non-owner, got %v", err)
+	}
+
+	// Owner deletes venue/application
+	if err := mem.DeleteApplication(owner.ID, appID); err != nil {
+		t.Fatalf("delete application: %v", err)
+	}
+
+	if remaining := mem.ListApplicationsByOwner(owner.ID); len(remaining) != 0 {
+		t.Fatalf("expected 0 apps after delete, got %d", len(remaining))
+	}
+	if _, err := mem.GetVenue(venueID); err != ErrNotFound {
+		t.Fatalf("expected venue removed after delete, got %v", err)
+	}
+}

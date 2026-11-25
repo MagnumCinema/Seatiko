@@ -34,7 +34,7 @@ export function GoogleVenueMap({
     let instance: google.maps.Map | undefined;
     let ready: google.maps.MapsEventListener | undefined;
 
-    loadGoogleMaps(apiKey)
+    loadGoogleMaps(apiKey, locale)
       .then(([{ Map }]) => {
         if (disposed) return;
         instance = new Map(node, {
@@ -65,7 +65,7 @@ export function GoogleVenueMap({
       ready?.remove();
       node.replaceChildren();
     };
-  }, [apiKey, mapId, bounds, compact, onError, onReady]);
+  }, [apiKey, mapId, bounds, compact, locale, onError, onReady]);
 
   useEffect(() => {
     if (!map) return;
