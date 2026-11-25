@@ -5575,7 +5575,14 @@ html[data-theme="light"] .owner-filters button.active { background: #fff; color:
 .cabinet-ops-card .owner-card-head { margin-bottom: 20px; }
 .cabinet-ops-card .owner-metrics {
   margin-top: 18px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+.cabinet-ops-card .owner-metrics article > span {
+  white-space: nowrap;
+}
+.cabinet-ops .panel-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .owner-dashboard .floor-editor-stage {
   grid-template-columns: minmax(0, 1fr) 290px;
@@ -5956,26 +5963,26 @@ html[data-theme="light"] .cabinet-menu-actions .panel-btn.danger {
 }
 .cabinet-staff-input {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   min-height: 44px;
   padding: 10px 14px;
   color: var(--input-fg);
   border: 1px solid var(--input-border);
   border-radius: 10px;
-  background: var(--input-bg);
+  background-color: var(--input-bg);
   font-size: .84rem;
+}
+select.cabinet-staff-input {
+  padding-right: 36px;
 }
 .cabinet-staff-cards-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
   gap: 12px;
-}
-@media (max-width: 1020px) {
-  .cabinet-staff-cards-list {
-    grid-template-columns: 1fr;
-  }
 }
 .cabinet-staff-empty {
   grid-column: 1 / -1;
@@ -5990,10 +5997,12 @@ html[data-theme="light"] .cabinet-menu-actions .panel-btn.danger {
 }
 .cabinet-staff-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 18px;
   border: 1px solid var(--site-border);
   border-radius: 14px;
   background: var(--site-surface);
@@ -6036,7 +6045,7 @@ html[data-theme="light"] .cabinet-staff-avatar {
 .cabinet-staff-name-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .cabinet-staff-name {
@@ -6053,6 +6062,8 @@ html[data-theme="light"] .cabinet-staff-avatar {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .cabinet-staff-shift-pill.on-shift {
   background: rgba(34, 197, 94, 0.15);
@@ -6084,6 +6095,7 @@ html[data-theme="light"] .cabinet-staff-shift-pill.on-shift {
 .cabinet-staff-email {
   font-size: 0.78rem;
   color: var(--site-muted);
+  overflow-wrap: anywhere;
 }
 .cabinet-staff-meta {
   font-size: 0.7rem;
@@ -6094,7 +6106,9 @@ html[data-theme="light"] .cabinet-staff-shift-pill.on-shift {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--site-border) 65%, transparent);
 }
 .cabinet-staff-card-actions .panel-btn.shift-active {
   background: rgba(34, 197, 94, 0.12) !important;
@@ -6110,7 +6124,7 @@ html[data-theme="light"] .cabinet-staff-card-actions .panel-btn.shift-active {
 /* Staff Role Selector & Tags */
 .cabinet-staff-invite-grid {
   display: grid;
-  grid-template-columns: 130px 1fr 1fr auto;
+  grid-template-columns: minmax(170px, max-content) minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
 }
@@ -6121,6 +6135,12 @@ html[data-theme="light"] .cabinet-staff-card-actions .panel-btn.shift-active {
 }
 .cabinet-staff-role-select {
   cursor: pointer;
+  max-width: 240px;
+}
+@media (max-width: 768px) {
+  .cabinet-staff-role-select {
+    max-width: none;
+  }
 }
 .cabinet-staff-role-tag {
   display: inline-flex;
@@ -7936,6 +7956,9 @@ html[data-theme="light"] .cabinet-quick-conflict-warning {
   margin: 16px 0 20px;
 }
 .cabinet-category-pills button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   min-height: 36px;
   padding: 6px 14px;
   color: var(--site-muted);
@@ -7944,8 +7967,12 @@ html[data-theme="light"] .cabinet-quick-conflict-warning {
   background: color-mix(in srgb, var(--site-surface) 70%, transparent);
   font-size: .74rem;
   font-weight: 650;
+  white-space: nowrap;
   cursor: pointer;
   transition: all .15s ease;
+}
+.cabinet-category-pills button .cabinet-role-pill-dot {
+  margin-right: 0;
 }
 .cabinet-category-pills button:hover {
   color: var(--site-fg);
@@ -21763,13 +21790,14 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   letter-spacing: 0.03em;
   border: 1px solid var(--site-border);
   color: var(--site-muted);
+  white-space: nowrap;
 }
 .cabinet-role-kind.custom {
   color: var(--site-accent, #e9b96e);
   border-color: color-mix(in srgb, var(--site-accent, #e9b96e) 45%, transparent);
 }
 .cabinet-role-kind.off { border-style: dashed; }
-.cabinet-role-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.cabinet-role-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
 .cabinet-role-buttons { display: flex; align-items: center; gap: 6px; }
 .cabinet-role-buttons .panel-btn.icon { min-width: 32px; padding: 4px 8px; }
 .cabinet-role-switch {
@@ -21781,6 +21809,7 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   font-size: 0.76rem;
   color: var(--site-muted);
   user-select: none;
+  white-space: nowrap;
 }
 .cabinet-role-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .cabinet-role-switch-track {
@@ -21849,7 +21878,7 @@ html[data-theme="light"] .catalog-discover-btn:hover {
 .cabinet-role-color input:focus-visible + span { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 3px; }
 .cabinet-role-reassign { display: grid; gap: 6px; margin: 4px 0 12px; text-align: left; }
 .cabinet-role-reassign label { font-size: 0.8rem; font-weight: 600; color: var(--site-fg); }
-.cabinet-staff-role-assign { flex: 0 1 170px; min-height: 32px; padding: 4px 10px; font-size: 0.76rem; }
+.cabinet-staff-role-assign { flex: 1 1 130px; width: auto; min-width: 120px; min-height: 34px; padding: 5px 34px 5px 10px; font-size: 0.76rem; }
 .cabinet-roster-coverage { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; }
 .cabinet-coverage-chip {
   display: inline-flex;
@@ -21864,13 +21893,18 @@ html[data-theme="light"] .catalog-discover-btn:hover {
 .cabinet-planner-col-title-wrap h5 { margin: 0; }
 html[data-theme="light"] .cabinet-role-badge { color: color-mix(in srgb, var(--role-color) 78%, #111); }
 html[data-theme="light"] .cabinet-role-switch-track::after { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+@media (max-width: 900px) {
+  .cabinet-role-row { flex-wrap: wrap; align-items: flex-start; }
+  .cabinet-role-info { flex-basis: calc(100% - 30px); }
+  .cabinet-role-actions { width: 100%; justify-content: space-between; flex-shrink: 1; }
+}
 @media (max-width: 700px) {
+  .cabinet-ops-card { padding: 18px 14px; }
   .cabinet-roles-head { flex-direction: column; }
   .cabinet-roles-head .panel-btn { width: 100%; }
   .cabinet-roles-suggest { flex-direction: column; align-items: stretch; }
-  .cabinet-role-row { flex-wrap: wrap; align-items: flex-start; }
-  .cabinet-role-info { flex-basis: calc(100% - 30px); }
-  .cabinet-role-actions { width: 100%; justify-content: space-between; }
+}
+@media (max-width: 520px) {
   .cabinet-staff-role-assign { flex: 1 1 100%; }
 }
 /* Cards in the ops panels never grow past the column (long rows wrap instead). */
