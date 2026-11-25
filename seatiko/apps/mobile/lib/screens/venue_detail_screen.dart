@@ -106,11 +106,32 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
+  Future<void> _launchExternal(
+    Uri uri, {
+    LaunchMode mode = LaunchMode.platformDefault,
+  }) async {
+    HapticFeedback.selectionClick();
+    try {
+      final opened = await launchUrl(uri, mode: mode);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('common.error'.tr())),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('common.error'.tr())),
+        );
+      }
+    }
+  }
+
   void _openRoute(Venue v) {
     final uri = Uri.parse(
       'https://www.google.com/maps/search/?api=1&query=${v.lat},${v.lng}',
     );
-    launchUrl(uri, mode: LaunchMode.externalApplication);
+    _launchExternal(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _openEventInquiry(Venue v, String locale) async {
@@ -118,220 +139,34 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     final ok = await ensureAuth(context);
     if (!ok || !mounted) return;
 
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final notesCtrl = TextEditingController();
+    var initialName = '';
+    var initialPhone = '';
     try {
       final me = await ApiClient.instance.fetchMe();
-      nameCtrl.text = me.displayName;
-      phoneCtrl.text = me.phone ?? '';
+      initialName = me.displayName;
+      initialPhone = me.phone ?? '';
     } catch (_) {}
 
     if (!mounted) return;
-    String eventType = 'birthday';
-    int guestCount = 12;
-    String contactMethod = 'call';
-    DateTime preferredDate = DateTime.now().add(const Duration(days: 7));
-    bool submitting = false;
-
-    await showModalBottomSheet<void>(
+    final sent = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: FaColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              14,
-              20,
-              24 + MediaQuery.viewInsetsOf(ctx).bottom,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: FaColors.muted.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Text(
-                  'venue.event_inquiry_title'.tr(),
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  v.name.pick(locale),
-                  style: const TextStyle(color: FaColors.muted),
-                ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
-                  initialValue: eventType,
-                  decoration: InputDecoration(
-                    labelText: 'venue.event_type'.tr(),
-                  ),
-                  items: const ['birthday', 'banquet', 'corporate', 'romantic', 'other']
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text('venue.event_$e'.tr()),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (val) =>
-                      setModalState(() => eventType = val ?? 'birthday'),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('reservation.guests'.tr()),
-                    ),
-                    IconButton(
-                      onPressed: guestCount > 2
-                          ? () => setModalState(() => guestCount -= 2)
-                          : null,
-                      icon: const Icon(Icons.remove_circle_outline),
-                    ),
-                    Text(
-                      '$guestCount',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    IconButton(
-                      onPressed: guestCount < 200
-                          ? () => setModalState(() => guestCount += 2)
-                          : null,
-                      icon: const Icon(Icons.add_circle_outline),
-                    ),
-                  ],
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text('venue.event_date'.tr()),
-                  subtitle: Text(formatDateTime(preferredDate)),
-                  trailing: const Icon(Icons.calendar_today_outlined),
-                  onTap: () async {
-                    final d = await showDatePicker(
-                      context: ctx,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                      initialDate: preferredDate,
-                    );
-                    if (d == null) return;
-                    setModalState(() {
-                      preferredDate = DateTime(
-                        d.year,
-                        d.month,
-                        d.day,
-                        preferredDate.hour,
-                        preferredDate.minute,
-                      );
-                    });
-                  },
-                ),
-                TextField(
-                  controller: nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: 'venue.contact_name'.tr(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: phoneCtrl,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: 'venue.contact_phone'.tr(),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                      value: 'call',
-                      label: Text('venue.contact_call'.tr()),
-                    ),
-                    ButtonSegment(
-                      value: 'chat',
-                      label: Text('venue.contact_chat'.tr()),
-                    ),
-                  ],
-                  selected: {contactMethod},
-                  onSelectionChanged: (s) =>
-                      setModalState(() => contactMethod = s.first),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: notesCtrl,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: 'reservation.notes'.tr(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: submitting
-                      ? null
-                      : () async {
-                          if (nameCtrl.text.trim().isEmpty ||
-                              phoneCtrl.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(content: Text('error.invalid_input'.tr())),
-                            );
-                            return;
-                          }
-                          setModalState(() => submitting = true);
-                          try {
-                            await ApiClient.instance.createEventInquiry(
-                              venueId: v.id,
-                              eventType: eventType,
-                              guestCount: guestCount,
-                              preferredDate: preferredDate,
-                              contactMethod: contactMethod,
-                              contactPhone: phoneCtrl.text.trim(),
-                              contactName: nameCtrl.text.trim(),
-                              notes: notesCtrl.text.trim(),
-                            );
-                            if (!ctx.mounted) return;
-                            HapticFeedback.mediumImpact();
-                            Navigator.pop(ctx);
-                            messenger.showSnackBar(
-                              SnackBar(content: Text('venue.event_sent'.tr())),
-                            );
-                          } catch (e) {
-                            if (ctx.mounted) {
-                              HapticFeedback.heavyImpact();
-                              setModalState(() => submitting = false);
-                              ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(content: Text(apiErrorText(e))),
-                              );
-                            }
-                          }
-                        },
-                  child: Text('venue.event_submit'.tr()),
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => _EventInquirySheet(
+        venue: v,
+        locale: locale,
+        initialName: initialName,
+        initialPhone: initialPhone,
       ),
     );
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
-    notesCtrl.dispose();
+    if (sent == true && mounted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('venue.event_sent'.tr())),
+      );
+    }
   }
 
   @override
@@ -534,9 +369,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                               ActionChip(
                                 avatar: const Icon(Icons.phone_outlined, size: 16),
                                 label: Text(v.phone),
-                                onPressed: () => launchUrl(
-                                  Uri.parse('tel:${v.phone}'),
-                                ),
+                                onPressed: () =>
+                                    _launchExternal(Uri.parse('tel:${v.phone}')),
                               ),
                             if (v.website.isNotEmpty)
                               ActionChip(
@@ -546,7 +380,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                                   final raw = v.website.startsWith('http')
                                       ? v.website
                                       : 'https://${v.website}';
-                                  launchUrl(
+                                  _launchExternal(
                                     Uri.parse(raw),
                                     mode: LaunchMode.externalApplication,
                                   );
@@ -784,6 +618,221 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _EventInquirySheet extends StatefulWidget {
+  const _EventInquirySheet({
+    required this.venue,
+    required this.locale,
+    required this.initialName,
+    required this.initialPhone,
+  });
+
+  final Venue venue;
+  final String locale;
+  final String initialName;
+  final String initialPhone;
+
+  @override
+  State<_EventInquirySheet> createState() => _EventInquirySheetState();
+}
+
+class _EventInquirySheetState extends State<_EventInquirySheet> {
+  late final TextEditingController _nameCtrl = TextEditingController(
+    text: widget.initialName,
+  );
+  late final TextEditingController _phoneCtrl = TextEditingController(
+    text: widget.initialPhone,
+  );
+  final TextEditingController _notesCtrl = TextEditingController();
+  String _eventType = 'birthday';
+  int _guestCount = 12;
+  String _contactMethod = 'call';
+  DateTime _preferredDate = DateTime.now().add(const Duration(days: 7));
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_nameCtrl.text.trim().isEmpty || _phoneCtrl.text.trim().isEmpty) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('error.invalid_input'.tr())),
+      );
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await ApiClient.instance.createEventInquiry(
+        venueId: widget.venue.id,
+        eventType: _eventType,
+        guestCount: _guestCount,
+        preferredDate: _preferredDate,
+        contactMethod: _contactMethod,
+        contactPhone: _phoneCtrl.text.trim(),
+        contactName: _nameCtrl.text.trim(),
+        notes: _notesCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        HapticFeedback.heavyImpact();
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorText(e))),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          14,
+          20,
+          24 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: FaColors.muted.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              'venue.event_inquiry_title'.tr(),
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.venue.name.pick(widget.locale),
+              style: const TextStyle(color: FaColors.muted),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              initialValue: _eventType,
+              decoration: InputDecoration(labelText: 'venue.event_type'.tr()),
+              items: const ['birthday', 'banquet', 'corporate', 'romantic', 'other']
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text('venue.event_$e'.tr()),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (val) =>
+                  setState(() => _eventType = val ?? 'birthday'),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: Text('reservation.guests'.tr())),
+                IconButton(
+                  onPressed: _guestCount > 2
+                      ? () => setState(() => _guestCount -= 2)
+                      : null,
+                  icon: const Icon(Icons.remove_circle_outline),
+                ),
+                Text(
+                  '$_guestCount',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                IconButton(
+                  onPressed: _guestCount < 200
+                      ? () => setState(() => _guestCount += 2)
+                      : null,
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+              ],
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('venue.event_date'.tr()),
+              subtitle: Text(formatDateTime(_preferredDate)),
+              trailing: const Icon(Icons.calendar_today_outlined),
+              onTap: () async {
+                final d = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                  initialDate: _preferredDate,
+                );
+                if (d == null || !mounted) return;
+                setState(() {
+                  _preferredDate = DateTime(
+                    d.year,
+                    d.month,
+                    d.day,
+                    _preferredDate.hour,
+                    _preferredDate.minute,
+                  );
+                });
+              },
+            ),
+            TextField(
+              controller: _nameCtrl,
+              decoration: InputDecoration(labelText: 'venue.contact_name'.tr()),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: 'venue.contact_phone'.tr(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SegmentedButton<String>(
+              segments: [
+                ButtonSegment(
+                  value: 'call',
+                  label: Text('venue.contact_call'.tr()),
+                ),
+                ButtonSegment(
+                  value: 'chat',
+                  label: Text('venue.contact_chat'.tr()),
+                ),
+              ],
+              selected: {_contactMethod},
+              onSelectionChanged: (s) =>
+                  setState(() => _contactMethod = s.first),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _notesCtrl,
+              maxLines: 2,
+              decoration: InputDecoration(labelText: 'reservation.notes'.tr()),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _submitting ? null : _submit,
+              child: Text('venue.event_submit'.tr()),
+            ),
+          ],
+        ),
       ),
     );
   }

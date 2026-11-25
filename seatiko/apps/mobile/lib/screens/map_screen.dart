@@ -343,6 +343,27 @@ class MapTabState extends State<MapTab> {
     );
   }
 
+  Future<void> _launchSafe(
+    Uri uri, {
+    LaunchMode mode = LaunchMode.platformDefault,
+  }) async {
+    HapticFeedback.selectionClick();
+    try {
+      final ok = await launchUrl(uri, mode: mode);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('common.error'.tr())),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('common.error'.tr())),
+        );
+      }
+    }
+  }
+
   void _openPlaceSheet(MapPlace place, String locale) {
     HapticFeedback.selectionClick();
     showModalBottomSheet<void>(
@@ -388,7 +409,7 @@ class MapTabState extends State<MapTab> {
               if (place.phone != null && place.phone!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 InkWell(
-                  onTap: () => launchUrl(Uri.parse('tel:${place.phone}')),
+                  onTap: () => _launchSafe(Uri.parse('tel:${place.phone}')),
                   child: Text(
                     place.phone!,
                     style: const TextStyle(
@@ -404,7 +425,7 @@ class MapTabState extends State<MapTab> {
                   final url = Uri.parse(
                     'https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}',
                   );
-                  launchUrl(url, mode: LaunchMode.externalApplication);
+                  _launchSafe(url, mode: LaunchMode.externalApplication);
                 },
                 icon: const Icon(Icons.directions_outlined),
                 label: Text('venue.route'.tr()),

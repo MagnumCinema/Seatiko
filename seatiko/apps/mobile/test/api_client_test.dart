@@ -373,5 +373,135 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(tokenKey), isNull);
     });
+
+    test('zonesFromTables, zoneLabel, mediaUrl, WaitlistEntry and DiscoverResult parsing', () {
+      expect(mediaUrl(''), '');
+      expect(mediaUrl('https://cdn.seatiko.md/a.jpg'), 'https://cdn.seatiko.md/a.jpg');
+      expect(mediaUrl('/uploads/v.png'), endsWith('/uploads/v.png'));
+
+      final tables = [
+        VenueTable.fromJson({'id': 't1', 'zone': 'street', 'number': 1, 'seats': 2, 'x': 0.2, 'y': 0.2}),
+        VenueTable.fromJson({'id': 't2', 'zone': 'Зал', 'number': 2, 'seats': 4, 'x': 0.5, 'y': 0.5}),
+        VenueTable.fromJson({'id': 't3', 'zone': 'vip', 'number': 3, 'seats': 6, 'x': 0.8, 'y': 0.8}),
+      ];
+      expect(zonesFromTables(tables), ['hall', 'street', 'vip']);
+      expect(zoneLabel('hall', 'ru'), 'Зал');
+      expect(zoneLabel('street', 'ro'), 'Stradă');
+      expect(zoneLabel('terrace', 'en'), 'Terrace');
+
+      final wl = WaitlistEntry.fromJson({
+        'id': 'w1',
+        'venue_id': 'v1',
+        'guest_name': 'Ion',
+        'guests': 3,
+        'status': 'READY',
+        'position': 1,
+        'table_number': 7,
+      });
+      expect(wl.isActive, isTrue);
+      expect(wl.isReady, isTrue);
+
+      final disc = DiscoverResult.fromJson({
+        'venues': [],
+        'explanation': {'en': 'Great match', 'ru': 'Отлично'},
+        'exact': false,
+        'prefs': {
+          'cuisine': ['moldovan'],
+          'budget': {'min': 100, 'max': 400},
+        },
+      }, locale: 'en');
+      expect(disc.explanation, 'Great match');
+      expect(disc.exact, isFalse);
+      expect(disc.prefs?.budgetMax, 400);
+    });
+
+    test('createReservation, payOrder, callWaiter, markNotificationsRead and deleteAccount', () async {
+      await ApiClient.instance.setToken('tok-ops');
+      final requests = <String>[];
+      ApiClient.testHttpClient = MockClient((req) async {
+        requests.add('${req.method} ${req.url.path}');
+        switch ('${req.method} ${req.url.path}') {
+          case 'POST /api/v1/reservations':
+            return http.Response(
+              jsonEncode({
+                'reservation': {
+                  'id': 'r1',
+                  'user_id': 'u1',
+                  'venue_id': 'v1',
+                  'table_id': 't1',
+                  'guests': 2,
+                  'reserved_for': '2026-12-01T19:00:00Z',
+                  'status': 'CONFIRMED',
+                },
+              }),
+              201,
+            );
+          case 'POST /api/v1/payments':
+            return http.Response(
+              jsonEncode({
+                'order': {
+                  'id': 'o1',
+                  'session_id': 's1',
+                  'user_id': 'u1',
+                  'venue_id': 'v1',
+                  'items': [],
+                  'status': 'PAID',
+                  'total': 200,
+                  'check_number': 'CHK-9',
+                },
+              }),
+              200,
+            );
+          case 'POST /api/v1/sessions/s1/waiter-calls':
+            return http.Response(
+              jsonEncode({
+                'waiter_call': {
+                  'id': 'wc1',
+                  'session_id': 's1',
+                  'venue_id': 'v1',
+                  'table_id': 't1',
+                  'reason': 'bill',
+                  'status': 'SENT',
+                },
+              }),
+              201,
+            );
+          case 'POST /api/v1/me/notifications/read':
+            return http.Response(jsonEncode({'unread': 0}), 200);
+          case 'DELETE /api/v1/me':
+            return http.Response('{}', 200);
+          default:
+            return http.Response(jsonEncode({'error': 'not_found'}), 404);
+        }
+      });
+
+      final r = await ApiClient.instance.createReservation(
+        venueId: 'v1',
+        tableId: 't1',
+        guests: 2,
+        reservedFor: DateTime.utc(2026, 12, 1, 19),
+      );
+      expect(r.status, 'CONFIRMED');
+
+      final paid = await ApiClient.instance.payOrder(orderId: 'o1', method: 'app');
+      expect(paid.status, 'PAID');
+      expect(paid.checkNumber, 'CHK-9');
+
+      final wc = await ApiClient.instance.callWaiter(sessionId: 's1', reason: 'bill');
+      expect(wc.reason, 'bill');
+
+      final unread = await ApiClient.instance.markNotificationsRead();
+      expect(unread, 0);
+
+      await ApiClient.instance.deleteAccount('secret123');
+      expect(await ApiClient.instance.getToken(), isNull);
+      expect(requests, [
+        'POST /api/v1/reservations',
+        'POST /api/v1/payments',
+        'POST /api/v1/sessions/s1/waiter-calls',
+        'POST /api/v1/me/notifications/read',
+        'DELETE /api/v1/me',
+      ]);
+    });
   });
 }

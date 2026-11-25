@@ -483,6 +483,8 @@ class ProfileTabState extends State<ProfileTab> {
                   backgroundColor: FaColors.green.withValues(alpha: 0.16),
                   backgroundImage:
                       avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                  onBackgroundImageError:
+                      avatarUrl.isNotEmpty ? (_, _) {} : null,
                   child: avatarUrl.isEmpty
                       ? const Icon(
                           Icons.person_rounded,
@@ -709,13 +711,20 @@ class ProfileTabState extends State<ProfileTab> {
                   trailing: IconButton(
                     icon: const Icon(Icons.favorite_rounded, color: FaColors.clay),
                     onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       final next = user!.favoriteVenues
                           .where((id) => id != v.id)
                           .toList();
                       try {
                         await ApiClient.instance.updateMe(favoriteVenues: next);
+                        HapticFeedback.mediumImpact();
                         reload();
-                      } catch (_) {}
+                      } catch (e) {
+                        HapticFeedback.heavyImpact();
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(apiErrorText(e))),
+                        );
+                      }
                     },
                   ),
                   onTap: () {
