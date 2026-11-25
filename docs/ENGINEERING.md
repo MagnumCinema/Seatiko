@@ -93,9 +93,9 @@ flowchart LR
     subgraph Docker[Docker Compose]
         Nginx[Nginx :80]
         Web[Next.js :3001]
-        API[Go API :8080]
-        State[(Atomic JSON state)]
-        Uploads[(Uploads volume)]
+        API[NestJS API :8080]
+        State[(PostgreSQL)]
+        Uploads[(MinIO / S3)]
         CRM[Twenty server]
         Worker[Twenty worker]
         DB[(PostgreSQL)]
@@ -124,7 +124,7 @@ Nginx является единой точкой входа:
 
 ```text
 http://localhost/          → Next.js
-http://localhost/api/...   → Go API
+http://localhost/api/...   → NestJS API
 http://localhost/uploads/  → загруженные фотографии
 http://localhost/healthz   → health check API
 http://crm.localhost/      → Twenty CRM
@@ -161,7 +161,7 @@ Virtual-restaurant-/
 ├── seatiko/
 │   ├── apps/web/                     # Next.js, TypeScript, MapLibre
 │   ├── apps/mobile/                  # Flutter Android
-│   ├── services/api/                 # Go, Gin, JWT, storage, CRM sync
+│   ├── (API — в /backend: NestJS, PostgreSQL, CRM sync)
 │   ├── docs/images/                  # скриншоты README
 │   └── README.md                     # пошаговая инструкция со скриншотами
 └── twenty/                           # исходный код Twenty CRM
@@ -747,8 +747,10 @@ docker volume ls | rg 'virtual-restaurant|twenty'
 ### Backend
 
 ```bash
-cd seatiko/services/api
-go test ./...
+cd backend
+npm run lint && npm test && npm run build
+# контрактные тесты против запущенного API (своя тестовая база с демо):
+CONTRACT_BASE_URL=http://127.0.0.1:18091 npm run test:contract
 ```
 
 ### Web

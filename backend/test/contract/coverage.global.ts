@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 // Records which routes the suite called and, at the end, lists operations of the
 // OpenAPI contract that no test touched.
-const OPENAPI = join(import.meta.dirname, '../../../seatiko/services/api/internal/apidocs/openapi.yaml');
+const OPENAPI = join(import.meta.dirname, '../../contract/openapi.yaml');
 
 function operations(): string[] {
   const yaml = readFileSync(OPENAPI, 'utf8');

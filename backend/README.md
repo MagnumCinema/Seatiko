@@ -1,12 +1,11 @@
 # Seatiko backend (NestJS)
 
-Перенос API Seatiko с Go (`seatiko/services/api`) на NestJS. План, архитектура и этапы — [PLAN.md](./PLAN.md).
+API Seatiko: NestJS 12 + PostgreSQL (Drizzle). Перенесён с Go целиком: те же маршруты, ответы и коды ошибок,
+сайт и Android работают без изменений. Архитектура, правила слоёв и история переноса — [PLAN.md](./PLAN.md).
 
-Статус: этапы 0–5 готовы (каркас, схема БД, каталог и карта, аккаунт, брони). Дальше: зал (QR, заказы), кабинеты ресторана и админа, AI-подбор, Twenty CRM — см. PLAN.md.
+## Запустить проект
 
-## Посмотреть сайт
-
-Все настройки и ключи — в одном файле `.env` в корне (не в git). Первый раз:
+Все настройки и ключи — в одном файле `.env` в корне репозитория (не в git). Первый раз:
 
 ```bash
 git pull
@@ -14,13 +13,26 @@ cp .env.example .env      # впишите SEATIKO_ADMIN_EMAIL / SEATIKO_ADMIN_P
 docker compose up -d --build
 ```
 
-Сайт — http://localhost. Поднимается и Nest (`COMPOSE_PROFILES=nest` в `.env`); при первом запуске он сам
-загружает настоящие кафе и рестораны Бельц из OpenStreetMap и Overture (~1 мин), администратор создаётся из `.env`.
+Сайт — http://localhost, CRM — http://crm.localhost. При первом запуске API сам:
+
+- применяет миграции базы и справочник городов;
+- создаёт администратора из `SEATIKO_ADMIN_EMAIL` / `SEATIKO_ADMIN_PASSWORD`;
+- загружает настоящие кафе и рестораны Бельц из OpenStreetMap и Overture (~1 мин, потом раз в неделю;
+  другие города — `OPEN_PLACES_CITIES=balti,chisinau`);
+- синхронизирует Twenty CRM, если задан `TWENTY_API_KEY` (через пару секунд после каждого изменения).
+
 Демо-данных на сайте нет: только настоящие места и аккаунты, которые регистрируются.
 
-Какой бэкенд отвечает сайту — `SEATIKO_API_UPSTREAM` в `.env`: `api:8080` (Go) или `nest-api:8080` (Nest),
-после изменения `docker compose up -d nginx`. На Nest уже работают: карта и каталог, вход и регистрация, профиль,
-брони, предзаказ, очередь. Пока только на Go: кабинет ресторана, персонал, админка, AI-подбор, CRM.
+## Модули
+
+| Модуль | Что делает |
+|---|---|
+| `catalog`, `map`, `open-places` | города, заведения, меню, доступность; карта с местами OSM + Overture |
+| `accounts`, `notifications` | вход, профиль, аватар, удаление аккаунта (GDPR); уведомления и SSE |
+| `reservations`, `waitlist` | брони, «Я приду», предзаказ и кухня по времени, банкеты, очередь |
+| `floor`, `adult`, `orders` | QR-сессии, заказы, оплата, вызов официанта, панель персонала, 18+ |
+| `applications`, `venue-admin`, `staff-team` | заявки ресторанов и модерация, кабинет владельца, персонал и смены |
+| `admin`, `discover`, `crm` | отчёты админки, AI-подбор (Groq + правила), Twenty CRM |
 
 ## Команды
 
@@ -29,29 +41,21 @@ npm install
 npm run build          # сборка
 npm test               # unit-тесты (Vitest)
 npm run lint           # oxlint
-
-# Контрактные тесты против запущенного API (Go сейчас, Nest потом):
-CONTRACT_BASE_URL=http://127.0.0.1:18090 npm run test:contract
+npm run places:import  # обновить места OSM + Overture сейчас
 ```
 
-Контрактный набор ожидает свежий сервер с демо-данными (`JWT_SECRET` любой, Twenty и Google выключены) и в конце печатает, какие операции контракта не покрыты.
-
-## Запуск Nest локально
+Контрактные тесты (чёрный ящик по HTTP, весь OpenAPI-контракт `contract/openapi.yaml`) гоняются против
+отдельной тестовой базы с демо-данными, никогда против основной:
 
 ```bash
-docker compose up -d seatiko-db                  # PostgreSQL на localhost:5433
-npm run build && node --env-file=../.env dist/main.js   # настройки — из корневого .env
+DATABASE_URL=postgres://seatiko:seatiko-dev-password@127.0.0.1:5433/seatiko_test npm run db:seed
+DATABASE_URL=…/seatiko_test JWT_SECRET=test-secret-1234567 ADDR=127.0.0.1:18091 OPEN_PLACES_IMPORT=false node dist/main.js &
+CONTRACT_BASE_URL=http://127.0.0.1:18091 npm run test:contract
 ```
 
-Структура и правила слоёв — в PLAN.md, раздел «Архитектура и структура».
-
-## Какой бэкенд обслуживает сайт
-
-nginx отдаёт `/api/` бэкенду из `SEATIKO_API_UPSTREAM`:
+## Запуск API без Docker
 
 ```bash
-docker compose up -d nginx                                                # Go (по умолчанию)
-SEATIKO_API_UPSTREAM=nest-api:8080 docker compose --profile nest up -d nginx   # NestJS
+docker compose up -d seatiko-db minio             # PostgreSQL на localhost:5433
+npm run build && node --env-file=../.env dist/main.js
 ```
-
-Пока Nest реализует не все маршруты, переключать стоит только для проверки.

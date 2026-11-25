@@ -9,7 +9,7 @@ services:
       - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80"
       - "${BIND_ADDRESS:-127.0.0.1}:3000:80"
     depends_on:
-      api:
+      nest-api:
         condition: service_healthy
       web:
         condition: service_healthy
@@ -18,58 +18,14 @@ services:
       minio:
         condition: service_healthy
     environment:
-      # Which API serves /api/: api:8080 (Go, default) or nest-api:8080 (NestJS,
-      # start it with --profile nest). See backend/PLAN.md, cutover.
-      SEATIKO_API_UPSTREAM: ${SEATIKO_API_UPSTREAM:-api:8080}
+      # The API behind /api/ (NestJS, ./backend).
+      SEATIKO_API_UPSTREAM: ${SEATIKO_API_UPSTREAM:-nest-api:8080}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
       interval: 5s
       timeout: 3s
       retries: 15
-
-  api:
-    build:
-      context: ./seatiko/services/api
-      dockerfile: Dockerfile
-    expose:
-      - "8080"
-    networks:
-      default:
-        aliases: [api.seatiko.local]
-    # Settings come from the single .env; secrets go to the backend only, never to web builds.
-    volumes:
-      - api-data:/app/data
-      - api-uploads:/app/data/uploads
-    environment:
-      ADDR: ":8080"
-      JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
-      APP_ENV: ${APP_ENV:-development}
-      UPLOAD_DIR: /app/data/uploads
-      DATA_FILE: /app/data/seatiko-state.json
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
-      TWENTY_API_KEY: ${TWENTY_API_KEY:-}
-      TWENTY_WEBHOOK_SECRET: ${TWENTY_WEBHOOK_SECRET:-}
-      TWENTY_BASE_URL: http://twenty-server:3000
-      TWENTY_PUBLIC_URL: ${SERVER_URL:-http://crm.localhost}
-      TWENTY_SYNC_INTERVAL_SECONDS: ${TWENTY_SYNC_INTERVAL_SECONDS:-15}
-      # Avatars in MinIO (S3); browsers load them through nginx /media/.
-      S3_ENDPOINT: http://minio:9000
-      S3_REGION: us-east-1
-      S3_BUCKET: ${S3_BUCKET:-seatiko}
-      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-seatiko}
-      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-seatiko-minio-dev-secret}
-      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-/media}
-    depends_on:
-      minio-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
-      interval: 10s
-      timeout: 3s
-      retries: 10
 
   web:
     build:
@@ -84,7 +40,7 @@ services:
       PORT: 3001
       HOSTNAME: 0.0.0.0
     depends_on:
-      api:
+      nest-api:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3001/"]
@@ -93,11 +49,9 @@ services:
       retries: 15
     restart: unless-stopped
 
-  # --- NestJS API (migration from the Go api, see backend/PLAN.md). Profile "nest",
-  # on by default through COMPOSE_PROFILES=nest in .env.
+  # --- Seatiko API: NestJS (./backend) on PostgreSQL.
   seatiko-db:
     image: postgres:16
-    profiles: ["nest"]
     environment:
       POSTGRES_DB: seatiko
       POSTGRES_USER: seatiko
@@ -116,9 +70,11 @@ services:
   nest-api:
     build:
       context: ./backend
-    profiles: ["nest"]
     expose:
       - "8080"
+    networks:
+      default:
+        aliases: [api.seatiko.local]
     environment:
       ADDR: ":8080"
       APP_ENV: ${APP_ENV:-development}
@@ -148,10 +104,12 @@ services:
     depends_on:
       seatiko-db:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   # S3-compatible object storage: MinIO Community (Chainguard build; MinIO stopped
-  # publishing free images in Oct 2025). For AWS S3 / R2 change the S3_* variables of api.
+  # publishing free images in Oct 2025). For AWS S3 / R2 change the S3_* variables of nest-api.
   minio:
     image: cgr.dev/chainguard/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
@@ -286,8 +244,6 @@ services:
 volumes:
   seatiko-db-data:
   minio-data:
-  api-data:
-  api-uploads:
   twenty-db-data:
     name: twenty_db-data
   twenty-server-data:
