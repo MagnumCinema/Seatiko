@@ -1,4 +1,4 @@
-ARG TWENTY_IMAGE_TAG=v2.57.1
+ARG TWENTY_IMAGE_TAG=v2.63.0
 FROM twentycrm/twenty:${TWENTY_IMAGE_TAG}
 
 COPY skip-workspace-samples.cjs /tmp/seatiko-skip-workspace-samples.cjs

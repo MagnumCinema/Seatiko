@@ -823,9 +823,9 @@ docker compose logs --tail=100 twenty-server twenty-worker
 ### Webhook не доходит локально
 
 - URL должен быть `http://api.seatiko.local:8080/api/v1/integrations/twenty/webhook`;
-- у `twenty-worker` должен быть `OUTBOUND_HTTP_SAFE_MODE_ENABLED=false`;
+- `api.seatiko.local` должен быть в `OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS` у `twenty-server` и `twenty-worker` (по умолчанию так и есть; остальные внутренние адреса Twenty блокирует);
 - worker должен быть запущен;
-- в production не отключайте safe mode — используйте публичный HTTPS URL.
+- в production используйте публичный HTTPS URL API и не расширяйте список внутренних хостов.
 
 ### Карта пустая
 
