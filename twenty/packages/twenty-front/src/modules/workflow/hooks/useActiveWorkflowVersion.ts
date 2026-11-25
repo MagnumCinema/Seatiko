@@ -1,6 +1,6 @@
-import { CoreObjectNameSingular } from 'twenty-shared/types';
-import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
-import { type WorkflowVersion } from '@/workflow/types/Workflow';
+import { isNonEmptyString } from '@sniptt/guards';
+
+import { useCoreWorkflowVersions } from '@/object-core/workflows/versions/hooks/useCoreWorkflowVersions';
 
 type UseActiveWorkflowVersionProps = {
   workflowId: string;
@@ -9,25 +9,17 @@ type UseActiveWorkflowVersionProps = {
 export const useActiveWorkflowVersion = ({
   workflowId,
 }: UseActiveWorkflowVersionProps) => {
-  const { records: workflowVersions, loading } = useFindManyRecords<
-    Pick<WorkflowVersion, 'id' | '__typename'>
-  >({
-    objectNameSingular: CoreObjectNameSingular.WorkflowVersion,
-    filter: {
-      workflowId: {
-        eq: workflowId,
-      },
-      status: {
-        eq: 'ACTIVE',
-      },
-    },
-    recordGqlFields: {
-      id: true,
-    },
-  });
+  const { coreWorkflowVersions, loading } = useCoreWorkflowVersions(
+    isNonEmptyString(workflowId) ? workflowId : undefined,
+  );
 
   return {
-    workflowVersion: workflowVersions?.[0],
+    workflowVersion: coreWorkflowVersions.find(
+      (version) => version.status === 'ACTIVE',
+    ),
+    hasDraftVersion: coreWorkflowVersions.some(
+      (version) => version.status === 'DRAFT',
+    ),
     loading,
   };
 };

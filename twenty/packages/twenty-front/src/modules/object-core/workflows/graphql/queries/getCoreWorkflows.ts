@@ -6,20 +6,24 @@ export const GET_CORE_WORKFLOWS = gql`
     $after: String
     $orderBy: CoreWorkflowOrderByField
     $orderByDirection: CoreWorkflowOrderByDirection
+    $filter: CoreWorkflowFilterInput
   ) {
     coreWorkflows(
       first: $first
       after: $after
       orderBy: $orderBy
       orderByDirection: $orderByDirection
+      filter: $filter
     ) {
       edges {
         node {
           id
           name
           statuses
-          applicationId
           workspaceWorkflowId
+          isSystem
+          isPrivate
+          canChangeVisibility
           updatedAt
         }
         cursor
@@ -29,6 +33,16 @@ export const GET_CORE_WORKFLOWS = gql`
         hasNextPage
       }
       totalCount
+      runSummaries {
+        coreWorkflowId
+        runCountLast14Days
+        isRunCountLowerBound
+        recentRuns {
+          id
+          status
+          createdAt
+        }
+      }
     }
   }
 `;

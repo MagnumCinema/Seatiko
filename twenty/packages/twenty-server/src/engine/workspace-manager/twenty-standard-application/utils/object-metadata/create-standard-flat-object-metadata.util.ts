@@ -9,8 +9,394 @@ import {
   type CreateStandardObjectArgs,
   createStandardObjectFlatMetadata,
 } from 'src/engine/workspace-manager/twenty-standard-application/utils/object-metadata/create-standard-object-flat-metadata.util';
+import {
+  PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+  PLATFORM_WRITTEN_DISABLED_OBJECT_PERMISSION_ACTIONS,
+} from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-disabled-object-permission-actions.constant';
 
 export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
+  agentChatThread: (
+    args: Omit<
+      CreateStandardObjectArgs<'agentChatThread'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentChatThread',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.agentChatThread.universalIdentifier,
+        nameSingular: 'agentChatThread',
+        namePlural: 'agentChatThreads',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Chat',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Chats',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Agent chat thread',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconMessage',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: true,
+        isUICreatable: false,
+        labelIdentifierFieldMetadataName: 'title',
+      },
+    }),
+  agentChatThreadTarget: (
+    args: Omit<
+      CreateStandardObjectArgs<'agentChatThreadTarget'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentChatThreadTarget',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.agentChatThreadTarget.universalIdentifier,
+        nameSingular: 'agentChatThreadTarget',
+        namePlural: 'agentChatThreadTargets',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Agent chat thread target',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Agent chat thread targets',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Record an agent chat thread is attached to',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconMessage',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        // Inherits from the thread, not the record, so a link stays as private as the conversation. It stays
+        // writable because record merges re-point its legs under the caller, as for noteTarget
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  agentTurn: (
+    args: Omit<CreateStandardObjectArgs<'agentTurn'>, 'context' | 'objectName'>,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentTurn',
+      context: {
+        universalIdentifier: STANDARD_OBJECTS.agentTurn.universalIdentifier,
+        nameSingular: 'agentTurn',
+        namePlural: 'agentTurns',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Agent turn',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Agent turns',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({ message: 'Agent turn', context: 'objectMetadata.description' }),
+        ),
+        icon: 'IconLego',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  agentMessage: (
+    args: Omit<
+      CreateStandardObjectArgs<'agentMessage'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentMessage',
+      context: {
+        universalIdentifier: STANDARD_OBJECTS.agentMessage.universalIdentifier,
+        nameSingular: 'agentMessage',
+        namePlural: 'agentMessages',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Agent message',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Agent messages',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Agent message',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconLego',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  agentMessagePart: (
+    args: Omit<
+      CreateStandardObjectArgs<'agentMessagePart'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentMessagePart',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.agentMessagePart.universalIdentifier,
+        nameSingular: 'agentMessagePart',
+        namePlural: 'agentMessageParts',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Agent message part',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Agent message parts',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Agent message part',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconLego',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  agentMessageReaction: (
+    args: Omit<
+      CreateStandardObjectArgs<'agentMessageReaction'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentMessageReaction',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.agentMessageReaction.universalIdentifier,
+        nameSingular: 'agentMessageReaction',
+        namePlural: 'agentMessageReactions',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Chat message reaction',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Chat message reactions',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Emoji reaction of a workspace member to a chat message',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconMoodSmile',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        // Read and written only through the chat resolvers, which check the
+        // member can read the message's thread
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  agentChatThreadParticipant: (
+    args: Omit<
+      CreateStandardObjectArgs<'agentChatThreadParticipant'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'agentChatThreadParticipant',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.agentChatThreadParticipant.universalIdentifier,
+        nameSingular: 'agentChatThreadParticipant',
+        namePlural: 'agentChatThreadParticipants',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Chat thread participant',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Chat thread participants',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Read and inbox state of a member in a chat thread',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconMessage',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        // Each row is one member's private inbox state, readable through its
+        // owner grant and written only through the chat resolvers
+        disabledObjectPermissionActions:
+          PLATFORM_WRITTEN_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  campaignDelivery: (
+    args: Omit<
+      CreateStandardObjectArgs<'campaignDelivery'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'campaignDelivery',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.campaignDelivery.universalIdentifier,
+        nameSingular: 'campaignDelivery',
+        namePlural: 'campaignDeliveries',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Campaign delivery',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Campaign deliveries',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Campaign delivery',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconSend',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+  messageSuppression: (
+    args: Omit<
+      CreateStandardObjectArgs<'messageSuppression'>,
+      'context' | 'objectName'
+    >,
+  ) =>
+    createStandardObjectFlatMetadata({
+      ...args,
+      objectName: 'messageSuppression',
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.messageSuppression.universalIdentifier,
+        nameSingular: 'messageSuppression',
+        namePlural: 'messageSuppressions',
+        labelSingular: i18nLabel(
+          msg({
+            message: 'Message suppression',
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: 'Message suppressions',
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: 'Message suppression',
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconBan',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+    }),
+
   attachment: ({
     now,
     workspaceId,
@@ -129,6 +515,8 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         isSystem: true,
         isAuditLogged: false,
         isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_WRITTEN_DISABLED_OBJECT_PERMISSION_ACTIONS,
         labelIdentifierFieldMetadataName: 'id',
       },
       workspaceId,
@@ -224,6 +612,53 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         isAuditLogged: false,
         isUICreatable: false,
         labelIdentifierFieldMetadataName: 'title',
+      },
+      workspaceId,
+      standardObjectMetadataRelatedEntityIds,
+      twentyStandardApplicationId,
+      now,
+    }),
+  calendarEventTarget: ({
+    now,
+    workspaceId,
+    standardObjectMetadataRelatedEntityIds,
+    twentyStandardApplicationId,
+    dependencyFlatEntityMaps,
+  }: Omit<
+    CreateStandardObjectArgs<'calendarEventTarget'>,
+    'context' | 'objectName'
+  >) =>
+    createStandardObjectFlatMetadata({
+      objectName: 'calendarEventTarget',
+      dependencyFlatEntityMaps,
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.calendarEventTarget.universalIdentifier,
+        nameSingular: 'calendarEventTarget',
+        namePlural: 'calendarEventTargets',
+        labelSingular: i18nLabel(
+          msg({
+            message: `Calendar Event Target`,
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: `Calendar Event Targets`,
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `A calendar event target`,
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconCalendar',
+        isSystem: true,
+        isAuditLogged: false,
+        isUICreatable: false,
+        labelIdentifierFieldMetadataName: 'id',
       },
       workspaceId,
       standardObjectMetadataRelatedEntityIds,
@@ -384,6 +819,7 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         ),
         icon: 'IconSend',
         isSystem: true,
+        isSearchable: true,
         isUICreatable: false,
         labelIdentifierFieldMetadataName: 'name',
       },
@@ -466,6 +902,7 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         ),
         icon: 'IconUser',
         isSystem: true,
+        isUICreatable: false,
         labelIdentifierFieldMetadataName: 'id',
       },
       workspaceId,
@@ -513,6 +950,8 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         isSystem: true,
         isAuditLogged: false,
         isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_WRITTEN_DISABLED_OBJECT_PERMISSION_ACTIONS,
         labelIdentifierFieldMetadataName: 'id',
       },
       workspaceId,
@@ -561,6 +1000,8 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         isSystem: true,
         isAuditLogged: false,
         isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_WRITTEN_DISABLED_OBJECT_PERMISSION_ACTIONS,
         labelIdentifierFieldMetadataName: 'id',
       },
       workspaceId,
@@ -655,6 +1096,53 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         isAuditLogged: false,
         isUICreatable: false,
         labelIdentifierFieldMetadataName: 'subject',
+      },
+      workspaceId,
+      standardObjectMetadataRelatedEntityIds,
+      twentyStandardApplicationId,
+      now,
+    }),
+  messageThreadTarget: ({
+    now,
+    workspaceId,
+    standardObjectMetadataRelatedEntityIds,
+    twentyStandardApplicationId,
+    dependencyFlatEntityMaps,
+  }: Omit<
+    CreateStandardObjectArgs<'messageThreadTarget'>,
+    'context' | 'objectName'
+  >) =>
+    createStandardObjectFlatMetadata({
+      objectName: 'messageThreadTarget',
+      dependencyFlatEntityMaps,
+      context: {
+        universalIdentifier:
+          STANDARD_OBJECTS.messageThreadTarget.universalIdentifier,
+        nameSingular: 'messageThreadTarget',
+        namePlural: 'messageThreadTargets',
+        labelSingular: i18nLabel(
+          msg({
+            message: `Message Thread Target`,
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: `Message Thread Targets`,
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `A message thread target`,
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconMessage',
+        isSystem: true,
+        isAuditLogged: false,
+        isUICreatable: false,
+        labelIdentifierFieldMetadataName: 'id',
       },
       workspaceId,
       standardObjectMetadataRelatedEntityIds,
@@ -851,6 +1339,147 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
       twentyStandardApplicationId,
       now,
     }),
+  accessGroup: ({
+    now,
+    workspaceId,
+    standardObjectMetadataRelatedEntityIds,
+    twentyStandardApplicationId,
+    dependencyFlatEntityMaps,
+  }: Omit<CreateStandardObjectArgs<'accessGroup'>, 'context' | 'objectName'>) =>
+    createStandardObjectFlatMetadata({
+      objectName: 'accessGroup',
+      dependencyFlatEntityMaps,
+      context: {
+        universalIdentifier: STANDARD_OBJECTS.accessGroup.universalIdentifier,
+        nameSingular: 'accessGroup',
+        namePlural: 'accessGroups',
+        labelSingular: i18nLabel(
+          msg({
+            message: `Access group`,
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: `Access groups`,
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `Members of a role who receive the same evaluated grant`,
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconLock',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+      workspaceId,
+      standardObjectMetadataRelatedEntityIds,
+      twentyStandardApplicationId,
+      now,
+    }),
+  recordShare: ({
+    now,
+    workspaceId,
+    standardObjectMetadataRelatedEntityIds,
+    twentyStandardApplicationId,
+    dependencyFlatEntityMaps,
+  }: Omit<CreateStandardObjectArgs<'recordShare'>, 'context' | 'objectName'>) =>
+    createStandardObjectFlatMetadata({
+      objectName: 'recordShare',
+      dependencyFlatEntityMaps,
+      context: {
+        universalIdentifier: STANDARD_OBJECTS.recordShare.universalIdentifier,
+        nameSingular: 'recordShare',
+        namePlural: 'recordShares',
+        labelSingular: i18nLabel(
+          msg({
+            message: `Record share`,
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: `Record shares`,
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `Who may read a record of a private object`,
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconLock',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'id',
+      },
+      workspaceId,
+      standardObjectMetadataRelatedEntityIds,
+      twentyStandardApplicationId,
+      now,
+    }),
+  shortLink: ({
+    now,
+    workspaceId,
+    standardObjectMetadataRelatedEntityIds,
+    twentyStandardApplicationId,
+    dependencyFlatEntityMaps,
+  }: Omit<CreateStandardObjectArgs<'shortLink'>, 'context' | 'objectName'>) =>
+    createStandardObjectFlatMetadata({
+      objectName: 'shortLink',
+      dependencyFlatEntityMaps,
+      context: {
+        universalIdentifier: STANDARD_OBJECTS.shortLink.universalIdentifier,
+        nameSingular: 'shortLink',
+        namePlural: 'shortLinks',
+        labelSingular: i18nLabel(
+          msg({
+            message: `Short link`,
+            context: 'objectMetadata.labelSingular',
+          }),
+        ),
+        labelPlural: i18nLabel(
+          msg({
+            message: `Short links`,
+            context: 'objectMetadata.labelPlural',
+          }),
+        ),
+        description: i18nLabel(
+          msg({
+            message: `A link tracked in a campaign`,
+            context: 'objectMetadata.description',
+          }),
+        ),
+        icon: 'IconLink',
+        isSystem: true,
+        isSearchable: false,
+        isAuditLogged: false,
+        isUIEditable: false,
+        isUICreatable: false,
+        disabledObjectPermissionActions:
+          PLATFORM_MANAGED_DISABLED_OBJECT_PERMISSION_ACTIONS,
+        labelIdentifierFieldMetadataName: 'resolvedDestinationUrl',
+      },
+      workspaceId,
+      standardObjectMetadataRelatedEntityIds,
+      twentyStandardApplicationId,
+      now,
+    }),
   task: ({
     now,
     workspaceId,
@@ -966,87 +1595,7 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         isSystem: true,
         isAuditLogged: false,
         isUICreatable: false,
-        labelIdentifierFieldMetadataName: 'name',
-      },
-      workspaceId,
-      standardObjectMetadataRelatedEntityIds,
-      twentyStandardApplicationId,
-      now,
-    }),
-  workflow: ({
-    now,
-    workspaceId,
-    standardObjectMetadataRelatedEntityIds,
-    twentyStandardApplicationId,
-    dependencyFlatEntityMaps,
-  }: Omit<CreateStandardObjectArgs<'workflow'>, 'context' | 'objectName'>) =>
-    createStandardObjectFlatMetadata({
-      objectName: 'workflow',
-      dependencyFlatEntityMaps,
-      context: {
-        universalIdentifier: STANDARD_OBJECTS.workflow.universalIdentifier,
-        nameSingular: 'workflow',
-        openRecordIn: ObjectOpenRecordIn.RECORD_PAGE,
-        namePlural: 'workflows',
-        labelSingular: i18nLabel(
-          msg({ message: `Workflow`, context: 'objectMetadata.labelSingular' }),
-        ),
-        labelPlural: i18nLabel(
-          msg({ message: `Workflows`, context: 'objectMetadata.labelPlural' }),
-        ),
-        description: i18nLabel(
-          msg({ message: `A workflow`, context: 'objectMetadata.description' }),
-        ),
-        icon: 'IconSettingsAutomation',
-        isSearchable: true,
-        shortcut: 'W',
-        labelIdentifierFieldMetadataName: 'name',
-      },
-      workspaceId,
-      standardObjectMetadataRelatedEntityIds,
-      twentyStandardApplicationId,
-      now,
-    }),
-  workflowAutomatedTrigger: ({
-    now,
-    workspaceId,
-    standardObjectMetadataRelatedEntityIds,
-    twentyStandardApplicationId,
-    dependencyFlatEntityMaps,
-  }: Omit<
-    CreateStandardObjectArgs<'workflowAutomatedTrigger'>,
-    'context' | 'objectName'
-  >) =>
-    createStandardObjectFlatMetadata({
-      objectName: 'workflowAutomatedTrigger',
-      dependencyFlatEntityMaps,
-      context: {
-        universalIdentifier:
-          STANDARD_OBJECTS.workflowAutomatedTrigger.universalIdentifier,
-        nameSingular: 'workflowAutomatedTrigger',
-        namePlural: 'workflowAutomatedTriggers',
-        labelSingular: i18nLabel(
-          msg({
-            message: `Workflow Automated Trigger`,
-            context: 'objectMetadata.labelSingular',
-          }),
-        ),
-        labelPlural: i18nLabel(
-          msg({
-            message: `Workflow Automated Triggers`,
-            context: 'objectMetadata.labelPlural',
-          }),
-        ),
-        description: i18nLabel(
-          msg({
-            message: `A workflow automated trigger`,
-            context: 'objectMetadata.description',
-          }),
-        ),
-        icon: 'IconSettingsAutomation',
-        isSystem: true,
-        isUICreatable: false,
-        labelIdentifierFieldMetadataName: 'id',
+        labelIdentifierFieldMetadataName: 'linkedRecordCachedName',
       },
       workspaceId,
       standardObjectMetadataRelatedEntityIds,
@@ -1088,53 +1637,6 @@ export const STANDARD_FLAT_OBJECT_METADATA_BUILDERS_BY_OBJECT_NAME = {
         icon: 'IconHistoryToggle',
         isSystem: true,
         isAuditLogged: false,
-        isUICreatable: false,
-        labelIdentifierFieldMetadataName: 'name',
-      },
-      workspaceId,
-      standardObjectMetadataRelatedEntityIds,
-      twentyStandardApplicationId,
-      now,
-    }),
-  workflowVersion: ({
-    now,
-    workspaceId,
-    standardObjectMetadataRelatedEntityIds,
-    twentyStandardApplicationId,
-    dependencyFlatEntityMaps,
-  }: Omit<
-    CreateStandardObjectArgs<'workflowVersion'>,
-    'context' | 'objectName'
-  >) =>
-    createStandardObjectFlatMetadata({
-      objectName: 'workflowVersion',
-      dependencyFlatEntityMaps,
-      context: {
-        universalIdentifier:
-          STANDARD_OBJECTS.workflowVersion.universalIdentifier,
-        nameSingular: 'workflowVersion',
-        openRecordIn: ObjectOpenRecordIn.RECORD_PAGE,
-        namePlural: 'workflowVersions',
-        labelSingular: i18nLabel(
-          msg({
-            message: `Workflow Version`,
-            context: 'objectMetadata.labelSingular',
-          }),
-        ),
-        labelPlural: i18nLabel(
-          msg({
-            message: `Workflow Versions`,
-            context: 'objectMetadata.labelPlural',
-          }),
-        ),
-        description: i18nLabel(
-          msg({
-            message: `A workflow version`,
-            context: 'objectMetadata.description',
-          }),
-        ),
-        icon: 'IconVersions',
-        isSystem: true,
         isUICreatable: false,
         labelIdentifierFieldMetadataName: 'name',
       },

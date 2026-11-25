@@ -1,13 +1,13 @@
 /* @license Enterprise */
 
-import { type SSOIdentitiesProvidersParamsSchema } from '@/settings/security/validation-schemas/SSOIdentityProviderSchema';
+import { type ssoIdentitiesProvidersParamsSchema } from '@/settings/security/validation-schemas/ssoIdentityProviderSchema';
 import { type z } from 'zod';
 import {
   type IdentityProviderType,
   type SsoIdentityProviderStatus,
 } from '~/generated-metadata/graphql';
 
-export type SSOIdentityProvider = {
+export type SsoIdentityProvider = {
   __typename: 'SSOIdentityProvider';
   id: string;
   type: IdentityProviderType;
@@ -16,6 +16,6 @@ export type SSOIdentityProvider = {
   status: SsoIdentityProviderStatus;
 };
 
-export type SettingSecurityNewSSOIdentityFormValues = z.infer<
-  typeof SSOIdentitiesProvidersParamsSchema
+export type SettingSecurityNewSsoIdentityFormValues = z.infer<
+  typeof ssoIdentitiesProvidersParamsSchema
 >;

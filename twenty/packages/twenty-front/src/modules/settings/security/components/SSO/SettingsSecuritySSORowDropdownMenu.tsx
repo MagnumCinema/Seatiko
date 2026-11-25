@@ -1,107 +1,93 @@
-import { useDeleteSSOIdentityProvider } from '@/settings/security/hooks/useDeleteSSOIdentityProvider';
-import { useUpdateSSOIdentityProvider } from '@/settings/security/hooks/useUpdateSSOIdentityProvider';
-import { type SSOIdentityProvider } from '@/settings/security/types/SSOIdentityProvider';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
-import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
+import { DropdownRoot } from '@/ui/layout/dropdown/components/DropdownRoot';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
-import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
-import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
+import { useDeleteSsoIdentityProvider } from '@/settings/security/hooks/useDeleteSsoIdentityProvider';
+import { useUpdateSsoIdentityProvider } from '@/settings/security/hooks/useUpdateSsoIdentityProvider';
+import { type SsoIdentityProvider } from '@/settings/security/types/SsoIdentityProvider';
 import { useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared/utils';
+import { useToast } from 'twenty-ui/components/feedback';
+import { LightIconButton } from 'twenty-ui/components/input';
+import { Dropdown } from 'twenty-ui/components/navigation';
 import { IconArchive, IconDotsVertical, IconTrash } from 'twenty-ui/icon';
-import { LightIconButton } from 'twenty-ui/input';
-import { MenuItem } from 'twenty-ui/navigation';
 import { SsoIdentityProviderStatus } from '~/generated-metadata/graphql';
 
-type SettingsSecuritySSORowDropdownMenuProps = {
-  SSOIdp: Omit<SSOIdentityProvider, '__typename'>;
+type SettingsSecuritySsoRowDropdownMenuProps = {
+  ssoIdp: Omit<SsoIdentityProvider, '__typename'>;
 };
 
-export const SettingsSecuritySSORowDropdownMenu = ({
-  SSOIdp,
-}: SettingsSecuritySSORowDropdownMenuProps) => {
-  const dropdownId = `settings-account-row-${SSOIdp.id}`;
+export const SettingsSecuritySsoRowDropdownMenu = ({
+  ssoIdp,
+}: SettingsSecuritySsoRowDropdownMenuProps) => {
+  const dropdownId = `settings-account-row-${ssoIdp.id}`;
+  const { enqueueToast } = useToast();
 
-  const { enqueueErrorSnackBar } = useSnackBar();
-
-  const { closeDropdown } = useCloseDropdown();
-
-  const { deleteSSOIdentityProvider } = useDeleteSSOIdentityProvider();
-  const { updateSSOIdentityProvider } = useUpdateSSOIdentityProvider();
+  const { deleteSsoIdentityProvider } = useDeleteSsoIdentityProvider();
+  const { updateSsoIdentityProvider } = useUpdateSsoIdentityProvider();
 
   const { t } = useLingui();
 
-  const handleDeleteSSOIdentityProvider = async (
+  const handleDeleteSsoIdentityProvider = async (
     identityProviderId: string,
   ) => {
-    const result = await deleteSSOIdentityProvider({
+    const result = await deleteSsoIdentityProvider({
       identityProviderId,
     });
     if (isDefined(result.error)) {
-      enqueueErrorSnackBar({
-        message: t`Error deleting SSO Identity Provider`,
-        options: {
-          duration: 2000,
-        },
+      enqueueToast({
+        status: 'error',
+        children: t`Error deleting SSO Identity Provider`,
+        duration: 2000,
       });
     }
   };
 
-  const toggleSSOIdentityProviderStatus = async (
+  const toggleSsoIdentityProviderStatus = async (
     identityProviderId: string,
   ) => {
-    const result = await updateSSOIdentityProvider({
+    const result = await updateSsoIdentityProvider({
       id: identityProviderId,
       status:
-        SSOIdp.status === 'Active'
+        ssoIdp.status === 'Active'
           ? SsoIdentityProviderStatus.Inactive
           : SsoIdentityProviderStatus.Active,
     });
     if (isDefined(result.error)) {
-      enqueueErrorSnackBar({
-        message: t`Error editing SSO Identity Provider`,
-        options: {
-          duration: 2000,
-        },
+      enqueueToast({
+        status: 'error',
+        children: t`Error editing SSO Identity Provider`,
+        duration: 2000,
       });
     }
   };
 
   return (
-    <Dropdown
-      dropdownId={dropdownId}
-      dropdownPlacement="right-start"
-      clickableComponent={
-        <LightIconButton
-          Icon={IconDotsVertical}
-          accent="tertiary"
-          aria-label={t`More options`}
-        />
-      }
-      dropdownComponents={
-        <DropdownContent>
-          <DropdownMenuItemsContainer>
-            <MenuItem
-              accent="default"
-              LeftIcon={IconArchive}
-              text={SSOIdp.status === 'Active' ? t`Deactivate` : t`Activate`}
-              onClick={() => {
-                toggleSSOIdentityProviderStatus(SSOIdp.id);
-                closeDropdown(dropdownId);
-              }}
-            />
-            <MenuItem
-              accent="danger"
-              LeftIcon={IconTrash}
-              text={t`Delete`}
-              onClick={() => {
-                handleDeleteSSOIdentityProvider(SSOIdp.id);
-                closeDropdown(dropdownId);
-              }}
-            />
-          </DropdownMenuItemsContainer>
-        </DropdownContent>
-      }
-    />
+    <DropdownRoot type="menu" dropdownId={dropdownId}>
+      <Dropdown.Trigger
+        render={
+          <LightIconButton emphasis="subtle" aria-label={t`More options`}>
+            <IconDotsVertical />
+          </LightIconButton>
+        }
+      />
+      <DropdownContent side="right" align="start">
+        <Dropdown.Section>
+          <Dropdown.ActionItem
+            startIcon={<IconArchive />}
+            onClick={() => {
+              toggleSsoIdentityProviderStatus(ssoIdp.id);
+            }}
+          >
+            {ssoIdp.status === 'Active' ? t`Deactivate` : t`Activate`}
+          </Dropdown.ActionItem>
+          <Dropdown.ActionItem
+            color="danger"
+            startIcon={<IconTrash />}
+            onClick={() => {
+              handleDeleteSsoIdentityProvider(ssoIdp.id);
+            }}
+          >{t`Delete`}</Dropdown.ActionItem>
+        </Dropdown.Section>
+      </DropdownContent>
+    </DropdownRoot>
   );
 };

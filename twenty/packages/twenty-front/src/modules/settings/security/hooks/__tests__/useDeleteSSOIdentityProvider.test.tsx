@@ -2,14 +2,14 @@
 
 import { renderHook } from '@testing-library/react';
 
-import { useDeleteSSOIdentityProvider } from '@/settings/security/hooks/useDeleteSSOIdentityProvider';
+import { useDeleteSsoIdentityProvider } from '@/settings/security/hooks/useDeleteSsoIdentityProvider';
 import { getJestMetadataAndApolloMocksWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksWrapper';
 
-const mutationDeleteSSOIDPCallSpy = jest.fn();
+const mutationDeleteSsoIdpCallSpy = jest.fn();
 
 jest.mock('@apollo/client/react', () => ({
   ...jest.requireActual('@apollo/client/react'),
-  useMutation: () => [mutationDeleteSSOIDPCallSpy],
+  useMutation: () => [mutationDeleteSsoIdpCallSpy],
 }));
 
 const Wrapper = getJestMetadataAndApolloMocksWrapper({
@@ -25,13 +25,13 @@ describe('useDeleteSsoIdentityProvider', () => {
     const params = { identityProviderId: 'test' };
     renderHook(
       () => {
-        const { deleteSSOIdentityProvider } = useDeleteSSOIdentityProvider();
-        deleteSSOIdentityProvider(params);
+        const { deleteSsoIdentityProvider } = useDeleteSsoIdentityProvider();
+        deleteSsoIdentityProvider(params);
       },
       { wrapper: Wrapper },
     );
 
-    expect(mutationDeleteSSOIDPCallSpy).toHaveBeenCalledWith({
+    expect(mutationDeleteSsoIdpCallSpy).toHaveBeenCalledWith({
       onCompleted: expect.any(Function),
       variables: {
         input: params,

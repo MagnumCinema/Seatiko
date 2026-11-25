@@ -1,8 +1,8 @@
 /* @license Enterprise */
 
-import { parseSAMLMetadataFromXMLFile } from '@/settings/security/utils/parseSAMLMetadataFromXMLFile';
+import { parseSamlMetadataFromXmlFile } from '@/settings/security/utils/parseSamlMetadataFromXmlFile';
 
-describe('parseSAMLMetadataFromXMLFile', () => {
+describe('parseSamlMetadataFromXmlFile', () => {
   it('should parse SAML metadata from XML file', () => {
     const xmlString = `<?xml version="1.0" encoding="UTF-8"?><md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://test.com" validUntil="2026-02-04T17:46:23.000Z">
     <md:IDPSSODescriptor WantAuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
@@ -18,7 +18,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
         <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://test.com"/>
     </md:IDPSSODescriptor>
 </md:EntityDescriptor>`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: true,
       data: {
@@ -43,7 +43,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
         <ns0:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://test.com"/>
     </ns0:IDPSSODescriptor>
 </ns0:EntityDescriptor>`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: true,
       data: {
@@ -66,7 +66,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
         <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sso.jumpcloud.com/saml2/twenty"/>
     </md:IDPSSODescriptor>
 </md:EntityDescriptor>`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: true,
       data: {
@@ -90,7 +90,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
         <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://test.com/redirect"/>
     </md:IDPSSODescriptor>
 </md:EntityDescriptor>`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: true,
       data: {
@@ -113,7 +113,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
         <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://test.com/soap"/>
     </md:IDPSSODescriptor>
 </md:EntityDescriptor>`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: false,
       reason:
@@ -133,7 +133,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
         <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sso.jumpcloud.com/saml2/twenty"/>
     </md:IDPSSODescriptor>
 </md:EntityDescriptor>`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: false,
       reason: 'entityID: entityID is not a valid URL',
@@ -141,7 +141,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
   });
   it('should return a descriptive reason when EntityDescriptor is missing', () => {
     const xmlString = `<?xml version="1.0" encoding="UTF-8"?><root />`;
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: false,
       reason: 'EntityDescriptor element is missing',
@@ -149,7 +149,7 @@ describe('parseSAMLMetadataFromXMLFile', () => {
   });
   it('should return error if XML is invalid', () => {
     const xmlString = 'invalid xml';
-    const result = parseSAMLMetadataFromXMLFile(xmlString);
+    const result = parseSamlMetadataFromXmlFile(xmlString);
     expect(result).toEqual({
       success: false,
       reason: 'File is not valid XML',

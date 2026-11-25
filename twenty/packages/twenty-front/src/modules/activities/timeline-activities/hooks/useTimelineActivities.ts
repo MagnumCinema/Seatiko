@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import { useLinkedObjectsTitle } from '@/activities/timeline-activities/hooks/useLinkedObjectsTitle';
+import { useLinkedRecordsIdentifiers } from '@/activities/timeline-activities/hooks/useLinkedRecordsIdentifiers';
 import { type TimelineActivity } from '@/activities/timeline-activities/types/TimelineActivity';
 import { getTimelineActivityRecordGqlFields } from '@/activities/timeline-activities/utils/getTimelineActivityRecordGqlFields';
 import { type ActivityTargetableObject } from '@/activities/types/ActivityTargetableEntity';
@@ -11,7 +11,7 @@ import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadat
 import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 import { useListenToEventsForQuery } from '@/sse-db-event/hooks/useListenToEventsForQuery';
 import {
-  CoreObjectNameSingular,
+  StandardObjectNameSingular,
   type RecordGqlOperationFilter,
 } from 'twenty-shared/types';
 import { capitalize, isDefined } from 'twenty-shared/utils';
@@ -32,22 +32,12 @@ export const useTimelineActivities = (
 
   const { objectMetadataItem: timelineActivityMetadata } =
     useObjectMetadataItem({
-      objectNameSingular: CoreObjectNameSingular.TimelineActivity,
+      objectNameSingular: StandardObjectNameSingular.TimelineActivity,
     });
 
   const { objectMetadataItems } = useFilteredObjectMetadataItems();
   const { objectMetadataItems: allObjectMetadataItems } =
     useObjectMetadataItems();
-
-  const noteObjectMetadataItem = objectMetadataItems.find(
-    (objectMetadataItem) =>
-      objectMetadataItem.nameSingular === CoreObjectNameSingular.Note,
-  );
-
-  const taskObjectMetadataItem = objectMetadataItems.find(
-    (objectMetadataItem) =>
-      objectMetadataItem.nameSingular === CoreObjectNameSingular.Task,
-  );
 
   const hasTimelineActivityField = timelineActivityMetadata.fields.some(
     (field) =>
@@ -75,11 +65,11 @@ export const useTimelineActivities = (
     refetch,
   } = useFindManyRecords<TimelineActivity>({
     skip: !hasTimelineActivityField,
-    objectNameSingular: CoreObjectNameSingular.TimelineActivity,
+    objectNameSingular: StandardObjectNameSingular.TimelineActivity,
     filter,
     orderBy: [
       {
-        createdAt: 'DescNullsFirst',
+        happensAt: 'DescNullsFirst',
       },
     ],
     recordGqlFields,
@@ -88,7 +78,7 @@ export const useTimelineActivities = (
 
   const operationSignature = useMemo(
     () => ({
-      objectNameSingular: CoreObjectNameSingular.TimelineActivity,
+      objectNameSingular: StandardObjectNameSingular.TimelineActivity,
       variables: {
         filter,
       },
@@ -115,24 +105,8 @@ export const useTimelineActivities = (
     objectMetadataItemId: timelineActivityMetadata.id,
   });
 
-  const noteAndTaskObjectMetadataIds = [
-    noteObjectMetadataItem?.id,
-    taskObjectMetadataItem?.id,
-  ].filter(isDefined);
-
-  // Notes and tasks expose a title that we resolve to label their timeline rows.
-  const noteAndTaskLinkedRecordIds = timelineActivities
-    .filter(
-      (timelineActivity) =>
-        isDefined(timelineActivity.linkedObjectMetadataId) &&
-        noteAndTaskObjectMetadataIds.includes(
-          timelineActivity.linkedObjectMetadataId,
-        ),
-    )
-    .map((timelineActivity) => timelineActivity.linkedRecordId)
-    .filter(isDefined);
-
-  useLinkedObjectsTitle(noteAndTaskLinkedRecordIds);
+  const { result: linkedRecordsByObjectNamePlural } =
+    useLinkedRecordsIdentifiers({ timelineActivities, objectMetadataItems });
 
   const firstQueryLoading =
     loadingTimelineActivities && timelineActivities.length === 0;
@@ -145,5 +119,6 @@ export const useTimelineActivities = (
     firstQueryLoading,
     loadingMore,
     fetchMoreRecords,
+    linkedRecords: Object.values(linkedRecordsByObjectNamePlural).flat(),
   };
 };

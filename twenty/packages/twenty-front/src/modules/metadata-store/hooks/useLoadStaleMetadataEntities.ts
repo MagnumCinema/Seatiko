@@ -12,6 +12,7 @@ import {
   FindAllViewsDocument,
   FindManyCommandMenuItemsDocument,
   FindAllRecordPageLayoutsDocument,
+  FindAllRecordFormPageLayoutsDocument,
   FindFieldsWidgetViewsDocument,
   FindTableWidgetViewsDocument,
   FindManyFrontComponentsDocument,
@@ -48,6 +49,7 @@ const INDEX_VIEW_TYPES = [
   ViewType.KANBAN,
   ViewType.CALENDAR,
   ViewType.LIST,
+  ViewType.INBOX,
 ];
 const FIELDS_WIDGET_VIEW_TYPES = [ViewType.FIELDS_WIDGET];
 const WIDGET_VIEW_TYPES = [
@@ -146,29 +148,33 @@ export const useLoadStaleMetadataEntities = () => {
 
       if (hasOverlap(staleEntityKeys, PAGE_LAYOUTS_GROUP_KEYS)) {
         fetchPromises.push(
-          client
-            .query({
+          Promise.all([
+            client.query({
               query: FindAllRecordPageLayoutsDocument,
               fetchPolicy: 'network-only',
-            })
-            .then((result) => {
-              if (!isDefined(result.data?.getPageLayouts)) {
-                return;
-              }
-
-              const transformed =
-                result.data.getPageLayouts.map(transformPageLayout);
-
-              const {
-                flatPageLayouts,
-                flatPageLayoutTabs,
-                flatPageLayoutWidgets,
-              } = splitPageLayoutWithRelated(transformed);
-
-              replaceDraft('pageLayouts', flatPageLayouts);
-              replaceDraft('pageLayoutTabs', flatPageLayoutTabs);
-              replaceDraft('pageLayoutWidgets', flatPageLayoutWidgets);
             }),
+            client.query({
+              query: FindAllRecordFormPageLayoutsDocument,
+              fetchPolicy: 'network-only',
+            }),
+          ]).then(([recordPageResult, recordFormResult]) => {
+            const allPageLayouts = [
+              ...(recordPageResult.data?.getPageLayouts ?? []),
+              ...(recordFormResult.data?.getPageLayouts ?? []),
+            ];
+
+            const transformed = allPageLayouts.map(transformPageLayout);
+
+            const {
+              flatPageLayouts,
+              flatPageLayoutTabs,
+              flatPageLayoutWidgets,
+            } = splitPageLayoutWithRelated(transformed);
+
+            replaceDraft('pageLayouts', flatPageLayouts);
+            replaceDraft('pageLayoutTabs', flatPageLayoutTabs);
+            replaceDraft('pageLayoutWidgets', flatPageLayoutWidgets);
+          }),
         );
       }
 
@@ -246,8 +252,17 @@ export const useLoadStaleMetadataEntities = () => {
         );
       }
 
-      await Promise.all(fetchPromises);
+      const settledFetches = await Promise.allSettled(fetchPromises);
+
       applyChanges();
+
+      const firstRejectedFetch = settledFetches.find(
+        (settledFetch) => settledFetch.status === 'rejected',
+      );
+
+      if (isDefined(firstRejectedFetch)) {
+        throw firstRejectedFetch.reason;
+      }
     },
     [client, replaceDraft, applyChanges],
   );

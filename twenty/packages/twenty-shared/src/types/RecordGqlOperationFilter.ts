@@ -82,12 +82,24 @@ export type DateTimeFilter = {
   is?: IsFilter;
 };
 
+export type FieldReferenceFilterOperator =
+  | 'gtField'
+  | 'gteField'
+  | 'ltField'
+  | 'lteField';
+
+// "field" on the same record, or "relation.field" through the relation back to
+// the record a relation filter starts from
+export type FieldReferenceFilter = {
+  [Operator in FieldReferenceFilterOperator]?: string;
+};
+
 export type CurrencyFilter = {
   amountMicros?: FloatFilter;
   currencyCode?: SelectFilter;
 };
 
-export type URLFilter = {
+export type UrlFilter = {
   url?: StringFilter;
   label?: StringFilter;
 };
@@ -154,11 +166,13 @@ export type ArrayFilter = {
 
 export type RawJsonFilter = {
   like?: string;
+  ilike?: string;
   is?: IsFilter;
 };
 
 export type FilesFilter = {
   like?: string;
+  ilike?: string;
   is?: IsFilter;
 };
 
@@ -181,8 +195,9 @@ export type LeafFilter =
   | FloatFilter
   | DateFilter
   | DateTimeFilter
+  | FieldReferenceFilter
   | CurrencyFilter
-  | URLFilter
+  | UrlFilter
   | FullNameFilter
   | BooleanFilter
   | AddressFilter
@@ -213,8 +228,13 @@ export type LeafObjectRecordFilter = {
   [fieldName: string]: LeafFilter;
 };
 
+export type RelationObjectRecordFilter = {
+  [fieldName: string]: LeafFilter | RecordGqlOperationFilter;
+};
+
 export type RecordGqlOperationFilter =
   | LeafObjectRecordFilter
+  | RelationObjectRecordFilter
   | AndObjectRecordFilter
   | OrObjectRecordFilter
   | NotObjectRecordFilter;

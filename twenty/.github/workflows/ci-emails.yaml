@@ -4,14 +4,12 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
   pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-emails-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
@@ -20,7 +18,12 @@ jobs:
     with:
       files: |
         package.json
+        yarn.lock
+        .github/workflows/ci-emails.yaml
         packages/twenty-emails/**
+        packages/twenty-oxlint-rules/scripts/check-unlocalized-strings.mjs
+        packages/twenty-oxlint-rules/scripts/filter-unlocalized-strings.mjs
+        packages/twenty-oxlint-rules/.oxlintrc.i18n.json
   emails-test:
     needs: changed-files-check
     if: needs.changed-files-check.outputs.any_changed == 'true'
@@ -33,6 +36,8 @@ jobs:
           fetch-depth: 10
       - name: Install dependencies
         uses: ./.github/actions/yarn-install
+      - name: Lint twenty-emails
+        run: npx nx lint twenty-emails
       - name: Build twenty-emails
         run: npx nx build twenty-emails
       - name: Extract translations (lingui)
@@ -60,9 +65,9 @@ jobs:
   ci-emails-status-check:
     if: always() && !cancelled()
     timeout-minutes: 5
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-2-cores
     needs: [changed-files-check, emails-test]
     steps:
       - name: Fail job if any needs failed
-        if: contains(needs.*.result, 'failure')
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: exit 1

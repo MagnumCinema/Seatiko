@@ -1,6 +1,6 @@
 /* @license Enterprise */
 
-import { SSOIdentitiesProvidersState } from '@/settings/security/states/SSOIdentitiesProvidersState';
+import { ssoIdentitiesProvidersState } from '@/settings/security/states/ssoIdentitiesProvidersState';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { useMutation } from '@apollo/client/react';
 import {
@@ -9,8 +9,9 @@ import {
   CreateOidcIdentityProviderDocument,
   CreateSamlIdentityProviderDocument,
 } from '~/generated-metadata/graphql';
+import { doNotTranslate } from 'twenty-shared/i18n';
 
-export const useCreateSSOIdentityProvider = () => {
+export const useCreateSsoIdentityProvider = () => {
   const [createOidcIdentityProviderMutation] = useMutation(
     CreateOidcIdentityProviderDocument,
   );
@@ -18,11 +19,11 @@ export const useCreateSSOIdentityProvider = () => {
     CreateSamlIdentityProviderDocument,
   );
 
-  const setSSOIdentitiesProviders = useSetAtomState(
-    SSOIdentitiesProvidersState,
+  const setSsoIdentitiesProviders = useSetAtomState(
+    ssoIdentitiesProvidersState,
   );
 
-  const createSSOIdentityProvider = async (
+  const createSsoIdentityProvider = async (
     input:
       | ({
           type: 'OIDC';
@@ -37,7 +38,7 @@ export const useCreateSSOIdentityProvider = () => {
       return await createOidcIdentityProviderMutation({
         variables: { input: params },
         onCompleted: (data) => {
-          setSSOIdentitiesProviders((existingProvider) => [
+          setSsoIdentitiesProviders((existingProvider) => [
             ...existingProvider,
             data.createOIDCIdentityProvider,
           ]);
@@ -49,18 +50,17 @@ export const useCreateSSOIdentityProvider = () => {
       return await createSamlIdentityProviderMutation({
         variables: { input: params },
         onCompleted: (data) => {
-          setSSOIdentitiesProviders((existingProvider) => [
+          setSsoIdentitiesProviders((existingProvider) => [
             ...existingProvider,
             data.createSAMLIdentityProvider,
           ]);
         },
       });
-    } else {
-      throw new Error('Invalid IdpType');
     }
+    throw new Error(doNotTranslate('Invalid IdpType'));
   };
 
   return {
-    createSSOIdentityProvider,
+    createSsoIdentityProvider,
   };
 };

@@ -2,8 +2,6 @@ import { isDefined } from 'twenty-shared/utils';
 import { type FindOptionsWhere } from 'typeorm';
 import { z } from 'zod';
 
-import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
-import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
   WorkflowRunStatus,
   type WorkflowRunWorkspaceEntity,
@@ -12,19 +10,18 @@ import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
 } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
-
-type ListWorkflowRunsToolContext = WorkflowToolContext & {
-  rolePermissionConfig: RolePermissionConfig;
-};
+import { type WorkflowTool } from 'src/modules/workflow/workflow-tools/types/workflow-tool.type';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
 const listWorkflowRunsSchema = z.object({
-  workflowId: z
+  coreWorkflowId: z
     .uuid()
     .optional()
-    .describe('Filter runs by the UUID of the workflow they belong to'),
+    .describe(
+      'Filter runs by the core workflow UUID they belong to, as returned by list_workflows',
+    ),
   status: z
     .nativeEnum(WorkflowRunStatus)
     .optional()
@@ -43,64 +40,67 @@ const listWorkflowRunsSchema = z.object({
 type ListWorkflowRunsInput = z.infer<typeof listWorkflowRunsSchema>;
 
 export const createListWorkflowRunsTool = (
-  deps: Pick<WorkflowToolDependencies, 'globalWorkspaceOrmManager'>,
-  context: ListWorkflowRunsToolContext,
-) => ({
-  name: 'list_workflow_runs' as const,
-  description:
-    'List workflow runs, optionally filtered by workflow and/or status, ordered from most to least recent. Use this to find the relevant run (for example the latest failed run of a workflow) before inspecting it in detail with get_workflow_run.',
-  inputSchema: listWorkflowRunsSchema,
-  execute: async (parameters: ListWorkflowRunsInput) => {
-    try {
-      const authContext = buildSystemAuthContext(context.workspaceId);
-
-      return await deps.globalWorkspaceOrmManager.executeInWorkspaceContext(
-        async () => {
-          const workflowRunRepository =
-            await deps.globalWorkspaceOrmManager.getRepository<WorkflowRunWorkspaceEntity>(
-              context.workspaceId,
-              'workflowRun',
-              context.rolePermissionConfig,
-            );
-
-          const where: FindOptionsWhere<WorkflowRunWorkspaceEntity> = {};
-
-          if (isDefined(parameters.workflowId)) {
-            where.workflowId = parameters.workflowId;
-          }
-
-          if (isDefined(parameters.status)) {
-            where.status = parameters.status;
-          }
-
-          const workflowRuns = await workflowRunRepository.find({
-            where,
-            order: { createdAt: 'DESC' },
-            take: parameters.limit ?? DEFAULT_LIMIT,
-          });
-
-          return {
-            success: true,
-            workflowRuns: workflowRuns.map((workflowRun) => ({
-              id: workflowRun.id,
-              name: workflowRun.name,
-              status: workflowRun.status,
-              error: workflowRun.state?.workflowRunError,
-              startedAt: workflowRun.startedAt,
-              endedAt: workflowRun.endedAt,
-              workflowId: workflowRun.workflowId,
-              workflowVersionId: workflowRun.workflowVersionId,
-            })),
-          };
-        },
-        authContext,
-      );
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: `Failed to list workflow runs: ${error.message}`,
-      };
-    }
+  deps: {
+    workspaceOrmManager: Pick<
+      WorkflowToolDependencies['workspaceOrmManager'],
+      'executeInWorkspaceContext' | 'getRepository'
+    >;
   },
-});
+  context: WorkflowToolContext,
+) =>
+  ({
+    name: 'list_workflow_runs' as const,
+    isReadOnly: true,
+    description:
+      'List workflow runs, optionally filtered by core workflow and/or status, ordered from most to least recent. Use this to find the relevant run (for example the latest failed run of a workflow) before inspecting it in detail with get_workflow_run.',
+    inputSchema: listWorkflowRunsSchema,
+    execute: async (parameters: ListWorkflowRunsInput) => {
+      try {
+        return await deps.workspaceOrmManager.executeInWorkspaceContext(
+          async () => {
+            const workflowRunRepository =
+              deps.workspaceOrmManager.getRepository<WorkflowRunWorkspaceEntity>(
+                'workflowRun',
+              );
+
+            const where: FindOptionsWhere<WorkflowRunWorkspaceEntity> = {};
+
+            if (isDefined(parameters.coreWorkflowId)) {
+              where.coreWorkflowId = parameters.coreWorkflowId;
+            }
+
+            if (isDefined(parameters.status)) {
+              where.status = parameters.status;
+            }
+
+            const workflowRuns = await workflowRunRepository.find({
+              where,
+              order: { createdAt: 'DESC' },
+              take: parameters.limit ?? DEFAULT_LIMIT,
+            });
+
+            return {
+              success: true,
+              workflowRuns: workflowRuns.map((workflowRun) => ({
+                id: workflowRun.id,
+                name: workflowRun.name,
+                status: workflowRun.status,
+                error: workflowRun.state?.workflowRunError,
+                startedAt: workflowRun.startedAt,
+                endedAt: workflowRun.endedAt,
+                coreWorkflowId: workflowRun.coreWorkflowId,
+                coreWorkflowVersionId: workflowRun.coreWorkflowVersionId,
+              })),
+            };
+          },
+          context.authContext,
+        );
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          message: `Failed to list workflow runs: ${error.message}`,
+        };
+      }
+    },
+  }) satisfies WorkflowTool;

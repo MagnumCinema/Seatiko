@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 
 import { type FlatViewGroup } from '@/metadata-store/types/FlatViewGroup';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
-import { usePerformViewEntityAPIPersistOperation } from '@/views/hooks/internal/usePerformViewEntityAPIPersistOperation';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
+import { usePerformViewEntityApiPersistOperation } from '@/views/hooks/internal/usePerformViewEntityApiPersistOperation';
 import { useMutation } from '@apollo/client/react';
 import { isNonEmptyArray } from '@sniptt/guards';
 import { CrudOperationType } from 'twenty-shared/types';
@@ -13,7 +13,7 @@ import {
   UpdateManyViewGroupsDocument,
 } from '~/generated-metadata/graphql';
 
-export const usePerformViewGroupAPIPersist = () => {
+export const usePerformViewGroupApiPersist = () => {
   const [updateManyViewGroupsMutation] = useMutation(
     UpdateManyViewGroupsDocument,
   );
@@ -22,10 +22,10 @@ export const usePerformViewGroupAPIPersist = () => {
     CreateManyViewGroupsDocument,
   );
 
-  const { performViewEntityAPIPersistOperation } =
-    usePerformViewEntityAPIPersistOperation('viewGroup');
+  const { performViewEntityApiPersistOperation } =
+    usePerformViewEntityApiPersistOperation('viewGroup');
 
-  const performViewGroupAPIUpdate = useCallback(
+  const performViewGroupApiUpdate = useCallback(
     async (
       updateViewGroupInputs: UpdateManyViewGroupsMutationVariables,
     ): Promise<
@@ -40,7 +40,7 @@ export const usePerformViewGroupAPIPersist = () => {
         };
       }
 
-      return performViewEntityAPIPersistOperation({
+      return performViewEntityApiPersistOperation({
         persist: () =>
           updateManyViewGroupsMutation({
             variables: updateViewGroupInputs,
@@ -55,10 +55,10 @@ export const usePerformViewGroupAPIPersist = () => {
         operationType: CrudOperationType.UPDATE,
       });
     },
-    [updateManyViewGroupsMutation, performViewEntityAPIPersistOperation],
+    [updateManyViewGroupsMutation, performViewEntityApiPersistOperation],
   );
 
-  const performViewGroupAPICreate = useCallback(
+  const performViewGroupApiCreate = useCallback(
     async (
       createViewGroupInputs: CreateManyViewGroupsMutationVariables,
     ): Promise<
@@ -73,7 +73,7 @@ export const usePerformViewGroupAPIPersist = () => {
         };
       }
 
-      return performViewEntityAPIPersistOperation({
+      return performViewEntityApiPersistOperation({
         persist: () =>
           createManyViewGroupsMutation({
             variables: createViewGroupInputs,
@@ -88,11 +88,11 @@ export const usePerformViewGroupAPIPersist = () => {
         operationType: CrudOperationType.CREATE,
       });
     },
-    [createManyViewGroupsMutation, performViewEntityAPIPersistOperation],
+    [createManyViewGroupsMutation, performViewEntityApiPersistOperation],
   );
 
   return {
-    performViewGroupAPIUpdate,
-    performViewGroupAPICreate,
+    performViewGroupApiUpdate,
+    performViewGroupApiCreate,
   };
 };

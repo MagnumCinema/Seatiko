@@ -1,36 +1,33 @@
 import { useCallback } from 'react';
 
 import { type FlatViewField } from '@/metadata-store/types/FlatViewField';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
-import { usePerformViewEntityAPIPersistOperation } from '@/views/hooks/internal/usePerformViewEntityAPIPersistOperation';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
+import { usePerformViewEntityApiPersistOperation } from '@/views/hooks/internal/usePerformViewEntityApiPersistOperation';
 import { useMutation } from '@apollo/client/react';
 import { CrudOperationType } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 import {
   type CreateManyViewFieldsMutationVariables,
-  type DeleteViewFieldMutationVariables,
   type DestroyViewFieldMutationVariables,
   type UpdateViewFieldMutationVariables,
   CreateManyViewFieldsDocument,
-  DeleteViewFieldDocument,
   DestroyViewFieldDocument,
   UpdateViewFieldDocument,
 } from '~/generated-metadata/graphql';
 
-export const usePerformViewFieldAPIPersist = () => {
+export const usePerformViewFieldApiPersist = () => {
   const [createManyViewFieldsMutation] = useMutation(
     CreateManyViewFieldsDocument,
   );
   const [updateViewFieldMutation] = useMutation(UpdateViewFieldDocument);
-  const [deleteViewFieldMutation] = useMutation(DeleteViewFieldDocument);
   const [destroyViewFieldMutation] = useMutation(DestroyViewFieldDocument);
 
   const {
-    performViewEntityAPIPersistOperation,
-    performViewEntityAPIPersistBatchOperation,
-  } = usePerformViewEntityAPIPersistOperation('viewField');
+    performViewEntityApiPersistOperation,
+    performViewEntityApiPersistBatchOperation,
+  } = usePerformViewEntityApiPersistOperation('viewField');
 
-  const performViewFieldAPICreate = useCallback(
+  const performViewFieldApiCreate = useCallback(
     async (
       createViewFieldInputs: CreateManyViewFieldsMutationVariables,
     ): Promise<
@@ -48,7 +45,7 @@ export const usePerformViewFieldAPIPersist = () => {
         };
       }
 
-      return performViewEntityAPIPersistOperation({
+      return performViewEntityApiPersistOperation({
         persist: () =>
           createManyViewFieldsMutation({
             variables: createViewFieldInputs,
@@ -63,10 +60,10 @@ export const usePerformViewFieldAPIPersist = () => {
         operationType: CrudOperationType.CREATE,
       });
     },
-    [createManyViewFieldsMutation, performViewEntityAPIPersistOperation],
+    [createManyViewFieldsMutation, performViewEntityApiPersistOperation],
   );
 
-  const performViewFieldAPIUpdate = useCallback(
+  const performViewFieldApiUpdate = useCallback(
     async (
       updateViewFieldInputs: UpdateViewFieldMutationVariables[],
     ): Promise<
@@ -74,7 +71,7 @@ export const usePerformViewFieldAPIPersist = () => {
         Awaited<ReturnType<typeof updateViewFieldMutation>>[]
       >
     > =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: updateViewFieldInputs,
         mutate: (variables) => updateViewFieldMutation({ variables }),
         applyResultToDraft: (fulfilledMutations, { updateInDraft }) =>
@@ -89,31 +86,10 @@ export const usePerformViewFieldAPIPersist = () => {
           ),
         operationType: CrudOperationType.UPDATE,
       }),
-    [updateViewFieldMutation, performViewEntityAPIPersistBatchOperation],
+    [updateViewFieldMutation, performViewEntityApiPersistBatchOperation],
   );
 
-  const performViewFieldAPIDelete = useCallback(
-    async (
-      deleteViewFieldInputs: DeleteViewFieldMutationVariables[],
-    ): Promise<
-      MetadataRequestResult<
-        Awaited<ReturnType<typeof deleteViewFieldMutation>>[]
-      >
-    > =>
-      performViewEntityAPIPersistBatchOperation({
-        inputs: deleteViewFieldInputs,
-        mutate: (variables) => deleteViewFieldMutation({ variables }),
-        applyResultToDraft: (fulfilledMutations, { removeFromDraft }) =>
-          removeFromDraft({
-            key: 'viewFields',
-            itemIds: fulfilledMutations.map(({ input }) => input.input.id),
-          }),
-        operationType: CrudOperationType.DELETE,
-      }),
-    [deleteViewFieldMutation, performViewEntityAPIPersistBatchOperation],
-  );
-
-  const performViewFieldAPIDestroy = useCallback(
+  const performViewFieldApiDestroy = useCallback(
     async (
       destroyViewFieldInputs: DestroyViewFieldMutationVariables[],
     ): Promise<
@@ -121,7 +97,7 @@ export const usePerformViewFieldAPIPersist = () => {
         Awaited<ReturnType<typeof destroyViewFieldMutation>>[]
       >
     > =>
-      performViewEntityAPIPersistBatchOperation({
+      performViewEntityApiPersistBatchOperation({
         inputs: destroyViewFieldInputs,
         mutate: (variables) => destroyViewFieldMutation({ variables }),
         applyResultToDraft: (fulfilledMutations, { removeFromDraft }) =>
@@ -131,13 +107,12 @@ export const usePerformViewFieldAPIPersist = () => {
           }),
         operationType: CrudOperationType.DESTROY,
       }),
-    [destroyViewFieldMutation, performViewEntityAPIPersistBatchOperation],
+    [destroyViewFieldMutation, performViewEntityApiPersistBatchOperation],
   );
 
   return {
-    performViewFieldAPICreate,
-    performViewFieldAPIUpdate,
-    performViewFieldAPIDelete,
-    performViewFieldAPIDestroy,
+    performViewFieldApiCreate,
+    performViewFieldApiUpdate,
+    performViewFieldApiDestroy,
   };
 };

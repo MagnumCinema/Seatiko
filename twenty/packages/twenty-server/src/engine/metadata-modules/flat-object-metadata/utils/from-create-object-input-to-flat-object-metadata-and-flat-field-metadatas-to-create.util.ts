@@ -1,5 +1,5 @@
 import { getFieldUniversalIdentifier } from 'twenty-shared/application';
-import { MetadataWritability, ObjectOpenRecordIn } from 'twenty-shared/types';
+import { ObjectOpenRecordIn } from 'twenty-shared/types';
 import {
   capitalize,
   isDefined,
@@ -71,7 +71,7 @@ export const fromCreateObjectInputToFlatObjectMetadataAndFlatFieldMetadatasToCre
       isSearchable: true,
       isUIEditable: true,
       isUICreatable: true,
-      writability: MetadataWritability.OPEN,
+      disabledObjectPermissionActions: null,
       isSystem: false,
       labelPlural: capitalize(createObjectInput.labelPlural),
       labelSingular: capitalize(createObjectInput.labelSingular),
@@ -84,23 +84,25 @@ export const fromCreateObjectInputToFlatObjectMetadataAndFlatFieldMetadatasToCre
       fieldUniversalIdentifiers: [],
       objectPermissionUniversalIdentifiers: [],
       fieldPermissionUniversalIdentifiers: [],
+      rowLevelPermissionRuleUniversalIdentifiers: [],
       viewUniversalIdentifiers: [],
       indexMetadataUniversalIdentifiers: [],
       searchFieldMetadataUniversalIdentifiers: [],
+      pageLayoutUniversalIdentifiers: [],
+      navigationMenuItemUniversalIdentifiers: [],
+      commandMenuItemUniversalIdentifiers: [],
       labelIdentifierFieldMetadataUniversalIdentifier,
       imageIdentifierFieldMetadataUniversalIdentifier: null,
     };
 
-    const nameFlatFieldMetadata =
-      createObjectInput.skipNameField === true
-        ? null
-        : buildNameFlatFieldMetadataForCustomObject({
-            flatObjectMetadata: {
-              applicationUniversalIdentifier:
-                flatApplication.universalIdentifier,
-              universalIdentifier,
-            },
-          });
+    const nameFlatFieldMetadata = createObjectInput.skipNameField
+      ? null
+      : buildNameFlatFieldMetadataForCustomObject({
+          flatObjectMetadata: {
+            applicationUniversalIdentifier: flatApplication.universalIdentifier,
+            universalIdentifier,
+          },
+        });
 
     const flatFieldMetadataToCreateOnObject: UniversalFlatFieldMetadata[] =
       isDefined(nameFlatFieldMetadata) ? [nameFlatFieldMetadata] : [];

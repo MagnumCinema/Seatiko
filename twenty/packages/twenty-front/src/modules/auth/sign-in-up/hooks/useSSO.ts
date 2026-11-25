@@ -1,40 +1,42 @@
 /* @license Enterprise */
 
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
+import { getToastOptionsFromError } from '@/error-handler/utils/getToastOptionsFromError';
+
 import { useApolloClient } from '@apollo/client/react';
-import { CombinedGraphQLErrors } from '@apollo/client/errors';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+
+import { useToast } from 'twenty-ui/components/feedback';
 import { GetAuthorizationUrlForSsoDocument } from '~/generated-metadata/graphql';
 
-export const useSSO = () => {
+export const useSso = () => {
   const apolloClient = useApolloClient();
   const workspaceInviteHash = useParams().workspaceInviteHash;
+  const [searchParams] = useSearchParams();
+  const workspacePersonalInviteToken =
+    searchParams.get('inviteToken') ?? undefined;
 
-  const { enqueueErrorSnackBar } = useSnackBar();
+  const { enqueueToast } = useToast();
   const { redirect } = useRedirect();
-  const redirectToSSOLoginPage = async (identityProviderId: string) => {
-    let authorizationUrlForSSOResult;
+  const redirectToSsoLoginPage = async (identityProviderId: string) => {
+    let authorizationUrlForSsoResult;
     try {
-      authorizationUrlForSSOResult = await apolloClient.mutate({
+      authorizationUrlForSsoResult = await apolloClient.mutate({
         mutation: GetAuthorizationUrlForSsoDocument,
         variables: {
           input: {
             identityProviderId,
             workspaceInviteHash,
+            workspacePersonalInviteToken,
           },
         },
       });
     } catch (error: unknown) {
-      return enqueueErrorSnackBar(
-        CombinedGraphQLErrors.is(error)
-          ? { apolloError: error }
-          : { message: error instanceof Error ? error.message : undefined },
-      );
+      return enqueueToast(getToastOptionsFromError({ error }));
     }
 
     const authorizationURL =
-      authorizationUrlForSSOResult.data?.getAuthorizationUrlForSSO
+      authorizationUrlForSsoResult.data?.getAuthorizationUrlForSSO
         ?.authorizationURL;
 
     if (authorizationURL) {
@@ -43,6 +45,6 @@ export const useSSO = () => {
   };
 
   return {
-    redirectToSSOLoginPage,
+    redirectToSsoLoginPage,
   };
 };

@@ -13,6 +13,7 @@ import {
   type GreenmailServer,
   startGreenmailContainer,
 } from 'test/integration/utils/start-greenmail-container.util';
+import { serializeEmailBody } from 'test/integration/utils/serialize-email-body.util';
 
 const PASSWORD = 'greenmail-password';
 const HANDLE = `imap-smtp-outbound-${randomUUID()}@acme.test`;
@@ -23,13 +24,16 @@ describe('IMAP/SMTP outbound messaging (integration)', () => {
   let messageChannelId: string;
 
   beforeAll(async () => {
-    await updateConfigVariable({
-      input: { key: 'OUTBOUND_HTTP_SAFE_MODE_ENABLED', value: false },
-    });
-
     greenmail = await startGreenmailContainer({
       username: HANDLE,
       password: PASSWORD,
+    });
+
+    await updateConfigVariable({
+      input: {
+        key: 'OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS',
+        value: [greenmail.host],
+      },
     });
 
     const { data } = await saveImapSmtpCaldavAccount({
@@ -67,7 +71,7 @@ describe('IMAP/SMTP outbound messaging (integration)', () => {
 
   afterAll(async () => {
     await updateConfigVariable({
-      input: { key: 'OUTBOUND_HTTP_SAFE_MODE_ENABLED', value: true },
+      input: { key: 'OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS', value: [] },
     }).catch(() => undefined);
 
     if (connectedAccountId) {
@@ -89,7 +93,10 @@ describe('IMAP/SMTP outbound messaging (integration)', () => {
       cc: HANDLE,
       bcc: HANDLE,
       subject,
-      body: '<p>SMTP reply body</p>',
+      body: serializeEmailBody({
+        type: 'html',
+        html: '<p>SMTP reply body</p>',
+      }),
       inReplyTo: '<smtp-parent@example.com>',
     });
 
@@ -133,5 +140,35 @@ describe('IMAP/SMTP outbound messaging (integration)', () => {
         expect.objectContaining({ handle: HANDLE, role: 'BCC' }),
       ]),
     );
+  }, 300000);
+
+  it('refuses to send from an address the account has not verified', async () => {
+    const subject = `IMAP/SMTP rejected sender ${randomUUID()}`;
+
+    const result = await sendEmail({
+      connectedAccountId,
+      fromHandle: 'not-my-alias@acme.test',
+      to: HANDLE,
+      subject,
+      body: serializeEmailBody({
+        type: 'html',
+        html: '<p>SMTP rejected body</p>',
+      }),
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: 'You cannot send from this address.',
+    });
+    expect(
+      await findRecordNodesByFilter<{ id: string }>(
+        'message',
+        'messages',
+        'id',
+        {
+          subject: { eq: subject },
+        },
+      ),
+    ).toEqual([]);
   }, 300000);
 });

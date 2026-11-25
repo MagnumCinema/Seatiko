@@ -12,11 +12,13 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { DEFAULT_VIEW_GROUP_LOAD_LIMIT } from 'twenty-shared/constants';
 import {
   AggregateOperations,
   ViewCalendarLayout,
   ViewOpenRecordIn,
   ViewKey,
+  ViewPresetFilter,
   ViewType,
   ViewVisibility,
 } from 'twenty-shared/types';
@@ -73,11 +75,23 @@ export class CreateViewInput {
   shouldHideEmptyGroups?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  @Field({ nullable: true, defaultValue: false })
+  shouldDisplayGroupsAsTabs?: boolean;
+
+  @IsOptional()
   @IsInt()
   @Min(KANBAN_COLUMN_MIN_WIDTH)
   @Max(KANBAN_COLUMN_MAX_WIDTH)
   @Field(() => Int, { nullable: true })
   kanbanColumnWidth?: number;
+
+  @IsOptional()
+  @Field(() => Int, {
+    nullable: true,
+    defaultValue: DEFAULT_VIEW_GROUP_LOAD_LIMIT,
+  })
+  groupLoadLimit?: number;
 
   @IsOptional()
   @IsEnum(ViewOpenRecordIn)
@@ -104,6 +118,11 @@ export class CreateViewInput {
   anyFieldFilterValue?: string;
 
   @IsOptional()
+  @IsEnum(ViewPresetFilter)
+  @Field(() => ViewPresetFilter, { nullable: true })
+  presetFilter?: ViewPresetFilter;
+
+  @IsOptional()
   @IsEnum(ViewCalendarLayout)
   @Field(() => ViewCalendarLayout, { nullable: true })
   calendarLayout?: ViewCalendarLayout;
@@ -124,9 +143,15 @@ export class CreateViewInput {
   mainGroupByFieldMetadataId?: string;
 
   @IsOptional()
+  @IsBoolean()
+  @Field(() => Boolean, { nullable: true })
+  isPrivate?: boolean;
+
+  @IsOptional()
   @IsEnum(ViewVisibility)
   @Field(() => ViewVisibility, {
     nullable: true,
+    deprecationReason: 'Use isPrivate instead',
   })
   visibility?: ViewVisibility;
 

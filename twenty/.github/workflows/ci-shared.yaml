@@ -18,6 +18,7 @@ jobs:
     with:
       files: |
         packages/twenty-shared/**
+        packages/twenty-oxlint-rules/**
   shared-test:
     needs: changed-files-check
     if: needs.changed-files-check.outputs.any_changed == 'true'
@@ -43,9 +44,9 @@ jobs:
   ci-shared-status-check:
     if: always() && !cancelled()
     timeout-minutes: 5
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-2-cores
     needs: [changed-files-check, shared-test]
     steps:
       - name: Fail job if any needs failed
-        if: contains(needs.*.result, 'failure')
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: exit 1

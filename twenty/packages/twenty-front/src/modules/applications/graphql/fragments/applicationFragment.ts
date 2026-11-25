@@ -23,18 +23,23 @@ export const APPLICATION_FRAGMENT = gql`
     }
     canBeUninstalled
     autoUpgrade
-    defaultRoleId
+    createdAt
+    requestedRoleId
     settingsCustomTabFrontComponentId
+    healthCheckLogicFunctionId
     availablePackages
     applicationVariables {
       id
       key
       value
       description
+      label
       isSecret
       isDeprecated
+      isRequired
       type
       options
+      scope
     }
     agents {
       ...AgentFields
@@ -66,6 +71,17 @@ export const APPLICATION_FRAGMENT = gql`
       applicationId
       createdAt
       updatedAt
+    }
+    settingsMenuItems {
+      id
+      universalIdentifier
+      applicationId
+      frontComponentId
+      title
+      icon
+      position
+      scope
+      slug
     }
     objects {
       ...ObjectMetadataFields

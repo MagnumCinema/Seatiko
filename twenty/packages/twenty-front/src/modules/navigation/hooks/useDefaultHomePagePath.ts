@@ -1,22 +1,29 @@
 import { currentUserState } from '@/auth/states/currentUserState';
 import { metadataStoreState } from '@/metadata-store/states/metadataStoreState';
 import { metadataStoreStatusFamilySelector } from '@/metadata-store/states/metadataStoreStatusFamilySelector';
+import { useNavigationMenuItemsByFolder } from '@/navigation-menu-item/display/folder/hooks/useNavigationMenuItemsByFolder';
 import { useNavigationMenuItemSectionItems } from '@/navigation-menu-item/display/hooks/useNavigationMenuItemSectionItems';
+import { useNavigationMenuItemsData } from '@/navigation-menu-item/display/hooks/useNavigationMenuItemsData';
+import { useSortedNavigationMenuItems } from '@/navigation-menu-item/display/hooks/useSortedNavigationMenuItems';
+import { getHomeNavigationMenuItemsInDisplayOrder } from '@/navigation-menu-item/display/utils/getHomeNavigationMenuItemsInDisplayOrder';
 import { type ObjectPathInfo } from '@/navigation/types/ObjectPathInfo';
 import { getFirstNavigationMenuItemLink } from '@/navigation/utils/getFirstNavigationMenuItemLink';
+import { computeObjectViewTargetIds } from '@/views/utils/computeObjectViewTargetIds';
 import { useFilteredObjectMetadataItems } from '@/object-metadata/hooks/useFilteredObjectMetadataItems';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
 import { filterReadableActiveObjectMetadataItems } from '@/object-metadata/utils/filterReadableActiveObjectMetadataItems';
 import { useObjectPermissions } from '@/object-record/hooks/useObjectPermissions';
-import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { useIsMobile } from 'twenty-ui/utilities';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
 import { useAtomFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilyStateValue';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { viewsSelector } from '@/views/states/selectors/viewsSelector';
+import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import isEmpty from 'lodash.isempty';
 import { useCallback, useMemo } from 'react';
 import { AppPath, SettingsPath } from 'twenty-shared/types';
 import { getAppPath, getSettingsPath, isDefined } from 'twenty-shared/utils';
+import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 export const useDefaultHomePagePath = () => {
   const currentUser = useAtomStateValue(currentUserState);
@@ -37,7 +44,15 @@ export const useDefaultHomePagePath = () => {
   const { activeObjectMetadataItems } = useFilteredObjectMetadataItems();
   const objectMetadataItems = useAtomStateValue(objectMetadataItemsSelector);
   const views = useAtomStateValue(viewsSelector);
-  const navigationMenuItemsInDisplayOrder = useNavigationMenuItemSectionItems();
+  const isCustomizableSidebarEnabled = useIsFeatureEnabled(
+    FeatureFlagKey.IS_CUSTOMIZABLE_SIDEBAR_ENABLED,
+  );
+  const legacyNavigationMenuItemsInDisplayOrder =
+    useNavigationMenuItemSectionItems({ shouldFlattenTopLevelSections: true });
+  const { workspaceNavigationMenuItems } = useNavigationMenuItemsData();
+  const { workspaceNavigationMenuItemsSorted } = useSortedNavigationMenuItems();
+  const { workspaceNavigationMenuItemsByFolder } =
+    useNavigationMenuItemsByFolder();
 
   const readableNonSystemObjectMetadataItems = useMemo(
     () =>
@@ -50,14 +65,43 @@ export const useDefaultHomePagePath = () => {
     [activeObjectMetadataItems, objectPermissionsByObjectMetadataId],
   );
 
-  const getFirstView = useCallback(
+  const getTargetViewId = useCallback(
     (objectMetadataItemId: string | undefined | null) => {
-      return views.find(
-        (view) => view.objectMetadataId === objectMetadataItemId,
+      const { firstSelectableViewId, indexViewId } = computeObjectViewTargetIds(
+        {
+          views,
+          objectMetadataId: objectMetadataItemId ?? undefined,
+        },
       );
+
+      return firstSelectableViewId ?? indexViewId;
     },
     [views],
   );
+
+  const navigationMenuItemsInDisplayOrder = useMemo(() => {
+    if (!isCustomizableSidebarEnabled) {
+      return legacyNavigationMenuItemsInDisplayOrder;
+    }
+
+    return getHomeNavigationMenuItemsInDisplayOrder({
+      workspaceNavigationMenuItems,
+      workspaceNavigationMenuItemsSorted,
+      workspaceNavigationMenuItemsByFolder,
+      objectMetadataItems,
+      views,
+      objectPermissionsByObjectMetadataId,
+    });
+  }, [
+    isCustomizableSidebarEnabled,
+    legacyNavigationMenuItemsInDisplayOrder,
+    workspaceNavigationMenuItems,
+    workspaceNavigationMenuItemsSorted,
+    workspaceNavigationMenuItemsByFolder,
+    objectMetadataItems,
+    objectPermissionsByObjectMetadataId,
+    views,
+  ]);
 
   const firstNavigationMenuItemLink = useMemo(
     () =>
@@ -82,10 +126,10 @@ export const useDefaultHomePagePath = () => {
       return null;
     }
 
-    const view = getFirstView(firstObjectMetadataItem.id);
+    const viewId = getTargetViewId(firstObjectMetadataItem.id);
 
-    return { objectMetadataItem: firstObjectMetadataItem, view };
-  }, [getFirstView, readableNonSystemObjectMetadataItems]);
+    return { objectMetadataItem: firstObjectMetadataItem, viewId };
+  }, [getTargetViewId, readableNonSystemObjectMetadataItems]);
 
   const defaultHomePagePath = useMemo(() => {
     if (!isDefined(currentUser)) {
@@ -96,9 +140,7 @@ export const useDefaultHomePagePath = () => {
       return AppPath.Home;
     }
 
-    // Both stores are transiently empty during the post-login window;
-    // deciding the redirect before they are loaded could strand users on a
-    // wrong fallback (/settings/profile or the alphabetically-first object).
+    // Both stores are empty right after login; deciding now would pick a wrong fallback.
     if (!areObjectMetadataItemsLoaded || !areNavigationMenuItemsLoaded) {
       return AppPath.Index;
     }
@@ -118,8 +160,8 @@ export const useDefaultHomePagePath = () => {
     return getAppPath(
       AppPath.RecordIndexPage,
       { objectNamePlural: firstObjectPathInfo.objectMetadataItem?.namePlural },
-      firstObjectPathInfo.view?.id
-        ? { viewId: firstObjectPathInfo.view.id }
+      isDefined(firstObjectPathInfo.viewId)
+        ? { viewId: firstObjectPathInfo.viewId }
         : undefined,
     );
   }, [

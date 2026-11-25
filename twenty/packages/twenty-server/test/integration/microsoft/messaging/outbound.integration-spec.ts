@@ -2,15 +2,20 @@ import { randomUUID } from 'node:crypto';
 
 import { ConnectedAccountProvider } from 'twenty-shared/types';
 
+import { ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
+
 import { setupMicrosoftMock } from 'test/integration/microsoft/mocks/setup-microsoft-mock.util';
 import { connectMessagingAccount } from 'test/integration/utils/connect-messaging-account.util';
 import { createCalendarEvent } from 'test/integration/utils/create-calendar-event.util';
 import { findImportedCalendarEventTitles } from 'test/integration/utils/find-imported-records.util';
 import { findRecordNodesByFilter } from 'test/integration/utils/find-records-by-filter.util';
+import { getCoreRepository } from 'test/integration/utils/get-core-repository.util';
 import { runMessageChannelSync } from 'test/integration/utils/run-message-channel-sync.util';
 import { sendEmail } from 'test/integration/utils/send-email.util';
+import { serializeEmailBody } from 'test/integration/utils/serialize-email-body.util';
 
 const HANDLE = 'microsoft-outbound@apple.dev';
+const ALIAS = 'microsoft-outbound-alias@apple.dev';
 const RECIPIENTS = {
   to: 'to-recipient@example.com',
   cc: 'cc-recipient@example.com',
@@ -35,6 +40,7 @@ const DRAFT_MESSAGE = {
 describe('Microsoft outbound messaging and calendar creation (integration)', () => {
   const microsoft = setupMicrosoftMock({
     handle: HANDLE,
+    aliases: [ALIAS],
     folders: [
       { id: 'inbox', displayName: 'Inbox' },
       { id: 'sentitems', displayName: 'Sent Items' },
@@ -73,7 +79,10 @@ describe('Microsoft outbound messaging and calendar creation (integration)', () 
       cc: RECIPIENTS.cc,
       bcc: RECIPIENTS.bcc,
       subject,
-      body: '<p>Microsoft reply body</p>',
+      body: serializeEmailBody({
+        type: 'html',
+        html: '<p>Microsoft reply body</p>',
+      }),
       inReplyTo: '<microsoft-parent@example.com>',
     });
 
@@ -181,7 +190,7 @@ describe('Microsoft outbound messaging and calendar creation (integration)', () 
       cc: RECIPIENTS.cc,
       bcc: RECIPIENTS.bcc,
       subject: DRAFT_SUBJECT,
-      body: 'Microsoft draft body',
+      body: serializeEmailBody({ type: 'text', text: 'Microsoft draft body' }),
       draftMessageId: draft.id,
     });
 
@@ -226,6 +235,78 @@ describe('Microsoft outbound messaging and calendar creation (integration)', () 
       }),
     ]);
     expect(result.messageThreadId).toEqual(expect.any(String));
+  }, 60000);
+
+  it('imports the verified aliases during sync and sends from one of them', async () => {
+    const connectedAccount = await getCoreRepository<ConnectedAccountEntity>(
+      ConnectedAccountEntity,
+    ).findOneByOrFail({ id: channel.connectedAccountId });
+
+    expect(connectedAccount.handleAliases).toEqual([ALIAS]);
+
+    const subject = `Microsoft alias outbound ${randomUUID()}`;
+
+    const result = await sendEmail({
+      connectedAccountId: channel.connectedAccountId,
+      fromHandle: ALIAS,
+      to: RECIPIENTS.to,
+      subject,
+      body: serializeEmailBody({
+        type: 'html',
+        html: '<p>Microsoft alias body</p>',
+      }),
+    });
+
+    expect(result).toMatchObject({ success: true });
+    expect(microsoft.createdMessages).toEqual([
+      expect.objectContaining({
+        subject,
+        from: { emailAddress: { address: ALIAS } },
+      }),
+    ]);
+  }, 60000);
+
+  it('replies from a verified alias by patching the reply draft', async () => {
+    const subject = `Microsoft alias reply ${randomUUID()}`;
+
+    const result = await sendEmail({
+      connectedAccountId: channel.connectedAccountId,
+      fromHandle: ALIAS,
+      to: RECIPIENTS.to,
+      subject,
+      body: serializeEmailBody({
+        type: 'html',
+        html: '<p>Microsoft alias reply body</p>',
+      }),
+      inReplyTo: '<microsoft-parent@example.com>',
+    });
+
+    expect(result).toMatchObject({ success: true });
+    expect(microsoft.patchedMessages).toEqual([
+      expect.objectContaining({
+        subject,
+        from: { emailAddress: { address: ALIAS } },
+      }),
+    ]);
+  }, 60000);
+
+  it('refuses to send from an address the account has not verified', async () => {
+    const result = await sendEmail({
+      connectedAccountId: channel.connectedAccountId,
+      fromHandle: 'not-my-alias@apple.dev',
+      to: RECIPIENTS.to,
+      subject: `Microsoft rejected sender ${randomUUID()}`,
+      body: serializeEmailBody({
+        type: 'html',
+        html: '<p>Microsoft rejected body</p>',
+      }),
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: 'You cannot send from this address.',
+    });
+    expect(microsoft.createdMessages).toEqual([]);
   }, 60000);
 
   it('creates and persists a calendar event with invitations and conferencing', async () => {

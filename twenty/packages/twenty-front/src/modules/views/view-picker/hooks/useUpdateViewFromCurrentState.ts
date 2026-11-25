@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useStore } from 'jotai';
 
 import { useAtomComponentStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateCallbackState';
-import { usePerformViewAPIUpdate } from '@/views/hooks/internal/usePerformViewAPIUpdate';
+import { usePerformViewApiUpdate } from '@/views/hooks/internal/usePerformViewApiUpdate';
 import { useCanPersistViewChanges } from '@/views/hooks/useCanPersistViewChanges';
 import { useCloseAndResetViewPicker } from '@/views/view-picker/hooks/useCloseAndResetViewPicker';
 import { viewPickerInputNameComponentState } from '@/views/view-picker/states/viewPickerInputNameComponentState';
@@ -11,7 +11,7 @@ import { viewPickerIsPersistingComponentState } from '@/views/view-picker/states
 import { viewPickerModeComponentState } from '@/views/view-picker/states/viewPickerModeComponentState';
 import { viewPickerReferenceViewIdComponentState } from '@/views/view-picker/states/viewPickerReferenceViewIdComponentState';
 import { viewPickerSelectedIconComponentState } from '@/views/view-picker/states/viewPickerSelectedIconComponentState';
-import { viewPickerVisibilityComponentState } from '@/views/view-picker/states/viewPickerVisibilityComponentState';
+import { viewPickerIsPrivateComponentState } from '@/views/view-picker/states/viewPickerIsPrivateComponentState';
 
 export const useUpdateViewFromCurrentState = () => {
   const { canPersistChanges } = useCanPersistViewChanges();
@@ -38,11 +38,11 @@ export const useUpdateViewFromCurrentState = () => {
   const viewPickerReferenceViewIdCallbackState =
     useAtomComponentStateCallbackState(viewPickerReferenceViewIdComponentState);
 
-  const viewPickerVisibilityCallbackState = useAtomComponentStateCallbackState(
-    viewPickerVisibilityComponentState,
+  const viewPickerIsPrivateCallbackState = useAtomComponentStateCallbackState(
+    viewPickerIsPrivateComponentState,
   );
 
-  const { performViewAPIUpdate } = usePerformViewAPIUpdate();
+  const { performViewApiUpdate } = usePerformViewApiUpdate();
 
   const store = useStore();
 
@@ -63,15 +63,15 @@ export const useUpdateViewFromCurrentState = () => {
     const viewPickerSelectedIcon = store.get(
       viewPickerSelectedIconCallbackState,
     );
-    const visibility = store.get(viewPickerVisibilityCallbackState);
+    const isPrivate = store.get(viewPickerIsPrivateCallbackState);
 
     try {
-      await performViewAPIUpdate({
+      await performViewApiUpdate({
         id: viewPickerReferenceViewId,
         input: {
           name: viewPickerInputName,
           icon: viewPickerSelectedIcon,
-          visibility: visibility,
+          isPrivate,
         },
       });
     } finally {
@@ -86,8 +86,8 @@ export const useUpdateViewFromCurrentState = () => {
     viewPickerReferenceViewIdCallbackState,
     viewPickerInputNameCallbackState,
     viewPickerSelectedIconCallbackState,
-    viewPickerVisibilityCallbackState,
-    performViewAPIUpdate,
+    viewPickerIsPrivateCallbackState,
+    performViewApiUpdate,
     store,
   ]);
 

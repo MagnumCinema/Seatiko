@@ -12,7 +12,7 @@ import {
   NAVIGATION_INTERPOLATED_ICON,
   NAVIGATION_INTERPOLATED_LABEL,
   NAVIGATION_INTERPOLATED_SHORT_LABEL,
-} from 'src/engine/metadata-modules/flat-command-menu-item/utils/build-navigation-flat-command-menu-item.util';
+} from 'src/engine/metadata-modules/flat-command-menu-item/utils/build-object-navigation-universal-flat-command-menu-item.util';
 import { STANDARD_COMMAND_MENU_ITEMS } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-command-menu-item.constant';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspace-manager/workspace-migration/services/workspace-migration-validate-build-and-run-service';
@@ -83,7 +83,9 @@ export class MigrateCommandMenuItemLabelsToPlaceholdersCommand extends Provision
 
     const now = new Date().toISOString();
 
-    const itemsToUpdate = Object.values(flatCommandMenuItemMaps.byUniversalIdentifier)
+    const itemsToUpdate = Object.values(
+      flatCommandMenuItemMaps.byUniversalIdentifier,
+    )
       .filter(isDefined)
       .map((existingItem) => {
         const expectedDisplayFields =
@@ -129,6 +131,7 @@ export class MigrateCommandMenuItemLabelsToPlaceholdersCommand extends Provision
     const validateAndBuildResult =
       await this.workspaceMigrationValidateBuildAndRunService.validateBuildAndRunLegacyWorkspaceMigration(
         {
+          shouldDeferActions: false,
           allFlatEntityOperationByMetadataName: {
             commandMenuItem: {
               flatEntityToCreate: [],

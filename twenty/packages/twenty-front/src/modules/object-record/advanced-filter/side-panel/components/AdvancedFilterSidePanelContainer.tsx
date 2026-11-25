@@ -7,11 +7,11 @@ import { useChildRecordFiltersAndRecordFilterGroups } from '@/object-record/adva
 import { AdvancedFilterContext } from '@/object-record/advanced-filter/states/context/AdvancedFilterContext';
 import { rootLevelRecordFilterGroupComponentSelector } from '@/object-record/advanced-filter/states/rootLevelRecordFilterGroupComponentSelector';
 import { isRecordFilterGroupChildARecordFilterGroup } from '@/object-record/advanced-filter/utils/isRecordFilterGroupChildARecordFilterGroup';
-import { type VariablePickerComponent } from '@/object-record/record-field/ui/form-types/types/VariablePickerComponent';
+import { type VariablePickerComponent } from '@/ui/input/types/VariablePickerComponent';
 import { useAtomComponentSelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentSelectorValue';
 import { styled } from '@linaria/react';
 import { isDefined } from 'twenty-shared/utils';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme';
 
 const StyledContainer = styled.div`
   align-items: start;
@@ -33,6 +33,7 @@ export type AdvancedFilterSidePanelContainerProps = {
   objectMetadataItem: EnrichedObjectMetadataItem;
   VariablePicker?: VariablePickerComponent;
   isWorkflowFindRecords?: boolean;
+  shouldHideRelationFields?: boolean;
 };
 
 export const AdvancedFilterSidePanelContainer = ({
@@ -41,6 +42,7 @@ export const AdvancedFilterSidePanelContainer = ({
   objectMetadataItem,
   VariablePicker,
   isWorkflowFindRecords,
+  shouldHideRelationFields,
 }: AdvancedFilterSidePanelContainerProps) => {
   const rootRecordFilterGroup = useAtomComponentSelectorValue(
     rootLevelRecordFilterGroupComponentSelector,
@@ -59,6 +61,7 @@ export const AdvancedFilterSidePanelContainer = ({
         readonly,
         VariablePicker,
         objectMetadataItem,
+        shouldHideRelationFields,
       }}
     >
       {isDefined(rootRecordFilterGroup) ? (

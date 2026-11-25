@@ -7,7 +7,7 @@ import { useObjectPermissions } from '@/object-record/hooks/useObjectPermissions
 import { generateFindManyRecordsQuery } from '@/object-record/utils/generateFindManyRecordsQuery';
 import {
   type QueryCursorDirection,
-  type RecordGqlOperationGqlRecordFields,
+  type RecordGqlFields,
 } from 'twenty-shared/types';
 
 export const useFindManyRecordsQuery = ({
@@ -17,7 +17,7 @@ export const useFindManyRecordsQuery = ({
   cursorDirection = 'after',
 }: {
   objectNameSingular: string;
-  recordGqlFields?: RecordGqlOperationGqlRecordFields;
+  recordGqlFields?: RecordGqlFields;
   computeReferences?: boolean;
   cursorDirection?: QueryCursorDirection;
 }) => {
@@ -29,7 +29,7 @@ export const useFindManyRecordsQuery = ({
 
   const { objectPermissionsByObjectMetadataId } = useObjectPermissions();
 
-  const findManyRecordsQuery = useMemo(
+  const { query, variables } = useMemo(
     () =>
       generateFindManyRecordsQuery({
         objectMetadataItem,
@@ -50,6 +50,7 @@ export const useFindManyRecordsQuery = ({
   );
 
   return {
-    findManyRecordsQuery,
+    findManyRecordsQuery: query,
+    relationsWithArgumentsVariables: variables,
   };
 };

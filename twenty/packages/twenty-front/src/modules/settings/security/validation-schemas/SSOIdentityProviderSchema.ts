@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 
-export const SSOIdentitiesProvidersOIDCParamsSchema = z
+export const ssoIdentitiesProvidersOidcParamsSchema = z
   .object({
     type: z.literal('OIDC'),
     clientID: z.string().nonempty(),
@@ -10,7 +10,7 @@ export const SSOIdentitiesProvidersOIDCParamsSchema = z
   })
   .required();
 
-export const SSOIdentitiesProvidersSAMLParamsSchema = z
+export const ssoIdentitiesProvidersSamlParamsSchema = z
   .object({
     type: z.literal('SAML'),
     id: z.string().nonempty(),
@@ -19,10 +19,10 @@ export const SSOIdentitiesProvidersSAMLParamsSchema = z
   })
   .required();
 
-export const SSOIdentitiesProvidersParamsSchema = z
+export const ssoIdentitiesProvidersParamsSchema = z
   .discriminatedUnion('type', [
-    SSOIdentitiesProvidersOIDCParamsSchema,
-    SSOIdentitiesProvidersSAMLParamsSchema,
+    ssoIdentitiesProvidersOidcParamsSchema,
+    ssoIdentitiesProvidersSamlParamsSchema,
   ])
   .and(
     z

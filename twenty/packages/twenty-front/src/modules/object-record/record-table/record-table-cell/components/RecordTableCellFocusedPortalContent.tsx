@@ -1,17 +1,17 @@
-import { FieldDisplay } from '@/object-record/record-field/ui/components/FieldDisplay';
 import { RECORD_TABLE_ROW_HEIGHT } from '@/object-record/record-table/constants/RecordTableRowHeight';
 import { useRecordTableBodyContextOrThrow } from '@/object-record/record-table/contexts/RecordTableBodyContext';
 import { useRecordTableRowContextOrThrow } from '@/object-record/record-table/contexts/RecordTableRowContext';
 import { RecordTableCellDisplayMode } from '@/object-record/record-table/record-table-cell/components/RecordTableCellDisplayMode';
+import { RecordTableCellFieldDisplay } from '@/object-record/record-table/record-table-cell/components/RecordTableCellFieldDisplay';
 
-import { isRecordTableRowActiveComponentFamilyState } from '@/object-record/record-table/states/isRecordTableRowActiveComponentFamilyState';
+import { isRecordTableRowActiveByRecordIdComponentFamilySelector } from '@/object-record/record-table/states/selectors/isRecordTableRowActiveByRecordIdComponentFamilySelector';
+import { useAtomComponentFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentFamilySelectorValue';
 import { recordTableFocusPositionComponentState } from '@/object-record/record-table/states/recordTableFocusPositionComponentState';
 import { recordTableHoverPositionComponentState } from '@/object-record/record-table/states/recordTableHoverPositionComponentState';
-import { useAtomComponentFamilyStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentFamilyStateValue';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { styled } from '@linaria/react';
 import { isDefined } from 'twenty-shared/utils';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme';
 
 const StyledRecordTableCellFocusPortalContent = styled.div<{
   isRecordTableRowActive: boolean;
@@ -35,16 +35,16 @@ const StyledRecordTableCellFocusPortalContent = styled.div<{
 `;
 
 export const RecordTableCellFocusedPortalContent = () => {
-  const { rowIndex } = useRecordTableRowContextOrThrow();
+  const { recordId } = useRecordTableRowContextOrThrow();
   const { onMoveHoverToCurrentCell } = useRecordTableBodyContextOrThrow();
 
   const recordTableFocusPosition = useAtomComponentStateValue(
     recordTableFocusPositionComponentState,
   );
 
-  const isRecordTableRowActive = useAtomComponentFamilyStateValue(
-    isRecordTableRowActiveComponentFamilyState,
-    rowIndex,
+  const isRecordTableRowActive = useAtomComponentFamilySelectorValue(
+    isRecordTableRowActiveByRecordIdComponentFamilySelector,
+    recordId,
   );
 
   const recordTableHoverPosition = useAtomComponentStateValue(
@@ -67,7 +67,7 @@ export const RecordTableCellFocusedPortalContent = () => {
       onMouseMove={handleContainerMouseMove}
     >
       <RecordTableCellDisplayMode>
-        <FieldDisplay />
+        <RecordTableCellFieldDisplay />
       </RecordTableCellDisplayMode>
     </StyledRecordTableCellFocusPortalContent>
   );

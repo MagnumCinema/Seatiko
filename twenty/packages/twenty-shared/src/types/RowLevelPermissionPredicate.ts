@@ -6,11 +6,16 @@ import { type RowLevelPermissionPredicateValue } from '@/types/RowLevelPermissio
 export type RowLevelPermissionPredicate = {
   id: string;
   fieldMetadataId: string;
+  relationFieldMetadataId?: string | null;
   objectMetadataId: string;
   operand: RowLevelPermissionPredicateOperand;
   value: RowLevelPermissionPredicateValue;
   subFieldName: string | null;
+  rowLevelPermissionPredicateGroupId: string | null;
   workspaceMemberFieldMetadataId: string | null;
   workspaceMemberSubFieldName: string | null;
+  workspaceMemberRelationFieldMetadataId?: string | null;
+  workspaceMemberRelationFilterFieldMetadataId?: string | null;
+  workspaceMemberRelationFilterValues?: string[] | null;
   roleId: string;
 };

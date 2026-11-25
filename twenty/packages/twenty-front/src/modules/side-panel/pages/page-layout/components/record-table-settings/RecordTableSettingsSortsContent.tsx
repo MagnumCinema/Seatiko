@@ -1,15 +1,18 @@
+import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
+import { filterSortableFieldMetadataItems } from '@/object-metadata/utils/filterSortableFieldMetadataItems';
 import { type RecordSort } from '@/object-record/record-sort/types/RecordSort';
 import { currentRecordSortsComponentState } from '@/object-record/record-sort/states/currentRecordSortsComponentState';
 import { useAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentState';
 import { styled } from '@linaria/react';
-import { t } from '@lingui/core/macro';
 import { isDefined } from 'twenty-shared/utils';
 import { IconArrowsSort, IconTrash } from 'twenty-ui/icon';
-import { Button, type SelectOption } from 'twenty-ui/input';
+import { useIcons } from 'twenty-ui/icon/provider';
+import { Button, type SelectOption } from 'twenty-ui/primitives/input';
 import { Select } from '@/ui/input/components/Select';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme';
 import { v4 as uuidv4 } from 'uuid';
 import { ViewSortDirection } from '~/generated-metadata/graphql';
+import { useLingui } from '@lingui/react/macro';
 
 const StyledSortItemContainer = styled.div`
   align-items: center;
@@ -22,16 +25,30 @@ const StyledAddButtonContainer = styled.div`
 `;
 
 type RecordTableSettingsSortsContentProps = {
-  sortableFieldOptions: Array<SelectOption<string>>;
-  directionOptions: Array<SelectOption<ViewSortDirection>>;
+  fieldMetadataItems: FieldMetadataItem[];
   onUpdate?: () => void;
 };
 
 export const RecordTableSettingsSortsContent = ({
-  sortableFieldOptions,
-  directionOptions,
+  fieldMetadataItems,
   onUpdate,
 }: RecordTableSettingsSortsContentProps) => {
+  const { t } = useLingui();
+  const { getIcon } = useIcons();
+
+  const sortableFieldOptions: Array<SelectOption<string>> = fieldMetadataItems
+    .filter(filterSortableFieldMetadataItems)
+    .map((field) => ({
+      Icon: getIcon(field.icon),
+      label: field.label,
+      value: field.id,
+    }));
+
+  const directionOptions: Array<SelectOption<ViewSortDirection>> = [
+    { label: t`Ascending`, value: ViewSortDirection.ASC },
+    { label: t`Descending`, value: ViewSortDirection.DESC },
+  ];
+
   const [currentRecordSorts, setCurrentRecordSorts] = useAtomComponentState(
     currentRecordSortsComponentState,
   );
@@ -102,19 +119,21 @@ export const RecordTableSettingsSortsContent = ({
               handleDirectionChange(sort.id, value as ViewSortDirection)
             }
           />
-          <Button onClick={() => handleRemoveSort(sort.id)} Icon={IconTrash} />
+          <Button
+            onClick={() => handleRemoveSort(sort.id)}
+            startIcon={<IconTrash />}
+            aria-label={t`Delete`}
+          />
         </StyledSortItemContainer>
       ))}
       <StyledAddButtonContainer>
         <Button
-          Icon={IconArrowsSort}
-          size="small"
-          variant="secondary"
-          accent="default"
+          startIcon={<IconArrowsSort />}
+          size="sm"
           onClick={handleAddSort}
-          ariaLabel={t`Add sort`}
-          title={t`Add sort`}
-        />
+          aria-label={t`Add sort`}
+          variant="outline"
+        >{t`Add sort`}</Button>
       </StyledAddButtonContainer>
     </>
   );

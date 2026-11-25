@@ -1,4 +1,3 @@
-// Standard IANA time zones
 // https://www.iana.org/time-zones
 export const IANA_TIME_ZONES = [
   'Africa/Abidjan',
@@ -96,9 +95,11 @@ export const IANA_TIME_ZONES = [
   'America/Cayman',
   'America/Chicago',
   'America/Chihuahua',
+  'America/Ciudad_Juarez',
   'America/Coral_Harbour',
   'America/Cordoba',
   'America/Costa_Rica',
+  'America/Coyhaique',
   'America/Creston',
   'America/Cuiaba',
   'America/Curacao',
@@ -450,6 +451,7 @@ export const IANA_TIME_ZONES = [
   'Europe/Kaliningrad',
   'Europe/Kiev',
   'Europe/Kirov',
+  'Europe/Kyiv',
   'Europe/Lisbon',
   'Europe/Ljubljana',
   'Europe/London',

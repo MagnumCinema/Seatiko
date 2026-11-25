@@ -4,12 +4,13 @@ import {
   type WorkflowToolContext,
   type WorkflowToolDependencies,
 } from 'src/modules/workflow/workflow-tools/types/workflow-tool-dependencies.type';
+import { type WorkflowTool } from 'src/modules/workflow/workflow-tools/types/workflow-tool.type';
 
 const deleteWorkflowVersionStepSchema = z.object({
-  workflowVersionId: z
+  coreWorkflowVersionId: z
     .string()
     .uuid()
-    .describe('The UUID of the workflow version containing the step'),
+    .describe('The core workflow version UUID containing the step'),
   stepId: z.string().uuid().describe('The UUID of the step to delete'),
 });
 
@@ -18,26 +19,29 @@ type DeleteWorkflowVersionStepInput = z.infer<
 >;
 
 export const createDeleteWorkflowVersionStepTool = (
-  deps: Pick<WorkflowToolDependencies, 'workflowVersionStepService'>,
+  deps: Pick<WorkflowToolDependencies, 'coreWorkflowVersionMutationService'>,
   context: WorkflowToolContext,
-) => ({
-  name: 'delete_workflow_version_step' as const,
-  description:
-    'Delete a step from a workflow version. This removes the step and updates the workflow structure.',
-  inputSchema: deleteWorkflowVersionStepSchema,
-  execute: async (parameters: DeleteWorkflowVersionStepInput) => {
-    try {
-      return await deps.workflowVersionStepService.deleteWorkflowVersionStep({
-        workspaceId: context.workspaceId,
-        workflowVersionId: parameters.workflowVersionId,
-        stepIdToDelete: parameters.stepId,
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        message: `Failed to delete workflow version step: ${error.message}`,
-      };
-    }
-  },
-});
+) =>
+  ({
+    name: 'delete_workflow_version_step' as const,
+    isDestructive: true,
+    description:
+      'Delete a step from a workflow version. This removes the step and updates the workflow structure.',
+    inputSchema: deleteWorkflowVersionStepSchema,
+    execute: async (parameters: DeleteWorkflowVersionStepInput) => {
+      try {
+        return await deps.coreWorkflowVersionMutationService.deleteStep({
+          workspaceId: context.workspaceId,
+          userWorkspaceId: context.userWorkspaceId,
+          coreWorkflowVersionId: parameters.coreWorkflowVersionId,
+          stepIdToDelete: parameters.stepId,
+        });
+      } catch (error) {
+        return {
+          success: false,
+          error: error.message,
+          message: `Failed to delete workflow version step: ${error.message}`,
+        };
+      }
+    },
+  }) satisfies WorkflowTool;

@@ -20,15 +20,14 @@ import { type APP_LOCALES } from 'twenty-shared/translations';
 
 import { type ObjectRecordFilter } from 'src/engine/api/graphql/workspace-query-builder/interfaces/object-record.interface';
 
-import { GraphqlQueryParser } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query.parser';
+import { CommonQueryParser } from 'src/engine/api/common/common-query-parsers/common-query.parser';
 import {
   decodeCursor,
   encodeCursorData,
-} from 'src/engine/api/graphql/graphql-query-runner/utils/cursors.util';
+} from 'src/engine/api/common/utils/cursors.util';
 import { isQueryCanceledError } from 'src/engine/api/graphql/workspace-query-runner/utils/is-query-canceled-error.util';
 import { FileUrlService } from 'src/engine/core-modules/file/file-url/file-url.service';
 import { extractFileIdFromUrl } from 'src/engine/core-modules/file/files-field/utils/extract-file-id-from-url.util';
-import { I18nService } from 'src/engine/core-modules/i18n/i18n.service';
 import { STANDARD_OBJECTS_BY_PRIORITY_RANK } from 'src/engine/core-modules/search/constants/standard-objects-by-priority-rank';
 import { type ObjectRecordFilterInput } from 'src/engine/core-modules/search/dtos/object-record-filter-input';
 import { type SearchArgs } from 'src/engine/core-modules/search/dtos/search-args';
@@ -39,8 +38,9 @@ import {
   SearchException,
   SearchExceptionCode,
 } from 'src/engine/core-modules/search/exceptions/search.exception';
-import { type RecordsWithObjectMetadataItem } from 'src/engine/core-modules/search/types/records-with-object-metadata-item';
+import { type RecordsWithObjectMetadataItem } from 'src/engine/core-modules/search/types/records-with-object-metadata-item.type';
 import { formatSearchTerms } from 'src/engine/core-modules/search/utils/format-search-terms';
+import { hasCjkCharacters } from 'src/engine/core-modules/search/utils/has-cjk-characters';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { type IDataloaders } from 'src/engine/dataloaders/dataloader.interface';
 import { computeCompositeColumnName } from 'src/engine/metadata-modules/field-metadata/utils/compute-column-name.util';
@@ -51,12 +51,11 @@ import { type FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-m
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
 import { getEffectiveImageIdentifierFieldMetadataId } from 'src/engine/metadata-modules/object-metadata/utils/get-effective-image-identifier-field-metadata-id.util';
 import { SEARCH_VECTOR_FIELD } from 'src/engine/metadata-modules/search-field-metadata/constants/search-vector-field.constants';
-import { resolveEffectiveEntityProperty } from 'src/engine/metadata-modules/utils/resolve-effective-entity-property.util';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
-import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
-import { getWorkspaceContext } from 'src/engine/twenty-orm/storage/orm-workspace-context.storage';
-import { resolveRolePermissionConfig } from 'src/engine/twenty-orm/utils/resolve-role-permission-config.util';
-import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
+import { resolveEffectiveEntityProperty } from 'src/engine/metadata-modules/overrides/utils/resolve-effective-entity-property.util';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
+import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace-repository';
+import { ApplicationTranslationCatalogService } from 'src/engine/metadata-modules/application-translation-catalog/services/application-translation-catalog.service';
+import { resolveEffectiveFlatEntityProperty } from 'src/engine/metadata-modules/overrides/utils/resolve-effective-flat-entity-property.util';
 
 type LastRanks = { tsRankCD: number; tsRank: number };
 
@@ -72,10 +71,10 @@ export class SearchService {
   private readonly logger = new Logger(SearchService.name);
 
   constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly fileUrlService: FileUrlService,
     private readonly twentyConfigService: TwentyConfigService,
-    private readonly i18nService: I18nService,
+    private readonly applicationTranslationCatalogService: ApplicationTranslationCatalogService,
   ) {}
 
   async getAllRecordsWithObjectMetadataItems({
@@ -87,11 +86,9 @@ export class SearchService {
     limit,
     filter,
     after,
-    workspaceId,
   }: {
     flatObjectMetadatas: FlatObjectMetadata[];
     flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
-    workspaceId: string;
   } & SearchArgs) {
     const filteredObjectMetadataItems = this.filterObjectMetadataItems({
       flatObjectMetadatas,
@@ -110,28 +107,18 @@ export class SearchService {
     for (const objectMetadataItemChunk of filteredObjectMetadataItemsChunks) {
       const recordsWithObjectMetadataItems = await Promise.all(
         objectMetadataItemChunk.map(async (flatObjectMetadata) => {
-          return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+          return this.workspaceOrmManager.executeInWorkspaceContext(
             async () => {
-              const context = getWorkspaceContext();
-              const rolePermissionConfig =
-                resolveRolePermissionConfig({
-                  authContext: context.authContext,
-                  userWorkspaceRoleMap: context.userWorkspaceRoleMap,
-                  apiKeyRoleMap: context.apiKeyRoleMap,
-                }) ?? undefined;
-
               const repository =
-                await this.globalWorkspaceOrmManager.getRepository<ObjectRecord>(
-                  workspaceId,
+                this.workspaceOrmManager.getRepository<ObjectRecord>(
                   flatObjectMetadata.nameSingular,
-                  rolePermissionConfig,
+                  { useReplica: true },
                 );
 
               return {
                 objectMetadataItem: flatObjectMetadata,
                 records: await this.buildSearchQueryAndGetRecordsWithFallback({
                   entityManager: repository,
-                  rolePermissionConfig,
                   flatObjectMetadata,
                   flatFieldMetadataMaps,
                   searchInput,
@@ -164,50 +151,51 @@ export class SearchService {
   }) {
     const hasExplicitInclusion = includedObjectNameSingulars.length > 0;
 
-    return flatObjectMetadatas.filter(
-      ({ nameSingular, isSearchable, isActive }) => {
-        if (!isActive) {
+    return flatObjectMetadatas.filter((flatObjectMetadata) => {
+      const { nameSingular, isSearchable } = flatObjectMetadata;
+
+      if (
+        !resolveEffectiveFlatEntityProperty({
+          metadataName: 'objectMetadata',
+          flatEntity: flatObjectMetadata,
+          property: 'isActive',
+        })
+      ) {
+        return false;
+      }
+
+      if (hasExplicitInclusion) {
+        if (
+          OBJECTS_WITH_CHANNEL_VISIBILITY_CONSTRAINTS.includes(
+            nameSingular as (typeof OBJECTS_WITH_CHANNEL_VISIBILITY_CONSTRAINTS)[number],
+          )
+        ) {
           return false;
         }
 
-        if (hasExplicitInclusion) {
-          if (
-            OBJECTS_WITH_CHANNEL_VISIBILITY_CONSTRAINTS.includes(
-              nameSingular as (typeof OBJECTS_WITH_CHANNEL_VISIBILITY_CONSTRAINTS)[number],
-            )
-          ) {
-            return false;
-          }
+        return (
+          includedObjectNameSingulars.includes(nameSingular) &&
+          !excludedObjectNameSingulars.includes(nameSingular)
+        );
+      }
 
-          return (
-            includedObjectNameSingulars.includes(nameSingular) &&
-            !excludedObjectNameSingulars.includes(nameSingular)
-          );
-        }
+      if (!isSearchable) {
+        return false;
+      }
 
-        if (!isSearchable) {
-          return false;
-        }
+      if (excludedObjectNameSingulars.includes(nameSingular)) {
+        return false;
+      }
 
-        if (excludedObjectNameSingulars.includes(nameSingular)) {
-          return false;
-        }
-
-        return true;
-      },
-    );
+      return true;
+    });
   }
 
-  // Runs a fast tsvector query first (uses GIN index). If tsvector returns zero
-  // results for an object type on the first page, falls back to ILIKE on the
-  // searchVector text to catch cases where tokenization fails (e.g. CJK text).
-  // Skipped when tsvector finds any results (partial results mean the data just
-  // has fewer matches, not a tokenization issue) and on paginated requests.
+  // The simple text search config does not segment CJK, so fall back to substring matching.
   async buildSearchQueryAndGetRecordsWithFallback<
     Entity extends ObjectLiteral,
   >({
     entityManager,
-    rolePermissionConfig,
     flatObjectMetadata,
     flatFieldMetadataMaps,
     searchInput,
@@ -218,7 +206,6 @@ export class SearchService {
     after,
   }: {
     entityManager: WorkspaceRepository<Entity>;
-    rolePermissionConfig?: RolePermissionConfig;
     flatObjectMetadata: FlatObjectMetadata;
     flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
     searchInput: string;
@@ -241,7 +228,7 @@ export class SearchService {
 
     if (
       tsvectorResults.length > 0 ||
-      !isNonEmptyString(searchInput.trim()) ||
+      !hasCjkCharacters(searchInput) ||
       isDefined(after)
     ) {
       return tsvectorResults;
@@ -249,7 +236,6 @@ export class SearchService {
 
     const fallbackResults = await this.buildIlikeFallbackQuery({
       entityManager,
-      rolePermissionConfig,
       flatObjectMetadata,
       flatFieldMetadataMaps,
       searchInput,
@@ -285,19 +271,19 @@ export class SearchService {
 
     const { flatObjectMetadataMaps } = entityManager.internalContext;
 
-    const queryParser = new GraphqlQueryParser(
+    const queryParser = new CommonQueryParser({
       flatObjectMetadata,
       flatObjectMetadataMaps,
       flatFieldMetadataMaps,
-    );
+    });
 
-    queryParser.applyFilterToBuilder(
+    queryParser.applyFilterToBuilder({
       queryBuilder,
-      flatObjectMetadata.nameSingular,
-      filter,
-    );
+      objectNameSingular: flatObjectMetadata.nameSingular,
+      recordFilter: filter,
+    });
 
-    queryParser.applyDeletedAtToBuilder(queryBuilder, filter);
+    queryParser.applyDeletedAtToBuilder({ queryBuilder, recordFilter: filter });
 
     const imageIdentifierColumns = this.getImageIdentifierColumns(
       flatObjectMetadata,
@@ -372,13 +358,12 @@ export class SearchService {
       .addOrderBy('id', 'ASC', 'NULLS FIRST')
       .setParameter('searchTerms', searchTerms)
       .setParameter('searchTermsOr', searchTermsOr)
-      .take(limit + 1) // We take one more to check if hasNextPage is true
-      .getRawMany();
+      .take(limit + 1)
+      .getRawMany<ObjectRecord & { tsRank: number; tsRankCD: number }>();
   }
 
   private async buildIlikeFallbackQuery<Entity extends ObjectLiteral>({
     entityManager,
-    rolePermissionConfig,
     flatObjectMetadata,
     flatFieldMetadataMaps,
     searchInput,
@@ -386,7 +371,6 @@ export class SearchService {
     filter,
   }: {
     entityManager: WorkspaceRepository<Entity>;
-    rolePermissionConfig?: RolePermissionConfig;
     flatObjectMetadata: FlatObjectMetadata;
     flatFieldMetadataMaps: FlatEntityMaps<FlatFieldMetadata>;
     searchInput: string;
@@ -398,7 +382,7 @@ export class SearchService {
     );
 
     try {
-      return await this.globalWorkspaceOrmManager.runInWorkspaceTransaction(
+      return await this.workspaceOrmManager.runInWorkspaceTransaction(
         async (transactionScope) => {
           await transactionScope.executeRawQuery(
             `SELECT set_config('statement_timeout', $1, true)`,
@@ -407,7 +391,6 @@ export class SearchService {
 
           const repository = transactionScope.getRepository<Entity>(
             flatObjectMetadata.nameSingular,
-            rolePermissionConfig,
           );
 
           const queryBuilder = repository.createQueryBuilder(
@@ -416,19 +399,22 @@ export class SearchService {
 
           const { flatObjectMetadataMaps } = repository.internalContext;
 
-          const queryParser = new GraphqlQueryParser(
+          const queryParser = new CommonQueryParser({
             flatObjectMetadata,
             flatObjectMetadataMaps,
             flatFieldMetadataMaps,
-          );
+          });
 
-          queryParser.applyFilterToBuilder(
+          queryParser.applyFilterToBuilder({
             queryBuilder,
-            flatObjectMetadata.nameSingular,
-            filter,
-          );
+            objectNameSingular: flatObjectMetadata.nameSingular,
+            recordFilter: filter,
+          });
 
-          queryParser.applyDeletedAtToBuilder(queryBuilder, filter);
+          queryParser.applyDeletedAtToBuilder({
+            queryBuilder,
+            recordFilter: filter,
+          });
 
           const imageIdentifierColumns = this.getImageIdentifierColumns(
             flatObjectMetadata,
@@ -475,7 +461,7 @@ export class SearchService {
           const rawResults = await queryBuilder
             .orderBy(`"${flatObjectMetadata.nameSingular}"."id"`, 'ASC')
             .take(limit)
-            .getRawMany();
+            .getRawMany<ObjectRecord>();
 
           return rawResults.map((record) => ({
             ...record,
@@ -807,13 +793,15 @@ export class SearchService {
                 overrides: objectMetadataItem.overrides,
                 property: 'labelSingular',
                 i18nContext:
-                  await this.i18nService.buildEffectiveEntityI18nContext({
-                    applicationId:
-                      objectMetadataItem.applicationId ?? undefined,
-                    loaders,
-                    locale,
-                    workspaceId,
-                  }),
+                  await this.applicationTranslationCatalogService.buildEffectiveEntityI18nContext(
+                    {
+                      applicationId:
+                        objectMetadataItem.applicationId ?? undefined,
+                      loaders,
+                      locale,
+                      workspaceId,
+                    },
+                  ),
               }),
             ] as const,
         ),

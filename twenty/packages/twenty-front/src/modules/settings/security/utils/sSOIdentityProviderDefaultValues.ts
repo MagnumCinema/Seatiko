@@ -1,12 +1,12 @@
 /* @license Enterprise */
 
-import { type SettingSecurityNewSSOIdentityFormValues } from '@/settings/security/types/SSOIdentityProvider';
+import { type SettingSecurityNewSsoIdentityFormValues } from '@/settings/security/types/SsoIdentityProvider';
 import { v4 } from 'uuid';
 import { type IdentityProviderType } from '~/generated-metadata/graphql';
 
-export const sSOIdentityProviderDefaultValues: Record<
+export const ssoIdentityProviderDefaultValues: Record<
   IdentityProviderType,
-  () => SettingSecurityNewSSOIdentityFormValues
+  () => SettingSecurityNewSsoIdentityFormValues
 > = {
   SAML: () => ({
     type: 'SAML',

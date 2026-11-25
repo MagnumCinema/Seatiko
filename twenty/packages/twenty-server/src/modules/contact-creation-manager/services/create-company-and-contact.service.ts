@@ -9,20 +9,17 @@ import {
   FieldActorSource,
   type FullNameMetadata,
 } from 'twenty-shared/types';
-import { isDefined } from 'twenty-shared/utils';
+import { isDefined, isWorkDomain, isWorkEmail } from 'twenty-shared/utils';
 import { type DeepPartial, type Repository } from 'typeorm';
 import { v4 } from 'uuid';
 
 import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handler/exception-handler.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
-import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceInternalImportService } from 'src/engine/core-modules/workspace/services/workspace-internal-import.service';
 import { type ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
-import {
-  TwentyORMException,
-  TwentyORMExceptionCode,
-} from 'src/engine/twenty-orm/exceptions/twenty-orm.exception';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { isDuplicateEntryError } from 'src/engine/twenty-orm/utils/is-duplicate-entry-error.util';
 import { CONTACTS_CREATION_BATCH_SIZE } from 'src/modules/contact-creation-manager/constants/contacts-creation-batch-size.constant';
 import { CreateCompanyService } from 'src/modules/contact-creation-manager/services/create-company.service';
 import { CreatePersonService } from 'src/modules/contact-creation-manager/services/create-person.service';
@@ -35,11 +32,6 @@ import { addPersonEmailFiltersToQueryBuilder } from 'src/modules/match-participa
 import { PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 import { computeDisplayName } from 'src/utils/compute-display-name';
-import { isWorkDomain, isWorkEmail } from 'src/utils/is-work-email';
-
-const isDuplicateEntryError = (error: unknown) =>
-  error instanceof TwentyORMException &&
-  error.code === TwentyORMExceptionCode.DUPLICATE_ENTRY_DETECTED;
 
 @Injectable()
 export class CreateCompanyAndPersonService {
@@ -48,12 +40,11 @@ export class CreateCompanyAndPersonService {
   constructor(
     private readonly createPersonService: CreatePersonService,
     private readonly createCompaniesService: CreateCompanyService,
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly exceptionHandlerService: ExceptionHandlerService,
     @InjectRepository(UserWorkspaceEntity)
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
-    @InjectRepository(WorkspaceEntity)
-    private readonly workspaceRepository: Repository<WorkspaceEntity>,
+    private readonly workspaceInternalImportService: WorkspaceInternalImportService,
   ) {}
 
   async createCompaniesAndPeople(
@@ -69,115 +60,107 @@ export class CreateCompanyAndPersonService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const personRepository =
-          await this.globalWorkspaceOrmManager.getRepository(
-            workspaceId,
-            PersonWorkspaceEntity,
-            {
-              shouldBypassPermissionChecks: true,
-            },
-          );
-
-        const workspaceMemberRepository =
-          await this.globalWorkspaceOrmManager.getRepository(
-            workspaceId,
-            WorkspaceMemberWorkspaceEntity,
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const workspaceMembers = await workspaceMemberRepository.find();
-
-        const workspace = await this.workspaceRepository.findOne({
-          where: { id: workspaceId },
-          select: ['id', 'isInternalMessagesImportEnabled'],
-        });
-
-        const peopleToCreateFromOtherCompanies =
-          filterOutContactsThatBelongToSelfOrWorkspaceMembers(
-            contactsToCreate,
-            connectedAccount,
-            workspaceMembers,
-            workspace?.isInternalMessagesImportEnabled ?? false,
-          );
-
-        const { uniqueContacts, uniqueHandles } = getUniqueContactsAndHandles(
-          peopleToCreateFromOtherCompanies,
+    return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+      const personRepository =
+        this.workspaceOrmManager.getRepositoryWithoutPermissionChecks(
+          PersonWorkspaceEntity,
         );
 
-        if (uniqueHandles.length === 0) {
-          return [];
-        }
+      const workspaceMemberRepository =
+        this.workspaceOrmManager.getRepositoryWithoutPermissionChecks(
+          WorkspaceMemberWorkspaceEntity,
+        );
 
-        const queryBuilder = addPersonEmailFiltersToQueryBuilder({
-          queryBuilder: personRepository.createQueryBuilder('person'),
-          emails: uniqueHandles,
+      const workspaceMembers = await workspaceMemberRepository.find();
+
+      const isInternalImportEnabled =
+        await this.workspaceInternalImportService.isInternalImportEnabled({
+          workspaceId,
         });
 
-        const alreadyCreatedPeople = await queryBuilder
-          .orderBy('person.createdAt', 'ASC')
-          .withDeleted()
-          .getMany();
+      const peopleToCreateFromOtherCompanies =
+        filterOutContactsThatBelongToSelfOrWorkspaceMembers(
+          contactsToCreate,
+          connectedAccount,
+          workspaceMembers,
+          isInternalImportEnabled,
+        );
 
-        const {
-          contactsThatNeedPersonCreate,
-          contactsThatNeedPersonRestore,
-          peopleToEnrichNames,
+      const { uniqueContacts, uniqueHandles } = getUniqueContactsAndHandles(
+        peopleToCreateFromOtherCompanies,
+      );
+
+      if (uniqueHandles.length === 0) {
+        return [];
+      }
+
+      const queryBuilder = addPersonEmailFiltersToQueryBuilder({
+        queryBuilder: personRepository.createQueryBuilder('person'),
+        emails: uniqueHandles,
+      });
+
+      const alreadyCreatedPeople = await queryBuilder
+        .orderBy('person.deletedAt', 'ASC', 'NULLS FIRST')
+        .addOrderBy('person.createdAt', 'ASC')
+        .withDeleted()
+        .getMany<PersonWorkspaceEntity>();
+
+      const {
+        contactsThatNeedPersonCreate,
+        contactsThatNeedPersonRestore,
+        peopleToEnrichNames,
+        workDomainNamesToCreate,
+        shouldCreateOrRestorePeopleByHandleMap,
+      } =
+        this.computeContactsThatNeedPersonCreateAndRestoreAndWorkDomainNamesToCreate(
+          uniqueContacts,
+          alreadyCreatedPeople,
+          source,
+          connectedAccount,
+          accountOwner,
+        );
+
+      const companiesMap =
+        await this.createCompaniesService.createOrRestoreCompanies(
           workDomainNamesToCreate,
-          shouldCreateOrRestorePeopleByHandleMap,
-        } =
-          this.computeContactsThatNeedPersonCreateAndRestoreAndWorkDomainNamesToCreate(
-            uniqueContacts,
-            alreadyCreatedPeople,
-            source,
-            connectedAccount,
-            accountOwner,
-          );
+          workspaceId,
+        );
 
-        const companiesMap =
-          await this.createCompaniesService.createOrRestoreCompanies(
-            workDomainNamesToCreate,
-            workspaceId,
-          );
-
-        const peopleToCreate = this.formatPeopleToCreateFromContacts({
-          contactsToCreate: contactsThatNeedPersonCreate,
-          createdBy: {
-            source: source,
-            workspaceMember: accountOwner,
-            context: {
-              provider: connectedAccount.provider,
-            },
+      const peopleToCreate = this.formatPeopleToCreateFromContacts({
+        contactsToCreate: contactsThatNeedPersonCreate,
+        createdBy: {
+          source: source,
+          workspaceMember: accountOwner,
+          context: {
+            provider: connectedAccount.provider,
           },
-          companiesMap,
-        });
+        },
+        companiesMap,
+      });
 
-        const createdPeople = await this.createPersonService.createPeople(
-          peopleToCreate,
-          workspaceId,
-        );
+      const createdPeople = await this.createPersonService.createPeople(
+        peopleToCreate,
+        workspaceId,
+      );
 
-        const peopleToRestore = this.formatPeopleToRestoreFromContacts({
-          contactsToRestore: contactsThatNeedPersonRestore,
-          companiesMap,
-          shouldCreateOrRestorePeopleByHandleMap,
-        });
+      const peopleToRestore = this.formatPeopleToRestoreFromContacts({
+        contactsToRestore: contactsThatNeedPersonRestore,
+        companiesMap,
+        shouldCreateOrRestorePeopleByHandleMap,
+      });
 
-        const restoredPeople = await this.createPersonService.restorePeople(
-          peopleToRestore,
-          workspaceId,
-        );
+      const restoredPeople = await this.createPersonService.restorePeople(
+        peopleToRestore,
+        workspaceId,
+      );
 
-        await this.createPersonService.enrichPeopleNames(
-          peopleToEnrichNames,
-          workspaceId,
-        );
+      await this.createPersonService.enrichPeopleNames(
+        peopleToEnrichNames,
+        workspaceId,
+      );
 
-        return { ...createdPeople, ...restoredPeople };
-      },
-      authContext,
-    );
+      return { ...createdPeople, ...restoredPeople };
+    }, authContext);
   }
 
   async createCompaniesAndPeopleAndUpdateParticipants(
@@ -206,37 +189,32 @@ export class CreateCompanyAndPersonService {
     }
 
     const accountOwner =
-      await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-        async () => {
-          const workspaceMemberRepository =
-            await this.globalWorkspaceOrmManager.getRepository(
-              workspaceId,
-              WorkspaceMemberWorkspaceEntity,
-              { shouldBypassPermissionChecks: true },
-            );
+      await this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+        const workspaceMemberRepository =
+          this.workspaceOrmManager.getRepositoryWithoutPermissionChecks(
+            WorkspaceMemberWorkspaceEntity,
+          );
 
-          return workspaceMemberRepository.findOne({
-            where: { userId: userWorkspace.userId },
-          });
-        },
-        authContext,
-      );
+        return workspaceMemberRepository.findOne({
+          where: { userId: userWorkspace.userId },
+        });
+      }, authContext);
 
-    for (const contactsBatch of contactsBatches) {
+    const createCompaniesAndPeopleIgnoringDuplicates = async (
+      contacts: Contact[],
+    ): Promise<{ hasHitDuplicateEntry: boolean }> => {
       try {
         await this.createCompaniesAndPeople(
           connectedAccount,
-          contactsBatch,
+          contacts,
           workspaceId,
           source,
           accountOwner,
         );
       } catch (error) {
-        // Concurrent imports for the same workspace can insert the same company
-        // domain or person email, and the loser hits the unique index. The
-        // record it wanted exists either way.
+        // Concurrent imports can race on a unique company domain or person email; the record exists either way
         if (isDuplicateEntryError(error)) {
-          continue;
+          return { hasHitDuplicateEntry: true };
         }
 
         this.exceptionHandlerService.captureExceptions([error], {
@@ -244,6 +222,21 @@ export class CreateCompanyAndPersonService {
             id: workspaceId,
           },
         });
+      }
+
+      return { hasHitDuplicateEntry: false };
+    };
+
+    for (const contactsBatch of contactsBatches) {
+      const { hasHitDuplicateEntry } =
+        await createCompaniesAndPeopleIgnoringDuplicates(contactsBatch);
+
+      if (!hasHitDuplicateEntry || contactsBatch.length === 1) {
+        continue;
+      }
+
+      for (const contact of contactsBatch) {
+        await createCompaniesAndPeopleIgnoringDuplicates([contact]);
       }
     }
   }
@@ -296,7 +289,9 @@ export class CreateCompanyAndPersonService {
         },
       );
 
-      if (!isDefined(existingPersonOnAdditionalEmails)) continue;
+      if (!isDefined(existingPersonOnAdditionalEmails)) {
+        continue;
+      }
 
       shouldCreateOrRestorePeopleByHandleMap.set(contact.handle.toLowerCase(), {
         existingPerson: existingPersonOnAdditionalEmails,
@@ -334,8 +329,12 @@ export class CreateCompanyAndPersonService {
             ? getDomainNameFromHandle(contact.handle)
             : undefined;
 
-          if (!isDefined(companyDomainName) || !isWorkDomain(companyDomainName))
+          if (
+            !isDefined(companyDomainName) ||
+            !isWorkDomain(companyDomainName)
+          ) {
             return undefined;
+          }
 
           return {
             domainName: companyDomainName,
@@ -358,10 +357,6 @@ export class CreateCompanyAndPersonService {
     };
   }
 
-  // Stages per-personId name enrichments for existing People auto-created via
-  // CALENDAR or EMAIL. Empty fields are filled from new sources (first
-  // non-empty value wins across multiple contacts mapping to the same Person);
-  // populated fields are never overwritten.
   private computePeopleToEnrichNames(
     uniqueContacts: Contact[],
     shouldCreateOrRestorePeopleByHandleMap: Map<
@@ -383,8 +378,7 @@ export class CreateCompanyAndPersonService {
         continue;
       }
 
-      // Soft-deleted matches are restored earlier in the same job, so the
-      // enrichment UPDATE runs against an un-deleted row.
+      // Soft-deleted matches were already restored earlier in this job
       const existingSource = existingPerson.createdBy?.source;
 
       if (
@@ -513,8 +507,9 @@ export class CreateCompanyAndPersonService {
         handle.toLowerCase(),
       )?.existingPerson;
 
-      if (!isDefined(existingPerson) || isNull(existingPerson.deletedAt))
+      if (!isDefined(existingPerson) || isNull(existingPerson.deletedAt)) {
         continue;
+      }
 
       const companyId = companiesMap[getDomainNameFromHandle(handle)];
 

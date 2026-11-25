@@ -1,14 +1,20 @@
+import { type AgentMessageWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-message.workspace-entity';
 import { registerEnumType } from '@nestjs/graphql';
 
 import { type APP_LOCALES } from 'twenty-shared/translations';
 import { type FullNameMetadata } from 'twenty-shared/types';
 import { type Relation } from 'typeorm';
 
+import { type AgentChatThreadParticipantWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-chat-thread-participant.workspace-entity';
+import { type AgentChatThreadWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-chat-thread.workspace-entity';
+import { type AgentMessageReactionWorkspaceEntity } from 'src/engine/metadata-modules/ai/ai-history/standard-objects/agent-message-reaction.workspace-entity';
 import { BaseWorkspaceEntity } from 'src/engine/twenty-orm/base.workspace-entity';
 import { type AttachmentWorkspaceEntity } from 'src/modules/attachment/standard-objects/attachment.workspace-entity';
 import { type BlocklistWorkspaceEntity } from 'src/modules/blocklist/standard-objects/blocklist.workspace-entity';
+import { type CalendarChannelEventAssociationWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-channel-event-association.workspace-entity';
 import { type CalendarEventParticipantWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-event-participant.workspace-entity';
 import { type CompanyWorkspaceEntity } from 'src/modules/company/standard-objects/company.workspace-entity';
+import { type MessageChannelMessageAssociationWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel-message-association.workspace-entity';
 import { type MessageParticipantWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-participant.workspace-entity';
 import { type OpportunityWorkspaceEntity } from 'src/modules/opportunity/standard-objects/opportunity.workspace-entity';
 import { type TaskWorkspaceEntity } from 'src/modules/task/standard-objects/task.workspace-entity';
@@ -74,7 +80,21 @@ export class WorkspaceMemberWorkspaceEntity extends BaseWorkspaceEntity {
   calendarEventParticipants: Relation<
     CalendarEventParticipantWorkspaceEntity[]
   >;
+  accountOwnerForCalendarChannelEventAssociations: Relation<
+    CalendarChannelEventAssociationWorkspaceEntity[]
+  >;
+  accountOwnerForMessageChannelMessageAssociations: Relation<
+    MessageChannelMessageAssociationWorkspaceEntity[]
+  >;
   timelineActivities: Relation<TimelineActivityWorkspaceEntity[]>;
+  agentMessages: Relation<AgentMessageWorkspaceEntity[]>;
+
+  agentChatThreads: Relation<AgentChatThreadWorkspaceEntity[]>;
+  assignedAgentChatThreads: Relation<AgentChatThreadWorkspaceEntity[]>;
+  agentChatThreadParticipants: Relation<
+    AgentChatThreadParticipantWorkspaceEntity[]
+  >;
+  agentMessageReactions: Relation<AgentMessageReactionWorkspaceEntity[]>;
   ownedOpportunities: Relation<OpportunityWorkspaceEntity[]>;
   searchVector: string;
   numberFormat: string;

@@ -2,11 +2,13 @@ import { styled } from '@linaria/react';
 import { useContext } from 'react';
 
 import { RecordBoardCardHotkeysEffect } from '@/object-record/record-board/record-board-card/components/RecordBoardCardHotkeysEffect';
+import { useIsRecordFieldReadOnly } from '@/object-record/read-only/hooks/useIsRecordFieldReadOnly';
 import { useIsRecordReadOnly } from '@/object-record/read-only/hooks/useIsRecordReadOnly';
 import { RecordBoardColumnContext } from '@/object-record/record-board/record-board-column/contexts/RecordBoardColumnContext';
 import { RecordBoardContext } from '@/object-record/record-board/contexts/RecordBoardContext';
 import { RecordBoardCard } from '@/object-record/record-board/record-board-card/components/RecordBoardCard';
 import { isRecordBoardCardFocusedComponentFamilyState } from '@/object-record/record-board/states/isRecordBoardCardFocusedComponentFamilyState';
+import { isRecordBoardCellsNonEditableComponentState } from '@/object-record/record-board/states/isRecordBoardCellsNonEditableComponentState';
 import { isRecordBoardDropProcessingComponentState } from '@/object-record/record-board/states/isRecordBoardDropProcessingComponentState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { RecordBoardCardContext } from '@/object-record/record-board/record-board-card/contexts/RecordBoardCardContext';
@@ -35,13 +37,21 @@ export const RecordBoardCardContextProvider = ({
   rowIndex,
   group,
 }: RecordBoardCardContextProviderProps) => {
-  const { objectMetadataItem } = useContext(RecordBoardContext);
+  const { objectMetadataItem, selectFieldMetadataItem } =
+    useContext(RecordBoardContext);
   const { columnIndex } = useContext(RecordBoardColumnContext);
 
-  const isRecordReadOnly = useIsRecordReadOnly({
+  const isRecordReadOnlyFromPermissions = useIsRecordReadOnly({
     recordId,
     objectMetadataId: objectMetadataItem.id,
   });
+
+  const isRecordBoardCellsNonEditable = useAtomComponentStateValue(
+    isRecordBoardCellsNonEditableComponentState,
+  );
+
+  const isRecordReadOnly =
+    isRecordBoardCellsNonEditable || isRecordReadOnlyFromPermissions;
 
   const isRecordBoardCardFocused = useAtomComponentFamilyStateValue(
     isRecordBoardCardFocusedComponentFamilyState,
@@ -55,6 +65,17 @@ export const RecordBoardCardContextProvider = ({
     isRecordBoardDropProcessingComponentState,
   );
 
+  const isGroupByFieldReadOnly = useIsRecordFieldReadOnly({
+    recordId,
+    objectMetadataId: objectMetadataItem.id,
+    fieldMetadataId: selectFieldMetadataItem.id,
+  });
+
+  const isDragDisabled =
+    isRecordBoardDropProcessing ||
+    isRecordBoardCellsNonEditable ||
+    isGroupByFieldReadOnly;
+
   return (
     <RecordBoardCardContext.Provider
       value={{ recordId, isRecordReadOnly, rowIndex, columnIndex }}
@@ -65,10 +86,11 @@ export const RecordBoardCardContextProvider = ({
         group={group}
         type={RECORD_BOARD_CARD_DND_TYPE}
         accept={RECORD_BOARD_CARD_DND_TYPE}
-        disabled={isRecordBoardDropProcessing}
+        data={{ recordId }}
+        disabled={isDragDisabled}
       >
         <StyledDraggableContainer
-          isDragDisabled={isRecordBoardDropProcessing}
+          isDragDisabled={isDragDisabled}
           id={`record-board-card-${columnIndex}-${rowIndex}`}
           data-selectable-id={recordId}
           data-select-disable

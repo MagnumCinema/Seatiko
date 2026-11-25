@@ -6,6 +6,7 @@ import { CompanyEnrichmentService } from 'src/engine/core-modules/company-enrich
 import { PersonEnrichmentService } from 'src/engine/core-modules/company-enrichment/services/person-enrichment.service';
 import { OnboardingService } from 'src/engine/core-modules/onboarding/onboarding.service';
 import { type WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { AccessPolicyService } from 'src/engine/guards/access-policy/access-policy.service';
 
 describe('CompanyEnrichmentResolver', () => {
   let resolver: CompanyEnrichmentResolver;
@@ -13,6 +14,7 @@ describe('CompanyEnrichmentResolver', () => {
   let personEnrichmentService: { enrichPersonForWorkspaceCreator: jest.Mock };
   let onboardingService: {
     setOnboardingBookCallPendingIfQualified: jest.Mock;
+    creditEnrichmentQualificationReward: jest.Mock;
     isOnboardingBookCallPending: jest.Mock;
   };
 
@@ -30,6 +32,7 @@ describe('CompanyEnrichmentResolver', () => {
     };
     onboardingService = {
       setOnboardingBookCallPendingIfQualified: jest.fn(),
+      creditEnrichmentQualificationReward: jest.fn(),
       isOnboardingBookCallPending: jest.fn().mockResolvedValue(false),
     };
 
@@ -48,6 +51,7 @@ describe('CompanyEnrichmentResolver', () => {
           provide: OnboardingService,
           useValue: onboardingService,
         },
+        { provide: AccessPolicyService, useValue: {} },
       ],
     }).compile();
 
@@ -78,6 +82,27 @@ describe('CompanyEnrichmentResolver', () => {
     });
   });
 
+  it('should hand the enriched employee count to the credit reward on a match', async () => {
+    companyEnrichmentService.enrichCompanyForWorkspaceCreator.mockResolvedValue(
+      {
+        outcome: 'matched',
+        enrichment: { domain: 'acme.com', employeeCount: 320 },
+      },
+    );
+
+    await resolver.enrichWorkspaceCompany(user, workspace);
+
+    expect(
+      onboardingService.creditEnrichmentQualificationReward,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      onboardingService.creditEnrichmentQualificationReward,
+    ).toHaveBeenCalledWith({
+      workspaceId: workspace.id,
+      employeeCount: 320,
+    });
+  });
+
   it.each(['unavailable', 'transientError'])(
     'should not qualify for the book-call step on outcome %s',
     async (outcome) => {
@@ -89,6 +114,9 @@ describe('CompanyEnrichmentResolver', () => {
 
       expect(
         onboardingService.setOnboardingBookCallPendingIfQualified,
+      ).not.toHaveBeenCalled();
+      expect(
+        onboardingService.creditEnrichmentQualificationReward,
       ).not.toHaveBeenCalled();
     },
   );

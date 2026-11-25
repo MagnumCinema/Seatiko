@@ -26,18 +26,27 @@ export class StripePriceService {
 
   async getPriceByPriceId(priceId: string) {
     return await this.stripe.prices.retrieve(priceId, {
-      expand: ['data.currency_options', 'data.tiers'],
+      expand: ['currency_options', 'tiers'],
     });
   }
 
+  // Paginates fully: superseded prices stay on the product forever
   async getPricesByProductId(productId: string) {
-    const prices = await this.stripe.prices.list({
+    const prices: Stripe.Price[] = [];
+
+    for await (const price of this.stripe.prices.list({
       product: productId,
       type: 'recurring',
       limit: 100,
       expand: ['data.currency_options', 'data.tiers'],
-    });
+    })) {
+      prices.push(price);
+    }
 
-    return prices.data;
+    return prices;
+  }
+
+  async createPrice(params: Stripe.PriceCreateParams): Promise<Stripe.Price> {
+    return await this.stripe.prices.create(params);
   }
 }
