@@ -6,6 +6,13 @@ import { useLocale } from "@/components/locale-provider";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
+  calcDurationMinutes,
+  findShiftConflict,
+  getMemberActiveDayShifts,
+  splitIntervalsOverlap,
+  suggestNextShiftSlot,
+} from "@/lib/work-shifts";
+import {
   ApiError,
   batchCreateVenueWorkShifts,
   copyVenueWorkShiftsWeek,
@@ -49,24 +56,6 @@ function addDays(dateStr: string, delta: number): string {
   return toDateString(d);
 }
 
-function parseTimeMinutes(hhmm: string): number | null {
-  const parts = (hhmm || "").trim().split(":");
-  if (parts.length !== 2) return null;
-  const h = Number(parts[0]);
-  const m = Number(parts[1]);
-  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
-  return h * 60 + m;
-}
-
-function calcDurationMinutes(start: string, end: string): number {
-  const s = parseTimeMinutes(start);
-  const e = parseTimeMinutes(end);
-  if (s === null || e === null) return 0;
-  let mins = e - s;
-  if (mins <= 0) mins += 24 * 60;
-  return mins;
-}
-
 function formatDurationMinutes(mins: number, locale: "ru" | "ro" | "en"): string {
   if (mins <= 0) return "";
   const hrs = Math.floor(mins / 60);
@@ -81,35 +70,6 @@ function formatHoursCompact(totalMins: number, locale: "ru" | "ro" | "en"): stri
   const hUnit = locale === "ro" ? "h" : locale === "en" ? "h" : "ч";
   const hrs = Math.round((totalMins / 60) * 10) / 10;
   return `${hrs} ${hUnit}`;
-}
-
-function shiftsOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
-  const s1 = parseTimeMinutes(startA);
-  let e1 = parseTimeMinutes(endA);
-  const s2 = parseTimeMinutes(startB);
-  let e2 = parseTimeMinutes(endB);
-  if (s1 === null || e1 === null || s2 === null || e2 === null) return true;
-  if (e1 <= s1) e1 += 24 * 60;
-  if (e2 <= s2) e2 += 24 * 60;
-  return s1 < e2 && s2 < e1;
-}
-
-function findShiftConflict(
-  shifts: WorkShift[],
-  staffId: string,
-  date: string,
-  startTime: string,
-  endTime: string,
-  excludeShiftId?: string,
-): WorkShift | undefined {
-  return shifts.find(
-    (s) =>
-      s.id !== excludeShiftId &&
-      s.staff_id === staffId &&
-      s.date === date &&
-      (s.status === "CONFIRMED" || s.status === "PENDING") &&
-      shiftsOverlap(startTime, endTime, s.start_time, s.end_time),
-  );
 }
 
 function formatConflictLabel(conflict: WorkShift, locale: "ru" | "ro" | "en"): string {
@@ -210,6 +170,9 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const [batchDate, setBatchDate] = useState(selectedDate);
   const [batchStart, setBatchStart] = useState("10:00");
   const [batchEnd, setBatchEnd] = useState("22:00");
+  const [batchSplit, setBatchSplit] = useState(false);
+  const [batchSplitStart, setBatchSplitStart] = useState("18:00");
+  const [batchSplitEnd, setBatchSplitEnd] = useState("22:00");
   const [batchWaiters, setBatchWaiters] = useState<string[]>([]);
   const [batchCooks, setBatchCooks] = useState<string[]>([]);
   const [batchNote, setBatchNote] = useState("");
@@ -218,6 +181,9 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const [quickDate, setQuickDate] = useState(todayStr);
   const [quickStart, setQuickStart] = useState("10:00");
   const [quickEnd, setQuickEnd] = useState("22:00");
+  const [quickSplit, setQuickSplit] = useState(false);
+  const [quickSplitStart, setQuickSplitStart] = useState("18:00");
+  const [quickSplitEnd, setQuickSplitEnd] = useState("22:00");
   const [quickNote, setQuickNote] = useState("");
 
   // Recurring Form State
@@ -229,6 +195,9 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const [recurringStaffIds, setRecurringStaffIds] = useState<string[]>([]);
   const [recurringStart, setRecurringStart] = useState("10:00");
   const [recurringEnd, setRecurringEnd] = useState("22:00");
+  const [recurringSplit, setRecurringSplit] = useState(false);
+  const [recurringSplitStart, setRecurringSplitStart] = useState("18:00");
+  const [recurringSplitEnd, setRecurringSplitEnd] = useState("22:00");
   const [recurringNote, setRecurringNote] = useState("");
 
   // Swap Form State
@@ -410,21 +379,40 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
     return { confirmed, pending, totalMinutes };
   }, [focusedStaffShifts]);
 
+  const batchConflictFor = (staffId: string): WorkShift | undefined =>
+    findShiftConflict(shifts, staffId, batchDate, batchStart, batchEnd) ??
+    (batchSplit ? findShiftConflict(shifts, staffId, batchDate, batchSplitStart, batchSplitEnd) : undefined);
+
+  const batchSelfOverlap = batchSplit && splitIntervalsOverlap(batchStart, batchEnd, batchSplitStart, batchSplitEnd);
+
   // Batch modal valid selections
   const validBatchWaiters = useMemo(
-    () => batchWaiters.filter((id) => !findShiftConflict(shifts, id, batchDate, batchStart, batchEnd)),
-    [batchWaiters, shifts, batchDate, batchStart, batchEnd],
+    () => (batchSelfOverlap ? [] : batchWaiters.filter((id) => !batchConflictFor(id))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [batchWaiters, shifts, batchDate, batchStart, batchEnd, batchSplit, batchSplitStart, batchSplitEnd, batchSelfOverlap],
   );
   const validBatchCooks = useMemo(
-    () => batchCooks.filter((id) => !findShiftConflict(shifts, id, batchDate, batchStart, batchEnd)),
-    [batchCooks, shifts, batchDate, batchStart, batchEnd],
+    () => (batchSelfOverlap ? [] : batchCooks.filter((id) => !batchConflictFor(id))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [batchCooks, shifts, batchDate, batchStart, batchEnd, batchSplit, batchSplitStart, batchSplitEnd, batchSelfOverlap],
   );
 
-  // Quick 1-cell conflict check
+  // Quick 1-cell conflict & existing day shifts
+  const quickMemberDayShifts = useMemo(
+    () => (quickCell ? getMemberActiveDayShifts(shifts, quickCell.member.id, quickDate) : []),
+    [quickCell, shifts, quickDate],
+  );
+  const quickSelfOverlap = quickSplit && splitIntervalsOverlap(quickStart, quickEnd, quickSplitStart, quickSplitEnd);
   const quickCellConflict = useMemo(() => {
     if (!quickCell) return undefined;
-    return findShiftConflict(shifts, quickCell.member.id, quickDate, quickStart, quickEnd);
-  }, [quickCell, shifts, quickDate, quickStart, quickEnd]);
+    return (
+      findShiftConflict(shifts, quickCell.member.id, quickDate, quickStart, quickEnd) ??
+      (quickSplit ? findShiftConflict(shifts, quickCell.member.id, quickDate, quickSplitStart, quickSplitEnd) : undefined)
+    );
+  }, [quickCell, shifts, quickDate, quickStart, quickEnd, quickSplit, quickSplitStart, quickSplitEnd]);
+
+  const recurringSelfOverlap =
+    recurringSplit && splitIntervalsOverlap(recurringStart, recurringEnd, recurringSplitStart, recurringSplitEnd);
 
   // Recurring schedule calculation with 2/2 waves
   const recurringAssignments = useMemo(() => {
@@ -483,16 +471,26 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
 
     let availableSlots = 0;
     let conflictSlots = 0;
+    const intervals = recurringSplit
+      ? [
+          { start: recurringStart, end: recurringEnd },
+          { start: recurringSplitStart, end: recurringSplitEnd },
+        ]
+      : [{ start: recurringStart, end: recurringEnd }];
     for (const sid of teamAStaff) {
       for (const d of datesA) {
-        if (findShiftConflict(shifts, sid, d, recurringStart, recurringEnd)) conflictSlots++;
-        else availableSlots++;
+        for (const iv of intervals) {
+          if (recurringSelfOverlap || findShiftConflict(shifts, sid, d, iv.start, iv.end)) conflictSlots++;
+          else availableSlots++;
+        }
       }
     }
     for (const sid of teamBStaff) {
       for (const d of datesB) {
-        if (findShiftConflict(shifts, sid, d, recurringStart, recurringEnd)) conflictSlots++;
-        else availableSlots++;
+        for (const iv of intervals) {
+          if (recurringSelfOverlap || findShiftConflict(shifts, sid, d, iv.start, iv.end)) conflictSlots++;
+          else availableSlots++;
+        }
       }
     }
 
@@ -509,6 +507,10 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
     shifts,
     recurringStart,
     recurringEnd,
+    recurringSplit,
+    recurringSplitStart,
+    recurringSplitEnd,
+    recurringSelfOverlap,
   ]);
 
   // Swap modal candidate cards
@@ -537,21 +539,28 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
     // Do NOT pre-select everyone by default so the owner clicks only who they need
     setBatchWaiters([]);
     setBatchCooks([]);
+    setBatchSplit(false);
     setBatchNote("");
     setIsBatchModalOpen(true);
   }
 
   function openQuickCellModal(member: StaffMember, date: string) {
+    const existing = getMemberActiveDayShifts(shifts, member.id, date);
+    const suggested = suggestNextShiftSlot(existing);
     setQuickCell({ member, date });
     setQuickDate(date);
-    setQuickStart("10:00");
-    setQuickEnd("22:00");
+    setQuickStart(suggested.start);
+    setQuickEnd(suggested.end);
+    setQuickSplit(false);
+    setQuickSplitStart("18:00");
+    setQuickSplitEnd("22:00");
     setQuickNote("");
   }
 
   function openRecurringModal() {
     setRecurringStartDate(selectedDate);
     setRecurringStaffIds([]);
+    setRecurringSplit(false);
     setRecurringNote("");
     setIsRecurringModalOpen(true);
   }
@@ -573,66 +582,96 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   async function handleBatchSubmit(e: React.FormEvent) {
     e.preventDefault();
     const allSelectedStaff = [...validBatchWaiters, ...validBatchCooks];
-    if (allSelectedStaff.length === 0) return;
+    if (allSelectedStaff.length === 0 || batchSelfOverlap) return;
 
+    const note = batchNote.trim() || undefined;
+    const totalCreated = allSelectedStaff.length * (batchSplit ? 2 : 1);
     await run(async () => {
       await batchCreateVenueWorkShifts(venueId, {
         staff_ids: allSelectedStaff,
         dates: [batchDate],
         start_time: batchStart,
         end_time: batchEnd,
-        note: batchNote.trim() || undefined,
+        note,
       });
+      if (batchSplit) {
+        await batchCreateVenueWorkShifts(venueId, {
+          staff_ids: allSelectedStaff,
+          dates: [batchDate],
+          start_time: batchSplitStart,
+          end_time: batchSplitEnd,
+          note,
+        });
+      }
       setIsBatchModalOpen(false);
     }, locale === "ro"
-      ? `${allSelectedStaff.length} ture programate pentru ${batchDate}`
+      ? `${totalCreated} ture programate pentru ${batchDate}`
       : locale === "en"
-      ? `${allSelectedStaff.length} shifts assigned for ${batchDate}`
-      : `Назначено смен: ${allSelectedStaff.length} на ${batchDate}`);
+      ? `${totalCreated} shifts assigned for ${batchDate}`
+      : `Назначено смен: ${totalCreated} на ${batchDate}`);
   }
 
   async function handleQuickCellSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!quickCell || quickCellConflict) return;
+    if (!quickCell || quickCellConflict || quickSelfOverlap) return;
     const member = quickCell.member;
+    const note = quickNote.trim() || undefined;
     await run(async () => {
       await createVenueWorkShift(venueId, {
         staff_id: member.id,
         date: quickDate,
         start_time: quickStart,
         end_time: quickEnd,
-        note: quickNote.trim() || undefined,
+        note,
       });
+      if (quickSplit) {
+        await createVenueWorkShift(venueId, {
+          staff_id: member.id,
+          date: quickDate,
+          start_time: quickSplitStart,
+          end_time: quickSplitEnd,
+          note,
+        });
+      }
       setQuickCell(null);
     }, locale === "ro"
-      ? `Tură programată pentru ${member.name || member.email}`
+      ? `${quickSplit ? "Ture fracționate programate" : "Tură programată"} pentru ${member.name || member.email}`
       : locale === "en"
-      ? `Shift assigned for ${member.name || member.email}`
-      : `Смена назначена: ${member.name || member.email}`);
+      ? `${quickSplit ? "Split shifts assigned" : "Shift assigned"} for ${member.name || member.email}`
+      : `${quickSplit ? "Разрывная смена назначена" : "Смена назначена"}: ${member.name || member.email}`);
   }
 
   async function handleRecurringSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (recurringAssignments.availableSlots === 0) return;
+    if (recurringAssignments.availableSlots === 0 || recurringSelfOverlap) return;
 
+    const note = recurringNote.trim() || undefined;
+    const intervals = recurringSplit
+      ? [
+          { start: recurringStart, end: recurringEnd },
+          { start: recurringSplitStart, end: recurringSplitEnd },
+        ]
+      : [{ start: recurringStart, end: recurringEnd }];
     await run(async () => {
-      if (recurringAssignments.teamAStaff.length > 0 && recurringAssignments.teamADates.length > 0) {
-        await batchCreateVenueWorkShifts(venueId, {
-          staff_ids: recurringAssignments.teamAStaff,
-          dates: recurringAssignments.teamADates,
-          start_time: recurringStart,
-          end_time: recurringEnd,
-          note: recurringNote.trim() || undefined,
-        });
-      }
-      if (recurringAssignments.teamBStaff.length > 0 && recurringAssignments.teamBDates.length > 0) {
-        await batchCreateVenueWorkShifts(venueId, {
-          staff_ids: recurringAssignments.teamBStaff,
-          dates: recurringAssignments.teamBDates,
-          start_time: recurringStart,
-          end_time: recurringEnd,
-          note: recurringNote.trim() || undefined,
-        });
+      for (const iv of intervals) {
+        if (recurringAssignments.teamAStaff.length > 0 && recurringAssignments.teamADates.length > 0) {
+          await batchCreateVenueWorkShifts(venueId, {
+            staff_ids: recurringAssignments.teamAStaff,
+            dates: recurringAssignments.teamADates,
+            start_time: iv.start,
+            end_time: iv.end,
+            note,
+          });
+        }
+        if (recurringAssignments.teamBStaff.length > 0 && recurringAssignments.teamBDates.length > 0) {
+          await batchCreateVenueWorkShifts(venueId, {
+            staff_ids: recurringAssignments.teamBStaff,
+            dates: recurringAssignments.teamBDates,
+            start_time: iv.start,
+            end_time: iv.end,
+            note,
+          });
+        }
       }
       setIsRecurringModalOpen(false);
     }, locale === "ro"
@@ -978,12 +1017,16 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                       {locale === "ro" ? "Angajat" : locale === "en" ? "Staff member" : "Сотрудник"}
                     </th>
                     {weekDays.map((d) => {
-                      const activeWaiters = shifts.filter(
-                        (s) => s.date === d.date && (s.role || "waiter") === "waiter" && s.status !== "DECLINED",
-                      ).length;
-                      const activeCooks = shifts.filter(
-                        (s) => s.date === d.date && s.role === "cook" && s.status !== "DECLINED",
-                      ).length;
+                      const activeWaiters = new Set(
+                        shifts
+                          .filter((s) => s.date === d.date && (s.role || "waiter") === "waiter" && s.status !== "DECLINED")
+                          .map((s) => s.staff_id),
+                      ).size;
+                      const activeCooks = new Set(
+                        shifts
+                          .filter((s) => s.date === d.date && s.role === "cook" && s.status !== "DECLINED")
+                          .map((s) => s.staff_id),
+                      ).size;
                       const lowCoverage = activeWaiters === 0 || activeCooks === 0;
 
                       return (
@@ -1052,12 +1095,16 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
             <div className="cabinet-planner-week-strip">
               <div className="cabinet-planner-days-grid" role="tablist">
                 {weekDays.map((d) => {
-                  const countWaiters = shifts.filter(
-                    (s) => s.date === d.date && (s.role || "waiter") === "waiter" && s.status !== "DECLINED",
-                  ).length;
-                  const countCooks = shifts.filter(
-                    (s) => s.date === d.date && s.role === "cook" && s.status !== "DECLINED",
-                  ).length;
+                  const countWaiters = new Set(
+                    shifts
+                      .filter((s) => s.date === d.date && (s.role || "waiter") === "waiter" && s.status !== "DECLINED")
+                      .map((s) => s.staff_id),
+                  ).size;
+                  const countCooks = new Set(
+                    shifts
+                      .filter((s) => s.date === d.date && s.role === "cook" && s.status !== "DECLINED")
+                      .map((s) => s.staff_id),
+                  ).size;
                   const hasAlert = shifts.some(
                     (s) => s.date === d.date && (s.status === "SWAP_REQUESTED" || s.status === "DECLINED"),
                   );
@@ -1209,57 +1256,21 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   />
                 </div>
 
-                <div className="cabinet-shift-field-group">
-                  <label>{copy.opsSchedulePresetsTitle}</label>
-                  <div className="cabinet-shift-preset-buttons">
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${batchStart === "08:00" && batchEnd === "16:00" ? "active" : ""}`}
-                      onClick={() => { setBatchStart("08:00"); setBatchEnd("16:00"); }}
-                    >
-                      {copy.opsSchedulePresetMorning}
-                    </button>
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${batchStart === "10:00" && batchEnd === "22:00" ? "active" : ""}`}
-                      onClick={() => { setBatchStart("10:00"); setBatchEnd("22:00"); }}
-                    >
-                      {copy.opsSchedulePresetDay}
-                    </button>
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${batchStart === "14:00" && batchEnd === "23:00" ? "active" : ""}`}
-                      onClick={() => { setBatchStart("14:00"); setBatchEnd("23:00"); }}
-                    >
-                      {copy.opsSchedulePresetEvening}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="cabinet-shift-time-row">
-                  <div className="cabinet-shift-field-group">
-                    <label htmlFor="batch-start">{copy.opsScheduleTimeStart}</label>
-                    <input
-                      id="batch-start"
-                      type="time"
-                      required
-                      value={batchStart}
-                      onChange={(e) => setBatchStart(e.target.value)}
-                      className="cabinet-shift-input"
-                    />
-                  </div>
-                  <div className="cabinet-shift-field-group">
-                    <label htmlFor="batch-end">{copy.opsScheduleTimeEnd}</label>
-                    <input
-                      id="batch-end"
-                      type="time"
-                      required
-                      value={batchEnd}
-                      onChange={(e) => setBatchEnd(e.target.value)}
-                      className="cabinet-shift-input"
-                    />
-                  </div>
-                </div>
+                <ShiftIntervalFields
+                  idPrefix="batch"
+                  start={batchStart}
+                  end={batchEnd}
+                  onStartChange={setBatchStart}
+                  onEndChange={setBatchEnd}
+                  splitEnabled={batchSplit}
+                  onSplitToggle={setBatchSplit}
+                  splitStart={batchSplitStart}
+                  splitEnd={batchSplitEnd}
+                  onSplitStartChange={setBatchSplitStart}
+                  onSplitEndChange={setBatchSplitEnd}
+                  locale={locale}
+                  copy={copy}
+                />
 
                 <div className="cabinet-shift-roles-split">
                   <div className="cabinet-shift-field-group">
@@ -1272,9 +1283,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                             className="cabinet-shift-bulk-btn"
                             onClick={() =>
                               setBatchWaiters(
-                                waiters
-                                  .filter((w) => !findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd))
-                                  .map((w) => w.id),
+                                waiters.filter((w) => !batchConflictFor(w.id)).map((w) => w.id),
                               )
                             }
                           >
@@ -1298,18 +1307,19 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                     ) : (
                       <div className="cabinet-shift-staff-grid">
                         {waiters.map((w) => {
-                          const conflict = findShiftConflict(shifts, w.id, batchDate, batchStart, batchEnd);
-                          const isSelected = !conflict && validBatchWaiters.includes(w.id);
+                          const conflict = batchConflictFor(w.id);
+                          const existingDay = !conflict ? getMemberActiveDayShifts(shifts, w.id, batchDate) : [];
+                          const isSelected = !conflict && !batchSelfOverlap && validBatchWaiters.includes(w.id);
                           const name = w.name?.trim() || w.email.split("@")[0];
                           return (
                             <button
                               key={w.id}
                               type="button"
-                              disabled={!!conflict}
+                              disabled={!!conflict || batchSelfOverlap}
                               title={conflict ? formatConflictLabel(conflict, locale) : undefined}
                               className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
                               onClick={() => {
-                                if (conflict) return;
+                                if (conflict || batchSelfOverlap) return;
                                 setBatchWaiters((prev) =>
                                   isSelected ? prev.filter((id) => id !== w.id) : [...prev, w.id]
                                 );
@@ -1321,11 +1331,15 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                               </span>
                               <span className="cabinet-shift-staff-pill-meta">
                                 <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                {conflict && (
+                                {conflict ? (
                                   <small className="cabinet-shift-pill-conflict">
                                     {formatConflictLabel(conflict, locale)}
                                   </small>
-                                )}
+                                ) : existingDay.length > 0 ? (
+                                  <small className="cabinet-shift-pill-existing">
+                                    {existingDay.map((s) => `${s.start_time}–${s.end_time}`).join(", ")}
+                                  </small>
+                                ) : null}
                               </span>
                             </button>
                           );
@@ -1344,9 +1358,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                             className="cabinet-shift-bulk-btn"
                             onClick={() =>
                               setBatchCooks(
-                                cooks
-                                  .filter((c) => !findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd))
-                                  .map((c) => c.id),
+                                cooks.filter((c) => !batchConflictFor(c.id)).map((c) => c.id),
                               )
                             }
                           >
@@ -1370,18 +1382,19 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                     ) : (
                       <div className="cabinet-shift-staff-grid">
                         {cooks.map((c) => {
-                          const conflict = findShiftConflict(shifts, c.id, batchDate, batchStart, batchEnd);
-                          const isSelected = !conflict && validBatchCooks.includes(c.id);
+                          const conflict = batchConflictFor(c.id);
+                          const existingDay = !conflict ? getMemberActiveDayShifts(shifts, c.id, batchDate) : [];
+                          const isSelected = !conflict && !batchSelfOverlap && validBatchCooks.includes(c.id);
                           const name = c.name?.trim() || c.email.split("@")[0];
                           return (
                             <button
                               key={c.id}
                               type="button"
-                              disabled={!!conflict}
+                              disabled={!!conflict || batchSelfOverlap}
                               title={conflict ? formatConflictLabel(conflict, locale) : undefined}
                               className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
                               onClick={() => {
-                                if (conflict) return;
+                                if (conflict || batchSelfOverlap) return;
                                 setBatchCooks((prev) =>
                                   isSelected ? prev.filter((id) => id !== c.id) : [...prev, c.id]
                                 );
@@ -1393,11 +1406,15 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                               </span>
                               <span className="cabinet-shift-staff-pill-meta">
                                 <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                {conflict && (
+                                {conflict ? (
                                   <small className="cabinet-shift-pill-conflict">
                                     {formatConflictLabel(conflict, locale)}
                                   </small>
-                                )}
+                                ) : existingDay.length > 0 ? (
+                                  <small className="cabinet-shift-pill-existing">
+                                    {existingDay.map((s) => `${s.start_time}–${s.end_time}`).join(", ")}
+                                  </small>
+                                ) : null}
                               </span>
                             </button>
                           );
@@ -1494,57 +1511,36 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   />
                 </div>
 
-                <div className="cabinet-shift-field-group">
-                  <label>{copy.opsSchedulePresetsTitle}</label>
-                  <div className="cabinet-shift-preset-buttons">
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${quickStart === "08:00" && quickEnd === "16:00" ? "active" : ""}`}
-                      onClick={() => { setQuickStart("08:00"); setQuickEnd("16:00"); }}
-                    >
-                      {copy.opsSchedulePresetMorning}
-                    </button>
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${quickStart === "10:00" && quickEnd === "22:00" ? "active" : ""}`}
-                      onClick={() => { setQuickStart("10:00"); setQuickEnd("22:00"); }}
-                    >
-                      {copy.opsSchedulePresetDay}
-                    </button>
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${quickStart === "14:00" && quickEnd === "23:00" ? "active" : ""}`}
-                      onClick={() => { setQuickStart("14:00"); setQuickEnd("23:00"); }}
-                    >
-                      {copy.opsSchedulePresetEvening}
-                    </button>
+                {quickMemberDayShifts.length > 0 && (
+                  <div className="cabinet-existing-shifts-note">
+                    <strong>
+                      {locale === "ro"
+                        ? "Ture deja programate în această zi:"
+                        : locale === "en"
+                        ? "Already scheduled this day:"
+                        : "Уже назначено на этот день:"}
+                    </strong>{" "}
+                    {quickMemberDayShifts
+                      .map((s) => `${s.start_time}–${s.end_time} (${formatDurationMinutes(calcDurationMinutes(s.start_time, s.end_time), locale)})`)
+                      .join(", ")}
                   </div>
-                </div>
+                )}
 
-                <div className="cabinet-shift-time-row">
-                  <div className="cabinet-shift-field-group">
-                    <label htmlFor="quick-start">{copy.opsScheduleTimeStart}</label>
-                    <input
-                      id="quick-start"
-                      type="time"
-                      required
-                      value={quickStart}
-                      onChange={(e) => setQuickStart(e.target.value)}
-                      className="cabinet-shift-input"
-                    />
-                  </div>
-                  <div className="cabinet-shift-field-group">
-                    <label htmlFor="quick-end">{copy.opsScheduleTimeEnd}</label>
-                    <input
-                      id="quick-end"
-                      type="time"
-                      required
-                      value={quickEnd}
-                      onChange={(e) => setQuickEnd(e.target.value)}
-                      className="cabinet-shift-input"
-                    />
-                  </div>
-                </div>
+                <ShiftIntervalFields
+                  idPrefix="quick"
+                  start={quickStart}
+                  end={quickEnd}
+                  onStartChange={setQuickStart}
+                  onEndChange={setQuickEnd}
+                  splitEnabled={quickSplit}
+                  onSplitToggle={setQuickSplit}
+                  splitStart={quickSplitStart}
+                  splitEnd={quickSplitEnd}
+                  onSplitStartChange={setQuickSplitStart}
+                  onSplitEndChange={setQuickSplitEnd}
+                  locale={locale}
+                  copy={copy}
+                />
 
                 {quickCellConflict && (
                   <div className="cabinet-quick-conflict-warning" role="alert">
@@ -1573,7 +1569,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   <button
                     type="submit"
                     className="panel-btn primary"
-                    disabled={busy || !!quickCellConflict}
+                    disabled={busy || !!quickCellConflict || quickSelfOverlap}
                   >
                     {copy.opsScheduleSubmitBtn}
                   </button>
@@ -1810,57 +1806,21 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                 </div>
 
-                <div className="cabinet-shift-field-group">
-                  <label>{copy.opsSchedulePresetsTitle}</label>
-                  <div className="cabinet-shift-preset-buttons">
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${recurringStart === "08:00" && recurringEnd === "16:00" ? "active" : ""}`}
-                      onClick={() => { setRecurringStart("08:00"); setRecurringEnd("16:00"); }}
-                    >
-                      {copy.opsSchedulePresetMorning}
-                    </button>
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${recurringStart === "10:00" && recurringEnd === "22:00" ? "active" : ""}`}
-                      onClick={() => { setRecurringStart("10:00"); setRecurringEnd("22:00"); }}
-                    >
-                      {copy.opsSchedulePresetDay}
-                    </button>
-                    <button
-                      type="button"
-                      className={`cabinet-shift-preset-pill ${recurringStart === "14:00" && recurringEnd === "23:00" ? "active" : ""}`}
-                      onClick={() => { setRecurringStart("14:00"); setRecurringEnd("23:00"); }}
-                    >
-                      {copy.opsSchedulePresetEvening}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="cabinet-shift-time-row">
-                  <div className="cabinet-shift-field-group">
-                    <label htmlFor="rec-start">{copy.opsScheduleTimeStart}</label>
-                    <input
-                      id="rec-start"
-                      type="time"
-                      required
-                      value={recurringStart}
-                      onChange={(e) => setRecurringStart(e.target.value)}
-                      className="cabinet-shift-input"
-                    />
-                  </div>
-                  <div className="cabinet-shift-field-group">
-                    <label htmlFor="rec-end">{copy.opsScheduleTimeEnd}</label>
-                    <input
-                      id="rec-end"
-                      type="time"
-                      required
-                      value={recurringEnd}
-                      onChange={(e) => setRecurringEnd(e.target.value)}
-                      className="cabinet-shift-input"
-                    />
-                  </div>
-                </div>
+                <ShiftIntervalFields
+                  idPrefix="rec"
+                  start={recurringStart}
+                  end={recurringEnd}
+                  onStartChange={setRecurringStart}
+                  onEndChange={setRecurringEnd}
+                  splitEnabled={recurringSplit}
+                  onSplitToggle={setRecurringSplit}
+                  splitStart={recurringSplitStart}
+                  splitEnd={recurringSplitEnd}
+                  onSplitStartChange={setRecurringSplitStart}
+                  onSplitEndChange={setRecurringSplitEnd}
+                  locale={locale}
+                  copy={copy}
+                />
 
                 <div className="cabinet-shift-roles-split">
                   {/* Separate Waiters Section */}
@@ -2280,6 +2240,18 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                 </button>
                 <button
                   type="button"
+                  className="panel-btn ghost"
+                  onClick={() => {
+                    const target = inspectingShift;
+                    const member = staff.find((m) => m.id === target.staff_id);
+                    setInspectingShift(null);
+                    if (member) openQuickCellModal(member, target.date);
+                  }}
+                >
+                  + {locale === "ro" ? "Încă o tură în această zi" : locale === "en" ? "Add split shift" : "Ещё смену в этот день"}
+                </button>
+                <button
+                  type="button"
                   className="panel-btn ghost danger"
                   onClick={() => {
                     const target = inspectingShift;
@@ -2613,9 +2585,7 @@ function RosterGroupRows({
 
             {weekDays.map((d) => {
               const cellShifts = shiftCellMap.get(`${member.id}::${d.date}`) || [];
-              const hasActiveShift = cellShifts.some(
-                (s) => s.status === "CONFIRMED" || s.status === "PENDING",
-              );
+              const hasAnyShift = cellShifts.length > 0;
 
               return (
                 <td key={d.date} className={`cabinet-roster-day-cell ${d.isToday ? "today" : ""}`}>
@@ -2642,17 +2612,33 @@ function RosterGroupRows({
                         </span>
                       </button>
                     ))}
-                    {!hasActiveShift && (
-                      <button
-                        type="button"
-                        className="cabinet-roster-cell-add"
-                        onClick={() => onQuickAdd(member, d.date)}
-                        aria-label={`${displayName} ${d.date}`}
-                        title={locale === "ro" ? "Adaugă tură" : locale === "en" ? "Assign shift" : "Назначить смену"}
-                      >
-                        +
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={`cabinet-roster-cell-add ${hasAnyShift ? "compact" : ""}`}
+                      onClick={() => onQuickAdd(member, d.date)}
+                      aria-label={`${displayName} ${d.date}`}
+                      title={
+                        hasAnyShift
+                          ? locale === "ro"
+                            ? "Adaugă încă o tură în aceeași zi"
+                            : locale === "en"
+                            ? "Add another shift on this day"
+                            : "Добавить ещё смену в этот день"
+                          : locale === "ro"
+                          ? "Adaugă tură"
+                          : locale === "en"
+                          ? "Assign shift"
+                          : "Назначить смену"
+                      }
+                    >
+                      {hasAnyShift
+                        ? locale === "ro"
+                          ? "+ tură"
+                          : locale === "en"
+                          ? "+ shift"
+                          : "+ смену"
+                        : "+"}
+                    </button>
                   </div>
                 </td>
               );
@@ -2660,6 +2646,208 @@ function RosterGroupRows({
           </tr>
         );
       })}
+    </>
+  );
+}
+
+function ShiftIntervalFields({
+  idPrefix,
+  start,
+  end,
+  onStartChange,
+  onEndChange,
+  splitEnabled,
+  onSplitToggle,
+  splitStart,
+  splitEnd,
+  onSplitStartChange,
+  onSplitEndChange,
+  locale,
+  copy,
+}: {
+  idPrefix: string;
+  start: string;
+  end: string;
+  onStartChange: (v: string) => void;
+  onEndChange: (v: string) => void;
+  splitEnabled: boolean;
+  onSplitToggle: (v: boolean) => void;
+  splitStart: string;
+  splitEnd: string;
+  onSplitStartChange: (v: string) => void;
+  onSplitEndChange: (v: string) => void;
+  locale: "ru" | "ro" | "en";
+  copy: ReturnType<typeof getSiteCopy>["cabinet"];
+}) {
+  const mins1 = calcDurationMinutes(start, end);
+  const mins2 = splitEnabled ? calcDurationMinutes(splitStart, splitEnd) : 0;
+  const selfOverlap = splitEnabled && splitIntervalsOverlap(start, end, splitStart, splitEnd);
+
+  return (
+    <>
+      <div className="cabinet-shift-field-group">
+        <label>{copy.opsSchedulePresetsTitle}</label>
+        <div className="cabinet-shift-preset-buttons">
+          <button
+            type="button"
+            className={`cabinet-shift-preset-pill ${!splitEnabled && start === "08:00" && end === "16:00" ? "active" : ""}`}
+            onClick={() => {
+              onSplitToggle(false);
+              onStartChange("08:00");
+              onEndChange("16:00");
+            }}
+          >
+            {copy.opsSchedulePresetMorning}
+          </button>
+          <button
+            type="button"
+            className={`cabinet-shift-preset-pill ${!splitEnabled && start === "10:00" && end === "22:00" ? "active" : ""}`}
+            onClick={() => {
+              onSplitToggle(false);
+              onStartChange("10:00");
+              onEndChange("22:00");
+            }}
+          >
+            {copy.opsSchedulePresetDay}
+          </button>
+          <button
+            type="button"
+            className={`cabinet-shift-preset-pill ${!splitEnabled && start === "14:00" && end === "23:00" ? "active" : ""}`}
+            onClick={() => {
+              onSplitToggle(false);
+              onStartChange("14:00");
+              onEndChange("23:00");
+            }}
+          >
+            {copy.opsSchedulePresetEvening}
+          </button>
+          <button
+            type="button"
+            className={`cabinet-shift-preset-pill ${!splitEnabled && start === "08:00" && end === "12:00" ? "active" : ""}`}
+            onClick={() => {
+              onSplitToggle(false);
+              onStartChange("08:00");
+              onEndChange("12:00");
+            }}
+          >
+            {locale === "ro" ? "4h Dimineața (08–12)" : locale === "en" ? "4h Morning (08–12)" : "4ч Утро (08–12)"}
+          </button>
+          <button
+            type="button"
+            className={`cabinet-shift-preset-pill ${!splitEnabled && start === "18:00" && end === "22:00" ? "active" : ""}`}
+            onClick={() => {
+              onSplitToggle(false);
+              onStartChange("18:00");
+              onEndChange("22:00");
+            }}
+          >
+            {locale === "ro" ? "4h Seara (18–22)" : locale === "en" ? "4h Evening (18–22)" : "4ч Вечер (18–22)"}
+          </button>
+          <button
+            type="button"
+            className={`cabinet-shift-preset-pill ${splitEnabled ? "active" : ""}`}
+            onClick={() => {
+              onSplitToggle(true);
+              onStartChange("08:00");
+              onEndChange("12:00");
+              onSplitStartChange("18:00");
+              onSplitEndChange("22:00");
+            }}
+          >
+            {locale === "ro" ? "4h + 4h (Fracționată)" : locale === "en" ? "4h + 4h Split" : "Разрывная 4ч + 4ч"}
+          </button>
+        </div>
+      </div>
+
+      <div className="cabinet-shift-time-row">
+        <div className="cabinet-shift-field-group">
+          <label htmlFor={`${idPrefix}-start`}>{copy.opsScheduleTimeStart}</label>
+          <input
+            id={`${idPrefix}-start`}
+            type="time"
+            required
+            value={start}
+            onChange={(e) => onStartChange(e.target.value)}
+            className="cabinet-shift-input"
+          />
+        </div>
+        <div className="cabinet-shift-field-group">
+          <label htmlFor={`${idPrefix}-end`}>{copy.opsScheduleTimeEnd}</label>
+          <input
+            id={`${idPrefix}-end`}
+            type="time"
+            required
+            value={end}
+            onChange={(e) => onEndChange(e.target.value)}
+            className="cabinet-shift-input"
+          />
+        </div>
+      </div>
+
+      <label className="cabinet-shift-split-toggle">
+        <input
+          type="checkbox"
+          checked={splitEnabled}
+          onChange={(e) => onSplitToggle(e.target.checked)}
+        />
+        <span>
+          {locale === "ro"
+            ? "Adaugă al 2-lea interval în aceeași zi (tură fracționată cu pauză)"
+            : locale === "en"
+            ? "Add 2nd shift interval on the same day (split shift with break)"
+            : "Добавить 2-й интервал в этот день (разрывная смена с перерывом)"}
+        </span>
+      </label>
+
+      {splitEnabled && (
+        <div className="cabinet-shift-split-box">
+          <div className="cabinet-shift-time-row">
+            <div className="cabinet-shift-field-group">
+              <label htmlFor={`${idPrefix}-split-start`}>
+                {locale === "ro" ? "Început interval 2" : locale === "en" ? "Interval 2 start" : "Начало 2-го интервала"}
+              </label>
+              <input
+                id={`${idPrefix}-split-start`}
+                type="time"
+                required
+                value={splitStart}
+                onChange={(e) => onSplitStartChange(e.target.value)}
+                className="cabinet-shift-input"
+              />
+            </div>
+            <div className="cabinet-shift-field-group">
+              <label htmlFor={`${idPrefix}-split-end`}>
+                {locale === "ro" ? "Sfârșit interval 2" : locale === "en" ? "Interval 2 end" : "Конец 2-го интервала"}
+              </label>
+              <input
+                id={`${idPrefix}-split-end`}
+                type="time"
+                required
+                value={splitEnd}
+                onChange={(e) => onSplitEndChange(e.target.value)}
+                className="cabinet-shift-input"
+              />
+            </div>
+          </div>
+
+          <span className="cabinet-shift-duration-summary">
+            {locale === "ro" ? "Total pe zi:" : locale === "en" ? "Daily total:" : "Итого за день:"}{" "}
+            {formatDurationMinutes(mins1, locale)} + {formatDurationMinutes(mins2, locale)} ={" "}
+            <strong>{formatDurationMinutes(mins1 + mins2, locale)}</strong>
+          </span>
+
+          {selfOverlap && (
+            <div className="cabinet-quick-conflict-warning" role="alert">
+              ⚠️{" "}
+              {locale === "ro"
+                ? "Cele două intervale ale aceleiași zile nu se pot suprapune"
+                : locale === "en"
+                ? "The two split-shift intervals cannot overlap"
+                : "Два интервала одной смены не могут пересекаться"}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }

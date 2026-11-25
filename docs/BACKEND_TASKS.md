@@ -21,14 +21,14 @@
 | 9 | Локали EN/RO для Google-only мест на карте | карта / Places | Сделано |
 | 10 | Discover AI: NL-запрос → prefs / ranked venues | `/discover` AI-стаб | Сделано |
 | 11 | Live count «Найдено: N» для discover/map filters | `/discover` filters bar | Сделано |
-| 12 | OAuth / Social Logins (Google, Apple, Telegram) | `/login` соцсети | Открыто |
+| 12 | OAuth / Social Logins (Google готово; Apple, Telegram открыто) | `/login` соцсети | В работе |
 | 13 | Password Reset / Сброс пароля | `/login` забыли пароль | Открыто |
 | 14 | Seed демо-владельца ресторана (`RoleRestaurant`) | `/login`, `/cabinet` | Сделано |
 | 15 | Онбординг персонала (Email-инвайты и QR-код подключения смены) | `/staff`, `/cabinet` | Открыто |
 | 16 | Верификация корпоративного email владельца заведения | `/register` | Открыто |
 | 17 | GDPR / Удаление аккаунта гостя (`DELETE /api/v1/me`) | `/account` | Сделано |
 | 18 | Загрузка и хранение аватара гостя (`POST/DELETE /api/v1/me/avatar`) | `/account` | Сделано |
-| 19 | Модерация изменений профиля заведения (Change Requests / diff) | `/cabinet`, `/admin` | Открыто |
+| 19 | Модерация изменений профиля заведения (Change Requests / diff) | `/cabinet`, `/admin` | В работе |
 
 ---
 
@@ -108,20 +108,17 @@
 
 `GET /map/places` с параметрами `/discover` (`cuisine`, `type`, `budget`, `occasion`, `practical`, `lat`/`lng`) возвращает `filters: {total, matched, relax?}`; список мест не меняется. Фильтры — те же, что `filterAndRankPlaces` на вебе (`internal/discover/prefs.go`). Веб: «Найдено: N из M» на карте, при нуле — кнопка «Уберите „…“ — будет N».
 
-### 12. OAuth / Social Logins (Google, Apple, Telegram) — **Открыто**
+### 12. OAuth / Social Logins (Google, Apple, Telegram) — **В работе**
 
-**Контекст.** На странице входа `/login` добавлены плейсхолдер-кнопки для входа через Google, Apple и Telegram. Сейчас при клике отображается информационное уведомление о скором запуске провайдера.
+**Контекст.** На странице входа `/login` (и в `/register`, `AuthForm`) добавлены кнопки входа через Google, Apple и Telegram. Google уже подключён к реальному OAuth-флоу (`POST /api/v1/auth/google`), для Apple и Telegram отображается уведомление «Скоро».
 
 **Нужно на бэке:**
 
-- [ ] Модели и миграция: хранение связок OAuth (`provider`, `provider_user_id`, `email`, `user_id`, `created_at`).
-- [ ] Endpoint `POST /api/v1/auth/oauth`:
-  - Приём токена/подписи (`google_id_token`, `apple_identity_token`, либо `telegram_auth_data` с валидацией хеша `bot_token`).
-  - Проверка валидности подписи на стороне бэкенда.
-  - Поиск пользователя по email или связке провайдера; при отсутствии — автосоздание пользователя с ролью `RoleGuest`.
-  - Выдача JWT-токена Seatiko (тот же формат `AuthResponse { token, user }`).
+- [x] Таблица связок OAuth (`user_identities`: `provider`, `provider_subject`, `email`, `user_id`, `created_at`).
+- [x] Endpoint `POST /api/v1/auth/google` (проверка ID-токена Google через JWKS, вход/регистрация с выдачей JWT).
+- [ ] Поддержка провайдеров Apple (`apple_identity_token`) и Telegram (`telegram_auth_data` с проверкой подписи `bot_token`) в аналогичных эндпоинтах или `POST /api/v1/auth/oauth`.
 
-**Сейчас на фронте:** кликабельные кнопки соцсетей с аутентичными иконками и аккуратным уведомлением «Скоро».
+**Сейчас на фронте:** кнопка Google работает end-to-end (при заданном `GOOGLE_CLIENT_IDS`), для Apple и Telegram остаётся аккуратное уведомление «Скоро».
 
 ### 13. Password Reset / Сброс пароля — **Открыто**
 
@@ -195,40 +192,18 @@
 
 `POST/DELETE /api/v1/me/avatar`: JPEG/PNG/WebP по magic bytes (SVG и прочее — 415), до 5 МБ, защита от «бомб» по размеру холста, 10 загрузок в минуту на пользователя; сохраняется JPEG 512×512 (обрезка по центру, без EXIF). Хранилище — S3-совместимое (`internal/media`, подпись SigV4 без SDK; проверено на примере AWS и живом MinIO) или локальная папка. В docker-compose — MinIO Community (сборка Chainguard: официальные бесплатные образы MinIO не выпускаются с октября 2025), бакет создаётся `minio-init`, отдача через nginx `/media/`. Для AWS S3 / R2 — сменить `S3_*` у `api`.
 
-### 19. Модерация изменений профиля заведения (Change Requests / diff) — **Открыто**
+### 19. Модерация изменений профиля заведения (Change Requests / diff) — **В работе**
 
-**Контекст.** В `/cabinet` (вкладка «Профиль заведения») для опубликованных и подтверждённых ресторанов (`status === "APPROVED"` / `"PUBLISHED"`) добавлена кнопка «Изменить данные». Владелец может отредактировать поля профиля (название, описание, кухня, адрес, координаты, часы, контакты, фото), после чего нажимает «Отправить на модерацию». Изменения не должны сразу перезаписывать публичные данные заведения, а должны поступать на модерацию администратору платформы в `/admin`.
+**Контекст.** В `/cabinet` (вкладка «Профиль заведения») для опубликованных и подтверждённых ресторанов (`status === "APPROVED"` / `"PUBLISHED"`) добавлена кнопка «Изменить данные». Владелец может отредактировать поля профиля, чтобы изменения поступали на модерацию администратору в `/admin`.
 
 **Нужно на бэке:**
 
-- [ ] **Модели данных и БД:**
-  - Создать сущность `VenueChangeRequest`:
-    - `id: string` (UUID).
-    - `application_id: string` и `venue_id: *string`.
-    - `owner_user_id: string`.
-    - `payload: ApplicationUpdate` (предложенные новые значения полей).
-    - `status: "PENDING" | "APPROVED" | "REJECTED"`.
-    - `review_comment: *string` (комментарий модератора при отклонении/одобрении).
-    - `reviewed_by_user_id: *string`.
-    - `created_at: time.Time`, `reviewed_at: *time.Time`.
-- [ ] **Эндпоинты для владельца ресторана (`/cabinet`):**
-  - `POST /api/v1/restaurant/applications/{id}/change-requests` — приём предложенных изменений.
-  - `GET /api/v1/restaurant/applications/{id}/change-requests/latest` — получение текущего статуса запроса и сохранённого diff'а.
-  - `DELETE /api/v1/restaurant/applications/{id}/change-requests/{request_id}` — отзыв отправленного запроса владельцем.
-- [ ] **Эндпоинты для администратора платформы (`/admin`):**
-  - `GET /api/v1/admin/change-requests` — список всех запросов на изменение с пагинацией и фильтрами по статусу.
-  - `POST /api/v1/admin/change-requests/{id}/approve` — одобрение правок:
-    - Атомарное применение предложенных изменений к `VenueApplication` и публичной сущности `Venue`.
-    - Обновление статуса запроса в `APPROVED`.
-    - Запись события в аудит-лог `ApplicationActivity`.
-    - Триггер синхронизации CRM (Twenty).
-  - `POST /api/v1/admin/change-requests/{id}/reject` — отклонение правок с комментарием для владельца.
-- [ ] **Интерфейс в админке (`/admin`):**
-  - В табе модерации отображать блок «Запросы на изменение данных заведений».
-  - Полноценный визуальный diff (было → стало: название, описание, адрес, фото, кухня, часы).
-  - Кнопки «Одобрить изменения» и «Отклонить» с модальным окном комментария.
+- [x] Таблица `profile_change_requests` и доменная логика модерации.
+- [x] Эндпоинты владельца: `POST /api/v1/restaurant/applications/:id/change-requests`, `GET /api/v1/restaurant/change-requests`.
+- [x] Эндпоинты админа: `GET /api/v1/admin/change-requests`, `POST /api/v1/admin/change-requests/:id/review` (`APPROVED` / `REJECTED`).
+- [ ] Отзыв отправленного запроса владельцем (`DELETE /api/v1/restaurant/applications/:id/change-requests/:request_id`) и визуальный diff полей в `/admin`.
 
-**Сейчас на фронте:** в `/cabinet` во вкладке профиля для подтверждённых ресторанов реализована кнопка «Изменить данные», интерактивный режим редактирования со всеми разблокированными полями, баннер статуса модерации и сохранение предложенных изменений в хранилище с локальным ключом `seatiko_venue_pending_changes:<applicationId>`.
+**Сейчас на фронте:** `/admin` уже загружает и модерирует запросы через API (`adminListChangeRequests`, `adminReviewChangeRequest`), в `api.ts` есть `submitProfileChangeRequest`, но форма в `/cabinet` пока сохраняет черновик правок локально (`seatiko_venue_pending_changes:<applicationId>`).
 
 ---
 

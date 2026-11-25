@@ -352,6 +352,15 @@ export function SiteHeader({ variant = "solid" }: Props) {
     router.push(`/#${sectionId}`);
   }
 
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1081px)");
+    const onDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setMobileOpen(false);
+    };
+    mq.addEventListener("change", onDesktop);
+    return () => mq.removeEventListener("change", onDesktop);
+  }, []);
+
   return (
     <header className={`site-header ${variant}${mobileOpen ? " mobile-nav-open" : ""}`}>
       <div className="site-header-inner">
