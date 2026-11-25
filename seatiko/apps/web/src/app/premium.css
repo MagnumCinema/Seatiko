@@ -1179,15 +1179,38 @@ html[data-theme="light"] .site-nav-primary:hover {
   filter: saturate(.78) sepia(.06) brightness(1.025);
 }
 .live-map-surface .maplibregl-ctrl-top-right { top: 10px; right: 10px; }
+.live-map-surface .maplibregl-ctrl-bottom-right { right: 10px; bottom: 6px; }
+/* Controls in the Google Maps style: white square buttons, soft shadow, thin grey glyphs. */
 .live-map-surface .maplibregl-ctrl-group {
   overflow: hidden;
-  border: 1px solid rgba(36,74,59,.08);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(31,62,50,.12);
+  border: 0;
+  border-radius: 2px;
+  box-shadow: rgba(0, 0, 0, .3) 0 1px 4px -1px;
 }
-.live-map-surface .maplibregl-ctrl-group button { width: 36px; height: 36px; background-color: rgba(255,253,248,.96); }
-.live-map-surface .maplibregl-ctrl button .maplibregl-ctrl-icon { opacity: .72; }
+.live-map-surface .maplibregl-ctrl-group button { width: 40px; height: 40px; background-color: #fff; }
+.live-map-surface .maplibregl-ctrl-group button:hover { background-color: #fff; }
+.live-map-surface .maplibregl-ctrl button:focus:not(:focus-visible) { box-shadow: none; }
+.live-map-surface .maplibregl-ctrl-group button + button { border-top: 0; position: relative; }
+.live-map-surface .maplibregl-ctrl-group button + button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: #e6e6e6;
+}
+.live-map-surface .maplibregl-ctrl button .maplibregl-ctrl-icon { opacity: .62; background-size: 18px; transition: opacity 120ms ease; }
+.live-map-surface .maplibregl-ctrl button:hover .maplibregl-ctrl-icon { opacity: .9; }
+.live-map-surface .maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 4.5v15M4.5 12h15' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.live-map-surface .maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.5 12h15' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+/* Credits folded into a small (i) button. */
 .live-map-surface .maplibregl-ctrl-attrib { color: #65756c; background: rgba(255,253,248,.88); font-size: 9px; }
+.live-map-surface .maplibregl-ctrl-attrib.maplibregl-compact { min-height: 22px; }
 .live-map-surface .maplibregl-ctrl-attrib a { color: #486d5d; }
 .live-map-loading {
   position: absolute;
@@ -1252,7 +1275,7 @@ html[data-theme="light"] .site-nav-primary:hover {
 .venue-map-legend span { display: flex; align-items: center; gap: 6px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .legend-dot-ours { background: #175f43; }
-.legend-dot-other { background: #8a8f8c; }
+.legend-dot-other { background: #7fa792; }
 
 .live-map-fallback {
   position: absolute;
@@ -1390,6 +1413,18 @@ html[data-theme="light"] .site-nav-primary:hover {
   font-weight: 750;
   transition: all 160ms ease;
 }
+
+.venue-num.venue-dot {
+  width: 12px;
+  height: 12px;
+  margin: 0 7px;
+  border-radius: 50%;
+  border: 2px solid #fffdf8;
+  background: #7fa792;
+  box-shadow: 0 0 0 1px rgba(31, 80, 60, .12);
+}
+.venue-num.venue-dot.is-partner { background: #175f43; }
+.venue-num.venue-dot.active { background: #e9b96e; box-shadow: 0 0 0 1px rgba(212, 154, 70, .4); }
 
 .venue-num.active {
   color: #0d241c;

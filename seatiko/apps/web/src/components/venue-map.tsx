@@ -37,7 +37,6 @@ type PlacePointProperties = {
   placeId: string;
   venueId: string;
   inDatabase: boolean;
-  index: string;
   name: string;
   selected: boolean;
 };
@@ -47,8 +46,12 @@ const BALTI_BOUNDS: MapBounds = { south: 47.70, west: 27.84, north: 47.82, east:
 const MOLDOVA_BOUNDS: MapBounds = { south: 45.45, west: 26.60, north: 48.55, east: 30.20 };
 const OPEN_FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const SOURCE_ID = "seatiko-venues";
-const CLUSTER_LAYER_ID = "seatiko-clusters";
 const VENUE_LAYER_ID = "seatiko-venue-pins";
+const DOT_LAYER_ID = "seatiko-venue-dots";
+/** Below this zoom (whole city) places are dots, so they don't pile up; closer they become pins. */
+const PIN_MIN_ZOOM = 14;
+/** Site palette: partners deep green, other places sage, the selected one gold. */
+const PIN_COLORS = { partner: "#175f43", other: "#7fa792", selected: "#d99a3e" };
 
 const mapCopy = {
   ru: {
@@ -155,7 +158,8 @@ function getVenueHours(place: MapPlace, locale: LocaleCode): string {
   if (place.venue_id) {
     return getVenueHoursById(place.venue_id, locale);
   }
-  return getVenueHoursById("", locale);
+  // Open-data places: only what OpenStreetMap knows, never a made-up default.
+  return place.opening_hours ?? "";
 }
 
 function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
@@ -170,6 +174,43 @@ function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
   });
 }
 
+/** Draws a map pin (teardrop with a white dot) once per map, at 2× for sharp screens. */
+function addPinImage(map: maplibregl.Map, id: string, color: string) {
+  if (map.hasImage(id)) return;
+  const ratio = 2;
+  const w = 26;
+  const h = 34;
+  const canvas = document.createElement("canvas");
+  canvas.width = w * ratio;
+  canvas.height = h * ratio;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  ctx.scale(ratio, ratio);
+  const cx = w / 2;
+  const r = 11;
+  const cy = r + 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, h - 1);
+  ctx.bezierCurveTo(cx - 2, h - 8, cx - r, cy + 7, cx - r, cy);
+  ctx.arc(cx, cy, r, Math.PI, 0);
+  ctx.bezierCurveTo(cx + r, cy + 7, cx + 2, h - 8, cx, h - 1);
+  ctx.closePath();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.28)";
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4.2, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  map.addImage(id, ctx.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: ratio });
+}
+
 function placeCollection(
   places: MapPlace[],
   locale: LocaleCode,
@@ -177,7 +218,7 @@ function placeCollection(
 ): GeoJSON.FeatureCollection<GeoJSON.Point, PlacePointProperties> {
   return {
     type: "FeatureCollection",
-    features: places.map((place, index) => ({
+    features: places.map((place) => ({
       type: "Feature",
       id: place.id,
       geometry: {
@@ -188,7 +229,6 @@ function placeCollection(
         placeId: place.id,
         venueId: place.venue_id ?? "",
         inDatabase: place.in_database,
-        index: String(index + 1),
         name: pickLocale(place.name, locale),
         selected: place.id === selectedId,
       },
@@ -367,7 +407,8 @@ function VenueMapArea({
   const [retry, setRetry] = useState(0);
   const googleKey = config?.google_maps_key;
   const useGoogle = Boolean(googleKey) && !googleFailed;
-  const includeGoogle = useGoogle && googleReady && !bookableOnly;
+  // Without a Google key the API still adds open-data places (OpenStreetMap, Overture).
+  const includeGoogle = (useGoogle ? googleReady : true) && !bookableOnly;
   const validViewport = useGoogle && viewport &&
     viewport.south < viewport.north && viewport.west < viewport.east ? viewport : undefined;
   const filters = preferences ? encodePreferences(preferences) : "";
@@ -402,14 +443,13 @@ function VenueMapArea({
   }, [bounds]);
 
   const ranked = useMemo(() => {
-    const allPlaces = data?.places ?? [];
-    const visible = useGoogle ? allPlaces : allPlaces.filter((place) => place.in_database);
+    const visible = data?.places ?? [];
     if (!preferences) return visible.map((place) => ({ place, score: 0 }));
     return filterAndRankPlaces(visible, preferences, {
       userLat: userGeo?.lat,
       userLng: userGeo?.lng,
     });
-  }, [data, preferences, userGeo, useGoogle]);
+  }, [data, preferences, userGeo]);
 
   const places = useMemo(() => ranked.map((r) => r.place), [ranked]);
 
@@ -472,25 +512,29 @@ function VenueMapArea({
     }
     root.appendChild(head);
 
-    // Schedule & open status row
+    // Schedule & open status row (open-data places: hours only, when known)
     const schedule = document.createElement("div");
     schedule.className = "venue-map-popup-schedule";
 
-    const dot = document.createElement("span");
-    dot.className = `status-dot ${place.open_now ? "open" : "closed"}`;
-    schedule.appendChild(dot);
+    if (venueId) {
+      const dot = document.createElement("span");
+      dot.className = `status-dot ${place.open_now ? "open" : "closed"}`;
+      schedule.appendChild(dot);
 
-    const status = document.createElement("span");
-    status.className = "popup-status-text";
-    status.textContent = place.open_now ? labels.open : labels.closed;
-    schedule.appendChild(status);
+      const status = document.createElement("span");
+      status.className = "popup-status-text";
+      status.textContent = place.open_now ? labels.open : labels.closed;
+      schedule.appendChild(status);
+    }
 
-    const hoursSpan = document.createElement("span");
-    hoursSpan.className = "popup-hours-text";
-    hoursSpan.textContent = `· ${hours}`;
-    schedule.appendChild(hoursSpan);
+    if (hours) {
+      const hoursSpan = document.createElement("span");
+      hoursSpan.className = "popup-hours-text";
+      hoursSpan.textContent = venueId ? `· ${hours}` : hours;
+      schedule.appendChild(hoursSpan);
+    }
 
-    root.appendChild(schedule);
+    if (schedule.childElementCount > 0) root.appendChild(schedule);
 
     if (venueId) {
       if (place.bookable && typeof place.free_tables === "number") {
@@ -535,6 +579,14 @@ function VenueMapArea({
       address.className = "venue-map-popup-address";
       address.textContent = pickLocale(place.address, localeRef.current);
       root.appendChild(address);
+
+      if (place.phone) {
+        const phone = document.createElement("a");
+        phone.className = "venue-map-popup-address";
+        phone.href = `tel:${place.phone.replace(/[^+\d]/g, "")}`;
+        phone.textContent = place.phone;
+        root.appendChild(phone);
+      }
 
       const comingSoon = document.createElement("div");
       comingSoon.className = "venue-map-popup-comingsoon";
@@ -591,26 +643,27 @@ function VenueMapArea({
     }
     mapRef.current = map;
 
-    map.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      "top-right",
-    );
     if (!compact) {
       map.addControl(new maplibregl.FullscreenControl(), "top-right");
     }
+    // Bottom right, as on Google Maps: credits strip, zoom +/−, then "my location" above.
+    map.addControl(
+      // ODbL: OpenStreetMap data (tiles and places) must be credited; folded into an (i) button.
+      new maplibregl.AttributionControl({ compact: true, customAttribution: "Places: © OpenStreetMap contributors, Overture Maps Foundation" }),
+      "bottom-right",
+    );
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(
       new maplibregl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
       }),
-      "top-right",
-    );
-    map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
       "bottom-right",
     );
 
     map.once("load", () => {
+      // Start with the credits folded; the (i) button opens them.
+      map.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((el) => el.classList.remove("maplibregl-compact-show"));
       applyMapLibreLocalization(map, localeRef.current);
       setMapState("ready");
     });
@@ -641,129 +694,65 @@ function VenueMapArea({
       map.addSource(SOURCE_ID, {
         type: "geojson",
         data,
-        cluster: true,
-        clusterMaxZoom: 13,
-        clusterRadius: 46,
       });
 
+      // City view: small dots. Zoomed in: location pins (teardrops).
+      const sortKey = ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0];
       map.addLayer({
-        id: "seatiko-cluster-halo",
+        id: DOT_LAYER_ID,
         type: "circle",
         source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": "rgba(255, 253, 248, 0.92)",
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            23,
-            10,
-            28,
-            30,
-            33,
-          ],
-          "circle-blur": 0.08,
-        },
-      });
-      map.addLayer({
-        id: CLUSTER_LAYER_ID,
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": "#173f31",
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            18,
-            10,
-            23,
-            30,
-            28,
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fffdf8",
-          "circle-opacity": 0.96,
-        },
-      });
-      map.addLayer({
-        id: "seatiko-cluster-count",
-        type: "symbol",
-        source: SOURCE_ID,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-size": 11,
-          "text-font": ["Noto Sans Regular"],
-        },
-        paint: { "text-color": "#ffffff" },
-      });
-      map.addLayer({
-        id: "seatiko-venue-halo",
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": "rgba(255, 253, 248, 0.94)",
-          "circle-radius": [
-            "case",
-            ["boolean", ["get", "selected"], false],
-            21,
-            18,
-          ],
-          "circle-blur": 0.12,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "rgba(31, 80, 60, 0.08)",
-        },
-      });
-      map.addLayer({
-        id: VENUE_LAYER_ID,
-        type: "circle",
-        source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
+        maxzoom: PIN_MIN_ZOOM,
+        layout: { "circle-sort-key": sortKey as maplibregl.ExpressionSpecification },
         paint: {
           "circle-color": [
             "case",
             ["boolean", ["get", "selected"], false],
-            "#e9b96e",
+            PIN_COLORS.selected,
             ["boolean", ["get", "inDatabase"], false],
-            "#175f43",
-            "#8a8f8c",
+            PIN_COLORS.partner,
+            PIN_COLORS.other,
           ],
-          "circle-radius": [
-            "case",
-            ["boolean", ["get", "selected"], false],
-            16,
-            13.5,
-          ],
-          "circle-stroke-width": 2.5,
+          "circle-radius": ["case", ["boolean", ["get", "selected"], false], 8, ["boolean", ["get", "inDatabase"], false], 6.5, 5],
+          "circle-stroke-width": 1.5,
           "circle-stroke-color": "#fffdf8",
-          "circle-opacity": 0.98,
         },
       });
+      addPinImage(map, "seatiko-pin-partner", PIN_COLORS.partner);
+      addPinImage(map, "seatiko-pin-other", PIN_COLORS.other);
+      addPinImage(map, "seatiko-pin-selected", PIN_COLORS.selected);
       map.addLayer({
-        id: "seatiko-venue-index",
+        id: VENUE_LAYER_ID,
         type: "symbol",
         source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
+        minzoom: PIN_MIN_ZOOM,
         layout: {
-          "text-field": ["get", "index"],
-          "text-size": 10,
-          "text-font": ["Noto Sans Regular"],
+          "icon-image": [
+            "case",
+            ["boolean", ["get", "selected"], false],
+            "seatiko-pin-selected",
+            ["boolean", ["get", "inDatabase"], false],
+            "seatiko-pin-partner",
+            "seatiko-pin-other",
+          ],
+          "icon-size": ["case", ["boolean", ["get", "selected"], false], 1.25, 1],
+          "icon-anchor": "bottom",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+          // Partners and the selected place are drawn above the other pins.
+          "symbol-sort-key": sortKey as maplibregl.ExpressionSpecification,
         },
-        paint: { "text-color": "#ffffff" },
       });
       map.addLayer({
         id: "seatiko-venue-name",
         type: "symbol",
         source: SOURCE_ID,
-        filter: ["!", ["has", "point_count"]],
-        minzoom: 13.4,
+        minzoom: PIN_MIN_ZOOM,
         layout: {
           "text-field": ["get", "name"],
           "text-size": 11,
           "text-font": ["Noto Sans Regular"],
-          "text-offset": [0, 2.1],
+          "text-offset": [0, 0.3],
           "text-anchor": "top",
           "text-optional": true,
           "text-padding": 5,
@@ -777,7 +766,7 @@ function VenueMapArea({
         },
       });
 
-      map.on("click", VENUE_LAYER_ID, (event) => {
+      const onPlaceClick = (event: maplibregl.MapLayerMouseEvent) => {
         const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
         const placeId = String(feature?.properties?.placeId ?? "");
         const place = placesRef.current.find((item) => item.id === placeId);
@@ -785,20 +774,10 @@ function VenueMapArea({
         setSelectedId(place.id);
         map.easeTo({ center: [place.lng, place.lat], zoom: 15.2, duration: 520 });
         showVenuePopup(place, map);
-      });
-      map.on("click", CLUSTER_LAYER_ID, async (event) => {
-        const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
-        const clusterId = Number(feature?.properties?.cluster_id);
-        if (!Number.isFinite(clusterId) || !feature) return;
-        const source = map.getSource(SOURCE_ID) as GeoJSONSource;
-        const zoom = await source.getClusterExpansionZoom(clusterId);
-        const coordinates = (feature.geometry as GeoJSON.Point).coordinates as [
-          number,
-          number,
-        ];
-        map.easeTo({ center: coordinates, zoom, duration: 500 });
-      });
-      [VENUE_LAYER_ID, CLUSTER_LAYER_ID].forEach((layerId) => {
+      };
+      map.on("click", VENUE_LAYER_ID, onPlaceClick);
+      map.on("click", DOT_LAYER_ID, onPlaceClick);
+      [VENUE_LAYER_ID, DOT_LAYER_ID].forEach((layerId) => {
         map.on("mouseenter", layerId, () => {
           map.getCanvas().style.cursor = "pointer";
         });
@@ -868,7 +847,7 @@ function VenueMapArea({
           .join(" ")}
         onClick={() => selectPlace(place)}
       >
-        <b className={`venue-num ${isSelected ? "active" : ""}`}>{index + 1}</b>
+        <b aria-hidden="true" className={`venue-num venue-dot ${place.in_database ? "is-partner" : ""} ${isSelected ? "active" : ""}`} />
         <span className="venue-name">{pickLocale(place.name, locale)}</span>
         <small className="venue-status-pill">
           {place.in_database && place.bookable && place.venue_id ? (
@@ -935,7 +914,7 @@ function VenueMapArea({
             </div>
             <div className="venue-map-legend" aria-label={copy.legendAria}>
               <span><i className="legend-dot legend-dot-ours" /> {copy.legendOurs}</span>
-              {useGoogle && !bookableOnly && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
+              {!bookableOnly && places.some((place) => !place.in_database) && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
             </div>
           </>
         )}
@@ -1038,6 +1017,13 @@ function VenueMapArea({
                   </span>
                 </div>
                 <strong>{selected.free_tables ?? 0} {formatFreeTablesLabel(locale, selected.free_tables ?? 0)}</strong>
+              </div>
+            ) : null}
+
+            {!selected.in_database && (selected.opening_hours || selected.phone) ? (
+              <div className="venue-map-meta">
+                {selected.opening_hours && <span>{selected.opening_hours}</span>}
+                {selected.phone && <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>}
               </div>
             ) : null}
 
