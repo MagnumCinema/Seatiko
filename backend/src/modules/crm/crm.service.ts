@@ -10,6 +10,7 @@ import type { ApplicationPatch } from '../../database/schema/restaurant.js';
 import { type ApplicationRow, CrmRepository, type UserRow } from './crm.repository.js';
 import { onboardingTasks, TASK_PREFIX } from './domain/onboarding-tasks.js';
 import { emailValue, isDemoApplication, isDemoGuest, isDemoUser, localizedValue, phoneFromTwenty, phoneValue } from './domain/projection.js';
+import { JOB_TITLES, workplaces } from './domain/workplace.js';
 import { verifyWebhook } from './domain/webhook-signature.js';
 
 /** Emitted by services after a change the CRM should see; the sync runs shortly after. */
@@ -137,7 +138,14 @@ export class CrmService implements OnApplicationBootstrap, OnModuleDestroy {
       this.schemaReady = true;
     }
     const [people, companies, reservations] = await Promise.all([client.listAll('people'), client.listAll('companies'), client.listAll('reservations')]);
-    const [users, apps, activities, cityRows, bookings] = await Promise.all([this.repo.users(), this.repo.applications(), this.repo.activities(), this.repo.cities(), this.repo.reservations()]);
+    const [users, apps, activities, cityRows, bookings, staff] = await Promise.all([
+      this.repo.users(),
+      this.repo.applications(),
+      this.repo.activities(),
+      this.repo.cities(),
+      this.repo.reservations(),
+      this.repo.staff(),
+    ]);
     const userById = new Map(users.map((u) => [u.id, u]));
     const cityName = new Map(cityRows.map((c) => [c.id, c.name.ro]));
 
@@ -157,20 +165,21 @@ export class CrmService implements OnApplicationBootstrap, OnModuleDestroy {
       companyIds.set(a.id, await this.syncApplication(client, companies, a, owner, cityName.get(a.cityId) ?? ''));
     }
 
-    // Twenty's People → Company link holds one company: a published venue first, then the earliest application.
-    const best = new Map<string, ApplicationRow>();
-    for (const a of realApps) {
-      const cur = best.get(a.ownerUserId);
-      const pub = a.status === 'PUBLISHED';
-      const curPub = cur?.status === 'PUBLISHED';
-      const earlier = cur && (a.createdAt < cur.createdAt || (a.createdAt === cur.createdAt && a.id < cur.id));
-      if (!cur || (pub && !curPub) || (pub === curPub && earlier)) best.set(a.ownerUserId, a);
-    }
-    const linked = new Map(people.map((p) => [recordId(p), stringField(p, 'companyId')]));
-    for (const [ownerId, app] of best) {
-      const pid = personIds.get(ownerId)!;
-      const cid = companyIds.get(app.id)!;
-      if (linked.get(pid) !== cid) await client.update('people', pid, { companyId: cid });
+    // People → Company and Job Title: owners at their restaurant, staff where they have access.
+    const workplace = workplaces(realApps, staff);
+    const current = new Map(people.map((p) => [recordId(p), { companyId: stringField(p, 'companyId'), jobTitle: stringField(p, 'jobTitle') }]));
+    for (const u of users) {
+      const pid = personIds.get(u.id);
+      if (!pid) continue;
+      const place = workplace.get(u.id);
+      const was = current.get(pid) ?? { companyId: '', jobTitle: '' };
+      if (place) {
+        const cid = companyIds.get(place.applicationId)!;
+        if (was.companyId !== cid || was.jobTitle !== place.jobTitle) await client.update('people', pid, { companyId: cid, jobTitle: place.jobTitle });
+      } else if (u.role === 'staff' && Object.values(JOB_TITLES).includes(was.jobTitle)) {
+        // Access revoked: the workplace this sync set goes; a title the team typed stays.
+        await client.update('people', pid, { companyId: null, jobTitle: '' });
+      }
     }
 
     const appByVenue = new Map(realApps.filter((a) => a.venueId).map((a) => [a.venueId!, a]));

@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
 import { and, asc, eq, ne, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.module.js';
-import { applicationActivities, applications, cities, reservations, reservationTables, tables, users } from '../../database/schema/index.js';
+import { applicationActivities, applications, cities, reservations, reservationTables, staffMembers, tables, users } from '../../database/schema/index.js';
 
 export type UserRow = typeof users.$inferSelect;
 export type ApplicationRow = typeof applications.$inferSelect;
@@ -27,6 +27,13 @@ export class CrmRepository {
 
   activities() {
     return this.db.select({ applicationId: applicationActivities.applicationId, action: applicationActivities.action, createdAt: applicationActivities.createdAt }).from(applicationActivities);
+  }
+
+  /** Staff memberships: who works where, in which role, with which access. */
+  staff() {
+    return this.db
+      .select({ userId: staffMembers.userId, venueId: staffMembers.venueId, role: staffMembers.role, status: staffMembers.status, createdAt: staffMembers.createdAt })
+      .from(staffMembers);
   }
 
   cities() {
