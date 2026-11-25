@@ -14459,6 +14459,14 @@ html[data-theme="light"] .login-forgot-hint {
   .catalog-search-row {
     flex-direction: column;
   }
+  .catalog-search-row .catalog-discover-btn {
+    inline-size: 100%;
+    height: auto;
+    min-block-size: 48px;
+    padding: 12px 16px;
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 .catalog-title {
@@ -18189,6 +18197,12 @@ html[data-theme="light"] .booking-done-extras svg {
 /* ==========================================================================
    /book — quick booking search (free tables across venues)
    ========================================================================== */
+.venue-page,
+.book-main-content {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
 .qb {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -18328,8 +18342,9 @@ html[data-theme="light"] .booking-done-extras svg {
 }
 .qb-card-photo {
   display: block;
-  align-self: stretch;
-  min-height: 112px;
+  align-self: start;
+  inline-size: 100%;
+  min-block-size: 0;
   overflow: hidden;
   border-radius: 14px;
   background:
@@ -18402,6 +18417,9 @@ html[data-theme="light"] .booking-done-extras svg {
   flex-wrap: wrap;
   gap: 6px;
 }
+.qb-slots:empty {
+  display: none;
+}
 .qb-slots button {
   min-height: 40px;
   min-width: 72px;
@@ -18422,8 +18440,8 @@ html[data-theme="light"] .booking-done-extras svg {
   transform: translateY(-1px);
 }
 .qb-slots button.on {
-  border-color: var(--state-free);
-  background: var(--state-free);
+  border-color: #246f48;
+  background: #246f48;
   color: #ffffff;
 }
 .qb-slots button:focus-visible {
@@ -18547,23 +18565,73 @@ html[data-theme="light"] .qb-slots button:hover {
 @media (max-width: 640px) {
   .qb-search {
     position: static;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(118px, 0.78fr) minmax(0, 1.22fr);
+    gap: 12px;
     padding: 14px;
+    border-radius: 16px;
   }
   .qb-search > .qb-field:last-child {
     grid-column: 1 / -1;
   }
+  .qb-search .qb-field-days .booking-slot-days {
+    flex-wrap: wrap;
+    flex-wrap: balance;
+    overflow: visible;
+    gap: 6px;
+  }
+  .qb-search .qb-field-days .booking-slot-days button {
+    flex: 1 0 74px;
+    max-inline-size: 132px;
+    min-inline-size: 0;
+    padding-inline: 10px;
+  }
+  .qb-search > .qb-field:last-child .booking-slot-days {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+    gap: 6px;
+  }
+  .qb-search > .qb-field:last-child .booking-slot-days button {
+    inline-size: 100%;
+    min-inline-size: 0;
+    padding-inline: 6px;
+  }
+  .qb-select {
+    padding: 0 32px 0 12px;
+    font-size: 0.86rem;
+    text-overflow: ellipsis;
+  }
+  .qb-results-head {
+    align-items: flex-start;
+    gap: 6px 14px;
+  }
   .qb-card {
-    grid-template-columns: 96px minmax(0, 1fr);
-    column-gap: 16px;
+    grid-template-columns: 92px minmax(0, 1fr);
+    column-gap: 14px;
     row-gap: 10px;
     padding: 12px;
+    border-radius: 16px;
   }
   .qb-card-photo {
-    min-height: 96px;
+    min-block-size: 0;
   }
   .qb-card-meta {
     white-space: normal;
+  }
+  .qb-others summary {
+    padding: 12px 14px;
+  }
+  .qb-others ul {
+    padding: 0 14px 14px;
+  }
+  .qb-others li {
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+}
+@media (max-width: 360px) {
+  .qb-search {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -20681,7 +20749,7 @@ html[data-theme="light"] .site-header:not(.transparent) .site-menu-toggle {
 }
 
 @media (max-width: 640px) {
-  .site-prefs .site-pref-dropdown:nth-child(2) {
+  .site-header .site-prefs .site-pref-dropdown:nth-child(2) {
     display: none;
   }
 }
@@ -20697,7 +20765,7 @@ html[data-theme="light"] .site-header:not(.transparent) .site-menu-toggle {
 }
 
 @media (max-width: 420px) {
-  .site-prefs {
+  .site-header .site-prefs {
     display: none;
   }
 }
@@ -20998,6 +21066,9 @@ html[data-theme="light"] .catalog-discover-btn:hover {
     .menu-toggle,
     .menu-chip,
     .qb-slots button,
+    .qb-search .booking-slot-days button,
+    .qb-card-action,
+    .qb-catalog-link,
     .booking-popup-x,
     .legal-modal-close,
     .footer-col li a,
@@ -21028,6 +21099,17 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   .site-header .site-nav .site-nav-primary,
   .site-header .site-nav .site-notify-trigger {
     min-inline-size: 44px;
+  }
+}
+
+@media (max-width: 720px) {
+  .qb-find .catalog-discover-btn {
+    inline-size: 100%;
+    height: auto;
+    min-block-size: 48px;
+    padding: 12px 16px;
+    white-space: normal;
+    text-align: center;
   }
 }
 
@@ -21130,23 +21212,104 @@ html[data-theme="light"] .catalog-discover-btn:hover {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 540px) {
+  .qb {
+    gap: 16px;
+  }
+
+  .qb-hero {
+    padding-top: 6px;
+  }
+
+  .qb-find {
+    margin-top: 0;
+  }
+
+  .qb-find .catalog-search-input {
+    height: 48px;
+    padding: 0 42px;
+  }
+
+  .qb-empty > div {
+    flex-direction: column;
+  }
+
+  .qb-empty .venue-cta {
+    width: 100%;
+  }
+
   .qb-card {
-    grid-template-columns: 80px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: 76px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 6px;
+    align-content: start;
+    padding: 12px;
   }
 
   .qb-card-photo {
-    min-height: 80px;
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    align-self: start;
+    inline-size: 100%;
+    min-block-size: 0;
+    aspect-ratio: 1;
+  }
+
+  .qb-card-body {
+    display: contents;
+  }
+
+  .qb-card-title {
+    grid-column: 2;
+    grid-row: 1;
+    align-items: start;
+    min-inline-size: 0;
+  }
+
+  .qb-card-title h3 {
+    font-size: 1.06rem;
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+
+  .qb-card-meta {
+    grid-column: 2;
+    grid-row: 2;
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+
+  .qb-card-status {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 2px;
+    min-inline-size: 0;
   }
 
   .qb-slots {
     grid-column: 1 / -1;
+    margin-top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .qb-slots button {
-    min-width: 64px;
-    flex: 1 1 auto;
+    flex: 1 1 74px;
+    max-inline-size: 132px;
+    min-inline-size: 0;
+    padding: 0 8px;
+  }
+
+  .qb-card-action,
+  .qb-card-note {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+  }
+
+  .qb-card-action {
+    display: inline-flex;
+    align-items: center;
   }
 }
 
