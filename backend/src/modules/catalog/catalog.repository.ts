@@ -68,6 +68,11 @@ export class CatalogRepository {
     return this.db.select().from(menuItems).where(and(eq(menuItems.venueId, venueId), eq(menuItems.stopped, false)));
   }
 
+  menuItemsByIds(ids: string[]): Promise<MenuItemRecord[]> {
+    if (!ids.length) return Promise.resolve([]);
+    return this.db.select().from(menuItems).where(inArray(menuItems.id, ids));
+  }
+
   listCollections() {
     return this.db.select().from(collections).orderBy(asc(collections.position));
   }

@@ -66,6 +66,16 @@ export class CatalogService {
     throw notFound('venue_not_found');
   }
 
+  /** A published venue (not an application preview), or undefined. */
+  publishedVenue(id: string): Promise<VenueRecord | undefined> {
+    return this.repo.getVenue(id);
+  }
+
+  /** Raw dishes by id, stopped ones included (preorders check them line by line). */
+  menuItemsByIds(ids: string[]) {
+    return this.repo.menuItemsByIds(ids);
+  }
+
   async getVenue(id: string) {
     return presentVenue(await this.getVenueRecord(id));
   }

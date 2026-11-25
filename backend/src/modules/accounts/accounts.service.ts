@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
-import { badRequest, conflict, forbidden, notFound, unauthorized } from '../../core/errors/domain-error.js';
+import { badRequest, conflict, forbidden, notFound, pgCode, unauthorized } from '../../core/errors/domain-error.js';
 import { TokenService } from '../../core/auth/token.service.js';
 import { Clock } from '../../core/time/time.js';
 import { squareJpeg } from '../../integrations/storage/image.js';
@@ -69,7 +69,7 @@ export class AccountsService {
       });
     } catch (error) {
       // Two sign-ups racing for one address: the unique index decides.
-      if ((error as { cause?: { code?: string } }).cause?.code === '23505') throw conflict('email_taken');
+      if (pgCode(error) === '23505') throw conflict('email_taken');
       throw error;
     }
     return this.session(user);

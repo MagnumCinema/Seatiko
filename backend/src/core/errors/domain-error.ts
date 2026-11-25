@@ -22,3 +22,10 @@ export const forbidden = (code = 'forbidden') => new DomainError(code, HttpStatu
 export const notFound = (code = 'not_found') => new DomainError(code, HttpStatus.NOT_FOUND);
 export const conflict = (code = 'conflict', extra?: Record<string, unknown>) => new DomainError(code, HttpStatus.CONFLICT, extra);
 export const unavailable = (code: string) => new DomainError(code, HttpStatus.SERVICE_UNAVAILABLE);
+
+/** SQLSTATE of a Postgres error, also when Drizzle wraps it (error.cause). */
+export function pgCode(error: unknown): string | undefined {
+  const e = error as { code?: unknown; cause?: { code?: unknown } };
+  const code = typeof e?.code === 'string' ? e.code : e?.cause?.code;
+  return typeof code === 'string' ? code : undefined;
+}

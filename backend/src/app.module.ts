@@ -13,6 +13,10 @@ import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { DocsModule } from './modules/docs/docs.module.js';
 import { MapModule } from './modules/map/map.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
+import { ReservationsModule } from './modules/reservations/reservations.module.js';
+import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
+import { VenueAccessModule } from './modules/venue-access/venue-access.service.js';
 import { HealthModule } from './modules/health/health.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -36,9 +40,13 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     HealthModule,
     DocsModule,
     NotificationsModule,
+    VenueAccessModule,
+    OrdersModule,
     AccountsModule,
     CatalogModule,
     MapModule,
+    ReservationsModule,
+    WaitlistModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: HttpErrorFilter },
