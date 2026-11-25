@@ -91,6 +91,50 @@ services:
       retries: 15
     restart: unless-stopped
 
+  # --- NestJS API (migration from the Go api, see backend/PLAN.md). Not started by
+  # default: `docker compose --profile nest up -d seatiko-db nest-api`.
+  seatiko-db:
+    image: postgres:16
+    profiles: ["nest"]
+    environment:
+      POSTGRES_DB: seatiko
+      POSTGRES_USER: seatiko
+      POSTGRES_PASSWORD: ${SEATIKO_DB_PASSWORD:-seatiko-dev-password}
+    volumes:
+      - seatiko-db-data:/var/lib/postgresql/data
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:5433:5432"
+    healthcheck:
+      test: pg_isready -U seatiko -d seatiko
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  nest-api:
+    build:
+      context: ./backend
+    profiles: ["nest"]
+    expose:
+      - "8080"
+    env_file:
+      - path: ./.env.integration.local
+        required: false
+    environment:
+      ADDR: ":8080"
+      APP_ENV: ${APP_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:-dev-seatiko-change-me}
+      DATABASE_URL: postgres://seatiko:${SEATIKO_DB_PASSWORD:-seatiko-dev-password}@seatiko-db:5432/seatiko
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET:-seatiko}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-seatiko}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-seatiko-minio-dev-secret}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-/media}
+    depends_on:
+      seatiko-db:
+        condition: service_healthy
+    restart: unless-stopped
+
   # S3-compatible object storage: MinIO Community (Chainguard build; MinIO stopped
   # publishing free images in Oct 2025). For AWS S3 / R2 change the S3_* variables of api.
   minio:
@@ -225,6 +269,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  seatiko-db-data:
   minio-data:
   api-data:
   api-uploads:
