@@ -40,4 +40,7 @@ async function bootstrap() {
   const { host, port } = listenAddress({ ADDR: config.get('ADDR', { infer: true }), PORT: config.get('PORT', { infer: true }) });
   await app.listen(port, host ?? '0.0.0.0');
 }
-await bootstrap();
+void bootstrap().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

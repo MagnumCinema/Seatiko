@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectDrizzle } from '@nestjs/drizzle';
@@ -11,8 +11,28 @@ import { CITIES } from './reference/cities.js';
 import { cities, users } from './schema/index.js';
 import { importGoState } from './seed/import-go-state.js';
 
+type BundledAssets = {
+  migrations?: Record<string, string>;
+  demoState?: { generated_at: string; state: unknown };
+  openapiYaml?: string;
+};
+
+function getBundledAssets(): BundledAssets | undefined {
+  return (globalThis as { __SEATIKO_BUNDLED_ASSETS__?: BundledAssets }).__SEATIKO_BUNDLED_ASSETS__;
+}
+
 function resolveExistingPath(candidates: string[]): string | undefined {
   return candidates.find((p) => existsSync(p));
+}
+
+function materializeBundledMigrations(files: Record<string, string>): string {
+  const dir = '/tmp/seatiko-migrations';
+  for (const [rel, content] of Object.entries(files)) {
+    const dest = join(dir, rel);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, content, 'utf8');
+  }
+  return dir;
 }
 
 /**
@@ -31,13 +51,19 @@ export class DatabaseBootstrap implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (this.config.get('DB_MIGRATE_ON_START', { infer: true })) {
-      const migrationsFolder = resolveExistingPath([
+      let migrationsFolder = resolveExistingPath([
         join(import.meta.dirname, 'migrations'),
         join(process.cwd(), 'dist/database/migrations'),
         join(process.cwd(), 'src/database/migrations'),
         join(process.cwd(), 'backend/dist/database/migrations'),
         join(process.cwd(), 'backend/src/database/migrations'),
       ]);
+      if (!migrationsFolder) {
+        const bundled = getBundledAssets()?.migrations;
+        if (bundled && Object.keys(bundled).length > 0) {
+          migrationsFolder = materializeBundledMigrations(bundled);
+        }
+      }
       if (migrationsFolder) {
         await migrate(this.db, { migrationsFolder });
       } else {
@@ -68,11 +94,13 @@ export class DatabaseBootstrap implements OnModuleInit {
       join(process.cwd(), 'backend/dist/database/seed/demo-state.json'),
       join(process.cwd(), 'backend/src/database/seed/demo-state.json'),
     ]);
-    if (!demoPath) {
+    const demo = demoPath
+      ? (JSON.parse(readFileSync(demoPath, 'utf8')) as { generated_at: string; state: unknown })
+      : getBundledAssets()?.demoState;
+    if (!demo) {
       this.logger.warn('SEED_DEMO_ON_EMPTY_DB is enabled, but demo-state.json was not found');
       return;
     }
-    const demo = JSON.parse(readFileSync(demoPath, 'utf8')) as { generated_at: string; state: unknown };
     const shiftMs = Date.now() - new Date(demo.generated_at).getTime();
     const report = await importGoState(this.db, demo.state as never, { replace: true, shiftMs });
     this.logger.log(`seeded demo data into empty database: ${JSON.stringify(report)}`);

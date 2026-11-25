@@ -18,7 +18,9 @@ function resolveOpenApiFile(): string | undefined {
 
 export const openApiYaml = (): string => {
   const file = resolveOpenApiFile();
-  return file ? readFileSync(file, 'utf8') : FALLBACK_OPENAPI;
+  if (file) return readFileSync(file, 'utf8');
+  const bundled = (globalThis as { __SEATIKO_BUNDLED_ASSETS__?: { openapiYaml?: string } }).__SEATIKO_BUNDLED_ASSETS__?.openapiYaml;
+  return bundled ?? FALLBACK_OPENAPI;
 };
 
 export const openApiDocument = (): Record<string, unknown> => parse(openApiYaml()) as Record<string, unknown>;
