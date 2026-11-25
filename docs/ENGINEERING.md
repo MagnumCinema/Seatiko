@@ -147,7 +147,7 @@ Backend напрямую не публикует порт `8080` на компь
 ## Структура репозитория
 
 ```text
-Virtual-restaurant-/
+Seatiko/
 ├── README.md                         # главный вход (карта документации)
 ├── docker-compose.yml                # весь локальный стек
 ├── .env                              # все настройки и ключи (не в git; шаблон .env.example)
@@ -729,15 +729,15 @@ Volumes:
 
 | Volume | Данные |
 |---|---|
-| `virtual-restaurant_api-data` | состояние API |
-| `virtual-restaurant_api-uploads` | фотографии |
+| `seatiko_api-data` | состояние API |
+| `seatiko_api-uploads` | фотографии |
 | `twenty_db-data` | PostgreSQL Twenty |
 | `twenty_server-local-data` | локальные файлы Twenty |
 
 Просмотр:
 
 ```bash
-docker volume ls | rg 'virtual-restaurant|twenty'
+docker volume ls | rg 'seatiko|twenty'
 ```
 
 Перед ручным переносом или восстановлением остановите изменяющие данные сервисы и сделайте резервную копию всех четырёх volumes. Для production используйте регулярный `pg_dump`, объектное хранилище и проверяемую процедуру восстановления.

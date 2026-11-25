@@ -142,7 +142,7 @@ func TestMergeMapPlaces_UnmatchedVenueStillEmitted(t *testing.T) {
 - [ ] **Step 2: Run tests — expect fail**
 
 ```bash
-docker run --rm -v "/Users/cristianchilat/WebstormProjects/Virtual-restaurant-/seatiko/services/api:/src" -w /src golang:1.25-alpine go test ./internal/places/ -count=1
+docker run --rm -v "/Users/cristianchilat/WebstormProjects/Seatiko/seatiko/services/api:/src" -w /src golang:1.25-alpine go test ./internal/places/ -count=1
 ```
 
 Expected: FAIL (missing types/functions).
@@ -516,7 +516,7 @@ v1.GET("/map/places", api.ListMapPlaces)
 - [ ] **Step 3: Rebuild API and smoke-test**
 
 ```bash
-cd /Users/cristianchilat/WebstormProjects/Virtual-restaurant-
+cd /Users/cristianchilat/WebstormProjects/Seatiko
 docker compose up -d --build api
 curl -s "http://localhost/api/v1/map/places" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["source"]); print(len(d["places"]), "places"); print(sum(1 for p in d["places"] if p["in_database"]), "in_db")'
 ```

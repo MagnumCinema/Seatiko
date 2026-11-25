@@ -1,4 +1,4 @@
-name: virtual-restaurant
+name: seatiko
 
 services:
   nginx:

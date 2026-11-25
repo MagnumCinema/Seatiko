@@ -664,7 +664,7 @@ Remove obsolete `.discover-stepper-tabs` rules once markup no longer uses them (
 - [ ] **Step 2: Rebuild web container so localhost picks up CSS**
 
 ```bash
-cd /Users/cristianchilat/WebstormProjects/Virtual-restaurant- && docker compose build web && docker compose up -d web
+cd /Users/cristianchilat/WebstormProjects/Seatiko && docker compose build web && docker compose up -d web
 ```
 
 Expected: web image rebuilt and container restarted.
