@@ -32,3 +32,6 @@ dist/
 .env.*
 !.env.example
 .seatiko-local/
+
+# Local file storage of the API (uploads written by dev runs and contract tests)
+backend/data/
