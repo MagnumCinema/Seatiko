@@ -658,6 +658,10 @@ function VenueMapArea({
         id: "seatiko-venue-halo",
         type: "circle",
         source: SOURCE_ID,
+        layout: {
+          // Partners and the selected place are drawn above the other dots.
+          "circle-sort-key": ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0],
+        },
                 paint: {
           "circle-color": "rgba(255, 253, 248, 0.94)",
           "circle-radius": [
@@ -675,6 +679,10 @@ function VenueMapArea({
         id: VENUE_LAYER_ID,
         type: "circle",
         source: SOURCE_ID,
+        layout: {
+          // Partners and the selected place are drawn above the other dots.
+          "circle-sort-key": ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0],
+        },
                 paint: {
           "circle-color": [
             "case",
