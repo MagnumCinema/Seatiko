@@ -1,7 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { SwaggerModule } from '@nestjs/swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { listenAddress, type Env } from './config/env.schema.js';
@@ -34,7 +33,12 @@ async function bootstrap() {
       // Read-only filesystem (e.g. serverless without S3_BUCKET): skip local static serving.
     }
   }
-  SwaggerModule.setup('api/docs', app, openApiDocument() as never, { swaggerOptions: { url: '/api/openapi.yaml' } });
+  try {
+    const { SwaggerModule } = await import('@nestjs/swagger');
+    SwaggerModule.setup('api/docs', app, openApiDocument() as never, { swaggerOptions: { url: '/api/openapi.yaml' } });
+  } catch {
+    // Optional in serverless bundle without swagger-ui-dist static files; /api/openapi.yaml stays active.
+  }
 
   const config = app.get(ConfigService<Env, true>);
   const { host, port } = listenAddress({ ADDR: config.get('ADDR', { infer: true }), PORT: config.get('PORT', { infer: true }) });

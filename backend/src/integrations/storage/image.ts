@@ -1,4 +1,3 @@
-import sharp from 'sharp';
 import { DomainError } from '../../core/errors/domain-error.js';
 
 export const MAX_IMAGE_BYTES = 5 << 20;
@@ -25,6 +24,7 @@ export async function squareJpeg(data: Uint8Array, size = 512): Promise<Uint8Arr
   if (data.length > MAX_IMAGE_BYTES) throw tooLarge();
   if (!sniffImage(data)) throw unsupported();
   try {
+    const { default: sharp } = await import('sharp');
     const img = sharp(data, { limitInputPixels: MAX_PIXELS, failOn: 'error' });
     const meta = await img.metadata();
     const side = Math.min(meta.width ?? 0, meta.height ?? 0);
@@ -44,6 +44,7 @@ export async function photoJpeg(data: Uint8Array, max = 1600): Promise<Uint8Arra
   if (data.length > MAX_IMAGE_BYTES) throw tooLarge();
   if (!sniffImage(data)) throw unsupported();
   try {
+    const { default: sharp } = await import('sharp');
     return new Uint8Array(
       await sharp(data, { limitInputPixels: MAX_PIXELS, failOn: 'error' })
         .rotate()
