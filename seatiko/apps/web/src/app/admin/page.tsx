@@ -253,14 +253,14 @@ export default function AdminPage() {
 
   if (!user) {
     return (
-      <div className="admin-console">
+      <div className="admin-console" data-surface="dark">
         <p className="admin-loading">Загрузка консоли…</p>
       </div>
     );
   }
 
   return (
-    <div className="admin-console">
+    <div className="admin-console" data-surface="dark">
       <div className="admin-shell">
         <aside className="admin-rail">
           <div className="admin-rail-brand">
@@ -313,7 +313,7 @@ export default function AdminPage() {
             <span className="admin-user">{user.email}</span>
             <button
               type="button"
-              className="admin-link-btn"
+              className="btn btn--link admin-link-btn"
               onClick={() => {
                 logout();
                 router.push("/login");
@@ -345,7 +345,7 @@ export default function AdminPage() {
               )}
               <button
                 type="button"
-                className="admin-btn secondary"
+                className="btn btn--secondary btn--md"
                 disabled={busy}
                 onClick={() => void loadSection()}
               >
@@ -421,12 +421,12 @@ export default function AdminPage() {
                     {crm?.last_error && <p className="bad-text">{crm.last_error}</p>}
                   </div>
                   <div className="admin-crm-actions">
-                    <a className="admin-btn" href={crm?.crm_url || "/crm"} target="_blank" rel="noreferrer">
+                    <a className="btn btn--primary btn--md" href={crm?.crm_url || "/crm"} target="_blank" rel="noreferrer">
                       Открыть CRM
                     </a>
                     <button
                       type="button"
-                      className="admin-btn secondary"
+                      className="btn btn--secondary btn--md"
                       disabled={busy || !crm?.enabled || crm.running}
                       onClick={() => void reconcile()}
                     >
@@ -444,7 +444,7 @@ export default function AdminPage() {
                     <button
                       key={f.id || "all"}
                       type="button"
-                      className={filter === f.id ? "on" : ""}
+                      className={`chip${filter === f.id ? " is-active" : ""}`}
                       onClick={() => setFilter(f.id)}
                     >
                       {f.label}
@@ -496,6 +496,7 @@ export default function AdminPage() {
                               {a.status === "SUBMITTED" && (
                                 <button
                                   type="button"
+                                  className="btn btn--secondary btn--sm"
                                   disabled={busy}
                                   onClick={() =>
                                     run(
@@ -514,7 +515,7 @@ export default function AdminPage() {
                                 <>
                                   <button
                                     type="button"
-                                    className="primary"
+                                    className="btn btn--primary btn--sm"
                                     disabled={busy}
                                     onClick={() =>
                                       run(
@@ -528,7 +529,7 @@ export default function AdminPage() {
                                   >
                                     Одобрить
                                   </button>
-                                  <button type="button" disabled={busy} onClick={() => setRejectFor(a.id)}>
+                                  <button type="button" className="btn btn--danger-outline btn--sm" disabled={busy} onClick={() => setRejectFor(a.id)}>
                                     Отклонить
                                   </button>
                                 </>
@@ -536,7 +537,7 @@ export default function AdminPage() {
                               {a.status === "APPROVED" && (
                                 <button
                                   type="button"
-                                  className="primary"
+                                  className="btn btn--primary btn--sm"
                                   disabled={busy}
                                   onClick={() =>
                                     run(
@@ -558,7 +559,7 @@ export default function AdminPage() {
                                 />
                                 <button
                                   type="button"
-                                  className="primary"
+                                  className="btn btn--danger btn--sm"
                                   disabled={busy || rejectReason.trim().length < 3}
                                   onClick={() =>
                                     run(async () => {
@@ -781,7 +782,7 @@ export default function AdminPage() {
                             <div className="admin-row-actions">
                               <button
                                 type="button"
-                                className="primary"
+                                className="btn btn--primary btn--sm"
                                 disabled={busy}
                                 onClick={() =>
                                   run(
@@ -795,6 +796,7 @@ export default function AdminPage() {
                               </button>
                               <button
                                 type="button"
+                                className="btn btn--danger-outline btn--sm"
                                 disabled={busy}
                                 onClick={() =>
                                   run(
@@ -861,7 +863,7 @@ export default function AdminPage() {
                   {crm?.last_error && <p className="bad-text">{crm.last_error}</p>}
                   <div className="admin-crm-actions">
                     <a
-                      className="admin-btn"
+                      className="btn btn--primary btn--md"
                       href={crm?.crm_url || "/crm"}
                       target="_blank"
                       rel="noreferrer"
@@ -870,7 +872,7 @@ export default function AdminPage() {
                     </a>
                     <button
                       type="button"
-                      className="admin-btn secondary"
+                      className="btn btn--secondary btn--md"
                       disabled={busy || !crm?.enabled || crm.running}
                       onClick={() => void reconcile()}
                     >

@@ -2089,8 +2089,7 @@ a {
   padding: 14px 10px 4px;
   border-top: 1px solid var(--a-line);
 }
-.admin-rail-foot a,
-.admin-link-btn {
+.admin-rail-foot a {
   color: var(--a-gold);
   background: none;
   border: 0;
@@ -2102,8 +2101,8 @@ a {
   font-weight: 550;
   text-decoration: none;
 }
-.admin-rail-foot a:hover,
-.admin-link-btn:hover { color: #f0c98a; }
+.admin-rail-foot a:hover { color: #f0c98a; }
+.admin-link-btn { justify-self: start; }
 .admin-user {
   font-size: 0.75rem;
   color: var(--a-faint);
@@ -2167,69 +2166,7 @@ a {
   border-color: rgba(224, 182, 106, 0.55);
   box-shadow: 0 0 0 3px rgba(224, 182, 106, 0.12);
 }
-.admin-btn,
-.admin-row-actions button {
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  background: linear-gradient(180deg, #efc783, var(--a-gold-deep));
-  color: #1b140c;
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 700;
-  padding: 0 16px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: filter 140ms ease, transform 140ms ease;
-}
-.admin-btn:hover { filter: brightness(1.05); }
-.admin-btn.secondary,
-.admin-row-actions button {
-  background: transparent;
-  color: var(--a-text);
-  border-color: var(--a-line-strong);
-  font-weight: 600;
-}
-.admin-btn.secondary:hover,
-.admin-row-actions button:hover {
-  border-color: rgba(224, 182, 106, 0.4);
-  background: rgba(224, 182, 106, 0.08);
-}
-.admin-row-actions button.primary {
-  background: linear-gradient(180deg, #efc783, var(--a-gold-deep));
-  color: #1b140c;
-  border-color: transparent;
-  font-weight: 700;
-}
-.admin-row-actions button:disabled,
-.admin-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  filter: none;
-}
 .admin-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.admin-chips button {
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid var(--a-line-strong);
-  background: transparent;
-  color: var(--a-muted);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 550;
-  padding: 0 14px;
-  cursor: pointer;
-}
-.admin-chips button:hover { color: var(--a-text); border-color: rgba(224,182,106,.35); }
-.admin-chips button.on {
-  color: #1b140c;
-  background: var(--a-gold);
-  border-color: transparent;
-  font-weight: 700;
-}
 .admin-banner {
   border-radius: 12px;
   padding: 12px 14px;
@@ -2393,7 +2330,6 @@ a {
   border-color: var(--a-line-strong);
 }
 .admin-row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.admin-row-actions button { height: 32px; font-size: 0.78rem; padding: 0 12px; border-radius: 10px; }
 .admin-photos { display: flex; gap: 6px; }
 .admin-photos img {
   width: 40px;
@@ -2403,6 +2339,7 @@ a {
   border: 1px solid var(--a-line-strong);
 }
 .admin-reject { margin-top: 10px; display: grid; gap: 8px; max-width: 320px; }
+.admin-reject .btn { justify-self: start; }
 .admin-reject textarea {
   min-height: 72px;
   border-radius: 12px;
