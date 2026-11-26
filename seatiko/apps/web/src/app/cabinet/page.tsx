@@ -22,6 +22,7 @@ import {
   createApplication,
   deleteApplication,
   fetchMe,
+  fetchMapConfig,
   getToken,
   listApplicationActivity,
   listMyApplications,
@@ -29,6 +30,7 @@ import {
   listVenueWorkShifts,
   pickLocale,
   type ApplicationActivity,
+  type MapConfig,
   type RestaurantReservation,
   type User,
   type VenueApplication,
@@ -247,6 +249,15 @@ export default function CabinetPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const contentRef = useRef<HTMLElement>(null);
+  const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchMapConfig().then((config) => { if (active) setMapConfig(config); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const locations = mapConfig?.cities.filter((city) => city.country === "MD") ?? [];
   const [apps, setApps] = useState<VenueApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("overview");
@@ -881,6 +892,8 @@ export default function CabinetPage() {
                 <CabinetProfilePanel
                   key={selected.id}
                   application={selected}
+                  mapConfig={mapConfig}
+                  cities={locations}
                   onApplicationChange={(updated) =>
                     setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)))
                   }

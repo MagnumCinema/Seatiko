@@ -29,7 +29,6 @@ import { SelectMenu } from "@/components/ui/select-menu";
 import { VenueLocationPicker } from "@/components/venue-location-picker";
 import {
   ApiError,
-  fetchMapConfig,
   getApplication,
   listMyChangeRequests,
   mediaUrl,
@@ -38,6 +37,7 @@ import {
   submitApplication,
   submitProfileChangeRequest,
   updateApplication,
+  type City,
   type LocaleCode,
   type MapConfig,
   type MapCoordinates,
@@ -112,7 +112,7 @@ function formatTimeOfDay(ms: number, locale: LocaleCode) {
 }
 
 /** How a saved value reads in a change list. */
-function useValueText(copy: SiteCopy, cities: MapConfig["cities"], locale: LocaleCode) {
+function useValueText(copy: SiteCopy, cities: City[], locale: LocaleCode) {
   return useCallback(
     (change: ProfileChange, values: ProfileValues): string => {
       const t = copy.cabinet.profileTab;
@@ -159,6 +159,10 @@ function priceLabel(copy: SiteCopy, level: number) {
 
 export type CabinetProfilePanelProps = {
   application: VenueApplication;
+  /** Map key and cities (the page loads them once). */
+  mapConfig: MapConfig | null;
+  /** Moldovan cities to pick from. */
+  cities: City[];
   /** A fresher copy of the application (after save, upload, submit or a reload). */
   onApplicationChange: (app: VenueApplication) => void;
   /** Shows a notice above the tab; an empty text clears it. */
@@ -171,14 +175,10 @@ export type CabinetProfilePanelProps = {
   deleteBusy?: boolean;
 };
 
-let mapConfigCache: Promise<MapConfig | null> | null = null;
-const loadMapConfig = () => (mapConfigCache ??= fetchMapConfig().catch(() => {
-  mapConfigCache = null;
-  return null;
-}));
-
 export function CabinetProfilePanel({
   application,
+  mapConfig,
+  cities,
   onApplicationChange,
   onNotice,
   onActivityChange,
@@ -208,7 +208,6 @@ export function CabinetProfilePanel({
   const [confirm, setConfirm] = useState<"discard" | "reset" | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [cityChanged, setCityChanged] = useState(false);
-  const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
   const [requests, setRequests] = useState<ProfileChangeRequest[] | null>(null);
   const [requestsFailed, setRequestsFailed] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -236,18 +235,7 @@ export function CabinetProfilePanel({
   const changes = useMemo(() => (editing ? diffValues(savedValues, draftValues) : []), [editing, savedValues, draftValues]);
   const dirty = changes.length > 0;
   const photoCount = application.photo_urls?.length ?? 0;
-  const cities = useMemo(() => (mapConfig?.cities ?? []).filter((city) => city.country === "MD"), [mapConfig]);
   const valueText = useValueText(copy, cities, locale);
-
-  useEffect(() => {
-    let active = true;
-    void loadMapConfig().then((config) => {
-      if (active) setMapConfig(config);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const loadRequests = useCallback(async () => {
     try {
