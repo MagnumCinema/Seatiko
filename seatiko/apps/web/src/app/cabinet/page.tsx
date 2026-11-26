@@ -10,10 +10,10 @@ import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
 import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import {
   CabinetFloorPanel,
-  CabinetMenuPanel,
   CabinetRulesPanel,
   CabinetStaffPanel,
 } from "@/components/cabinet-ops";
+import { CabinetMenuPanel } from "@/components/cabinet-menu";
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
@@ -1881,7 +1881,8 @@ export default function CabinetPage() {
               )}
 
               {section === "menu" && (
-                <CabinetMenuPanel venueId={effectiveVenueId} />
+                // The menu lives on the published venue; before publishing there is none yet.
+                <CabinetMenuPanel venueId={selected.venue_id ?? ""} />
               )}
 
               {section === "rules" && (
