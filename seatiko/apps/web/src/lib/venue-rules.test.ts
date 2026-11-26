@@ -17,6 +17,46 @@ describe("resolveBookingRules", () => {
   it("never lets the announced-lateness limit drop below the hold time", () => {
     expect(resolveBookingRules({ hold_minutes: 25, max_late_arrival_min: 10 }).max_late_arrival_min).toBe(25);
   });
+
+  it("keeps a zero seating lead and walk-in release the owner chose (the API stores 0 as 0)", () => {
+    const rules = resolveBookingRules({ session_start_before_min: 0, release_before_min: 0 });
+    expect(rules.session_start_before_min).toBe(0);
+    expect(rules.release_before_min).toBe(0);
+  });
+
+  it("uses the seating defaults only when the venue has no value", () => {
+    const rules = resolveBookingRules({ booking_interval_min: 30 });
+    expect(rules.session_start_before_min).toBe(DEFAULT_BOOKING_RULES.session_start_before_min);
+    expect(rules.release_before_min).toBe(DEFAULT_BOOKING_RULES.release_before_min);
+  });
+
+  it("reads the kitchen lead time for preorders, 0 meaning the API default of 30 min", () => {
+    expect(resolveBookingRules({ preorder_lead_min: 45 }).preorder_lead_min).toBe(45);
+    expect(resolveBookingRules({ preorder_lead_min: 0 }).preorder_lead_min).toBe(30);
+  });
+});
+
+describe("validateBookingRules limits the API treats as 'use the default'", () => {
+  it("rejects a zero announced-lateness limit, which the API would turn into 30 min", () => {
+    expect(validateBookingRules({ ...DEFAULT_BOOKING_RULES, hold_minutes: 0, max_late_arrival_min: 0 })).toEqual([
+      { key: "max_late_arrival_min", reason: "range" },
+    ]);
+  });
+
+  it("rejects a zero kitchen lead time and one over three hours", () => {
+    expect(validateBookingRules({ ...DEFAULT_BOOKING_RULES, preorder_lead_min: 0 })).toEqual([
+      { key: "preorder_lead_min", reason: "range" },
+    ]);
+    expect(validateBookingRules({ ...DEFAULT_BOOKING_RULES, preorder_lead_min: 181 })).toEqual([
+      { key: "preorder_lead_min", reason: "range" },
+    ]);
+  });
+
+  it("accepts zero seating lead and walk-in release", () => {
+    expect(
+      validateBookingRules({ ...DEFAULT_BOOKING_RULES, session_start_before_min: 0, release_before_min: 0 }),
+    ).toEqual([]);
+  });
 });
 
 describe("validateBookingRules", () => {

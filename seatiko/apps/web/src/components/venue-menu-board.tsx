@@ -292,7 +292,8 @@ export function QtyStepper({
   );
 }
 
-function MenuDish({
+/** One dish card of the guest menu (also the owner's preview in the cabinet). */
+export function MenuDish({
   item,
   qty,
   locale,

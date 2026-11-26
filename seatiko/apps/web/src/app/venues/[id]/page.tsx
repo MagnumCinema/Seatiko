@@ -28,8 +28,7 @@ import { useLocale } from "@/components/locale-provider";
 import { listZonesFromTables } from "@/lib/floor-zones";
 import { getSiteCopy } from "@/lib/site-copy";
 import { apiErrorKey } from "@/lib/api-error-message";
-import { parseOpeningHours } from "@/lib/booking-slots";
-import { getVenueHours } from "@/lib/venue-hours";
+import { venueHoursOn } from "@/lib/venue-hours";
 import { AUTH_CHANGE_EVENT } from "@/lib/header-auth";
 import {
   fetchMe,
@@ -256,9 +255,11 @@ export default function VenuePage() {
     return [];
   }, [places, venue]);
 
-  const openingHours = useMemo(
-    () => parseOpeningHours(getVenueHours(venueId, "ru")),
-    [venueId],
+  const venueHoursText = venue?.hours_text;
+  // The schedule grid follows the venue's own hours on the day it shows (days off, after midnight).
+  const hoursOn = useMemo(
+    () => (day: Date) => venueHoursOn({ id: venueId, hours_text: venueHoursText }, day),
+    [venueId, venueHoursText],
   );
   const [scheduleReloadKey, setScheduleReloadKey] = useState(0);
 
@@ -669,7 +670,7 @@ export default function VenuePage() {
                   user?.role === "restaurant" || user?.role === "admin"
                 }
                 isAdmin={user?.role === "admin"}
-                openingHours={openingHours}
+                hoursOn={hoursOn}
                 reloadKey={scheduleReloadKey}
                 mineReservationIds={myReservationIds}
               />

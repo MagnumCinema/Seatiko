@@ -10,7 +10,6 @@ import {
   roleLabel,
   roleNameByKey,
   shiftRoleLabel,
-  splitTeamsByRole,
   validRoleName,
   VENUE_TYPE_IDS,
 } from "./venue-roles";
@@ -106,13 +105,6 @@ describe("venue roles", () => {
       cook: 0,
       "custom-sushi": 1,
     });
-  });
-
-  it("splits teams alternately inside each role", () => {
-    const staff = [member("w1", "waiter"), member("w2", "waiter"), member("w3", "waiter"), member("s1", "custom-sushi"), member("s2", "custom-sushi")];
-    const groups = groupStaffByRole(staff, roles, { inScheduleOnly: true });
-    expect(splitTeamsByRole(["w1", "w2", "w3", "s1", "s2"], groups)).toEqual({ teamA: ["w1", "w3", "s1"], teamB: ["w2", "s2"] });
-    expect(splitTeamsByRole(["w2"], groups)).toEqual({ teamA: ["w2"], teamB: [] });
   });
 
   it("validates role names against other roles", () => {

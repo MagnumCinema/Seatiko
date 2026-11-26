@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 import { FlameIcon, LeafIcon } from "@/components/venue-icons";
 import { mediaUrl, pickLocale, type MenuItem } from "@/lib/api";
@@ -27,6 +27,93 @@ const ALLERGEN_KEYS: Record<string, MessageKey> = {
 export function allergenLabel(t: ReturnType<typeof useLocale>["t"], code: string) {
   const key = ALLERGEN_KEYS[code];
   return key ? t(key) : code;
+}
+
+/**
+ * Photo, name, portion, labels, ingredients and allergens of a dish, as the
+ * guest dish card shows them. `children` go at the end (the popup's add button).
+ */
+export function MenuDishDetails({
+  item,
+  titleId = "menu-dish-popup-title",
+  children,
+}: {
+  item: MenuItem;
+  titleId?: string;
+  children?: ReactNode;
+}) {
+  const { locale, t } = useLocale();
+  const name = pickLocale(item.name, locale);
+  const description = pickLocale(item.description, locale);
+  const ingredients = pickLocale(item.ingredients, locale) || description;
+  const photo = item.image_url ? mediaUrl(item.image_url) : "";
+  const portion = portionOf(item);
+  const allergens = item.allergens ?? [];
+
+  return (
+    <div className="menu-dish-popup-layout">
+      {photo ? (
+        <div className="menu-dish-popup-media">
+          {/* eslint-disable-next-line @next/next/no-img-element -- remote dish photos from the API / Unsplash */}
+          <img src={photo} alt={name} />
+        </div>
+      ) : null}
+
+      <div className="menu-dish-popup-copy">
+        <div className="menu-dish-popup-top">
+          <h2 id={titleId}>{name}</h2>
+          {portion ? (
+            <p className="menu-dish-popup-portion">
+              {t(portion.unit === "g" ? "menu_page.portion_g" : "menu_page.portion_ml", { amount: portion.amount })}
+            </p>
+          ) : null}
+          <div className="menu-dish-popup-tags">
+            {hasTag(item, "popular") ? <span className="menu-tag popular">{t("menu_page.tag_popular")}</span> : null}
+            {hasTag(item, "vegetarian") ? (
+              <span className="menu-tag veg">
+                <LeafIcon className="menu-tag-icon" />
+                {t("menu_page.tag_vegetarian")}
+              </span>
+            ) : null}
+            {hasTag(item, "spicy") ? (
+              <span className="menu-tag spicy">
+                <FlameIcon className="menu-tag-icon" />
+                {t("menu_page.tag_spicy")}
+              </span>
+            ) : null}
+            {item.contains_alcohol ? (
+              <span className="menu-tag adult" title={t("menu_page.tag_alcohol_label")}>
+                {t("menu_page.tag_alcohol")}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {ingredients ? (
+          <div className="menu-dish-popup-block">
+            <h3>{t("menu_page.ingredients")}</h3>
+            <p>{ingredients}</p>
+          </div>
+        ) : null}
+
+        <div className="menu-dish-popup-allergens">
+          <span className="menu-dish-popup-alert" aria-hidden>
+            !
+          </span>
+          <div>
+            <strong>{t("menu_page.allergens")}</strong>
+            {allergens.length > 0 ? (
+              <p>{allergens.map((code) => allergenLabel(t, code)).join(", ")}.</p>
+            ) : (
+              <p>{t("menu_page.allergens_none")}</p>
+            )}
+          </div>
+        </div>
+
+        {children}
+      </div>
+    </div>
+  );
 }
 
 /** Andy's-style dish detail: photo, composition, allergens, add to selection. */
@@ -69,11 +156,6 @@ export function MenuDishPopup({
 
   const dish = item;
   const name = pickLocale(dish.name, locale);
-  const description = pickLocale(dish.description, locale);
-  const ingredients = pickLocale(dish.ingredients, locale) || description;
-  const photo = dish.image_url ? mediaUrl(dish.image_url) : "";
-  const portion = portionOf(dish);
-  const allergens = dish.allergens ?? [];
   const lineTotal = dish.price * localQty;
 
   function commitAndClose() {
@@ -98,96 +180,57 @@ export function MenuDishPopup({
             ×
           </button>
 
-          <div className="menu-dish-popup-layout">
-            {photo ? (
-              <div className="menu-dish-popup-media">
-                {/* eslint-disable-next-line @next/next/no-img-element -- remote dish photos from the API / Unsplash */}
-                <img src={photo} alt={name} />
-              </div>
-            ) : null}
-
-            <div className="menu-dish-popup-copy">
-              <div className="menu-dish-popup-top">
-                <h2 id="menu-dish-popup-title">{name}</h2>
-                {portion ? (
-                  <p className="menu-dish-popup-portion">
-                    {t(portion.unit === "g" ? "menu_page.portion_g" : "menu_page.portion_ml", { amount: portion.amount })}
-                  </p>
-                ) : null}
-                <div className="menu-dish-popup-tags">
-                  {hasTag(dish, "popular") ? <span className="menu-tag popular">{t("menu_page.tag_popular")}</span> : null}
-                  {hasTag(dish, "vegetarian") ? (
-                    <span className="menu-tag veg">
-                      <LeafIcon className="menu-tag-icon" />
-                      {t("menu_page.tag_vegetarian")}
-                    </span>
-                  ) : null}
-                  {hasTag(dish, "spicy") ? (
-                    <span className="menu-tag spicy">
-                      <FlameIcon className="menu-tag-icon" />
-                      {t("menu_page.tag_spicy")}
-                    </span>
-                  ) : null}
-                  {dish.contains_alcohol ? (
-                    <span className="menu-tag adult" title={t("menu_page.tag_alcohol_label")}>
-                      {t("menu_page.tag_alcohol")}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              {ingredients ? (
-                <div className="menu-dish-popup-block">
-                  <h3>{t("menu_page.ingredients")}</h3>
-                  <p>{ingredients}</p>
-                </div>
-              ) : null}
-
-              <div className="menu-dish-popup-allergens">
-                <span className="menu-dish-popup-alert" aria-hidden>
-                  !
-                </span>
-                <div>
-                  <strong>{t("menu_page.allergens")}</strong>
-                  {allergens.length > 0 ? (
-                    <p>{allergens.map((code) => allergenLabel(t, code)).join(", ")}.</p>
-                  ) : (
-                    <p>{t("menu_page.allergens_none")}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="menu-dish-popup-actions">
-                <div className="menu-stepper menu-dish-popup-stepper">
-                  <button
-                    type="button"
-                    aria-label={t("menu_page.less_label", { dish: name })}
-                    disabled={localQty <= 1}
-                    onClick={() => setLocalQty((n) => Math.max(1, n - 1))}
-                  >
-                    −
-                  </button>
-                  <output aria-live="polite">{localQty}</output>
-                  <button
-                    type="button"
-                    aria-label={t("menu_page.more_label", { dish: name })}
-                    onClick={() => setLocalQty((n) => Math.min(99, n + 1))}
-                  >
-                    +
-                  </button>
-                </div>
-                <button type="button" className="venue-cta venue-cta-hero menu-dish-popup-add" onClick={commitAndClose}>
-                  <span>{t("menu_page.add_to_selection")}</span>
-                  <b>
-                    {lineTotal} <small>MDL</small>
-                  </b>
-                </button>
-              </div>
-            </div>
-          </div>
+          <MenuDishDetails item={dish}>
+            <MenuDishAddBar
+              name={name}
+              qty={localQty}
+              total={lineTotal}
+              onLess={() => setLocalQty((n) => Math.max(1, n - 1))}
+              onMore={() => setLocalQty((n) => Math.min(99, n + 1))}
+              onAdd={commitAndClose}
+            />
+          </MenuDishDetails>
         </div>
       </section>
     </div>,
     document.body,
+  );
+}
+
+/** Portions stepper and «Add» button with the line total, at the bottom of the dish card. */
+export function MenuDishAddBar({
+  name,
+  qty,
+  total,
+  onLess,
+  onMore,
+  onAdd,
+}: {
+  name: string;
+  qty: number;
+  total: number;
+  onLess?: () => void;
+  onMore?: () => void;
+  onAdd?: () => void;
+}) {
+  const { t } = useLocale();
+  return (
+    <div className="menu-dish-popup-actions">
+      <div className="menu-stepper menu-dish-popup-stepper">
+        <button type="button" aria-label={t("menu_page.less_label", { dish: name })} disabled={qty <= 1} onClick={onLess}>
+          −
+        </button>
+        <output aria-live="polite">{qty}</output>
+        <button type="button" aria-label={t("menu_page.more_label", { dish: name })} onClick={onMore}>
+          +
+        </button>
+      </div>
+      <button type="button" className="venue-cta venue-cta-hero menu-dish-popup-add" onClick={onAdd}>
+        <span>{t("menu_page.add_to_selection")}</span>
+        <b>
+          {total} <small>MDL</small>
+        </b>
+      </button>
+    </div>
   );
 }

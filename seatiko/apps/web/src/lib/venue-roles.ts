@@ -111,19 +111,6 @@ export function roleCoverage(shifts: WorkShift[], date: string, roleKeys: string
   return out;
 }
 
-/** Split selected people into two alternating teams within each role, so every role covers every day. */
-export function splitTeamsByRole(selectedIds: string[], groups: RoleGroup[]): { teamA: string[]; teamB: string[] } {
-  const selected = new Set(selectedIds);
-  const teamA: string[] = [];
-  const teamB: string[] = [];
-  for (const g of groups) {
-    g.members
-      .filter((m) => selected.has(m.id))
-      .forEach((m, i) => (i % 2 === 0 ? teamA : teamB).push(m.id));
-  }
-  return { teamA, teamB };
-}
-
 /** First palette colour no role uses yet. */
 export function nextRoleColor(roles: VenueRole[]): string {
   const used = new Set(roles.map((r) => r.color.toLowerCase()));

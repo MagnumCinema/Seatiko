@@ -15,15 +15,15 @@ import {
 } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-error-message";
 import {
+  BOOKING_DAYS_AHEAD,
   DEFAULT_SLOT_STEP_MIN,
   addLocalDays,
   buildAnyTableSlots,
   groupSlotsByDayPart,
-  parseOpeningHours,
   startOfLocalDay,
   type DayPartId,
 } from "@/lib/booking-slots";
-import { getVenueHours } from "@/lib/venue-hours";
+import { venueHoursOn } from "@/lib/venue-hours";
 import { durationOptions, resolveBookingRules } from "@/lib/venue-rules";
 import { BookingRulesNote } from "@/components/booking-rules-note";
 import { VenueBookingRules } from "@/components/venue-booking-rules";
@@ -31,7 +31,6 @@ import { AuthForm } from "@/components/auth-form";
 import { BookingConfirmation, type BookedReservation } from "@/components/booking-confirmation";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
-const BOOKING_DAYS_AHEAD = 7;
 const DAY_PART_LABEL: Record<DayPartId, MessageKey> = {
   morning: "res.period_morning",
   lunch: "res.period_lunch",
@@ -120,7 +119,6 @@ export function BookingForm({
   const [booked, setBooked] = useState<BookedReservation | null>(null);
   const [chosenDuration, setChosenDuration] = useState<number | null>(initialDurationMin ?? null);
 
-  const hours = useMemo(() => parseOpeningHours(getVenueHours(venue.id, "ru")), [venue.id]);
   const rules = useMemo(() => resolveBookingRules(venue), [venue]);
   const stepMin = rules.booking_interval_min || DEFAULT_SLOT_STEP_MIN;
   const durations = useMemo(() => durationOptions(rules), [rules]);
@@ -155,12 +153,15 @@ export function BookingForm({
 
   const days = useMemo(() => {
     const today = startOfLocalDay(now);
+    const own = { id: venue.id, hours_text: venue.hours_text };
     return Array.from({ length: BOOKING_DAYS_AHEAD }, (_, offset) => {
       const day = addLocalDays(today, offset);
-      const slots = buildAnyTableSlots({ day, now, hours, stepMin, durationMin, candidates });
-      return { offset, day, slots, hasFree: slots.some((slot) => slot.available) };
+      // Each day by the venue's own hours (days off, closing after midnight); no slots on a day off.
+      const hours = venueHoursOn(own, day);
+      const slots = hours ? buildAnyTableSlots({ day, now, hours, stepMin, durationMin, candidates }) : [];
+      return { offset, day, slots, closed: !hours, hasFree: slots.some((slot) => slot.available) };
     });
-  }, [now, hours, stepMin, durationMin, candidates]);
+  }, [now, venue.id, venue.hours_text, stepMin, durationMin, candidates]);
 
   const activeOffset = dayOffset ?? days.find((d) => d.hasFree)?.offset ?? 0;
   const activeDay = days[activeOffset];
@@ -216,7 +217,7 @@ export function BookingForm({
   async function book() {
     setErrorKey(null);
     if (!selectedIso || chosenTables.length === 0) {
-      setErrorKey(candidates.length === 0 ? "res.no_table_for_guests" : "res.no_slots");
+      setErrorKey(candidates.length === 0 ? "res.no_table_for_guests" : activeDay.closed ? "res.closed_day" : "res.no_slots");
       return;
     }
     if (!getToken()) {
@@ -392,13 +393,14 @@ export function BookingForm({
         <fieldset className="booking-slots">
           <legend>{t("res.day")}</legend>
           <div className="booking-slot-days">
-            {days.map(({ offset, day, hasFree }) => (
+            {days.map(({ offset, day, hasFree, closed }) => (
               <button
                 key={offset}
                 type="button"
                 className={offset === activeOffset ? "on" : ""}
                 aria-pressed={offset === activeOffset}
                 disabled={!hasFree}
+                title={closed ? t("res.closed_day") : undefined}
                 onClick={() => {
                   setDayOffset(offset);
                   setSlotIso(null);
@@ -439,7 +441,11 @@ export function BookingForm({
             </div>
           ) : (
             <p className="web-book-muted">
-              {candidates.length === 0 ? t("res.no_table_for_guests") : t("res.no_slots")}
+              {candidates.length === 0
+                ? t("res.no_table_for_guests")
+                : activeDay.closed
+                  ? t("res.closed_day")
+                  : t("res.no_slots")}
             </p>
           )}
         </fieldset>

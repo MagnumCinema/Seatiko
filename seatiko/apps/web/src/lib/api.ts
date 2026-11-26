@@ -66,6 +66,8 @@ export type Venue = {
   hold_minutes?: number;
   max_late_arrival_min?: number;
   allow_preorder?: boolean;
+  preorder_lead_min?: number;
+  hours_text?: string;
 };
 
 export type VenueReview = {
@@ -235,7 +237,8 @@ export type ApplicationActivity = {
   actor_user_id: string;
   actor_role: string;
   action: string;
-  changed_fields: string[];
+  /** null when nothing was listed (the API never sends an empty array). */
+  changed_fields: string[] | null;
   note?: string;
   created_at: string;
 };
@@ -311,6 +314,8 @@ export type RestaurantReservation = {
   status: string;
   arrival_confirmed_at?: string | null;
   created_at: string;
+  /** Active preorder of this booking, if any. */
+  preorder?: Order;
 };
 
 export type Session = {
@@ -1399,6 +1404,7 @@ export async function updateBookingRules(
     | "max_late_arrival_min"
     | "session_start_before_min"
     | "release_before_min"
+    | "preorder_lead_min"
     | "allow_preorder"
   >>,
 ): Promise<Venue> {
@@ -1652,6 +1658,18 @@ export async function staffCompleteWaiterCall(id: string) {
   });
 }
 
+/**
+ * Bookings of one venue as the venue panel sees them (owner, admin or staff):
+ * adds duration, guest notes, source, all held tables and the announced arrival time,
+ * but no guest identity — the cabinet merges it with `listRestaurantReservations`.
+ */
+export async function staffListReservations(venueId: string): Promise<Reservation[]> {
+  const data = await apiFetch<{ reservations: Reservation[] }>(
+    `/api/v1/staff/reservations?venue_id=${encodeURIComponent(venueId)}`,
+  );
+  return data.reservations ?? [];
+}
+
 export async function staffListOrders(venueId: string): Promise<Order[]> {
   const data = await apiFetch<{ orders: Order[] }>(
     `/api/v1/staff/orders?venue_id=${encodeURIComponent(venueId)}`,
@@ -1671,14 +1689,24 @@ export async function staffUpdateOrder(
   return data.order;
 }
 
+/** The owner's own profile change requests, newest first (all venues). */
+export async function listMyChangeRequests(): Promise<ProfileChangeRequest[]> {
+  const data = await apiFetch<{ change_requests: ProfileChangeRequest[] }>(
+    "/api/v1/restaurant/change-requests",
+  );
+  return data.change_requests ?? [];
+}
+
 export async function submitProfileChangeRequest(
   applicationId: string,
   patch: ApplicationUpdate,
-) {
-  return apiFetch(`/api/v1/restaurant/applications/${applicationId}/change-requests`, {
-    method: "POST",
-    body: patch,
-  });
+): Promise<ProfileChangeRequest> {
+  // Only the changed fields: the moderator approves exactly this patch.
+  const data = await apiFetch<{ change_request: ProfileChangeRequest }>(
+    `/api/v1/restaurant/applications/${applicationId}/change-requests`,
+    { method: "POST", body: patch },
+  );
+  return data.change_request;
 }
 
 export type AdminOverview = {
@@ -1779,9 +1807,10 @@ export type ProfileChangeRequest = {
   id: string;
   application_id: string;
   owner_user_id: string;
-  status: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | string;
   patch: ApplicationUpdate;
   created_at: string;
+  /** Moderator's reason (set when rejected). */
   note?: string;
 };
 
