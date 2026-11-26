@@ -1655,17 +1655,52 @@ export async function toggleVenueStaffShift(
   return data.staff;
 }
 
-export async function staffListWaiterCalls(venueId: string) {
-  return apiFetch<{ waiter_calls: { id: string; table_id: string; reason: string; status: string }[] }>(
+/** A guest's call from the table (QR session): `reason` is order, bill, question, other or initial. */
+export type WaiterCall = {
+  id: string;
+  session_id?: string;
+  venue_id?: string;
+  table_id: string;
+  reason: string;
+  status: "PENDING" | "ACCEPTED" | "DONE" | string;
+  created_at?: string;
+};
+
+/** Every call of the venue, newest first (open and finished). */
+export async function staffListWaiterCalls(venueId: string): Promise<WaiterCall[]> {
+  const data = await apiFetch<{ waiter_calls: WaiterCall[] }>(
     `/api/v1/staff/waiter-calls?venue_id=${encodeURIComponent(venueId)}`,
   );
+  return data.waiter_calls ?? [];
 }
 
-export async function staffCompleteWaiterCall(id: string) {
-  return apiFetch(`/api/v1/staff/waiter-calls/${id}/complete`, {
+/** "I'm on it": PENDING → ACCEPTED (409 already_accepted when someone was faster). */
+export async function staffAcceptWaiterCall(id: string): Promise<WaiterCall> {
+  const data = await apiFetch<{ waiter_call: WaiterCall }>(`/api/v1/staff/waiter-calls/${id}/accept`, {
     method: "POST",
     body: {},
   });
+  return data.waiter_call;
+}
+
+export async function staffCompleteWaiterCall(id: string): Promise<WaiterCall> {
+  const data = await apiFetch<{ waiter_call: WaiterCall }>(`/api/v1/staff/waiter-calls/${id}/complete`, {
+    method: "POST",
+    body: {},
+  });
+  return data.waiter_call;
+}
+
+/**
+ * In-person ID check of the 18+ lines of a preorder: approved keeps them (the document was
+ * checked), refused removes them and tells the guest; an order left empty is cancelled.
+ */
+export async function staffAgeCheckOrder(orderId: string, approved: boolean): Promise<Order> {
+  const data = await apiFetch<{ order: Order }>(`/api/v1/staff/orders/${orderId}/age-check`, {
+    method: "POST",
+    body: { id_document_checked: approved, approved },
+  });
+  return data.order;
 }
 
 /**

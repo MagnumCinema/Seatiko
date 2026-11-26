@@ -31,7 +31,7 @@ export function PanelShell({ title, subtitle, children, email }: Props) {
           <div className="panel-top-actions">
             {email && <span className="panel-email">{email}</span>}
             <Link href="/account" className="panel-link">
-              {locale === "en" ? "Profile" : locale === "ro" ? "Profil" : "Профиль"}
+              {copy.profile}
             </Link>
             <Link href="/" className="panel-link">
               {copy.site}
