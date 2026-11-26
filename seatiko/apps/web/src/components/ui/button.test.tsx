@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -182,5 +184,31 @@ describe("ButtonLink", () => {
       links[1].click();
     });
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+describe("buttons.css tokens & variant rules", () => {
+  const css = readFileSync(resolve(__dirname, "../../app/buttons.css"), "utf8");
+  const cssRules = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("never uses !important and keeps shimmer gold on hover", () => {
+    expect(cssRules).not.toMatch(/!important/);
+    const shimmerHover = cssRules.match(
+      /\.btn\.btn--primary\.btn--shimmer:hover[^{]*\{([^}]+)\}/,
+    )?.[1];
+    expect(shimmerHover).toBeTruthy();
+    expect(shimmerHover).toMatch(/background:\s*linear-gradient\(/);
+    expect(shimmerHover).toContain("#e6b04b");
+    expect(shimmerHover).not.toContain("--btn-primary-bg-hover");
+  });
+
+  it("gives ghost buttons a faint visible edge at rest in every surface token block", () => {
+    const borderMatches = Array.from(css.matchAll(/--btn-ghost-border:\s*([^;]+);/g)).map(
+      (m) => m[1].trim(),
+    );
+    expect(borderMatches.length).toBeGreaterThanOrEqual(3);
+    for (const val of borderMatches) {
+      expect(val).not.toBe("transparent");
+    }
   });
 });
