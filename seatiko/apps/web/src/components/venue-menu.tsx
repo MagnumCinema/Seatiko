@@ -46,7 +46,7 @@ export function VenueMenu({
                 <div className="venue-menu-price">
                   <b>{item.price} MDL</b>
                   {onAdd ? (
-                    <button type="button" className="fa-mini" onClick={() => onAdd(item)}>
+                    <button type="button" className="btn btn--secondary btn--sm fa-mini" onClick={() => onAdd(item)}>
                       {t("menu.add")}
                     </button>
                   ) : null}

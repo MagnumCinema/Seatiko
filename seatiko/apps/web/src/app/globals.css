@@ -900,63 +900,14 @@ a {
   text-align: center;
 }
 
-.fa-btn {
-  display: block;
-  width: 100%;
-  padding: 13px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: transform 0.12s, background 0.15s;
-}
 
-.fa-btn:active {
-  transform: scale(0.98);
-}
 
-.fa-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 
-.fa-btn-primary {
-  background: var(--fa-gold);
-  color: #1a1510;
-}
 
-.fa-btn-primary:hover {
-  background: var(--fa-gold-soft);
-}
 
-.fa-btn-secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--fa-text);
-  border: 1px solid var(--fa-border);
-}
 
-.fa-btn-outline {
-  background: transparent;
-  border: 2px solid var(--fa-gold);
-  color: var(--fa-gold);
-}
 
-.fa-btn.fa-selected {
-  border-color: var(--fa-gold);
-  background: rgba(196, 165, 116, 0.15);
-}
 
-.fa-back {
-  background: none;
-  border: none;
-  color: var(--fa-gold);
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 12px;
-}
 
 .fa-city-header {
   display: flex;
@@ -1222,12 +1173,6 @@ a {
   margin: 12px 0;
 }
 
-.fa-cta-row .fa-btn {
-  flex: 1;
-  margin: 0;
-  padding: 10px;
-  font-size: 13px;
-}
 
 .fa-legend {
   display: flex;
@@ -1568,34 +1513,6 @@ a {
   color: var(--fa-muted, #7a7164);
   font-size: 0.88rem;
 }
-.fa-floor-sheet-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-  max-width: 280px;
-  padding: 0 18px;
-  border-radius: 12px;
-  border: 0;
-  background: linear-gradient(180deg, #d4b07a, #b8924f);
-  color: #1b140c;
-  font-weight: 750;
-  font-size: 0.95rem;
-  cursor: pointer;
-  text-decoration: none;
-  text-align: center;
-}
-.fa-floor-sheet-cta.ghost {
-  background: transparent;
-  border: 1px solid var(--fa-border, #d2c4ae);
-  color: var(--fa-text, #3a342b);
-  cursor: pointer;
-}
-.fa-floor-sheet-cta:disabled,
-.fa-floor-sheet-cta.ghost:disabled {
-  opacity: 0.72;
-  cursor: default;
-}
 
 .venue-floor-legend .free { background: #6f8f3d; }
 .venue-floor-legend .reserved { background: #b8924f; }
@@ -1761,16 +1678,6 @@ a {
   background: #22c55e;
 }
 
-.fa-mini {
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--fa-border);
-  background: rgba(196, 165, 116, 0.15);
-  color: var(--fa-gold);
-  font-size: 12px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
 
 .fa-cart {
   margin-top: 16px;
@@ -2812,11 +2719,6 @@ a {
   align-items: stretch;
 }
 
-.venue-floor-panel.reserve .fa-floor-sheet-cta {
-  width: 100%;
-  max-width: none;
-  text-align: center;
-}
 
 @media (max-width: 560px) {
   .fa-floor-sheet-meta {
@@ -3266,8 +3168,7 @@ html[data-theme="light"] .venue-page .waitlist-form select {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.floor-editor-group button,
-.cabinet-ops-floor-actions .fa-btn {
+.floor-editor-group button {
   min-height: 34px;
 }
 .floor-editor-group button {
@@ -3397,14 +3298,6 @@ html[data-theme="light"] .venue-page .waitlist-form select {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-}
-.floor-zone-tabs.guest button {
-  background: #fffdf8;
-  color: #17362c;
-}
-.floor-zone-tabs.guest button.on {
-  background: #6f8f3d;
-  color: #fff;
 }
 .floor-editor-toolbar {
   display: grid;

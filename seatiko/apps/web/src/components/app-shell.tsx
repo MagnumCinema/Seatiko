@@ -689,7 +689,7 @@ export function AppShell({
               </div>
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 onClick={() =>
                   obStep < 3 ? setObStep((s) => s + 1) : finishOnboarding()
                 }
@@ -698,7 +698,7 @@ export function AppShell({
               </button>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={finishOnboarding}
               >
                 {t("onboarding.skip")}
@@ -708,7 +708,7 @@ export function AppShell({
 
           {screen === "city-select" && (
             <div className="fa-content">
-              <button type="button" className="fa-back" onClick={() => go("map")}>
+              <button type="button" className="btn btn--link fa-back" onClick={() => go("map")}>
                 ← {t("common.back")}
               </button>
               <h3 className="fa-h3">{t("city.select_title")}</h3>
@@ -861,7 +861,7 @@ export function AppShell({
               </div>
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 disabled={aiBusy}
                 onClick={() => void runDiscover()}
               >
@@ -923,7 +923,7 @@ export function AppShell({
 
           {screen === "venue" && venue && (
             <div className="fa-content">
-              <button type="button" className="fa-back" onClick={() => go("map")}>
+              <button type="button" className="btn btn--link fa-back" onClick={() => go("map")}>
                 ← {t("common.back")}
               </button>
               <div className="fa-hero">
@@ -940,14 +940,14 @@ export function AppShell({
               <div className="fa-cta-row">
                 <button
                   type="button"
-                  className="fa-btn fa-btn-outline"
+                  className="btn btn--secondary btn--sm btn--block"
                   onClick={() => void openFloor()}
                 >
                   {t("venue.floor_map")}
                 </button>
                 <button
                   type="button"
-                  className="fa-btn fa-btn-primary"
+                  className="btn btn--primary btn--sm btn--block"
                   onClick={() => void openFloor()}
                 >
                   {t("venue.book")}
@@ -956,7 +956,7 @@ export function AppShell({
               <p className="fa-section-label">{t("venue.menu")}</p>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() => void openMenu(false)}
               >
                 {t("session.menu")}
@@ -964,7 +964,7 @@ export function AppShell({
               <p className="fa-body">{pickLocale(venue.description, locale)}</p>
               {venue.website && (
                 <a
-                  className="fa-btn fa-btn-outline fa-venue-website"
+                  className="btn btn--secondary btn--sm btn--block fa-venue-website"
                   href={venue.website}
                   target="_blank"
                   rel="noreferrer"
@@ -979,7 +979,7 @@ export function AppShell({
             <div className="fa-content">
               <button
                 type="button"
-                className="fa-back"
+                className="btn btn--link fa-back"
                 onClick={() => go("venue")}
               >
                 ← {pickLocale(venue.name, locale)}
@@ -1000,7 +1000,7 @@ export function AppShell({
               />
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 disabled={!selectedTable}
                 onClick={() => go("reservation", true)}
               >
@@ -1013,7 +1013,7 @@ export function AppShell({
             <div className="fa-content">
               <button
                 type="button"
-                className="fa-back"
+                className="btn btn--link fa-back"
                 onClick={() => go(selectedTable ? "floor" : "venue")}
               >
                 ← {t("common.back")}
@@ -1072,14 +1072,14 @@ export function AppShell({
               </label>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() => void openMenu(false)}
               >
                 {t("res.preorder")}
               </button>
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 disabled={busy || !selectedTable}
                 onClick={() => void submitReservation()}
               >
@@ -1104,7 +1104,7 @@ export function AppShell({
               />
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 disabled={busy || !qrToken.trim()}
                 onClick={() => void submitQr()}
               >
@@ -1190,7 +1190,7 @@ export function AppShell({
               )}
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 onClick={() => {
                   setPayStatus("idle");
                   setPayTotal(
@@ -1203,7 +1203,7 @@ export function AppShell({
               </button>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() => void releaseTable()}
               >
                 {t("session.release")}
@@ -1215,7 +1215,7 @@ export function AppShell({
             <div className="fa-content">
               <button
                 type="button"
-                className="fa-back"
+                className="btn btn--link fa-back"
                 onClick={() => go("order-choice")}
               >
                 ← {t("common.back")}
@@ -1235,14 +1235,14 @@ export function AppShell({
               </div>
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 onClick={() => void submitWaiter("initial")}
               >
                 🛎 {t("waiter.initial_call")}
               </button>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() => go("session")}
               >
                 📋 {t("order_choice.app")}
@@ -1254,7 +1254,7 @@ export function AppShell({
             <div className="fa-content">
               <button
                 type="button"
-                className="fa-back"
+                className="btn btn--link fa-back"
                 onClick={() => go("session")}
               >
                 ← {t("common.back")}
@@ -1272,7 +1272,7 @@ export function AppShell({
                 <button
                   key={id}
                   type="button"
-                  className={`fa-btn fa-btn-secondary ${waiterReason === id ? "fa-selected" : ""}`}
+                  className={`btn btn--sm btn--block ${waiterReason === id ? "btn--primary" : "btn--secondary"}`}
                   onClick={() => setWaiterReason(id)}
                 >
                   {t(key)}
@@ -1280,7 +1280,7 @@ export function AppShell({
               ))}
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 onClick={() => void submitWaiter(waiterReason)}
               >
                 {t("common.send")}
@@ -1293,7 +1293,7 @@ export function AppShell({
             <div className="fa-content">
               <button
                 type="button"
-                className="fa-back"
+                className="btn btn--link fa-back"
                 onClick={() => go(session ? "session" : venue ? "venue" : "map")}
               >
                 ← {t("common.back")}
@@ -1337,7 +1337,7 @@ export function AppShell({
                     </div>
                     <button
                       type="button"
-                      className="fa-btn fa-btn-primary"
+                      className="btn btn--primary btn--sm btn--block"
                       disabled={!session || busy}
                       onClick={() => void submitOrder()}
                     >
@@ -1356,7 +1356,7 @@ export function AppShell({
             <div className="fa-content">
               <button
                 type="button"
-                className="fa-back"
+                className="btn btn--link fa-back"
                 onClick={() => go("session")}
               >
                 ← {t("common.back")}
@@ -1370,14 +1370,14 @@ export function AppShell({
                 <>
                   <button
                     type="button"
-                    className="fa-btn fa-btn-primary"
+                    className="btn btn--primary btn--sm btn--block"
                     onClick={() => void submitPayment("app")}
                   >
                     {t("payment.pay_app")}
                   </button>
                   <button
                     type="button"
-                    className="fa-btn fa-btn-secondary"
+                    className="btn btn--secondary btn--sm btn--block"
                     onClick={() => void submitPayment("venue")}
                   >
                     {t("payment.pay_venue")}
@@ -1392,7 +1392,7 @@ export function AppShell({
                   </p>
                   <button
                     type="button"
-                    className="fa-btn fa-btn-primary"
+                    className="btn btn--primary btn--sm btn--block"
                     onClick={() => go("session")}
                   >
                     {t("payment.done")}
@@ -1408,7 +1408,7 @@ export function AppShell({
               {!isAuthed && (
                 <button
                   type="button"
-                  className="fa-btn fa-btn-primary"
+                  className="btn btn--primary btn--sm btn--block"
                   onClick={() => setAuthOpen(true)}
                 >
                   {t("orders.need_auth")}
@@ -1552,7 +1552,7 @@ export function AppShell({
                   <p className="fa-hint left">{t("table.arrived_hint")}</p>
                   <button
                     type="button"
-                    className="fa-btn fa-btn-secondary"
+                    className="btn btn--secondary btn--sm btn--block"
                     onClick={() => {
                       if (!venue) return;
                       void watchTable({
@@ -1576,7 +1576,7 @@ export function AppShell({
                   </p>
                   <button
                     type="button"
-                    className="fa-btn fa-btn-secondary"
+                    className="btn btn--secondary btn--sm btn--block"
                     onClick={() => {
                       const reservationId = tableSheet.reservation_id;
                       if (!reservationId) {
@@ -1602,7 +1602,7 @@ export function AppShell({
               {tableSheet.status === "FREE" && (
                 <button
                   type="button"
-                  className="fa-btn fa-btn-primary"
+                  className="btn btn--primary btn--sm btn--block"
                   onClick={() => {
                     setSelectedTable(tableSheet);
                     setTableSheet(null);
@@ -1614,7 +1614,7 @@ export function AppShell({
               )}
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() => setTableSheet(null)}
               >
                 {t("common.close")}
@@ -1675,7 +1675,7 @@ export function AppShell({
               {error && <p className="fa-error">{error}</p>}
               <button
                 type="button"
-                className="fa-btn fa-btn-primary"
+                className="btn btn--primary btn--sm btn--block"
                 disabled={busy}
                 onClick={() => void submitAuth()}
               >
@@ -1683,7 +1683,7 @@ export function AppShell({
               </button>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() =>
                   setAuthMode((m) => (m === "login" ? "register" : "login"))
                 }
@@ -1694,7 +1694,7 @@ export function AppShell({
               </button>
               <button
                 type="button"
-                className="fa-btn fa-btn-secondary"
+                className="btn btn--secondary btn--sm btn--block"
                 onClick={() => {
                   setAuthOpen(false);
                   setPendingScreen(null);

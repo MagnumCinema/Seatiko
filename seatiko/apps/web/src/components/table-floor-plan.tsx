@@ -246,7 +246,7 @@ export function TableFloorPlan({
   return (
     <div className={`fa-floor schematic ${compact ? "compact" : ""}`}>
       {zones.length > 1 && (
-        <div className="floor-zone-tabs guest" role="tablist" aria-label={t("floor.zones")}>
+        <div className="seg floor-zone-tabs guest" role="tablist" aria-label={t("floor.zones")}>
           {zones.map((zone) => {
             const free = tables.filter(
               (table) => normalizeZone(table.zone) === zone && table.status === "FREE",
@@ -257,7 +257,7 @@ export function TableFloorPlan({
                 type="button"
                 role="tab"
                 aria-selected={activeZone === zone}
-                className={activeZone === zone ? "on" : ""}
+                className={`seg-item${activeZone === zone ? " is-active" : ""}`}
                 onClick={() => setActiveZone(zone)}
               >
                 {zLabel(zone)}
@@ -548,13 +548,13 @@ export function TableReserveSheet({
           onReserve ? (
             <button
               type="button"
-              className="fa-floor-sheet-cta"
+              className="btn btn--primary btn--md btn--block fa-floor-sheet-cta"
               onClick={handleReserve}
             >
               {t("table.book_this")}
             </button>
           ) : (
-            <a className="fa-floor-sheet-cta" href={bookHref}>
+            <a className="btn btn--primary btn--md btn--block fa-floor-sheet-cta" href={bookHref}>
               {t("table.book_this")}
             </a>
           )
@@ -562,7 +562,7 @@ export function TableReserveSheet({
         {table.status === "OCCUPIED" && onNotifyFree ? (
           <button
             type="button"
-            className="fa-floor-sheet-cta ghost"
+            className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta"
             disabled={notifyDone}
             onClick={() => onNotifyFree(table)}
           >
@@ -572,7 +572,7 @@ export function TableReserveSheet({
         {table.status === "RESERVED" && onImComing && comingAccess === "allowed" ? (
           <button
             type="button"
-            className="fa-floor-sheet-cta ghost"
+            className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta"
             disabled={comingDone}
             onClick={() => onImComing(table)}
           >
@@ -582,13 +582,13 @@ export function TableReserveSheet({
           </button>
         ) : null}
         {table.status === "RESERVED" && comingAccess === "sign_in" && onComingSignIn ? (
-          <button type="button" className="fa-floor-sheet-cta ghost" onClick={onComingSignIn}>
+          <button type="button" className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta" onClick={onComingSignIn}>
             {t("table.im_coming_sign_in")}
           </button>
         ) : null}
         {isMine && table.reservation_id ? (
           <Link
-            className="fa-floor-sheet-cta ghost mine"
+            className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta mine"
             href={`/account?reservation=${encodeURIComponent(table.reservation_id)}`}
           >
             {t("table.open_my_booking")}
@@ -598,7 +598,7 @@ export function TableReserveSheet({
           <p className="fa-floor-sheet-actions-note">{t("floor.sheet_cleaning_wait")}</p>
         ) : null}
         {table.status !== "FREE" && onReserve && !isMine ? (
-          <button type="button" className="fa-floor-sheet-cta ghost" onClick={handleReserve}>
+          <button type="button" className="btn btn--ghost btn--md btn--block fa-floor-sheet-cta" onClick={handleReserve}>
             {t("table.book_later")}
           </button>
         ) : null}

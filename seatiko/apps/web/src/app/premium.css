@@ -13069,30 +13069,6 @@ html[data-theme="light"] {
 .venue-page .venue-floor-stage .floor-zone-tabs {
   margin: 0 0 14px;
 }
-.venue-page .floor-zone-tabs.guest button {
-  min-height: 38px;
-  background: transparent;
-  border-color: var(--fa-border);
-  color: var(--fa-text);
-  transition: border-color 160ms ease, background 160ms ease;
-}
-.venue-page .floor-zone-tabs.guest button:hover {
-  border-color: color-mix(in srgb, var(--fa-gold) 50%, var(--fa-border));
-}
-html[data-theme="dark"] .venue-page .floor-zone-tabs.guest button.on {
-  background: #e9b96e;
-  border-color: #e9b96e;
-  color: #17362c;
-}
-html[data-theme="light"] .venue-page .floor-zone-tabs.guest button.on {
-  background: #246046;
-  border-color: #246046;
-  color: #ffffff;
-}
-.venue-page .floor-zone-tabs.guest button:focus-visible {
-  outline: 3px solid var(--fa-gold);
-  outline-offset: 2px;
-}
 
 .venue-page .fa-floor-tip,
 .venue-page .fa-floor-tip.schematic {
@@ -14002,35 +13978,6 @@ html[data-theme="light"] .venue-booking-rules-list > div {
 }
 
 /* Owner cabinet is always light: booking-rules form uses the cabinet palette, not theme tokens */
-.booking-rules-form .fa-btn {
-  justify-self: start;
-  width: auto;
-  margin-top: 0;
-  padding: 10px 22px;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.88rem;
-  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
-  color: #0d241c !important;
-  border: 1px solid rgba(255, 230, 160, 0.45);
-  box-shadow: 0 3px 12px rgba(212, 154, 70, 0.28);
-  transition: all 0.15s ease;
-}
-.booking-rules-form .fa-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #f2c784 0%, #dba14e 100%);
-  box-shadow: 0 6px 18px rgba(212, 154, 70, 0.42);
-  transform: translateY(-1px);
-}
-html[data-theme="light"] .booking-rules-form .fa-btn {
-  background: linear-gradient(135deg, #246046 0%, #1a4835 100%);
-  color: #ffffff !important;
-  border: 1px solid rgba(26, 36, 32, 0.2);
-  box-shadow: 0 3px 12px rgba(36, 96, 70, 0.22);
-}
-html[data-theme="light"] .booking-rules-form .fa-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2c7555 0%, #215941 100%);
-  box-shadow: 0 6px 18px rgba(36, 96, 70, 0.35);
-}
 
 /* Rules block sits between the hero and the floor plan */
 .venue-page .venue-booking-rules {
@@ -14665,17 +14612,6 @@ html[data-theme="light"] {
 }
 .fa-floor-sheet.is-mine {
   border-color: color-mix(in srgb, var(--state-mine) 55%, transparent);
-}
-.fa-floor-sheet .fa-floor-sheet-cta.ghost.mine {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-color: var(--state-mine);
-  color: var(--state-mine-ink);
-  text-decoration: none;
-}
-.fa-floor-sheet .fa-floor-sheet-cta.ghost.mine:hover {
-  background: var(--state-mine-soft);
 }
 .venue-day-cal-event.mine,
 html[data-theme="dark"] .venue-day-cal-event.mine {
