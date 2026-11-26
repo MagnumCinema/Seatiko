@@ -47,33 +47,3 @@ export function photoProblem(file: { size: number; type: string }): "type" | "si
   if (file.size > MAX_PHOTO_BYTES) return "size";
   return null;
 }
-
-export type ReservationFilter = "upcoming" | "history" | "all";
-
-type BookingLike = { reserved_for: string; status: string };
-
-export function isHistoryBooking(booking: BookingLike, now: number): boolean {
-  return (
-    new Date(booking.reserved_for).getTime() < now ||
-    booking.status === "CANCELLED" ||
-    booking.status === "NO_SHOW"
-  );
-}
-
-/**
- * Filters bookings for a tab and orders them the way staff read them:
- * upcoming — soonest first; history and "all" — newest first.
- */
-export function filterReservations<T extends BookingLike>(
-  bookings: T[],
-  filter: ReservationFilter,
-  now: number,
-): T[] {
-  const list = bookings.filter((booking) => {
-    if (filter === "all") return true;
-    const history = isHistoryBooking(booking, now);
-    return filter === "history" ? history : !history;
-  });
-  const time = (b: T) => new Date(b.reserved_for).getTime();
-  return list.sort((a, b) => (filter === "upcoming" ? time(a) - time(b) : time(b) - time(a)));
-}
