@@ -295,6 +295,7 @@
   "res.today": "Today",
   "res.tomorrow": "Tomorrow",
   "res.no_slots": "No free time left on this day — pick another day.",
+  "res.closed_day": "The venue is closed on this day — pick another day.",
   "res.confirm_book_at": "Book for {time}",
   "error.network": "Can't reach the server. Check your connection and try again.",
   "error.email_taken": "This email is already registered — please sign in.",

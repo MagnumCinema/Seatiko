@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { pickLocale, type Venue } from "@/lib/api";
 import { mapsRouteUrl } from "@/lib/booking-share";
-import { getVenueHours } from "@/lib/venue-hours";
+import { venueHoursLabel } from "@/lib/venue-hours";
 import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import { useLocale } from "@/components/locale-provider";
 import { MapPinIcon } from "@/components/venue-icons";
@@ -37,7 +37,8 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
   const coords = hasCoords(venue);
   const name = pickLocale(venue.name, locale);
   const address = pickLocale(venue.address, locale);
-  const hours = getVenueHours(venue.id, locale);
+  // The venue's own hours in the guest's language, else the demo hours.
+  const hours = venueHoursLabel(venue, locale);
 
   useEffect(() => {
     const node = sectionRef.current;

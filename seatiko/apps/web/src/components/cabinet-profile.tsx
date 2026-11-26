@@ -14,7 +14,6 @@ import {
   FieldError,
   fill,
   HoursEditor,
-  hoursLabels,
   ImageIcon,
   LocalizedField,
   LockIcon,
@@ -46,7 +45,7 @@ import {
 } from "@/lib/api";
 import { pluralize } from "@/lib/cabinet-helpers";
 import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
-import { describeHours, parseHoursText } from "@/lib/opening-hours";
+import { describeHours, hoursLabelsFor, parseHoursText } from "@/lib/venue-hours";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
   applyPatch,
@@ -134,7 +133,7 @@ function useValueText(copy: SiteCopy, cities: City[], locale: LocaleCode) {
           return or(values.venue_type ? typeNames[values.venue_type] ?? values.venue_type : "");
         case "hours_text": {
           const week = parseHoursText(values.hours_text);
-          return week ? describeHours(week, hoursLabels(t)) : or(values.hours_text);
+          return week ? describeHours(week, hoursLabelsFor(locale)) : or(values.hours_text);
         }
         case "point":
           return values.lat && values.lng ? `${values.lat.toFixed(5)}, ${values.lng.toFixed(5)}` : t.notSet;
@@ -667,6 +666,8 @@ export function CabinetProfilePanel({
     draftValues.price_level ? priceLevelLabel(draftValues.price_level) : "",
     draftValues.average_check ? `~${draftValues.average_check} MDL` : "",
   ].filter(Boolean);
+  const previewWeek = parseHoursText(draftValues.hours_text);
+  const previewHours = previewWeek ? describeHours(previewWeek, hoursLabelsFor(textLocale)) : draftValues.hours_text;
   const cover = application.photo_urls?.[0];
 
   const preview = (
@@ -686,6 +687,7 @@ export function CabinetProfilePanel({
         <h3>{previewName || <span className="vp-muted">{t.previewNoName}</span>}</h3>
         {previewMeta.length > 0 && <p className="vp-preview-meta">{previewMeta.join(" · ")}</p>}
         {pickLocale(draftValues.address, textLocale) && <p className="vp-preview-line">⌖ {pickLocale(draftValues.address, textLocale)}</p>}
+        {previewHours && <p className="vp-preview-line">◷ {previewHours}</p>}
         {pickLocale(draftValues.description, textLocale) && <p className="vp-preview-desc">{pickLocale(draftValues.description, textLocale)}</p>}
         {published && application.venue_id ? (
           <a className="vp-preview-link" href={`/venues/${application.venue_id}`} target="_blank" rel="noreferrer">
@@ -861,6 +863,7 @@ export function CabinetProfilePanel({
                 readOnly={readOnly}
                 error={errorText("hours")}
                 t={t}
+                days={copy.hours}
               />
             </div>
           </div>

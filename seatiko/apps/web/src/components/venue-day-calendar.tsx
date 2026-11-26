@@ -227,13 +227,14 @@ export function VenueDayCalendar({
   compact = false,
   staffEnabled = false,
   isAdmin = false,
-  openingHours,
+  hoursOn,
   reloadKey = 0,
   mineReservationIds,
 }: {
   venueId: string;
   tables: Table[];
-  openingHours?: OpeningHours;
+  /** The venue's hours on a day (null on a day off): the grid starts and ends with them. */
+  hoursOn?: (day: Date) => OpeningHours | null;
   /** Bump to reload right away (e.g. after the guest books). */
   reloadKey?: number;
   /** The signed-in guest's reservations, highlighted as "your booking". */
@@ -318,8 +319,8 @@ export function VenueDayCalendar({
   }, [venueId, staffEnabled, isAdmin, reloadKey]);
 
   const { startHour, endHour } = useMemo(
-    () => gridWindow(eventsRaw, day, openingHours),
-    [eventsRaw, day, openingHours],
+    () => gridWindow(eventsRaw, day, hoursOn?.(day) ?? undefined),
+    [eventsRaw, day, hoursOn],
   );
 
   const positioned = useMemo(

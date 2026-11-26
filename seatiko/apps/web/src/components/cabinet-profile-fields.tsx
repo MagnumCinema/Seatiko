@@ -20,7 +20,7 @@ import {
   type DayHours,
   type HoursLabels,
   type WeekHours,
-} from "@/lib/opening-hours";
+} from "@/lib/venue-hours";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { guestFallbackLocale, TEXT_LOCALES, type ProfileChange, type ProfileValues } from "@/lib/venue-profile";
@@ -52,10 +52,6 @@ export function withSupportLink(template: string): ReactNode {
       {after}
     </>
   );
-}
-
-export function hoursLabels(t: ProfileCopy): HoursLabels {
-  return { days: [...t.dayShort], closed: t.closedWord, roundTheClock: t.roundTheClock, everyDay: t.everyDay };
 }
 
 /** Great-circle distance in metres. */
@@ -360,12 +356,15 @@ export function HoursEditor({
   readOnly,
   error,
   t,
+  days,
 }: {
   value: string;
   onChange: (text: string) => void;
   readOnly: boolean;
   error?: string | null;
   t: ProfileCopy;
+  /** Shared day names and words (`copy.hours`). */
+  days: SiteCopy["hours"];
 }) {
   const parsed = useMemo(() => parseHoursText(value), [value]);
   // An all-closed week has no text ("" = not set), so the grid keeps its own copy while it is edited.
@@ -376,7 +375,7 @@ export function HoursEditor({
     const mine = week ? formatHoursText(week) : null;
     if (mine !== value) setWeek(parsed);
   }
-  const labels = hoursLabels(t);
+  const labels: HoursLabels = { days: [...days.days], closed: days.closed, roundTheClock: days.roundTheClock, everyDay: days.everyDay };
   const update = (next: WeekHours) => {
     setWeek(next);
     const text = formatHoursText(next);
@@ -391,11 +390,11 @@ export function HoursEditor({
         {parsed ? (
           groupDays(parsed).map(({ from, to, hours: day }) => (
             <div key={from} className={`vp-hours-row${day.closed ? " closed" : ""}`}>
-              <span className="vp-day" title={from === to ? t.dayLong[from] : `${t.dayLong[from]} – ${t.dayLong[to]}`}>
-                {from === to ? t.dayShort[from] : `${t.dayShort[from]}–${t.dayShort[to]}`}
+              <span className="vp-day" title={from === to ? days.daysLong[from] : `${days.daysLong[from]} – ${days.daysLong[to]}`}>
+                {from === to ? days.days[from] : `${days.days[from]}–${days.days[to]}`}
               </span>
               <span className="vp-hours-value">
-                {day.closed ? t.dayClosed : isRoundTheClock(day) ? t.roundTheClock : `${formatClock(day.open)} – ${formatClock(day.close)}`}
+                {day.closed ? t.dayClosed : isRoundTheClock(day) ? days.roundTheClock : `${formatClock(day.open)} – ${formatClock(day.close)}`}
                 {!day.closed && closesNextDay(day) && <em title={fill(t.nextDayTitle, { time: formatClock(day.close) })}>{t.nextDay}</em>}
               </span>
             </div>
@@ -432,10 +431,10 @@ export function HoursEditor({
     <div id="venue-hours" className="vp-hours" tabIndex={-1} aria-describedby={error ? "venue-hours-error" : undefined}>
       {week.map((day, index) => {
         const open = !day.closed;
-        const dayName = t.dayLong[index];
+        const dayName = days.daysLong[index];
         return (
           <div key={index} className={`vp-hours-row${open ? "" : " closed"}`}>
-            <span className="vp-day" title={dayName}>{t.dayShort[index]}</span>
+            <span className="vp-day" title={dayName}>{days.days[index]}</span>
             <button
               type="button"
               role="switch"
@@ -453,7 +452,7 @@ export function HoursEditor({
                 <span aria-hidden="true">–</span>
                 <TimeInput value={day.close} label={`${dayName}: ${t.closesAt}`} onChange={(minutes) => setDay(index, { ...day, close: minutes })} />
                 {isRoundTheClock(day) ? (
-                  <em>{t.roundTheClock}</em>
+                  <em>{days.roundTheClock}</em>
                 ) : closesNextDay(day) ? (
                   <em title={fill(t.nextDayTitle, { time: formatClock(day.close) })}>{t.nextDay}</em>
                 ) : null}

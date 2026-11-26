@@ -19,6 +19,17 @@ describe("cabinet profile tab copy", () => {
     }
   });
 
+  it("has the shared day words (profile editor and guest pages) in every language", () => {
+    for (const locale of ["en", "ro"] as const) {
+      expect(paths(getSiteCopy(locale).hours).sort()).toEqual(paths(getSiteCopy("ru").hours).sort());
+    }
+    for (const locale of ["ru", "en", "ro"] as const) {
+      const hours = getSiteCopy(locale).hours;
+      expect(hours.days).toHaveLength(7);
+      expect(hours.daysLong).toHaveLength(7);
+    }
+  });
+
   it("keeps placeholders in every language", () => {
     for (const locale of ["ru", "en", "ro"] as const) {
       const copy = getSiteCopy(locale).cabinet.profileTab;
@@ -26,8 +37,6 @@ describe("cabinet profile tab copy", () => {
       expect(copy.requestCancelHint).toContain("{email}");
       expect(copy.hoursBookingNote).toContain("{range}");
       expect(copy.langFallback).toContain("{fallback}");
-      expect(copy.dayShort).toHaveLength(7);
-      expect(copy.dayLong).toHaveLength(7);
       for (const form of Object.values(copy.changesCount)) expect(form).toContain("{n}");
     }
   });

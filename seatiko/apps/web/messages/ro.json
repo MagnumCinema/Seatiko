@@ -295,6 +295,7 @@
   "res.today": "Azi",
   "res.tomorrow": "Mâine",
   "res.no_slots": "Nu mai sunt ore libere în această zi — alege altă zi.",
+  "res.closed_day": "Localul nu lucrează în această zi — alege altă zi.",
   "res.confirm_book_at": "Rezervă pentru {time}",
   "error.network": "Nu există conexiune cu serverul. Verifică internetul și încearcă din nou.",
   "error.email_taken": "Acest email este deja înregistrat — autentifică-te.",

@@ -23,7 +23,7 @@ import {
 } from "@/lib/cabinet-rules";
 import { getSiteCopy } from "@/lib/site-copy";
 import { useLeaveGuard } from "@/lib/use-leave-guard";
-import { VENUE_HOURS, venueOpeningHours } from "@/lib/venue-hours";
+import { describeHours, hoursLabelsFor, hoursVaryByDay, parseHoursText, VENUE_HOURS, venueOpeningHours } from "@/lib/venue-hours";
 import {
   BOOKING_RULE_KEYS,
   BOOKING_RULE_LIMITS,
@@ -205,11 +205,15 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
   const hours = venueOpeningHours({ id: venueId, hours_text: hoursSource });
   const dayLength = hours.closeMin - hours.openMin;
   const hoursKnown = Boolean(hoursSource) || Boolean(VENUE_HOURS[venueId]);
+  // A week that differs by day (days off, a later Friday) reads day by day; examples use its first open day.
+  const week = parseHoursText(hoursSource);
   const hoursLabel = !hoursKnown
     ? copy.hoursFallback
-    : dayLength >= 24 * 60
-      ? copy.hours24
-      : `${clock(hours.openMin)}–${clock(hours.closeMin)}`;
+    : week && hoursVaryByDay(week)
+      ? describeHours(week, hoursLabelsFor(locale))
+      : dayLength >= 24 * 60
+        ? copy.hours24
+        : `${clock(hours.openMin)}–${clock(hours.closeMin)}`;
 
   const errors = useMemo(() => validateBookingRules(parsed), [parsed]);
   const warnings = ruleWarnings(preview, hours);
