@@ -20,6 +20,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
 import { CabinetBookingsPanel, CabinetBookingsPreview } from "@/components/cabinet-bookings";
+import { CabinetHistoryPanel } from "@/components/cabinet-history";
 import { upcomingOwnerBookings } from "@/lib/cabinet-bookings";
 import {
   photoProblem,
@@ -34,7 +35,6 @@ import {
   fetchMe,
   fetchMapConfig,
   getToken,
-  listApplicationActivity,
   listMyApplications,
   listRestaurantReservations,
   listVenueWorkShifts,
@@ -44,7 +44,6 @@ import {
   submitApplication,
   updateApplication,
   uploadApplicationPhoto,
-  type ApplicationActivity,
   type ApplicationUpdate,
   type LocaleCode,
   type MapConfig,
@@ -56,6 +55,7 @@ import {
 import { getSiteCopy } from "@/lib/site-copy";
 import { VENUE_TYPE_IDS } from "@/lib/venue-roles";
 import "./bookings.css";
+import "./history.css";
 
 type Section =
   | "overview"
@@ -557,17 +557,6 @@ function getEditLockHint(status: string, copy: ReturnType<typeof getSiteCopy>["c
   return copy.lockHintReview;
 }
 
-function formatDateTime(value: string, locale: string) {
-  const loc = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
-  return new Intl.DateTimeFormat(loc, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
 function formatOwnerName(user: User): string {
   if (user.display_name) {
     const cleaned = user.display_name
@@ -635,8 +624,8 @@ export default function CabinetPage() {
   const [reservations, setReservations] = useState<RestaurantReservation[]>([]);
   const [focusBookingId, setFocusBookingId] = useState<string | null>(null);
   const [shiftAlertCount, setShiftAlertCount] = useState(0);
-  const [activity, setActivity] = useState<ApplicationActivity[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
+  // Bumped after the cabinet changes the venue, so the history tab reloads its log.
+  const [historyVersion, setHistoryVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -685,41 +674,6 @@ export default function CabinetPage() {
     [cabinetCopy],
   );
 
-  const activityLabels: Record<string, string> = useMemo(
-    () => ({
-      APPLICATION_CREATED: cabinetCopy.actCreated,
-      PROFILE_UPDATED: cabinetCopy.actUpdated,
-      PHOTO_ADDED: cabinetCopy.actPhotoAdded,
-      PHOTO_REMOVED: cabinetCopy.actPhotoRemoved,
-      APPLICATION_SUBMITTED: cabinetCopy.actSubmitted,
-      REVIEW_STARTED: cabinetCopy.actReviewStarted,
-      APPLICATION_APPROVED: cabinetCopy.actApproved,
-      APPLICATION_REJECTED: cabinetCopy.actRejected,
-      APPLICATION_PUBLISHED: cabinetCopy.actPublished,
-    }),
-    [cabinetCopy],
-  );
-
-  const fieldLabels: Record<string, string> = useMemo(
-    () => ({
-      name: cabinetCopy.name.replace(" *", ""),
-      description: cabinetCopy.description.replace(" *", ""),
-      address: cabinetCopy.address.replace(" *", ""),
-      cuisine: cabinetCopy.cuisine.replace(" *", ""),
-      phone: cabinetCopy.phone.replace(" *", ""),
-      email: cabinetCopy.email.replace(" *", ""),
-      website: cabinetCopy.website,
-      city: ui.city,
-      latitude: cabinetCopy.latitude.replace(" *", ""),
-      longitude: cabinetCopy.longitude.replace(" *", ""),
-      price_level: cabinetCopy.price,
-      average_check: cabinetCopy.average,
-      hours: cabinetCopy.hours.replace(" *", ""),
-      photos: cabinetCopy.photos,
-    }),
-    [cabinetCopy, ui],
-  );
-
   const load = useCallback(async () => {
     if (!getToken()) {
       router.replace("/login");
@@ -755,15 +709,10 @@ export default function CabinetPage() {
     }
   }, [router]);
 
-  const refreshActivity = useCallback(async (applicationId: string) => {
-    setActivityLoading(true);
-    try {
-      setActivity(await listApplicationActivity(applicationId));
-    } catch {
-      setActivity([]);
-    } finally {
-      setActivityLoading(false);
-    }
+  // The history tab loads its own log; this only tells it that something changed.
+  const refreshActivity = useCallback((applicationId: string) => {
+    void applicationId;
+    setHistoryVersion((version) => version + 1);
   }, []);
 
   useEffect(() => {
@@ -785,11 +734,9 @@ export default function CabinetPage() {
             : null,
         );
       }
-      if (selected) void refreshActivity(selected.id);
-      else setActivity([]);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [selected, locale, refreshActivity]);
+  }, [selected, locale]);
 
   useEffect(() => {
     const targetVenueId = selected ? selected.venue_id || selected.id : "";
@@ -1920,53 +1867,19 @@ export default function CabinetPage() {
                 ))}
 
               {section === "activity" && (
-                <section className="owner-activity">
-                  <div className="owner-audit-intro">
-                    <span><CheckIcon /></span>
-                    <div>
-                      <strong>{cabinetCopy.auditAutoNotice}</strong>
-                      <p>{cabinetCopy.auditAutoNoticeHint}</p>
-                    </div>
-                  </div>
-
-                  {activityLoading ? (
-                    <div className="owner-section-empty" role="status">
-                      <span className="owner-inline-spinner" aria-hidden="true" />
-                      <p>{cabinetCopy.loadingHistory}</p>
-                    </div>
-                  ) : activity.length === 0 ? (
-                    <div className="owner-section-empty">
-                      <span aria-hidden="true"><ActivityIcon /></span>
-                      <h3>{cabinetCopy.emptyHistory}</h3>
-                      <p>{ui.activityEmptyHint}</p>
-                    </div>
-                  ) : (
-                    <div className="owner-card owner-timeline">
-                      {activity.map((entry) => (
-                        <article key={entry.id}>
-                          <div className="owner-timeline-mark">
-                            <span>{entry.actor_role === "admin" ? "S" : initials(user)}</span>
-                            <i />
-                          </div>
-                          <div className="owner-timeline-content">
-                            <div>
-                              <strong>{activityLabels[entry.action] || entry.action}</strong>
-                              <time>{formatDateTime(entry.created_at, locale)}</time>
-                            </div>
-                            <p>{entry.actor_role === "admin" ? cabinetCopy.seatikoTeam : user.display_name || cabinetCopy.venueOwner}</p>
-                            {entry.changed_fields?.length > 0 && (
-                              <small>
-                                {cabinetCopy.changedFields}:{" "}
-                                {entry.changed_fields.map((field) => fieldLabels[field] || field).join(", ")}
-                              </small>
-                            )}
-                            {entry.note && <blockquote>{entry.note}</blockquote>}
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </section>
+                <CabinetHistoryPanel
+                  apps={apps}
+                  selectedId={selected.id}
+                  ownerId={user.id}
+                  ownerName={formatOwnerName(user)}
+                  cityNames={Object.fromEntries(locations.map((city) => [city.id, pickLocale(city.name, locale)]))}
+                  refreshKey={historyVersion}
+                  onOpen={(applicationId, target) => {
+                    setSelectedId(applicationId);
+                    openSection(target);
+                  }}
+                  onSelectVenue={setSelectedId}
+                />
               )}
             </>
           )}
