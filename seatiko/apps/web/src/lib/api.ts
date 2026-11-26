@@ -235,7 +235,8 @@ export type ApplicationActivity = {
   actor_user_id: string;
   actor_role: string;
   action: string;
-  changed_fields: string[];
+  /** null when nothing was listed (the API never sends an empty array). */
+  changed_fields: string[] | null;
   note?: string;
   created_at: string;
 };
@@ -1683,6 +1684,14 @@ export async function staffUpdateOrder(
     { method: "PATCH", body: { status, venue_id: venueId } },
   );
   return data.order;
+}
+
+/** The owner's own profile change requests, newest first (all venues). */
+export async function listMyChangeRequests(): Promise<ProfileChangeRequest[]> {
+  const data = await apiFetch<{ change_requests: ProfileChangeRequest[] }>(
+    "/api/v1/restaurant/change-requests",
+  );
+  return data.change_requests ?? [];
 }
 
 export async function submitProfileChangeRequest(
