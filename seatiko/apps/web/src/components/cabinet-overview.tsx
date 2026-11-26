@@ -529,7 +529,7 @@ function LiveOverview({
           </section>
 
           <div className="ov-grid">
-            <AttentionCard text={text} items={items} loaded={loaded} roles={parts.roles ?? []} onGo={(item) => {
+            <AttentionCard text={text} items={items} loaded={loaded} roles={parts.roles ?? []} staffHref={`/staff?venue=${encodeURIComponent(venueId)}`} onGo={(item) => {
               if (item.target === "reservations") onOpenBookings("today");
               else if (item.target !== "staffPanel") onOpenSection(item.target);
             }} />
@@ -692,12 +692,15 @@ function AttentionCard({
   items,
   loaded,
   roles,
+  staffHref,
   onGo,
 }: {
   text: Text;
   items: AttentionItem[];
   loaded: boolean;
   roles: VenueRole[];
+  /** The staff panel opened on this venue (waiter calls wait there). */
+  staffHref: string;
   onGo: (item: AttentionItem) => void;
 }) {
   const { copy } = text;
@@ -737,7 +740,7 @@ function AttentionCard({
                 {item.kind === "changeRejected" && item.note && <p>{item.note}</p>}
               </div>
               {item.target === "staffPanel" ? (
-                <Link className="ov-go" href="/staff">
+                <Link className="ov-go" href={staffHref}>
                   {goLabel(text, item.target)}
                   <ChevronIcon />
                 </Link>
