@@ -1,4 +1,5 @@
-import type { LocaleCode } from "@/lib/api";
+import type { LocaleCode, Venue } from "@/lib/api";
+import { parseOpeningHours, type OpeningHours } from "@/lib/booking-slots";
 
 export const VENUE_HOURS: Record<string, Record<LocaleCode, string>> = {
   "venue-1": {
@@ -82,3 +83,11 @@ export function getVenueHours(venueId: string, locale: LocaleCode): string {
   return "Mon–Sun 10:00–23:00";
 }
 
+/**
+ * Bookable hours of a venue: the `hours_text` the API publishes (what the server uses
+ * for /availability), else the bundled demo hours, else 10:00–23:00.
+ */
+export function venueOpeningHours(venue: Pick<Venue, "id" | "hours_text">): OpeningHours {
+  const text = venue.hours_text?.trim() || getVenueHours(venue.id, "ru");
+  return parseOpeningHours(text);
+}

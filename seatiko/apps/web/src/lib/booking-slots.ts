@@ -13,6 +13,8 @@ export const DEFAULT_SLOT_STEP_MIN = 30;
 export const DEFAULT_BOOKING_DURATION_MIN = 90;
 /** A guest cannot book a slot starting sooner than this from now. */
 export const MIN_LEAD_MIN = 15;
+/** Days a guest can book ahead in the booking window (today included); the same for every venue. */
+export const BOOKING_DAYS_AHEAD = 7;
 
 /** Parses "Пн–Вс 10:00–22:00" / "Mon–Sun 08:30–22:00" into minutes from midnight. */
 export function parseOpeningHours(text: string | null | undefined): OpeningHours {

@@ -438,16 +438,14 @@ export function CabinetFloorPanel({ venueId }: Props) {
 /**
  * Booking Rules Management Panel
  */
-export function CabinetRulesPanel({ venueId }: Props) {
-  const { locale } = useLocale();
-  const copy = getSiteCopy(locale).cabinet;
-
+export function CabinetRulesPanel({
+  venueId,
+  published,
+  hoursText,
+}: Props & { published?: boolean; hoursText?: string }) {
   return (
     <div className="cabinet-ops">
-      <section className="owner-card cabinet-ops-card">
-        <p className="cabinet-ops-sub cabinet-rules-lead">{copy.rulesSubtitle}</p>
-        <BookingRulesForm venueId={venueId} />
-      </section>
+      <BookingRulesForm key={venueId} venueId={venueId} published={published} hoursText={hoursText} />
     </div>
   );
 }

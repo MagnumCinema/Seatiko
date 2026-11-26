@@ -66,6 +66,8 @@ export type Venue = {
   hold_minutes?: number;
   max_late_arrival_min?: number;
   allow_preorder?: boolean;
+  preorder_lead_min?: number;
+  hours_text?: string;
 };
 
 export type VenueReview = {
@@ -1401,6 +1403,7 @@ export async function updateBookingRules(
     | "max_late_arrival_min"
     | "session_start_before_min"
     | "release_before_min"
+    | "preorder_lead_min"
     | "allow_preorder"
   >>,
 ): Promise<Venue> {
