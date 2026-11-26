@@ -181,6 +181,13 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
 
   const deletingState = deleting ? deleteState(deleting, staff) : null;
 
+  // Success notices fade; errors stay.
+  useEffect(() => {
+    if (message?.kind !== "success") return;
+    const timer = window.setTimeout(() => setMessage(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   return (
     <section className="owner-card cabinet-ops-card cabinet-roles-card" aria-labelledby="cabinet-roles-title">
       <div className="owner-card-head cabinet-roles-head">
@@ -277,21 +284,23 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   <button type="button" className="panel-btn ghost sm" disabled={busy} onClick={() => openEdit(role)}>
                     {copy.edit}
                   </button>
-                  <button
-                    type="button"
-                    className="panel-btn ghost sm danger"
-                    disabled={busy || role.is_system}
-                    title={role.is_system ? copy.systemLocked : copy.delete}
-                    onClick={() => openDelete(role)}
-                  >
-                    {copy.delete}
-                  </button>
+                  {!role.is_system && (
+                    <button
+                      type="button"
+                      className="panel-btn ghost sm danger"
+                      disabled={busy}
+                      onClick={() => openDelete(role)}
+                    >
+                      {copy.delete}
+                    </button>
+                  )}
                 </div>
               </div>
             </li>
           );
         })}
       </ul>
+      {roles.some((r) => r.is_system) && <p className="cabinet-ops-sub cabinet-roles-locked">{copy.systemLocked}</p>}
 
       {editor &&
         typeof document !== "undefined" &&

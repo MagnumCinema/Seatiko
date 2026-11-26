@@ -11,9 +11,9 @@ import {
   CabinetFloorPanel,
   CabinetMenuPanel,
   CabinetRulesPanel,
-  CabinetStaffPanel,
 } from "@/components/cabinet-ops";
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
+import { CabinetStaffPanel } from "@/components/cabinet-staff";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import { SelectMenu } from "@/components/ui/select-menu";
