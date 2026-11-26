@@ -254,7 +254,7 @@ export default function StaffPage() {
           title={copy.loadFailed}
           hint={copy.loadFailedHint}
           action={
-            <button type="button" className="panel-btn" onClick={() => void load()}>
+            <button type="button" className="btn btn--primary btn--md" onClick={() => void load()}>
               {copy.retry}
             </button>
           }
@@ -452,7 +452,7 @@ function StaffDashboard({
         title={copy.loadFailed}
         hint={copy.loadFailedHint}
         action={
-          <button type="button" className="panel-btn" onClick={() => void floor.reload()}>
+          <button type="button" className="btn btn--primary btn--md" onClick={() => void floor.reload()}>
             {copy.retry}
           </button>
         }
@@ -638,7 +638,7 @@ function StaffDashboard({
           <div className="sf-stale" role="status">
             <AlertIcon />
             <p>{fill(copy.refreshFailed, { time: formatClock(floor.updatedAt) })}</p>
-            <button type="button" onClick={() => void floor.reload()} disabled={floor.refreshing}>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => void floor.reload()} disabled={floor.refreshing}>
               {copy.retry}
             </button>
           </div>
@@ -648,7 +648,7 @@ function StaffDashboard({
           <div className={`owner-notice ${notice.tone}`} role={notice.tone === "error" ? "alert" : "status"} aria-live="polite">
             <span aria-hidden="true">{notice.tone === "error" ? "!" : "✓"}</span>
             <p>{notice.text}</p>
-            <button type="button" aria-label={copy.close} onClick={() => setNotice(null)}>
+            <button type="button" className="btn btn--ghost btn--sm btn--icon" aria-label={copy.close} onClick={() => setNotice(null)}>
               ×
             </button>
           </div>

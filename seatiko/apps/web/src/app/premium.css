@@ -4800,10 +4800,6 @@ html[data-theme="light"] .floor-actions-group {
 .cabinet-qr-actions { display: flex; gap: 10px; margin-top: 12px; }
 
 .cabinet-ops-row { display: flex; gap: 10px; align-items: center; }
-.panel-btn.sm { min-height: 32px; padding: 4px 10px; font-size: .68rem;
-}
-.panel-btn.danger { color: #bd5b49 !important; border-color: rgba(189, 91, 73, .3) !important;
-}
 
 .cabinet-staff-form {
   margin-bottom: 22px;
@@ -5412,15 +5408,6 @@ html[data-theme="light"] .staff-shifts-alert-card {
 }
 .staff-pending-shift-actions.inline {
   margin-left: 8px;
-}
-.staff-shift-accept-btn {
-  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
-  color: #fff !important;
-  border: none !important;
-  font-weight: 700;
-}
-.staff-shift-accept-btn:hover {
-  background: linear-gradient(135deg, #16a34a, #15803d) !important;
 }
 .staff-shifts-section {
   margin-bottom: 22px;

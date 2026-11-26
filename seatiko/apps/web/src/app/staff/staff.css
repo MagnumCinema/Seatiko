@@ -29,15 +29,12 @@ html[data-theme="light"] .sf-dashboard {
 .sf-head .owner-kicker { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Labels on buttons, chips and badges stay on one line in every language. */
-.sf-dashboard .panel-btn,
 .sf-chip,
 .sf-count,
 .sf-tag,
 .sf-wait,
-.sf-filters button,
-.sf-toggle,
-.sf-stale button,
-.sf-myshift strong { white-space: nowrap; }
+.sf-myshift strong { white-space: nowrap;
+}
 
 .sf-stack { display: grid; gap: 14px; min-width: 0; }
 .sf-loading { margin: 40px 0; color: var(--site-muted); text-align: center; font-size: .86rem; }
@@ -136,22 +133,8 @@ html[data-theme="light"] .sf-dashboard {
   50% { box-shadow: 0 0 0 5px color-mix(in srgb, #2ebd7a 0%, transparent); }
 }
 .sf-icon-btn {
-  width: 34px;
-  height: 34px;
   flex: none;
-  display: inline-grid;
-  place-items: center;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 10px;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color .15s ease;
 }
-.sf-icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--site-fg) 8%, transparent); }
-.sf-icon-btn:disabled { cursor: default; opacity: .6; }
-.sf-icon-btn:focus-visible { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 2px; }
-.sf-icon-btn > span { display: inline-grid; }
 .sf-spin { animation: sf-spin 1s linear infinite; }
 @keyframes sf-spin { to { transform: rotate(360deg); } }
 
@@ -168,16 +151,8 @@ html[data-theme="light"] .sf-dashboard {
 }
 .sf-stale svg { flex: none; }
 .sf-stale p { flex: 1; min-width: 0; margin: 0; color: var(--site-fg); }
-.sf-stale button {
+.sf-stale .btn {
   flex: none;
-  padding: 6px 12px;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 9px;
-  background: transparent;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .sf-notice-info {
@@ -245,25 +220,6 @@ html[data-theme="light"] .sf-count.tone-live { color: #fff; background: #246046;
   background: color-mix(in srgb, var(--sf-live) 12%, transparent);
 }
 
-.sf-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 0;
-  color: var(--site-muted);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: .76rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.sf-toggle:hover { color: var(--site-fg); }
-.sf-toggle:focus-visible { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 2px; border-radius: 6px; }
-.sf-toggle svg { transition: transform .15s ease; }
-.sf-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 
 .sf-summary {
   display: flex;
@@ -389,8 +345,6 @@ html[data-theme="light"] .sf-q-phone { color: #1f5a40; }
 
 .sf-call-actions,
 .sf-q-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
-.sf-dashboard .panel-btn.sm { min-height: 36px; padding: 6px 14px; font-size: .74rem; }
-.sf-dashboard .panel-btn.sf-btn-quiet { color: var(--site-muted) !important; }
 .sf-table-pick { min-width: 0; }
 .sf-table-pick button { min-height: 36px; }
 
@@ -452,7 +406,6 @@ html[data-theme="light"] .sf-field input { background: #ffffff; }
 .sf-field input:focus-visible { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 1px; }
 .sf-field input[aria-invalid="true"] { border-color: var(--sf-danger); }
 .sf-field-error { color: var(--sf-danger); font-size: .72rem; font-weight: 600; }
-.sf-add-submit { min-height: 42px; padding: 0 20px; }
 
 .sf-stepper {
   display: inline-grid;
@@ -487,41 +440,10 @@ html[data-theme="light"] .sf-stepper { background: #ffffff; }
   flex-wrap: wrap;
   gap: 6px;
 }
-.sf-filters button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 999px;
-  background: transparent;
-  font: inherit;
-  font-size: .76rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
-}
 .sf-filters button b {
-  min-width: 18px;
-  padding: 0 5px;
-  color: var(--site-muted);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--site-fg) 8%, transparent);
-  font-size: .66rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-.sf-filters button:hover { background: color-mix(in srgb, var(--site-fg) 6%, transparent); }
-.sf-filters button.active {
-  color: #0d241c;
-  border-color: transparent;
-  background: linear-gradient(135deg, #e9b96e, #d49a46);
-}
-.sf-filters button.active b { color: #0d241c; background: rgba(13, 36, 28, .14); }
-html[data-theme="light"] .sf-filters button.active { color: #fff; background: #246046; }
-html[data-theme="light"] .sf-filters button.active b { color: #fff; background: rgba(255, 255, 255, .2); }
-.sf-filters button:focus-visible { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 2px; }
 
 .sf-order-group { display: grid; gap: 0; }
 .sf-order-grid {
@@ -697,7 +619,8 @@ html[data-theme="light"] .cabinet-schedule-item.is-now .cabinet-schedule-date-pi
   .sf-field-guests { grid-column: 2; }
   .sf-field-phone,
   .sf-field-note { grid-column: 1 / -1; }
-  .sf-add-submit { grid-column: 1 / -1; }
+  .sf-add-submit { grid-column: 1 / -1;
+}
 }
 
 @container (max-width: 620px) {
@@ -705,8 +628,9 @@ html[data-theme="light"] .cabinet-schedule-item.is-now .cabinet-schedule-date-pi
   .sf-q { grid-template-columns: auto minmax(0, 1fr); }
   .sf-call-actions,
   .sf-q-actions { grid-column: 1 / -1; justify-content: stretch; }
-  .sf-call-actions .panel-btn,
-  .sf-q-actions .panel-btn { flex: 1 1 0; }
+  .sf-call-actions .btn,
+.sf-q-actions .btn { flex: 1 1 0;
+}
   .sf-q-actions .sf-table-pick { flex: 1 1 100%; }
   .sf-q-actions .sf-table-pick button { width: 100%; }
   .sf-bk { grid-template-columns: 56px minmax(0, 1fr); }
@@ -732,7 +656,8 @@ html[data-theme="light"] .cabinet-schedule-item.is-now .cabinet-schedule-date-pi
   .sf-daybar-date strong { font-size: 1.05rem; }
   .sf-filters { flex-wrap: nowrap; overflow-x: auto; margin-inline: -15px; padding: 2px 15px 6px; scrollbar-width: none; }
   .sf-filters::-webkit-scrollbar { display: none; }
-  .sf-filters button { flex: none; }
+  .sf-filters button { flex: none;
+}
   .sf-empty { min-height: 240px; }
   .sf-empty h3 { font-size: 1.3rem; }
 }

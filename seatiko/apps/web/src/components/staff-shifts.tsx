@@ -138,7 +138,7 @@ export function StaffShiftsPanel({
       <div className="staff-pending-shift-actions inline">
         <button
           type="button"
-          className="panel-btn primary sm staff-shift-accept-btn"
+          className="btn btn--primary btn--sm staff-shift-accept-btn"
           disabled={busyId !== null || Boolean(clash)}
           title={clash ? fill(p.ownOverlap, { when: shiftWhen(clash, today, locale, copy) }) : undefined}
           onClick={() => void respond(shift, "CONFIRMED")}
@@ -147,7 +147,7 @@ export function StaffShiftsPanel({
         </button>
         <button
           type="button"
-          className="panel-btn ghost sm danger staff-shift-decline-btn"
+          className="btn btn--danger-outline btn--sm staff-shift-decline-btn"
           disabled={busyId !== null}
           onClick={() => void respond(shift, "DECLINED")}
         >
@@ -209,7 +209,7 @@ export function StaffShiftsPanel({
           {!over && shift.status === "CONFIRMED" && (
             <button
               type="button"
-              className="panel-btn ghost sm danger"
+              className="btn btn--danger-outline btn--sm"
               disabled={busyId !== null}
               onClick={() => {
                 setSwapShift(shift);
@@ -246,7 +246,7 @@ export function StaffShiftsPanel({
                 <p className="sf-hint">{s.pendingHint}</p>
               </div>
               {acceptable.length > 1 && (
-                <button type="button" className="panel-btn primary sm" disabled={busyId !== null} onClick={() => void acceptAll()}>
+                <button type="button" className="btn btn--primary btn--sm" disabled={busyId !== null} onClick={() => void acceptAll()}>
                   {fill(p.acceptAll, { count: acceptable.length })}
                 </button>
               )}
@@ -266,7 +266,7 @@ export function StaffShiftsPanel({
               : copy.staffShiftsTitle}
           </p>
           {past.length > 0 && (
-            <button type="button" className="panel-btn ghost sm" aria-pressed={showPast} onClick={() => setShowPast((v) => !v)}>
+            <button type="button" className="btn btn--secondary btn--sm" aria-pressed={showPast} onClick={() => setShowPast((v) => !v)}>
               {fill(p.pastShifts, { count: past.length })}
             </button>
           )}
@@ -309,10 +309,10 @@ export function StaffShiftsPanel({
               />
             </div>
             <div className="cabinet-shift-actions">
-              <button type="submit" className="panel-btn primary danger" disabled={!swapReason.trim() || busyId === swapShift.id}>
+              <button type="submit" className="btn btn--danger btn--md" disabled={!swapReason.trim() || busyId === swapShift.id}>
                 {copy.staffSwapSendBtn}
               </button>
-              <button type="button" className="panel-btn ghost" onClick={() => setSwapShift(null)}>
+              <button type="button" className="btn btn--ghost btn--md" onClick={() => setSwapShift(null)}>
                 {copy.opsMenuCancel}
               </button>
             </div>
