@@ -488,7 +488,8 @@ export function BookingForm({
         <button
           type="button"
           className="venue-cta venue-cta-primary"
-          disabled={busy || !selectedIso}
+          // Only disabled while sending: with no bookable time a press says why (book()).
+          disabled={busy}
           onClick={() => void book()}
         >
           {busy
