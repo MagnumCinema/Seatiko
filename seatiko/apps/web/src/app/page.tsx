@@ -102,12 +102,12 @@ export default function HomePage() {
             {copy.leadShort}
           </p>
           <div className="landing-ctas">
-            <Link href="/venues" className="btn btn-gold btn-hero-find">
+            <Link href="/venues" className="btn btn--primary btn--lg">
               {copy.find} <span aria-hidden>→</span>
             </Link>
             <a
               href="#map"
-              className="btn btn-outline btn-hero-map"
+              className="btn btn--secondary btn--lg btn-hero-map"
               onClick={(event) => {
                 event.preventDefault();
                 scrollToSection("map");
@@ -230,14 +230,14 @@ export default function HomePage() {
           <p>{copy.ownerBody}</p>
 
           <div className="owner-cta-actions">
-            <Link href="/register" className="btn btn-owner-primary">
+            <Link href="/register" className="btn btn--primary btn--lg">
               <span>{copy.ownerAction}</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>
             </Link>
-            <Link href="/business" className="btn btn-owner-secondary">
+            <Link href="/business" className="btn btn--secondary btn--lg">
               <span>{copy.ownerLearnMore}</span>
               <span aria-hidden="true">→</span>
             </Link>

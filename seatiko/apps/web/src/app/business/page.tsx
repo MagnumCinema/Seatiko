@@ -269,10 +269,10 @@ export default function BusinessPage() {
             </h1>
             <p>{copy.body}</p>
             <div className="landing-ctas">
-              <Link href="/register" className="btn btn-gold">
+              <Link href="/register" className="btn btn--primary btn--lg">
                 {copy.connect} <span>→</span>
               </Link>
-              <Link href="/login?role=restaurant" className="btn btn-outline">
+              <Link href="/login?role=restaurant" className="btn btn--secondary btn--lg">
                 {copy.cabinet}
               </Link>
             </div>
@@ -515,7 +515,7 @@ export default function BusinessPage() {
           <span className="eyebrow">{copy.finalEyebrow}</span>
           <h2 style={{ whiteSpace: "pre-line" }}>{copy.finalTitle}</h2>
           <p>{copy.finalBody}</p>
-          <Link href="/register" className="btn btn-light">
+          <Link href="/register" className="btn btn--primary btn--lg btn--shimmer">
             {copy.finalAction} <span>→</span>
           </Link>
         </section>
