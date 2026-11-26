@@ -1,9 +1,12 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import type { Table } from "@/lib/api";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
+import { HallFixtures, HallFrame, rotClass, useElementWidth } from "@/components/hall-plan";
+import { HALL_H, HALL_W, clamp, fixturesOf, tableSize } from "@/lib/floor-layout";
+import { useFloorLayout } from "@/lib/floor-layout-store";
 import {
   listZonesFromTables,
   normalizeZone,
@@ -73,12 +76,18 @@ export function SeatingMarks({ seats }: { seats: number }) {
   );
 }
 
-/** Table centre on the plan, in % of the room (kept clear of the walls). */
+/**
+ * Guests see the owner's plan as drawn: the same 16:10 hall, scaled to the page width so the
+ * whole hall (bar, kitchen, entrance) is in view on a phone. Below GUEST_MIN_SCALE (screens
+ * under ~340px) the hall scrolls sideways instead of shrinking further.
+ */
+const GUEST_MIN_SCALE = 0.4;
+const GUEST_MAX_SCALE = 1.1;
+const COMPACT_MAX_SCALE = 0.8;
+
+/** Table centre on the plan, in % of the hall (the API already keeps it off the walls). */
 function tablePosition(table: Pick<Table, "x" | "y">) {
-  return {
-    left: Math.max(12, Math.min(88, table.x * 100)),
-    top: Math.max(16, Math.min(84, table.y * 100)),
-  };
+  return { left: table.x * 100, top: table.y * 100 };
 }
 
 /** The popover sits above its table, or below when the table is near the top wall. */
@@ -98,9 +107,17 @@ function estimatedFreeAt(table: Pick<Table, "occupied_since">): string {
   return new Date(end).toISOString();
 }
 
-function tipPosition(table: Pick<Table, "x" | "y">) {
+/** Popover anchor; `--tip-gap` clears the table (and the booking time under a reserved one) at the current scale. */
+function tipPosition(
+  table: Pick<Table, "x" | "y" | "seats" | "status" | "reserved_for">,
+  rotated: boolean,
+  scale: number,
+): CSSProperties {
   const { left, top } = tablePosition(table);
-  return { left: `${left}%`, top: `${top}%` };
+  const half = tableSize(table.seats, rotated ? 90 : 0).h / 2;
+  const below = tipPlacement(table).startsWith("below");
+  const timeBadge = below && table.status === "RESERVED" && table.reserved_for ? 24 : 0;
+  return { left: `${left}%`, top: `${top}%`, ["--tip-gap" as string]: `${Math.round(half * scale + 12 + timeBadge)}px` };
 }
 
 const ZONE_KEYS: Record<string, MessageKey> = {
@@ -159,6 +176,15 @@ export function TableFloorPlan({
   const [localSelected, setLocalSelected] = useState<string | null>(selectedId ?? null);
   const zones = useMemo(() => listZonesFromTables(tables), [tables]);
   const [activeZone, setActiveZone] = useState(zones[0] || "hall");
+  const layout = useFloorLayout(tables[0]?.venue_id);
+  const rotated = useMemo(() => new Set(layout.rotated), [layout.rotated]);
+  const fixtures = fixturesOf(layout.zones, activeZone);
+  const [stageRef, stageWidth] = useElementWidth<HTMLDivElement>();
+  const scale = clamp(
+    stageWidth > 0 ? stageWidth / HALL_W : 1,
+    GUEST_MIN_SCALE,
+    compact ? COMPACT_MAX_SCALE : GUEST_MAX_SCALE,
+  );
 
   if (!zones.includes(activeZone)) {
     setActiveZone(zones[0] || "hall");
@@ -243,103 +269,99 @@ export function TableFloorPlan({
       )}
 
       <div className="fa-floor-room-scroll">
-      <div
-        className="fa-floor-room schematic"
-        role="group"
-        aria-label={t("floor.plan", { zone: zLabel(activeZone) })}
-      >
-        <div className="fa-floor-zone bar" aria-hidden>
-          {t("floor.bar")}
-        </div>
-        <div className="fa-floor-zone kitchen" aria-hidden>
-          {activeZone === "street" || activeZone === "terrace"
-            ? t("floor.outside")
-            : t("floor.kitchen")}
-        </div>
-        <div className="fa-floor-zone entrance" aria-hidden>
-          {t("floor.entrance")}
-        </div>
-
-        {visible.map((table, index) => {
-          const { left, top } = tablePosition(table);
-          const isSelected = activeId === table.id || !!selectedIds?.includes(table.id);
-          const className = [
-            "fa-table",
-            "schematic",
-            statusClass(table),
-            seatingClass(table.seats),
-            isSelected ? "selected" : "",
-            table.status === "FREE" ? "available" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-
-          return (
-            <button
-              key={table.id}
-              type="button"
-              className={className}
-              style={{
-                left: `${left}%`,
-                top: `${top}%`,
-                animationDelay: `${index * 40}ms`,
-              }}
-              aria-pressed={isSelected}
-              aria-describedby={tipTable?.id === table.id ? tipId : undefined}
-              aria-label={t("table.a11y_label", {
-                n: table.number,
-                status: statusLabel(table),
-                seats: table.seats,
-              })}
-              onMouseEnter={() => setHoverId(table.id)}
-              onMouseLeave={() => setHoverId((id) => (id === table.id ? null : id))}
-              onFocus={() => setHoverId(table.id)}
-              onBlur={() => setHoverId((id) => (id === table.id ? null : id))}
-              onClick={() => handleSelect(table)}
-            >
-              <SeatingMarks seats={table.seats} />
-              <span>{table.number}</span>
-              {table.status === "RESERVED" && table.reserved_for ? (
-                <small className="fa-table-time" aria-hidden>
-                  {formatClock(table.reserved_for)}
-                </small>
-              ) : null}
-            </button>
-          );
-        })}
-
-        {visible.length === 0 && (
-          <div className="fa-floor-empty">
-            {t("floor.empty", { zone: zLabel(activeZone) })}
-          </div>
-        )}
-
-        {tipTable && (
-          <div
-            id={tipId}
-            className={`fa-floor-tip schematic anchored ${tipPlacement(tipTable)}`}
-            style={tipPosition(tipTable)}
-            role="status"
+        <div ref={stageRef} className={`hall-stage guest ${compact ? "compact" : ""}`}>
+          <HallFrame
+            scale={scale}
+            className="guest"
+            role="group"
+            aria-label={t("floor.plan", { zone: zLabel(activeZone) })}
+            overlay={
+              <>
+                {visible.length === 0 && (
+                  <div className="fa-floor-empty">{t("floor.empty", { zone: zLabel(activeZone) })}</div>
+                )}
+                {tipTable && (
+                  <div
+                    id={tipId}
+                    className={`fa-floor-tip schematic anchored ${tipPlacement(tipTable)}`}
+                    style={tipPosition(tipTable, rotated.has(tipTable.number), scale)}
+                    role="status"
+                  >
+                    <div className="fa-floor-tip-top">
+                      <strong>{t("table.title", { n: tipTable.number })}</strong>
+                      <span className={`fa-floor-tip-status ${statusClass(tipTable)}`}>
+                        {statusLabel(tipTable)}
+                      </span>
+                    </div>
+                    <p>
+                      {zLabel(tipTable.zone)} · {t("table.seats", { n: tipTable.seats })}
+                      {tipTable.status === "FREE" ? t("floor.bookable") : ""}
+                      {tipTable.status === "OCCUPIED"
+                        ? ` · ${t("table.arrived_at", { time: formatClock(tipTable.occupied_since) })}`
+                        : ""}
+                      {tipTable.status === "RESERVED"
+                        ? ` · ${t("table.reserved_for", { time: formatClock(tipTable.reserved_for) })}`
+                        : ""}
+                    </p>
+                  </div>
+                )}
+              </>
+            }
           >
-            <div className="fa-floor-tip-top">
-              <strong>{t("table.title", { n: tipTable.number })}</strong>
-              <span className={`fa-floor-tip-status ${statusClass(tipTable)}`}>
-                {statusLabel(tipTable)}
-              </span>
-            </div>
-            <p>
-              {zLabel(tipTable.zone)} · {t("table.seats", { n: tipTable.seats })}
-              {tipTable.status === "FREE" ? t("floor.bookable") : ""}
-              {tipTable.status === "OCCUPIED"
-                ? ` · ${t("table.arrived_at", { time: formatClock(tipTable.occupied_since) })}`
-                : ""}
-              {tipTable.status === "RESERVED"
-                ? ` · ${t("table.reserved_for", { time: formatClock(tipTable.reserved_for) })}`
-                : ""}
-            </p>
-          </div>
-        )}
-      </div>
+            <HallFixtures
+              fixtures={fixtures}
+              labels={{ bar: t("floor.bar"), kitchen: t("floor.kitchen"), entrance: t("floor.entrance") }}
+            />
+
+            {visible.map((table, index) => {
+              const isSelected = activeId === table.id || !!selectedIds?.includes(table.id);
+              const className = [
+                "fa-table",
+                "schematic",
+                statusClass(table),
+                seatingClass(table.seats),
+                rotClass(rotated.has(table.number) ? 90 : 0),
+                isSelected ? "selected" : "",
+                table.status === "FREE" ? "available" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <button
+                  key={table.id}
+                  type="button"
+                  className={className}
+                  style={{
+                    left: table.x * HALL_W,
+                    top: table.y * HALL_H,
+                    animationDelay: `${index * 40}ms`,
+                  }}
+                  aria-pressed={isSelected}
+                  aria-describedby={tipTable?.id === table.id ? tipId : undefined}
+                  aria-label={t("table.a11y_label", {
+                    n: table.number,
+                    status: statusLabel(table),
+                    seats: table.seats,
+                  })}
+                  onMouseEnter={() => setHoverId(table.id)}
+                  onMouseLeave={() => setHoverId((id) => (id === table.id ? null : id))}
+                  onFocus={() => setHoverId(table.id)}
+                  onBlur={() => setHoverId((id) => (id === table.id ? null : id))}
+                  onClick={() => handleSelect(table)}
+                >
+                  <SeatingMarks seats={table.seats} />
+                  <span>{table.number}</span>
+                  {table.status === "RESERVED" && table.reserved_for ? (
+                    <small className="fa-table-time" aria-hidden>
+                      {formatClock(table.reserved_for)}
+                    </small>
+                  ) : null}
+                </button>
+              );
+            })}
+          </HallFrame>
+        </div>
       </div>
 
       {active && !hideSheet && (
