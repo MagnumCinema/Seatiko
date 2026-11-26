@@ -333,13 +333,18 @@ export function CabinetBookingsPreview({
   rows,
   now,
   onOpen,
+  details = null,
+  rules = DEFAULT_RULES,
 }: {
   rows: RestaurantReservation[];
   now: number;
   onOpen: (id: string) => void;
+  /** Venue-panel rows (announced arrival, tables) when the caller has them. */
+  details?: Reservation[] | null;
+  rules?: VenueBookingRules;
 }) {
   const text = useBookingText();
-  const bookings = useMemo(() => mergeBookings(rows, null, DEFAULT_RULES), [rows]);
+  const bookings = useMemo(() => mergeBookings(rows, details, rules), [rows, details, rules]);
   const today = dayKey(now);
   return (
     <div className="cb-list is-compact">
@@ -350,7 +355,7 @@ export function CabinetBookingsPreview({
             key={booking.id}
             booking={booking}
             now={now}
-            holdMin={DEFAULT_HOLD_MIN}
+            holdMin={rules.holdMin}
             text={text}
             compact
             dayLabel={heading.relative || formatDay(dayKey(booking.start), text.locale, { weekday: false })}
@@ -641,6 +646,7 @@ type LoadState = "loading" | "ready" | "error";
 export function CabinetBookingsPanel({
   venueId,
   initialRows,
+  initialPeriod,
   focusBookingId,
   onFocusHandled,
   onOwnerRows,
@@ -649,6 +655,8 @@ export function CabinetBookingsPanel({
   venueId: string;
   /** This venue's rows from the cabinet load, shown while the tab refreshes. */
   initialRows: RestaurantReservation[];
+  /** Quick filter to open on (the overview's «Tomorrow» / «All bookings»); today by default. */
+  initialPeriod?: BookingPeriod;
   /** A booking to open right away (from the overview). */
   focusBookingId?: string | null;
   onFocusHandled?: () => void;
@@ -667,7 +675,9 @@ export function CabinetBookingsPanel({
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [filters, setFilters] = useState<BookingFilters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<BookingFilters>(() =>
+    initialPeriod && initialPeriod !== "day" ? { ...DEFAULT_FILTERS, period: initialPeriod } : DEFAULT_FILTERS,
+  );
   const [view, setView] = useState<View>("list");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [openId, setOpenId] = useState<string | null>(null);
