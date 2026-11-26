@@ -2,7 +2,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Table, Venue, VenueScheduleSlot } from "@/lib/api";
+import { ApiError, type Table, type Venue, type VenueScheduleSlot } from "@/lib/api";
 import ru from "../../messages/ru.json";
 
 const api = vi.hoisted(() => ({
@@ -103,4 +103,39 @@ describe("BookingForm confirm button", () => {
     expect(confirmButton().disabled).toBe(false);
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(ru["error.network"]);
   });
+
+  it("brings the sign-in form into view when the session is missing or expired", async () => {
+    const scrolled: Element[] = [];
+    const scrollIntoView = vi.fn(function (this: Element) {
+      scrolled.push(this);
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { value: scrollIntoView, configurable: true });
+    localStorage.removeItem("fa_token");
+    api.fetchVenueSchedule.mockResolvedValue([]);
+    await render();
+    await act(async () => confirmButton().click());
+    const auth = container.querySelector(".booking-popup-auth");
+    expect(auth).not.toBeNull();
+    expect(scrolled.some((el) => el.contains(auth))).toBe(true);
+    expect(auth?.contains(document.activeElement)).toBe(true);
+    expect(api.createReservation).not.toHaveBeenCalled();
+  });
+
+  it("brings the error into view when the booking is refused", async () => {
+    const scrolled: Element[] = [];
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      value: function (this: Element) {
+        scrolled.push(this);
+      },
+      configurable: true,
+    });
+    api.fetchVenueSchedule.mockResolvedValue([]);
+    api.createReservation.mockRejectedValue(new ApiError(409, "active_reservation_exists"));
+    await render();
+    await act(async () => confirmButton().click());
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.textContent).toContain(ru["error.active_reservation"]);
+    expect(scrolled).toContain(alert);
+  });
 });
+

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   ApiError,
@@ -118,6 +118,20 @@ export function BookingForm({
   const [authOpen, setAuthOpen] = useState(false);
   const [booked, setBooked] = useState<BookedReservation | null>(null);
   const [chosenDuration, setChosenDuration] = useState<number | null>(initialDurationMin ?? null);
+
+  // What a press of "Book" led to: the sign-in form or an error. Both render below or
+  // above the button inside a scrolling popup, so they are brought into view.
+  const authRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!authOpen) return;
+    const box = authRef.current;
+    box?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    box?.querySelector<HTMLInputElement>("input:not([type=hidden])")?.focus({ preventScroll: true });
+  }, [authOpen]);
+  useEffect(() => {
+    if (errorKey) errorRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [errorKey]);
 
   const rules = useMemo(() => resolveBookingRules(venue), [venue]);
   const stepMin = rules.booking_interval_min || DEFAULT_SLOT_STEP_MIN;
@@ -469,7 +483,7 @@ export function BookingForm({
           <VenueBookingRules rules={rules} allowPreorder={venue.allow_preorder !== false} compact />
         </details>
         {errorKey && (
-          <div className="web-book-error booking-form-error" role="alert">
+          <div ref={errorRef} className="web-book-error booking-form-error" role="alert">
             <p>{t(errorKey)}</p>
             {errorKey === "error.active_reservation" ? (
               <Link
@@ -503,14 +517,16 @@ export function BookingForm({
       </div>
 
       {authOpen && (
-        <AuthForm
-          initialMode="register"
-          onCancel={() => setAuthOpen(false)}
-          onSuccess={() => {
-            setAuthOpen(false);
-            void book();
-          }}
-        />
+        <div ref={authRef}>
+          <AuthForm
+            initialMode="register"
+            onCancel={() => setAuthOpen(false)}
+            onSuccess={() => {
+              setAuthOpen(false);
+              void book();
+            }}
+          />
+        </div>
       )}
     </div>
   );
