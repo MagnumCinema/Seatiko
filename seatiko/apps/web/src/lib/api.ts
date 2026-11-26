@@ -1704,6 +1704,14 @@ export async function submitProfileChangeRequest(
   });
 }
 
+/** The owner's profile change requests for all their venues (newest decisions included). */
+export async function listOwnerChangeRequests(): Promise<ProfileChangeRequest[]> {
+  const data = await apiFetch<{ change_requests: ProfileChangeRequest[] }>(
+    "/api/v1/restaurant/change-requests",
+  );
+  return data.change_requests ?? [];
+}
+
 export type AdminOverview = {
   users_total: number;
   guests_total: number;
