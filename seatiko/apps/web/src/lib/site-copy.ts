@@ -1702,7 +1702,7 @@ const copy = {
         selectAllShown: "Select all ({n})",
         clearSelection: "Clear selection",
         bulkLabel: "Actions for the selected dishes",
-        bulkStop: "Stop-list",
+        bulkStop: "Move to stop-list",
         bulkResume: "Back on menu",
         bulkMove: "Move to…",
         bulkDelete: "Delete",
