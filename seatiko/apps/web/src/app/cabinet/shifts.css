@@ -908,10 +908,6 @@ html[data-theme="light"] .cabinet-role-min {
     padding: 14px;
   }
 }
-.staff-remove-shifts {
-  margin: 0 0 12px;
-  text-align: left;
-}
 .staff-shifts-section .cabinet-schedule-item-right,
 .staff-pending-shift-actions {
   flex-wrap: wrap;
