@@ -906,6 +906,14 @@ function CategoryRenameDialog({
     if (!busy) onCancel();
   });
 
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     const typed = trimText(names);

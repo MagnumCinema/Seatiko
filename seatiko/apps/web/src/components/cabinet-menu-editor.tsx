@@ -355,7 +355,7 @@ export function CabinetDishEditor({
                 </label>
                 <SelectMenu
                   id={fieldId("category")}
-                  ariaLabelledBy={fieldId("category-label")}
+                  ariaLabelledBy={`${fieldId("category-label")} ${fieldId("category")}`}
                   value={draft.categoryKey}
                   options={categoryOptions}
                   fullWidth
