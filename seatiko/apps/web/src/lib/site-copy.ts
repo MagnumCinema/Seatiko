@@ -103,6 +103,8 @@ const copy = {
       owner: "Владелец аккаунта",
       venues: "Мои заведения",
       add: "Добавить ресторан",
+      /** Short tab labels for the cabinet nav: one line on a 360px phone. Section headings keep the full names above. */
+      nav: { overview: "Обзор", profile: "Профиль", floor: "Зал и QR", menu: "Меню", rules: "Правила брони", staff: "Команда, отчёты", shifts: "График и смены", reservations: "Бронирования", activity: "История действий" },
       overview: "Обзор",
       profile: "Профиль заведения",
       floor: "Зал и QR",
@@ -2105,6 +2107,8 @@ const copy = {
       owner: "Account owner",
       venues: "My venues",
       add: "Add restaurant",
+      /** Short tab labels for the cabinet nav: one line on a 360px phone. Section headings keep the full names above. */
+      nav: { overview: "Overview", profile: "Venue profile", floor: "Floor & QR", menu: "Menu", rules: "Booking rules", staff: "Team & reports", shifts: "Shifts & schedule", reservations: "Bookings", activity: "Activity history" },
       overview: "Overview",
       profile: "Venue profile",
       floor: "Floor & QR",
@@ -4102,6 +4106,8 @@ const copy = {
       owner: "Proprietarul contului",
       venues: "Localurile mele",
       add: "Adaugă restaurant",
+      /** Short tab labels for the cabinet nav: one line on a 360px phone. Section headings keep the full names above. */
+      nav: { overview: "Rezumat", profile: "Profilul localului", floor: "Sală și QR", menu: "Meniu", rules: "Reguli rezervări", staff: "Echipă și rapoarte", shifts: "Programul turelor", reservations: "Rezervări", activity: "Istoricul acțiunilor" },
       overview: "Prezentare generală",
       profile: "Profilul localului",
       floor: "Sală și QR",

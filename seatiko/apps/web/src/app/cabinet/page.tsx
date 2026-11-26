@@ -299,15 +299,15 @@ export default function CabinetPage() {
 
   const navigation: { id: Section; label: string; icon: React.ReactNode }[] = useMemo(
     () => [
-      { id: "overview", label: cabinetCopy.overview, icon: <OverviewIcon /> },
-      { id: "profile", label: cabinetCopy.profile, icon: <ProfileIcon /> },
-      { id: "floor", label: cabinetCopy.floor, icon: <FloorIcon /> },
-      { id: "menu", label: cabinetCopy.menu, icon: <MenuIcon /> },
-      { id: "rules", label: cabinetCopy.rules, icon: <RulesIcon /> },
-      { id: "staff", label: cabinetCopy.staff, icon: <StaffIcon /> },
-      { id: "shifts", label: cabinetCopy.shifts, icon: <ShiftsIcon /> },
-      { id: "reservations", label: cabinetCopy.reservations, icon: <ReservationsIcon /> },
-      { id: "activity", label: cabinetCopy.activity, icon: <ActivityIcon /> },
+      { id: "overview", label: cabinetCopy.nav.overview, icon: <OverviewIcon /> },
+      { id: "profile", label: cabinetCopy.nav.profile, icon: <ProfileIcon /> },
+      { id: "floor", label: cabinetCopy.nav.floor, icon: <FloorIcon /> },
+      { id: "menu", label: cabinetCopy.nav.menu, icon: <MenuIcon /> },
+      { id: "rules", label: cabinetCopy.nav.rules, icon: <RulesIcon /> },
+      { id: "staff", label: cabinetCopy.nav.staff, icon: <StaffIcon /> },
+      { id: "shifts", label: cabinetCopy.nav.shifts, icon: <ShiftsIcon /> },
+      { id: "reservations", label: cabinetCopy.nav.reservations, icon: <ReservationsIcon /> },
+      { id: "activity", label: cabinetCopy.nav.activity, icon: <ActivityIcon /> },
     ],
     [cabinetCopy],
   );

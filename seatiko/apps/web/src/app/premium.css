@@ -8560,13 +8560,33 @@ html[data-theme="light"] .owner-nav button.active {
     padding-top: 14px;
     padding-bottom: 0;
   }
+  /* Tab labels stay on one line in every language: the label gets the whole width next to the icon,
+     and counters / the unsaved dot sit on the button's corner instead of taking a column. */
   .owner-nav button {
-    grid-template-columns: 20px minmax(0, 1fr) auto;
+    grid-template-columns: 20px minmax(0, 1fr);
     gap: 8px;
     block-size: 100%;
     padding: 10px 11px;
     background: color-mix(in srgb, var(--site-fg) 3.5%, transparent);
     border-color: color-mix(in srgb, var(--site-border) 85%, transparent);
+  }
+  .owner-nav button > span:not(.owner-nav-icon) {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .owner-nav button > b,
+  .owner-nav button > .vp-nav-dot {
+    position: absolute;
+    grid-column: auto;
+    inset-block-start: -7px;
+    inset-inline-end: -5px;
+  }
+  .owner-nav button > b {
+    box-shadow: 0 0 0 2px var(--site-bg, #0b1712);
+  }
+  .owner-nav button > .vp-nav-dot {
+    inset-block-start: -3px;
+    inset-inline-end: -3px;
   }
   .owner-nav button.active::after,
   .owner-nav button[aria-selected="true"]::after {
@@ -8632,9 +8652,9 @@ html[data-theme="light"] .owner-nav button.active {
     gap: 8px;
   }
   .owner-nav button {
-    grid-template-columns: 18px minmax(0, 1fr) auto;
+    grid-template-columns: 18px minmax(0, 1fr);
     gap: 6px;
-    padding: 9px 10px;
+    padding: 9px 8px;
   }
   .owner-nav button > span:not(.owner-nav-icon) {
     font-size: .75rem;
