@@ -19,13 +19,11 @@ import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
+import { CabinetBookingsPanel, CabinetBookingsPreview } from "@/components/cabinet-bookings";
+import { upcomingOwnerBookings } from "@/lib/cabinet-bookings";
 import {
-  filterReservations,
   photoProblem,
-  pluralize,
   validateVenueContacts,
-  type PluralForms,
-  type ReservationFilter,
   type VenueContactErrors,
 } from "@/lib/cabinet-helpers";
 import {
@@ -57,6 +55,7 @@ import {
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
 import { VENUE_TYPE_IDS } from "@/lib/venue-roles";
+import "./bookings.css";
 
 type Section =
   | "overview"
@@ -634,8 +633,7 @@ export default function CabinetPage() {
   const [hasPendingModeration, setHasPendingModeration] = useState(false);
   const [section, setSection] = useState<Section>("overview");
   const [reservations, setReservations] = useState<RestaurantReservation[]>([]);
-  const [reservationFilter, setReservationFilter] =
-    useState<ReservationFilter>("upcoming");
+  const [focusBookingId, setFocusBookingId] = useState<string | null>(null);
   const [shiftAlertCount, setShiftAlertCount] = useState(0);
   const [activity, setActivity] = useState<ApplicationActivity[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -722,16 +720,6 @@ export default function CabinetPage() {
     [cabinetCopy, ui],
   );
 
-  const reservationLabels: Record<string, string> = useMemo(
-    () => ({
-      CONFIRMED: cabinetCopy.resConfirmed,
-      CHECKED_IN: cabinetCopy.resCheckedIn,
-      CANCELLED: cabinetCopy.resCancelled,
-      NO_SHOW: cabinetCopy.resNoShow,
-    }),
-    [cabinetCopy],
-  );
-
   const load = useCallback(async () => {
     if (!getToken()) {
       router.replace("/login");
@@ -743,13 +731,14 @@ export default function CabinetPage() {
         router.replace("/");
         return;
       }
+      // Bookings load apart: if they fail, the tab shows its own retry and the rest still opens.
       const [applicationList, bookingList] = await Promise.all([
         listMyApplications(),
-        listRestaurantReservations(),
+        listRestaurantReservations().catch(() => null),
       ]);
       setUser(me);
       setApps(applicationList);
-      setReservations(bookingList);
+      if (bookingList) setReservations(bookingList);
       setLoadFailed(false);
       setNow(Date.now());
       setSelectedId((current) => {
@@ -844,19 +833,7 @@ export default function CabinetPage() {
         : [],
     [reservations, selected],
   );
-
-  const filteredReservations = useMemo(
-    () => filterReservations(selectedReservations, reservationFilter, now),
-    [reservationFilter, selectedReservations, now],
-  );
-  const reservationCounts = useMemo(
-    () => ({
-      upcoming: filterReservations(selectedReservations, "upcoming", now).length,
-      history: filterReservations(selectedReservations, "history", now).length,
-      all: selectedReservations.length,
-    }),
-    [selectedReservations, now],
-  );
+  const clearFocusBooking = useCallback(() => setFocusBookingId(null), []);
 
   function showApiError(value: unknown, fallback: string) {
     if (value instanceof ApiError && value.code === "incomplete") {
@@ -1081,7 +1058,7 @@ export default function CabinetPage() {
   const isDraftStatus = selected ? editable(selected.status) : false;
   const canEdit = isDraftStatus || isEditingApproved;
   const effectiveVenueId = selected ? selected.venue_id || selected.id : "";
-  const futureBookings = filterReservations(selectedReservations, "upcoming", now);
+  const futureBookings = upcomingOwnerBookings(selectedReservations, now);
   const venueTitle = (app: VenueApplication) =>
     pickLocale(app.name, locale) || pickLocale(app.name, "ru") || ui.newVenue;
 
@@ -1420,19 +1397,14 @@ export default function CabinetPage() {
                         <p>{selected.venue_id ? cabinetCopy.noBookingsYet : cabinetCopy.bookingsAppearAfterPublish}</p>
                       </div>
                     ) : (
-                      <div className="owner-booking-list compact">
-                        {futureBookings.slice(0, 3).map((reservation) => (
-                          <ReservationRow
-                            key={reservation.id}
-                            reservation={reservation}
-                            locale={locale}
-                            reservationLabels={reservationLabels}
-                            tableLabel={cabinetCopy.table}
-                            guestLabel={cabinetCopy.guest}
-                            guestForms={ui.guestsForms}
-                          />
-                        ))}
-                      </div>
+                      <CabinetBookingsPreview
+                        rows={futureBookings.slice(0, 3)}
+                        now={now}
+                        onOpen={(id) => {
+                          setFocusBookingId(id);
+                          openSection("reservations");
+                        }}
+                      />
                     )}
                   </section>
                 </div>
@@ -1927,67 +1899,25 @@ export default function CabinetPage() {
                 />
               )}
 
-              {section === "reservations" && (
-                <section className="owner-reservations">
-                  <div className="owner-filter-row">
-                    <div className="owner-filters" role="group" aria-label={cabinetCopy.reservations}>
-                      {([
-                        ["upcoming", cabinetCopy.filterUpcoming],
-                        ["history", cabinetCopy.filterHistory],
-                        ["all", cabinetCopy.filterAll],
-                      ] as const).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          className={reservationFilter === value ? "active" : ""}
-                          onClick={() => setReservationFilter(value)}
-                          aria-pressed={reservationFilter === value}
-                        >
-                          {label}
-                          {selected.venue_id && <b>{reservationCounts[value]}</b>}
-                        </button>
-                      ))}
-                    </div>
-                    <span>
-                      {filteredReservations.length} {pluralize(filteredReservations.length, ui.recordsForms, locale)}
-                    </span>
-                  </div>
-
-                  {!selected.venue_id ? (
+              {section === "reservations" &&
+                (selected.venue_id ? (
+                  <CabinetBookingsPanel
+                    key={selected.venue_id}
+                    venueId={selected.venue_id}
+                    initialRows={selectedReservations}
+                    focusBookingId={focusBookingId}
+                    onFocusHandled={clearFocusBooking}
+                    onOwnerRows={setReservations}
+                  />
+                ) : (
+                  <section className="owner-reservations">
                     <div className="owner-section-empty">
                       <span aria-hidden="true"><ReservationsIcon /></span>
                       <h3>{ui.bookingsLockedTitle}</h3>
                       <p>{cabinetCopy.bookingsAppearAfterPublish}</p>
                     </div>
-                  ) : filteredReservations.length === 0 ? (
-                    <div className="owner-section-empty">
-                      <span aria-hidden="true"><ReservationsIcon /></span>
-                      <h3>
-                        {reservationFilter === "upcoming"
-                          ? ui.emptyUpcoming
-                          : reservationFilter === "history"
-                          ? ui.emptyHistory
-                          : ui.emptyAll}
-                      </h3>
-                      <p>{reservationFilter === "history" ? ui.emptyHistoryHint : ui.emptyUpcomingHint}</p>
-                    </div>
-                  ) : (
-                    <div className="owner-card owner-booking-list">
-                      {filteredReservations.map((reservation) => (
-                        <ReservationRow
-                          key={reservation.id}
-                          reservation={reservation}
-                          locale={locale}
-                          reservationLabels={reservationLabels}
-                          tableLabel={cabinetCopy.table}
-                          guestLabel={cabinetCopy.guest}
-                          guestForms={ui.guestsForms}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
+                  </section>
+                ))}
 
               {section === "activity" && (
                 <section className="owner-activity">
@@ -2064,56 +1994,5 @@ export default function CabinetPage() {
         onCancel={() => setRemovingPhoto(null)}
       />
     </PanelShell>
-  );
-}
-
-function ReservationRow({
-  reservation,
-  locale,
-  reservationLabels,
-  tableLabel,
-  guestLabel,
-  guestForms,
-}: {
-  reservation: RestaurantReservation;
-  locale: string;
-  reservationLabels: Record<string, string>;
-  tableLabel: string;
-  guestLabel: string;
-  guestForms: PluralForms;
-}) {
-  const loc = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
-  const bookingDate = new Date(reservation.reserved_for);
-  const statusClass = reservation.status.toLowerCase().replace("_", "-");
-
-  return (
-    <article className="owner-booking-row">
-      <div className="owner-booking-date">
-        <strong>{bookingDate.toLocaleDateString(loc, { day: "2-digit" })}</strong>
-        <span>{bookingDate.toLocaleDateString(loc, { month: "short" }).replace(".", "")}</span>
-      </div>
-      <div className="owner-booking-time">
-        <strong>{bookingDate.toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })}</strong>
-        <span>{tableLabel} {reservation.table_number || "—"}</span>
-      </div>
-      <div className="owner-booking-guest">
-        <span>{(reservation.guest_name || guestLabel).slice(0, 1).toUpperCase()}</span>
-        <p>
-          <strong title={reservation.guest_name || guestLabel}>{reservation.guest_name || guestLabel}</strong>
-          {reservation.guest_email && (
-            <a href={`mailto:${reservation.guest_email}`} title={reservation.guest_email}>
-              {reservation.guest_email}
-            </a>
-          )}
-        </p>
-      </div>
-      <div className="owner-booking-party">
-        <strong>{reservation.guests}</strong>
-        <span>{pluralize(reservation.guests, guestForms, locale)}</span>
-      </div>
-      <span className={`owner-reservation-status ${statusClass}`}>
-        {reservationLabels[reservation.status] || reservation.status}
-      </span>
-    </article>
   );
 }

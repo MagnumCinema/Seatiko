@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  filterReservations,
   photoProblem,
   pluralize,
   validateVenueContacts,
@@ -43,21 +42,5 @@ describe("photoProblem", () => {
     expect(photoProblem({ type: "image/png", size: 1000 })).toBeNull();
     expect(photoProblem({ type: "image/gif", size: 1000 })).toBe("type");
     expect(photoProblem({ type: "image/jpeg", size: 6 * 1024 * 1024 })).toBe("size");
-  });
-});
-
-describe("filterReservations", () => {
-  const now = Date.parse("2026-11-26T12:00:00Z");
-  const bookings = [
-    { id: "late", reserved_for: "2026-11-28T18:00:00Z", status: "CONFIRMED" },
-    { id: "soon", reserved_for: "2026-11-26T19:00:00Z", status: "CONFIRMED" },
-    { id: "past", reserved_for: "2026-11-20T19:00:00Z", status: "CHECKED_IN" },
-    { id: "cancelled", reserved_for: "2026-11-27T19:00:00Z", status: "CANCELLED" },
-  ];
-  it("orders upcoming soonest first", () => {
-    expect(filterReservations(bookings, "upcoming", now).map((b) => b.id)).toEqual(["soon", "late"]);
-  });
-  it("puts cancelled and past into history, newest first", () => {
-    expect(filterReservations(bookings, "history", now).map((b) => b.id)).toEqual(["cancelled", "past"]);
   });
 });
