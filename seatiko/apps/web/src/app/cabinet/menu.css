@@ -898,6 +898,9 @@ html[data-theme="light"] .cm-fieldset { background: #ffffff; }
   .cm-editor-foot { padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); }
   .cm-foot-status { flex-basis: 100%; order: -1; text-align: left; }
   .cm-foot-status:empty { display: none; }
+  /* New dish on a phone: the header × closes, so the footer keeps the two save buttons. */
+  .cm-editor-foot.has-next .is-cancel { display: none; }
+  .cm-editor-foot.has-next .panel-btn { flex: 1 1 auto; }
   .cm-editor-foot .panel-btn[type="submit"] { flex: 1 1 auto; }
 }
 

@@ -144,6 +144,30 @@ describe("CabinetMenuPanel", () => {
     expect(text()).toContain("«Борщ» сохранено");
   });
 
+  it("«Save & new» adds the dish and opens a fresh form in the same category", async () => {
+    api.listOwnerMenu.mockResolvedValue([borsch]);
+    api.upsertOwnerMenuItem.mockImplementation(async (_venue: string, body: object) => ({ ...borsch, ...body, id: "d9" }));
+    await mount();
+    click(document.querySelector('.cm-group-actions .cm-icon-btn'));
+    await flush();
+    type(document.querySelector(".cm-input-lg"), "Солянка");
+    type(document.querySelector(".cm-affix input"), "70");
+    click([...document.querySelectorAll(".cm-editor-foot button")].find((b) => b.textContent === "Сохранить и новое"));
+    await flush();
+    expect(api.upsertOwnerMenuItem).toHaveBeenCalledWith(
+      "venue-1",
+      expect.objectContaining({
+        name: { ru: "Солянка", en: "Солянка", ro: "Солянка" },
+        category: borsch.category,
+        price: 70,
+        stopped: false,
+      }),
+    );
+    expect(document.querySelector(".cm-editor")).not.toBeNull();
+    expect(document.querySelector<HTMLInputElement>(".cm-input-lg")?.value).toBe("");
+    expect(document.querySelector(".cm-grid .select-menu-value")?.textContent).toBe("Супы");
+  });
+
   it("does not save an invalid price", async () => {
     api.listOwnerMenu.mockResolvedValue([borsch]);
     await mount();

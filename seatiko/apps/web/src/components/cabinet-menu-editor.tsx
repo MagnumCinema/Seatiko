@@ -42,7 +42,8 @@ type Props = {
   venueId: string;
   /** Another dialog is open on top (delete confirmation): the editor lets it keep focus. */
   suspended?: boolean;
-  onSave: (payload: MenuItemPayload) => Promise<boolean>;
+  /** `next`: the owner wants to add another dish right after this one. */
+  onSave: (payload: MenuItemPayload, next?: boolean) => Promise<boolean>;
   onClose: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
@@ -206,6 +207,10 @@ export function CabinetDishEditor({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    await save(false);
+  }
+
+  async function save(next: boolean) {
     if (saving) return;
     setShowErrors(true);
     const found = validateDraft(draft);
@@ -217,7 +222,7 @@ export function CabinetDishEditor({
     }
     setSaving(true);
     setSaveError(null);
-    const ok = await onSave(draftToPayload(draft, initial, categories));
+    const ok = await onSave(draftToPayload(draft, initial, categories), next);
     if (!ok) {
       setSaving(false);
       setSaveError(m.saveFailed);
@@ -617,7 +622,7 @@ export function CabinetDishEditor({
           </aside>
         </div>
 
-        <footer className="cm-editor-foot">
+        <footer className={`cm-editor-foot${mode === "new" ? " has-next" : ""}`}>
           {mode === "edit" && onDelete ? (
             <button
               type="button"
@@ -645,9 +650,14 @@ export function CabinetDishEditor({
           <p className={`cm-foot-status${saveError ? " is-error" : ""}`} role={saveError ? "alert" : "status"}>
             {saveError ?? (dirty ? m.unsaved : "")}
           </p>
-          <button type="button" className="panel-btn ghost cm-btn" disabled={saving} onClick={requestClose}>
+          <button type="button" className="panel-btn ghost cm-btn is-cancel" disabled={saving} onClick={requestClose}>
             {m.cancel}
           </button>
+          {mode === "new" ? (
+            <button type="button" className="panel-btn ghost cm-btn" disabled={saving} onClick={() => void save(true)}>
+              {m.saveAndNew}
+            </button>
+          ) : null}
           <button type="submit" form={fieldId("form")} className="panel-btn primary cm-btn" disabled={saving}>
             {saving ? m.saving : mode === "new" ? m.addToMenu : m.save}
           </button>

@@ -227,7 +227,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
     }
   }
 
-  async function saveDish(payload: MenuItemPayload, itemId?: string): Promise<boolean> {
+  async function saveDish(payload: MenuItemPayload, itemId?: string, next = false): Promise<boolean> {
     try {
       const saved = itemId
         ? await updateOwnerMenuItem(venueId, itemId, payload)
@@ -236,7 +236,9 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
         setItems((list) => (itemId ? list.map((i) => (i.id === itemId ? saved : i)) : [...list, saved]));
       }
       const name = textIn(payload.name, locale);
-      setEditor(null);
+      // «Save & new»: a fresh form in the same category, for typing in a whole menu.
+      if (next) openEditor("new", emptyDraft(categoryKeyOf(payload.category)));
+      else setEditor(null);
       setNotice({
         kind: "success",
         text: (itemId ? m.saved : payload.stopped ? m.addedStopped : m.added).replace("{name}", name),
@@ -681,7 +683,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
           categories={categories}
           venueId={venueId}
           suspended={confirm !== null}
-          onSave={(payload) => saveDish(payload, editor.itemId)}
+          onSave={(payload, next) => saveDish(payload, editor.itemId, next)}
           onClose={() => setEditor(null)}
           onDelete={editingItem ? () => setConfirm({ kind: "dish", item: editingItem }) : undefined}
           onDuplicate={editingItem ? () => duplicate(editingItem) : undefined}
