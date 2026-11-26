@@ -22569,10 +22569,10 @@ html[data-theme="light"] .hall-canvas {
 .hall-fixture-label {
   max-width: 100%;
   overflow: hidden;
-  padding: 0 4px;
-  font-size: max(11px, calc(9px * var(--hall-inv, 1)));
+  padding: 0 2px;
+  font-size: max(11px, calc(8px * var(--hall-inv, 1)));
   font-weight: 750;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   line-height: 1.1;
   text-overflow: ellipsis;
   text-transform: uppercase;

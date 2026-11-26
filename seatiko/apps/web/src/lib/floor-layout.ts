@@ -247,7 +247,7 @@ export function defaultZoneFixtures(zone: string): ZoneFixtures {
   if (zone !== "hall") return { bar: null, kitchen: null, entrance };
   return {
     bar: { x: 20, y: 60, w: 40, h: 340 },
-    kitchen: { x: 660, y: 20, w: 120, h: 40 },
+    kitchen: { x: 620, y: 20, w: 160, h: 40 },
     entrance,
   };
 }
@@ -258,7 +258,7 @@ export function fixturesOf(fixtures: Record<string, ZoneFixtures>, zone: string)
 
 /** Default size and place for a bar / kitchen put back on the plan. */
 export function defaultBox(kind: BoxKind): Rect {
-  return kind === "bar" ? { x: 20, y: 60, w: 40, h: 340 } : { x: 660, y: 20, w: 120, h: 40 };
+  return kind === "bar" ? { x: 20, y: 60, w: 40, h: 340 } : { x: 620, y: 20, w: 160, h: 40 };
 }
 
 /** Id of a plan item: `t:<table key>`, or the fixture kind. */
