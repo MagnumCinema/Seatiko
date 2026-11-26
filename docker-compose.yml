@@ -36,6 +36,13 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
         # Demo sign-in buttons: only for a demo database (the site uses real data).
         NEXT_PUBLIC_DEMO_LOGIN: ${NEXT_PUBLIC_DEMO_LOGIN:-false}
+        # Sentry DSN of the site (seatiko-web), built into the browser, server and edge
+      # code; empty = Sentry off. SENTRY_DSN is the API's and is not passed to the site.
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
+        SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      # Source map upload to Sentry while building; empty token = skipped.
+      secrets: [sentry_auth_token]
     expose:
       - "3001"
     environment:
@@ -101,6 +108,10 @@ services:
       # NestJS Observe telemetry (traces, errors, logs); nothing is sent while the key is empty.
       OBSERVE_APP_KEY: ${OBSERVE_APP_KEY:-}
       OBSERVE_APP_SECRET: ${OBSERVE_APP_SECRET:-}
+      # Sentry error monitoring (seatiko-api project); nothing is sent while the DSN is empty.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
       # Cafes and restaurants from OpenStreetMap + Overture, imported at start and refreshed weekly.
       OPEN_PLACES_CITIES: ${OPEN_PLACES_CITIES:-balti}
       S3_ENDPOINT: http://minio:9000
@@ -291,6 +302,11 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+
+# Build-time secrets: read from .env / the shell, mounted only into the RUN that needs them.
+secrets:
+  sentry_auth_token:
+    environment: SENTRY_AUTH_TOKEN
 
 volumes:
   seatiko-db-data:

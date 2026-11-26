@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -35,6 +36,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
 /** Root module: wires infrastructure and domain modules, holds no logic itself. */
 @Module({
   imports: [
+    // Sentry tracing of routes; errors are reported by HttpErrorFilter. Inert while SENTRY_DSN is empty.
+    SentryModule.forRoot(),
     // NestJS Observe telemetry: sends nothing until OBSERVE_APP_KEY is set.
     ObserveModule.forRoot({
       appKey: process.env.OBSERVE_APP_KEY ?? 'YOUR_APP_KEY',
