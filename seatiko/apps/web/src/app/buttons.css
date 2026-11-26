@@ -60,6 +60,10 @@ html[data-theme="dark"] {
   --chip-active-bg: linear-gradient(135deg, #f1c881 0%, #d89f48 100%);
   --chip-active-fg: #10261e;
   --chip-active-border: rgba(255, 236, 198, 0.45);
+  --chip-active-bg-hover: linear-gradient(135deg, #f6d394 0%, #e1ac58 100%);
+  --chip-active-fg-hover: #10261e;
+  --chip-fg-hover: #ffffff;
+  --chip-border-hover: rgba(255, 255, 255, 0.3);
 
   --seg-track-bg: rgba(255, 255, 255, 0.04);
   --seg-track-border: rgba(255, 255, 255, 0.12);
@@ -67,6 +71,8 @@ html[data-theme="dark"] {
   --seg-fg-hover: #f3efe6;
   --seg-active-bg: #e9b96e;
   --seg-active-fg: #10261e;
+  --seg-active-bg-hover: #f1c881;
+  --seg-active-fg-hover: #10261e;
 }
 
 html[data-theme="light"] {
@@ -122,6 +128,10 @@ html[data-theme="light"] {
   --chip-active-bg: linear-gradient(135deg, #215b43 0%, #153e2e 100%);
   --chip-active-fg: #ffffff;
   --chip-active-border: #153e2e;
+  --chip-active-bg-hover: linear-gradient(135deg, #286e51 0%, #1a4e3a 100%);
+  --chip-active-fg-hover: #ffffff;
+  --chip-fg-hover: #12281e;
+  --chip-border-hover: rgba(23, 63, 49, 0.4);
 
   --seg-track-bg: rgba(26, 36, 32, 0.05);
   --seg-track-border: rgba(26, 36, 32, 0.14);
@@ -129,6 +139,8 @@ html[data-theme="light"] {
   --seg-fg-hover: #12281e;
   --seg-active-bg: #1e543e;
   --seg-active-fg: #ffffff;
+  --seg-active-bg-hover: #286e51;
+  --seg-active-fg-hover: #ffffff;
 }
 
 /* Always-dark showcase bands keep matte gold primary & light secondary even in light theme */
@@ -179,6 +191,10 @@ html[data-theme="light"] {
   --chip-active-bg: linear-gradient(135deg, #f1c881 0%, #d89f48 100%);
   --chip-active-fg: #10261e;
   --chip-active-border: rgba(255, 236, 198, 0.5);
+  --chip-active-bg-hover: linear-gradient(135deg, #f6d394 0%, #e1ac58 100%);
+  --chip-active-fg-hover: #10261e;
+  --chip-fg-hover: #ffffff;
+  --chip-border-hover: rgba(255, 255, 255, 0.34);
 
   --seg-track-bg: rgba(255, 255, 255, 0.06);
   --seg-track-border: rgba(255, 255, 255, 0.16);
@@ -186,6 +202,8 @@ html[data-theme="light"] {
   --seg-fg-hover: #ffffff;
   --seg-active-bg: #e9b96e;
   --seg-active-fg: #10261e;
+  --seg-active-bg-hover: #f1c881;
+  --seg-active-fg-hover: #10261e;
 }
 
 @keyframes btn-spin {
@@ -537,16 +555,26 @@ html[data-theme="light"] {
     transform 150ms ease;
 }
 
-.chip:hover:not(:disabled) {
+.chip:hover:not(:disabled):not(.is-active):not([aria-pressed="true"]):not([aria-selected="true"]) {
   background: var(--chip-bg-hover);
+  color: var(--chip-fg-hover);
+  border-color: var(--chip-border-hover);
 }
 
 .chip.is-active,
-.chip[aria-pressed="true"] {
+.chip[aria-pressed="true"],
+.chip[aria-selected="true"] {
   background: var(--chip-active-bg);
   color: var(--chip-active-fg);
   border-color: var(--chip-active-border);
   font-weight: 700;
+}
+
+/* Selected + hover keeps the selected fill (slightly brighter) with readable ink */
+.chip:is(.is-active, [aria-pressed="true"], [aria-selected="true"]):hover:not(:disabled) {
+  background: var(--chip-active-bg-hover);
+  color: var(--chip-active-fg-hover);
+  border-color: var(--chip-active-border);
 }
 
 .chip:focus-visible {
@@ -612,6 +640,11 @@ html[data-theme="light"] {
   background: var(--seg-active-bg);
   color: var(--seg-active-fg);
   font-weight: 700;
+}
+
+.seg-item:is(.is-active, [aria-selected="true"], [aria-pressed="true"]):hover:not(:disabled) {
+  background: var(--seg-active-bg-hover);
+  color: var(--seg-active-fg-hover);
 }
 
 .seg-item:focus-visible {
