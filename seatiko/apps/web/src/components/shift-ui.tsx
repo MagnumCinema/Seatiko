@@ -218,7 +218,7 @@ export function ShiftDialog({
       <button type="button" className="booking-popup-backdrop" aria-label={closeLabel} onClick={onClose} />
       <section ref={ref} className={`booking-popup cabinet-shift-dialog shift-dialog ${sizeClass}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="booking-popup-card cabinet-shift-card">
-          <button type="button" className="booking-popup-x" onClick={onClose} aria-label={closeLabel}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x" onClick={onClose} aria-label={closeLabel}>
             ×
           </button>
           <h3 id={titleId}>{title}</h3>

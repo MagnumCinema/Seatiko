@@ -29,28 +29,14 @@ html[data-theme="light"] .ov-root {
 .ov-go,
 .ov-badge,
 .ov-count,
-.ov-partial button,
-.ov-root .panel-btn { white-space: nowrap; }
+.ov-partial button { white-space: nowrap;
+}
 
 .ov-link {
   flex: none;
-  padding: 4px 0;
-  color: var(--site-accent, #e9b96e);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: .76rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
 }
-html[data-theme="light"] .ov-link { color: #1f5a40; }
-.ov-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-.ov-link:focus-visible,
-.ov-go:focus-visible,
 .ov-tile:focus-visible,
-.ov-icon-btn:focus-visible,
 .ov-setup-rows button:focus-visible,
 .ov-venues button:focus-visible,
 .ov-partial button:focus-visible {
@@ -81,21 +67,8 @@ html[data-theme="light"] .ov-link { color: #1f5a40; }
 .ov-daybar-refresh small { font-size: inherit; white-space: nowrap; }
 
 .ov-icon-btn {
-  width: 34px;
-  height: 34px;
   flex: none;
-  display: inline-grid;
-  place-items: center;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 10px;
-  background: transparent;
-  cursor: pointer;
-  transition: background-color .15s ease;
 }
-.ov-icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--site-fg) 8%, transparent); }
-.ov-icon-btn:disabled { cursor: default; opacity: .6; }
-.ov-icon-btn > span { display: inline-grid; }
 .ov-spin { animation: ov-spin 1s linear infinite; }
 @keyframes ov-spin { to { transform: rotate(360deg); } }
 
@@ -124,7 +97,8 @@ html[data-theme="light"] .ov-link { color: #1f5a40; }
   cursor: pointer;
 }
 .ov-failed { margin-top: 0; }
-.ov-failed .panel-btn { margin-top: 12px; }
+.ov-failed .btn { margin-top: 12px;
+}
 
 /* ---------- Tiles ---------- */
 
@@ -284,24 +258,6 @@ html[data-theme="light"] .ov-count { color: #fff; background: #1f5a40; }
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.ov-go {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 8px 6px 12px;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 9px;
-  background: var(--site-surface);
-  font: inherit;
-  font-size: .74rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-  transition: border-color .15s ease;
-}
-html[data-theme="light"] .ov-go { background: #ffffff; }
-.ov-go:hover { border-color: color-mix(in srgb, var(--site-accent) 60%, var(--site-border)); }
 
 .ov-all-good { display: flex; align-items: flex-start; gap: 12px; }
 .ov-all-good > span {
@@ -423,7 +379,8 @@ html[data-theme="light"] .ov-go { background: #ffffff; }
   background: var(--ov-ok);
 }
 .ov-published p { margin: 0; color: var(--site-fg); font-size: .76rem; line-height: 1.45; }
-.ov-published .ov-link { grid-column: 2; justify-self: start; }
+.ov-published .ov-link { grid-column: 2; justify-self: start;
+}
 
 /* ---------- All venues ---------- */
 
@@ -557,7 +514,8 @@ html[data-theme="light"] .ov-venues button.active { border-color: #1f5a40; backg
   .ov-tile strong { font-size: 1.45rem; }
   .ov-daybar-date strong { font-size: 1.05rem; }
   .ov-alerts li { grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; }
-  .ov-alerts .ov-go { grid-column: 2; justify-self: start; }
+  .ov-alerts .ov-go { grid-column: 2; justify-self: start;
+}
   .ov-venues ul { grid-template-columns: minmax(0, 1fr); }
   /* Set-up rows: the value goes under the label instead of being cut. */
   .ov-setup-rows button { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; }

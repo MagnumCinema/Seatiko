@@ -63,7 +63,7 @@ export function StaffingRulesEditor({
                       type="button"
                       aria-pressed={on}
                       aria-label={fullNames[i]}
-                      className={on ? "active" : ""}
+                      className={`chip${on ? " is-active" : ""}`}
                       onClick={() => {
                         const days = on ? rule.days.filter((d) => d !== day) : [...rule.days, day].sort((a, b) => a - b);
                         if (days.length) update(rule.id, { days });
@@ -75,11 +75,11 @@ export function StaffingRulesEditor({
                 })}
               </div>
               <div className="staffing-row">
-                <div className="staffing-mode" role="group">
+                <div className="seg staffing-mode" role="group">
                   <button
                     type="button"
                     aria-pressed={!windowed}
-                    className={!windowed ? "active" : ""}
+                    className={`seg-item${!windowed ? " is-active" : ""}`}
                     onClick={() => update(rule.id, { from: undefined, to: undefined })}
                   >
                     {p.minWholeDay}
@@ -87,7 +87,7 @@ export function StaffingRulesEditor({
                   <button
                     type="button"
                     aria-pressed={windowed}
-                    className={windowed ? "active" : ""}
+                    className={`seg-item${windowed ? " is-active" : ""}`}
                     onClick={() => update(rule.id, { from: rule.from ?? "18:00", to: rule.to ?? "23:00" })}
                   >
                     {p.minWindow}
@@ -114,15 +114,15 @@ export function StaffingRulesEditor({
                 )}
                 <span className="staffing-stepper">
                   <span className="staffing-stepper-label">{p.minPeople}</span>
-                  <button type="button" aria-label={p.minDecrease} disabled={rule.min <= 1} onClick={() => update(rule.id, { min: Math.max(1, rule.min - 1) })}>
+                  <button type="button" className="stepper-btn" aria-label={p.minDecrease} disabled={rule.min <= 1} onClick={() => update(rule.id, { min: Math.max(1, rule.min - 1) })}>
                     −
                   </button>
                   <output aria-live="polite">{rule.min}</output>
-                  <button type="button" aria-label={p.minIncrease} disabled={rule.min >= STAFFING_MAX} onClick={() => update(rule.id, { min: Math.min(STAFFING_MAX, rule.min + 1) })}>
+                  <button type="button" className="stepper-btn" aria-label={p.minIncrease} disabled={rule.min >= STAFFING_MAX} onClick={() => update(rule.id, { min: Math.min(STAFFING_MAX, rule.min + 1) })}>
                     +
                   </button>
                 </span>
-                <button type="button" className="staffing-remove" aria-label={p.minRemove} title={p.minRemove} onClick={() => onChange(rules.filter((r) => r.id !== rule.id))}>
+                <button type="button" className="btn btn--danger-outline btn--sm btn--icon staffing-remove" aria-label={p.minRemove} title={p.minRemove} onClick={() => onChange(rules.filter((r) => r.id !== rule.id))}>
                   ✕
                 </button>
               </div>
@@ -130,7 +130,7 @@ export function StaffingRulesEditor({
           );
         })}
       {!disabled && rules.length < MAX_RULES_PER_ROLE && (
-        <button type="button" className="panel-btn ghost sm staffing-add" onClick={() => onChange([...rules, defaultRule()])}>
+        <button type="button" className="btn btn--secondary btn--sm staffing-add" onClick={() => onChange([...rules, defaultRule()])}>
           {p.minAdd}
         </button>
       )}

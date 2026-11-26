@@ -86,7 +86,7 @@ export function IntervalFields({
             <button
               key={preset.key}
               type="button"
-              className={`cabinet-shift-preset-pill ${!second && first.start === preset.start && first.end === preset.end ? "active" : ""}`}
+              className={`chip cabinet-shift-preset-pill${!second && first.start === preset.start && first.end === preset.end ? " is-active" : ""}`}
               onClick={() => {
                 onFirst({ start: preset.start, end: preset.end });
                 onSecond(null);
@@ -98,7 +98,7 @@ export function IntervalFields({
           {allowSplit && (
             <button
               type="button"
-              className={`cabinet-shift-preset-pill ${second ? "active" : ""}`}
+              className={`chip cabinet-shift-preset-pill${second ? " is-active" : ""}`}
               onClick={() => {
                 onFirst({ start: "08:00", end: "12:00" });
                 onSecond({ start: "18:00", end: "22:00" });
@@ -348,7 +348,7 @@ export function QuickShiftDialog({
                 <p>{p.replaceHint}</p>
                 <button
                   type="button"
-                  className="panel-btn sm danger"
+                  className="btn btn--danger-outline btn--sm"
                   disabled={busy}
                   onClick={() => void onSubmit(drafts, [...(editing ? [editing.id] : []), ...replaceIds], "replace")}
                 >
@@ -372,10 +372,10 @@ export function QuickShiftDialog({
         </div>
 
         <div className="cabinet-shift-actions">
-          <button type="submit" className="panel-btn primary" disabled={busy || result.blocking.length > 0 || Boolean(unchanged)}>
+          <button type="submit" className="btn btn--primary btn--md" disabled={busy || result.blocking.length > 0 || Boolean(unchanged)}>
             {editing ? p.save : copy.opsScheduleSubmitBtn}
           </button>
-          <button type="button" className="panel-btn ghost" disabled={busy} onClick={onClose}>
+          <button type="button" className="btn btn--ghost btn--md" disabled={busy} onClick={onClose}>
             {copy.opsMenuCancel}
           </button>
         </div>
@@ -490,12 +490,12 @@ export function BatchAssignDialog({
                   <div className="cabinet-shift-staff-bulk-actions">
                     <button
                       type="button"
-                      className="cabinet-shift-bulk-btn"
+                      className="btn btn--link cabinet-shift-bulk-btn"
                       onClick={() => setSelected((prev) => [...new Set([...prev, ...ids.filter(pickable)])])}
                     >
                       {copy.opsScheduleSelectAll}
                     </button>
-                    <button type="button" className="cabinet-shift-bulk-btn" onClick={() => setSelected((prev) => prev.filter((id) => !ids.includes(id)))}>
+                    <button type="button" className="btn btn--link cabinet-shift-bulk-btn" onClick={() => setSelected((prev) => prev.filter((id) => !ids.includes(id)))}>
                       {copy.opsScheduleDeselectAll}
                     </button>
                   </div>
@@ -591,10 +591,10 @@ export function BatchAssignDialog({
         </div>
 
         <div className="cabinet-shift-actions">
-          <button type="submit" className="panel-btn primary" disabled={busy || plan.accepted.length === 0}>
+          <button type="submit" className="btn btn--primary btn--md" disabled={busy || plan.accepted.length === 0}>
             {fill(p.assignCount, { count: plan.accepted.length })}
           </button>
-          <button type="button" className="panel-btn ghost" disabled={busy} onClick={onClose}>
+          <button type="button" className="btn btn--ghost btn--md" disabled={busy} onClick={onClose}>
             {copy.opsMenuCancel}
           </button>
         </div>

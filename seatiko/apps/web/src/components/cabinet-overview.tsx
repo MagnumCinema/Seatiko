@@ -426,7 +426,7 @@ function LiveOverview({
           )}
           <button
             type="button"
-            className="ov-icon-btn"
+            className="btn btn--secondary btn--sm btn--icon ov-icon-btn"
             onClick={() => void reload()}
             disabled={refreshing}
             aria-label={refreshing ? bcopy.refreshing : bcopy.refresh}
@@ -446,7 +446,7 @@ function LiveOverview({
           </span>
           <h3>{copy.loadFailed}</h3>
           <p>{bcopy.loadFailedHint}</p>
-          <button type="button" className="panel-btn" onClick={() => void reload()}>
+          <button type="button" className="btn btn--primary btn--md" onClick={() => void reload()}>
             {ui.retry}
           </button>
         </div>
@@ -456,7 +456,7 @@ function LiveOverview({
             <div className="ov-partial" role="status">
               <AlertIcon />
               <p>{fill(copy.partialFailed, { list: failedLabels.join(", ") })}</p>
-              <button type="button" onClick={() => void reload()} disabled={refreshing}>
+              <button type="button" className="btn btn--link" onClick={() => void reload()} disabled={refreshing}>
                 {ui.retry}
               </button>
             </div>
@@ -552,7 +552,7 @@ function LiveOverview({
                 <span className="owner-kicker">{copy.guestsKicker}</span>
                 <h3>{copy.guestsTitle}</h3>
               </div>
-              <button type="button" className="ov-link" onClick={() => onOpenBookings("upcoming")}>
+              <button type="button" className="btn btn--link ov-link" onClick={() => onOpenBookings("upcoming")}>
                 {copy.guestsAll}
               </button>
             </div>
@@ -740,12 +740,12 @@ function AttentionCard({
                 {item.kind === "changeRejected" && item.note && <p>{item.note}</p>}
               </div>
               {item.target === "staffPanel" ? (
-                <Link className="ov-go" href={staffHref}>
+                <Link className="btn btn--secondary btn--sm ov-go" href={staffHref}>
                   {goLabel(text, item.target)}
                   <ChevronIcon />
                 </Link>
               ) : (
-                <button type="button" className="ov-go" onClick={() => onGo(item)}>
+                <button type="button" className="btn btn--secondary btn--sm ov-go" onClick={() => onGo(item)}>
                   {goLabel(text, item.target)}
                   <ChevronIcon />
                 </button>
@@ -755,7 +755,7 @@ function AttentionCard({
         </ul>
       )}
       {loaded && items.length > ATTENTION_ROWS && (
-        <button type="button" className="ov-link ov-more" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+        <button type="button" className="btn btn--link ov-link ov-more" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
           {expanded ? copy.showLess : fill(copy.showAll, { n: hidden })}
         </button>
       )}
@@ -797,7 +797,7 @@ function TeamCard({
           <span className="owner-kicker">{copy.teamKicker}</span>
           <h3>{copy.teamTitle}</h3>
         </div>
-        <button type="button" className="ov-link" onClick={onOpen}>
+        <button type="button" className="btn btn--link ov-link" onClick={onOpen}>
           {copy.openSchedule}
         </button>
       </div>
@@ -809,7 +809,7 @@ function TeamCard({
         <div className="ov-team-empty">
           <strong>{copy.teamNoStaff}</strong>
           <p>{copy.teamNoStaffHint}</p>
-          <button type="button" className="ov-go" onClick={onOpenStaff}>
+          <button type="button" className="btn btn--secondary btn--sm ov-go" onClick={onOpenStaff}>
             {copy.goStaff}
             <ChevronIcon />
           </button>
@@ -853,7 +853,7 @@ function TeamCard({
             })}
           </ul>
           {more > 0 && (
-            <button type="button" className="ov-link ov-more" onClick={onOpen}>
+            <button type="button" className="btn btn--link ov-link ov-more" onClick={onOpen}>
               {fill(copy.moreShifts, { n: more })}
             </button>
           )}
@@ -975,7 +975,7 @@ function SetupCard({
           <CheckIcon size={14} />
         </span>
         <p>{copy.publishedNote}</p>
-        <Link href={`/venues/${venueId}`} target="_blank" rel="noreferrer" className="ov-link">
+        <Link href={`/venues/${venueId}`} target="_blank" rel="noreferrer" className="btn btn--link ov-link">
           {copy.openPublicPage}
         </Link>
       </div>
@@ -1114,20 +1114,20 @@ function LaunchOverview({
           <h3>{canSubmit ? copy.readyToSubmit : statusHint}</h3>
           <div className="owner-hero-actions">
             {canSubmit && (
-              <button type="button" className="panel-btn" disabled={busy} onClick={onSubmit}>
+              <button type="button" className="btn btn--primary btn--md" disabled={busy} onClick={onSubmit}>
                 {copy.submitNow}
               </button>
             )}
             {canEdit && (
               <button
                 type="button"
-                className={`panel-btn${canSubmit ? " ghost" : ""}`}
+                className={`btn btn--md ${canSubmit ? "btn--secondary" : "btn--primary"}`}
                 onClick={() => onOpenSection("profile")}
               >
                 {rejected ? copy.fixAndResubmit : cabinet.continueEditing}
               </button>
             )}
-            <button type="button" className="panel-btn ghost" onClick={() => onOpenSection("activity")}>
+            <button type="button" className="btn btn--ghost btn--md" onClick={() => onOpenSection("activity")}>
               {cabinet.checkHistory}
             </button>
           </div>
@@ -1172,7 +1172,7 @@ function LaunchOverview({
                 <span>{check.done ? <CheckIcon size={12} /> : null}</span>
                 <p>{check.label}</p>
                 {!check.done && canEdit && (
-                  <button type="button" onClick={() => onOpenSection("profile")}>
+                  <button type="button" className="btn btn--link" onClick={() => onOpenSection("profile")}>
                     {cabinet.fillAction}
                   </button>
                 )}

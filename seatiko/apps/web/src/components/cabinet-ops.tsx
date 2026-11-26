@@ -39,7 +39,7 @@ function OpsNotice({ notice, onClose, closeLabel }: { notice: Notice | null; onC
     >
       <span>{notice.kind === "error" ? "!" : "✓"}</span>
       <p>{notice.text}</p>
-      <button type="button" aria-label={closeLabel} onClick={onClose}>
+      <button type="button" className="btn btn--ghost btn--sm btn--icon" aria-label={closeLabel} onClick={onClose}>
         ×
       </button>
     </div>
@@ -240,7 +240,7 @@ export function CabinetFloorPanel({ venueId }: Props) {
             )}
             <button
               type="button"
-              className="panel-btn ghost"
+              className="btn btn--secondary btn--md"
               disabled={busy || !dirty}
               onClick={() => {
                 // Undoable: the discarded edits come back with Undo.
@@ -252,7 +252,7 @@ export function CabinetFloorPanel({ venueId }: Props) {
             </button>
             <button
               type="button"
-              className="panel-btn"
+              className="btn btn--primary btn--md"
               disabled={busy || !dirty || plan.present.tables.length === 0}
               onClick={() => void save()}
             >
@@ -298,14 +298,14 @@ export function CabinetFloorPanel({ venueId }: Props) {
             <div className="cabinet-qr-actions">
               <button
                 type="button"
-                className="panel-btn ghost"
+                className="btn btn--secondary btn--md"
                 onClick={() => window.print()}
               >
                 {copy.opsQrPrint}
               </button>
               <button
                 type="button"
-                className="panel-btn ghost danger"
+                className="btn btn--danger-outline btn--md"
                 disabled={busy}
                 onClick={() => setConfirmRegen(true)}
               >

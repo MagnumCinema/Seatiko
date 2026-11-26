@@ -25,43 +25,11 @@ html[data-theme="light"] .ch-intro > span { color: #246046; background: color-mi
 
 /* ---------- Buttons ---------- */
 
-.ch-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  white-space: nowrap;
-}
 
 .ch-icon-btn {
-  min-width: 34px;
-  height: 34px;
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 10px;
-  background: transparent;
-  font: inherit;
-  font-size: .74rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease;
 }
-.ch-icon-btn > span { display: inline-grid; }
-.ch-icon-btn.ch-export { padding: 0 12px; }
-.ch-icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--site-fg) 8%, transparent); }
-.ch-icon-btn:disabled { opacity: .5; cursor: default; }
 
-.ch-icon-btn:focus-visible,
-.ch-chips button:focus-visible,
-.ch-link:focus-visible,
-.ch-inline-btn:focus-visible,
 .ch-search > button:focus-visible {
   outline: 2px solid var(--site-accent, #e9b96e);
   outline-offset: 2px;
@@ -74,42 +42,9 @@ html[data-theme="light"] .ch-intro > span { color: #246046; background: color-mi
 .ch-toolbar { display: grid; gap: 12px; min-width: 0; }
 
 .ch-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.ch-chips button {
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  color: var(--site-fg);
-  border: 1px solid var(--site-border);
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--site-surface) 70%, transparent);
-  font: inherit;
-  font-size: .76rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
-}
-.ch-chips button:hover { border-color: color-mix(in srgb, var(--site-fg) 28%, transparent); }
 .ch-chips button b {
-  min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--site-fg) 10%, transparent);
-  font-size: .66rem;
-  line-height: 1.5;
   text-align: center;
 }
-.ch-chips button.active {
-  color: #0d241c;
-  border-color: transparent;
-  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%);
-}
-.ch-chips button.active b { background: rgba(13, 36, 28, .16); }
-html[data-theme="light"] .ch-chips button { background: #ffffff; }
-html[data-theme="light"] .ch-chips button.active { color: #ffffff; background: linear-gradient(135deg, #246046 0%, #1a4835 100%); }
-html[data-theme="light"] .ch-chips button.active b { background: rgba(255, 255, 255, .2); }
 
 .ch-controls {
   display: grid;
@@ -192,19 +127,8 @@ html[data-theme="light"] .ch-chips button.active b { background: rgba(255, 255, 
 }
 .ch-note.is-warn { color: var(--site-fg); border-left-color: var(--ch-warn); }
 .ch-inline-btn {
-  padding: 0;
-  color: var(--site-accent, #e9b96e);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-weight: 700;
-  text-decoration: underline;
   text-underline-offset: 2px;
-  white-space: nowrap;
-  cursor: pointer;
 }
-html[data-theme="light"] .ch-inline-btn { color: #246046; }
-.ch-inline-btn:disabled { opacity: .55; cursor: default; }
 
 /* ---------- Day groups ---------- */
 
@@ -403,26 +327,9 @@ html[data-theme="light"] .ch-inline-btn { color: #246046; }
   text-transform: uppercase;
 }
 
-.ch-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  padding: 0;
-  color: var(--site-muted);
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: .74rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.ch-link:hover { color: var(--site-accent, #e9b96e); text-decoration: underline; text-underline-offset: 3px; }
-html[data-theme="light"] .ch-link:hover { color: #246046; }
 
-.ch-more { justify-self: center; min-width: 220px; }
+.ch-more { justify-self: center;
+}
 
 /* ---------- Narrow layouts ---------- */
 
@@ -436,16 +343,14 @@ html[data-theme="light"] .ch-link:hover { color: #246046; }
 
 @media (max-width: 700px) {
   .ch-chips { gap: 6px; }
-  .ch-chips button { min-height: 34px; padding: 6px 11px; }
-  .ch-controls.has-venue > .ch-select:nth-child(2) { grid-column: 1 / -1; }
+    .ch-controls.has-venue > .ch-select:nth-child(2) { grid-column: 1 / -1; }
   .ch-status-row { align-items: center; }
   .ch-updated { display: none; }
   .ch-item { grid-template-columns: 30px minmax(0, 1fr); gap: 12px; padding: 12px 14px; }
   .ch-mark { width: 30px; height: 30px; }
   .ch-mark svg { width: 14px; height: 14px; }
   .ch-request dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .ch-more { width: 100%; min-width: 0; }
-}
+  }
 
 @media (prefers-reduced-motion: reduce) {
   .ch-spin { animation: none; }

@@ -261,7 +261,7 @@ export function CabinetDishEditor({
             <h3 id={fieldId("title")}>{title}</h3>
           </div>
           {item?.stopped ? <span className="cm-pill is-stopped">{ui.stoppedBadge}</span> : null}
-          <button type="button" className="cm-icon-btn" onClick={requestClose} aria-label={m.close}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon cm-icon-btn" onClick={requestClose} aria-label={m.close}>
             <CloseIcon />
           </button>
         </header>
@@ -271,12 +271,12 @@ export function CabinetDishEditor({
             {/* Texts in three languages */}
             <fieldset className="cm-fieldset">
               <div className="cm-lang-row">
-                <div className="cm-seg" role="group" aria-label={m.languagesLabel}>
+                <div className="seg cm-seg" role="group" aria-label={m.languagesLabel}>
                   {MENU_LOCALES.map((code) => (
                     <button
                       key={code}
                       type="button"
-                      className={code === lang ? "active" : ""}
+                      className={`seg-item${code === lang ? " is-active" : ""}`}
                       aria-pressed={code === lang}
                       onClick={() => setLang(code)}
                     >
@@ -288,7 +288,7 @@ export function CabinetDishEditor({
                   ))}
                 </div>
                 {canCopy && copySource ? (
-                  <button type="button" className="cm-link-btn" onClick={copyFromSource}>
+                  <button type="button" className="btn btn--link cm-link-btn" onClick={copyFromSource}>
                     {m.copyFrom.replace("{lang}", LANG_CODE[copySource])}
                   </button>
                 ) : null}
@@ -397,7 +397,7 @@ export function CabinetDishEditor({
                         <button
                           key={names.ru}
                           type="button"
-                          className="cm-chip"
+                          className="chip cm-chip"
                           onClick={() => patch({ newCategory: { ...names } })}
                         >
                           {names[locale]}
@@ -444,12 +444,12 @@ export function CabinetDishEditor({
                     aria-invalid={visibleErrors.portion ? true : undefined}
                     aria-describedby={visibleErrors.portion ? fieldId("portion-msg") : undefined}
                   />
-                  <div className="cm-seg is-small" role="group" aria-label={m.unitLabel}>
+                  <div className="seg cm-seg is-small" role="group" aria-label={m.unitLabel}>
                     {(["g", "ml"] as const).map((unit) => (
                       <button
                         key={unit}
                         type="button"
-                        className={draft.portionUnit === unit ? "active" : ""}
+                        className={`seg-item${draft.portionUnit === unit ? " is-active" : ""}`}
                         aria-pressed={draft.portionUnit === unit}
                         onClick={() => patch({ portionUnit: unit })}
                       >
@@ -485,7 +485,7 @@ export function CabinetDishEditor({
                   <button
                     key={tag}
                     type="button"
-                    className={`cm-chip is-${tag}${draft.tags.includes(tag) ? " active" : ""}`}
+                    className={`chip cm-chip is-${tag}${draft.tags.includes(tag) ? " is-active" : ""}`}
                     aria-pressed={draft.tags.includes(tag)}
                     onClick={() => patch({ tags: toggleTag(draft.tags, tag) })}
                   >
@@ -495,7 +495,7 @@ export function CabinetDishEditor({
                 ))}
                 <button
                   type="button"
-                  className={`cm-chip is-adult${draft.containsAlcohol ? " active" : ""}`}
+                  className={`chip cm-chip is-adult${draft.containsAlcohol ? " is-active" : ""}`}
                   aria-pressed={draft.containsAlcohol}
                   onClick={() => patch({ containsAlcohol: !draft.containsAlcohol })}
                 >
@@ -503,7 +503,7 @@ export function CabinetDishEditor({
                 </button>
                 <button
                   type="button"
-                  className={`cm-chip is-adult${draft.adultOnly || draft.containsAlcohol ? " active" : ""}`}
+                  className={`chip cm-chip is-adult${draft.adultOnly || draft.containsAlcohol ? " is-active" : ""}`}
                   aria-pressed={draft.adultOnly || draft.containsAlcohol}
                   disabled={draft.containsAlcohol}
                   onClick={() => patch({ adultOnly: !draft.adultOnly })}
@@ -525,7 +525,7 @@ export function CabinetDishEditor({
                     <button
                       key={code}
                       type="button"
-                      className={`cm-chip is-allergen${on ? " active" : ""}`}
+                      className={`chip cm-chip is-allergen${on ? " is-active" : ""}`}
                       aria-pressed={on}
                       onClick={() => patch({ allergens: toggleAllergen(draft.allergens, code) })}
                     >
@@ -537,7 +537,7 @@ export function CabinetDishEditor({
                   <button
                     key={code}
                     type="button"
-                    className="cm-chip is-allergen active"
+                    className="chip cm-chip is-allergen is-active"
                     aria-label={m.removeAllergen.replace("{name}", code)}
                     onClick={() => patch({ allergens: draft.allergens.filter((a) => a !== code) })}
                   >
@@ -577,7 +577,7 @@ export function CabinetDishEditor({
                     aria-invalid={visibleErrors.imageUrl ? true : undefined}
                   />
                   {imageUrl ? (
-                    <button type="button" className="cm-link-btn" onClick={() => patch({ imageUrl: "" })}>
+                    <button type="button" className="btn btn--link cm-link-btn" onClick={() => patch({ imageUrl: "" })}>
                       {m.photoRemove}
                     </button>
                   ) : null}
@@ -599,12 +599,12 @@ export function CabinetDishEditor({
               <p className="cm-subhead">
                 {m.previewTitle} <span className="cm-lang-tag" title={m.previewLanguage}>{LANG_CODE[lang]}</span>
               </p>
-              <div className="cm-seg is-small" role="group" aria-label={m.previewTitle}>
+              <div className="seg cm-seg is-small" role="group" aria-label={m.previewTitle}>
                 {(["list", "card"] as const).map((view) => (
                   <button
                     key={view}
                     type="button"
-                    className={previewView === view ? "active" : ""}
+                    className={`seg-item${previewView === view ? " is-active" : ""}`}
                     aria-pressed={previewView === view}
                     onClick={() => setPreviewView(view)}
                   >
@@ -626,7 +626,7 @@ export function CabinetDishEditor({
           {mode === "edit" && onDelete ? (
             <button
               type="button"
-              className="panel-btn ghost danger cm-btn"
+              className="btn btn--danger-outline btn--md cm-btn"
               aria-label={m.deleteLabel.replace("{name}", title)}
               disabled={saving}
               onClick={onDelete}
@@ -638,7 +638,7 @@ export function CabinetDishEditor({
           {mode === "edit" && onDuplicate ? (
             <button
               type="button"
-              className="panel-btn ghost cm-btn"
+              className="btn btn--secondary btn--md cm-btn"
               aria-label={m.duplicateLabel.replace("{name}", title)}
               disabled={saving}
               onClick={requestDuplicate}
@@ -650,15 +650,15 @@ export function CabinetDishEditor({
           <p className={`cm-foot-status${saveError ? " is-error" : ""}`} role={saveError ? "alert" : "status"}>
             {saveError ?? (dirty ? m.unsaved : "")}
           </p>
-          <button type="button" className="panel-btn ghost cm-btn is-cancel" disabled={saving} onClick={requestClose}>
+          <button type="button" className="btn btn--ghost btn--md cm-btn is-cancel" disabled={saving} onClick={requestClose}>
             {m.cancel}
           </button>
           {mode === "new" ? (
-            <button type="button" className="panel-btn ghost cm-btn" disabled={saving} onClick={() => void save(true)}>
+            <button type="button" className="btn btn--secondary btn--md cm-btn" disabled={saving} onClick={() => void save(true)}>
               {m.saveAndNew}
             </button>
           ) : null}
-          <button type="submit" form={fieldId("form")} className="panel-btn primary cm-btn" disabled={saving}>
+          <button type="submit" form={fieldId("form")} className="btn btn--primary btn--md cm-btn" disabled={saving}>
             {saving ? m.saving : mode === "new" ? m.addToMenu : m.save}
           </button>
         </footer>

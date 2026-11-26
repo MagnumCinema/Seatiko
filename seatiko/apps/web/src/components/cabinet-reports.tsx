@@ -156,7 +156,7 @@ export function CabinetReports({ venueId, staff, roles, shifts, presetNames }: P
         <h3>{t.failed}</h3>
         <button
           type="button"
-          className="panel-btn"
+          className="btn btn--primary btn--md"
           onClick={() => {
             setState("loading");
             void load(false);
@@ -241,7 +241,7 @@ function LiveCard({
         </h3>
         <div className="cs-updated">
           {updatedAt > 0 && <span>{fill(t.updated, { time: formatClock(updatedAt) })}</span>}
-          <button type="button" className="cb-icon-btn" aria-label={t.refresh} title={t.refresh} disabled={refreshing} onClick={onRefresh}>
+          <button type="button" className="btn btn--secondary btn--sm btn--icon cb-icon-btn" aria-label={t.refresh} title={t.refresh} disabled={refreshing} onClick={onRefresh}>
             <span className={refreshing ? "cb-spin" : undefined}>
               <RefreshIcon />
             </span>
@@ -398,13 +398,13 @@ function PeriodReport({ rows, now, period, onPeriod, range, rangeText, number, s
   return (
     <>
       <div className="cs-report-bar">
-        <div className="cb-chips cs-periods" role="group" aria-label={t.periodLabel}>
+        <div className="seg cs-periods" role="group" aria-label={t.periodLabel}>
           {PERIODS.map((p) => (
             <button
               key={p}
               type="button"
               aria-pressed={period === p}
-              className={period === p ? "active" : ""}
+              className={`seg-item${period === p ? " is-active" : ""}`}
               onClick={() => onPeriod(p)}
             >
               {t.periods[PERIOD_KEY[p]]}
@@ -415,7 +415,7 @@ function PeriodReport({ rows, now, period, onPeriod, range, rangeText, number, s
           <strong>{rangeText(range.thisPeriod)}</strong>
           <span>{fill(t.compare, { range: rangeText(range.lastPeriod) })}</span>
         </p>
-        <button type="button" className="panel-btn ghost sm cs-btn cs-export" onClick={exportCsv}>
+        <button type="button" className="btn btn--secondary btn--sm cs-btn cs-export" onClick={exportCsv}>
           <DownloadIcon />
           {t.exportCsv}
         </button>
@@ -648,7 +648,7 @@ function ChartCard({
           {sub && <p className="cs-card-sub">{sub}</p>}
           {note && <p className="cs-card-note">{note}</p>}
         </div>
-        <button type="button" className="panel-btn ghost sm cs-btn" aria-pressed={asTable} onClick={() => setAsTable((v) => !v)}>
+        <button type="button" className="btn btn--secondary btn--sm cs-btn" aria-pressed={asTable} onClick={() => setAsTable((v) => !v)}>
           {asTable ? t.showChart : t.showTable}
         </button>
       </div>

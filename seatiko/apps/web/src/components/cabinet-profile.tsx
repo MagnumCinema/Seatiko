@@ -572,7 +572,7 @@ export function CabinetProfilePanel({
             <strong>{t.publishedTitle}</strong>
             <p>{t.publishedHint}</p>
           </div>
-          <button type="button" className="panel-btn vp-nowrap vp-edit-btn" onClick={startEditing}>
+          <button type="button" className="btn btn--primary btn--md vp-nowrap vp-edit-btn" onClick={startEditing}>
             <EditIcon />
             <span>{t.edit}</span>
           </button>
@@ -600,7 +600,7 @@ export function CabinetProfilePanel({
       <div className="vp-requests-head">
         <h3 id="vp-requests-title">{t.requestsTitle}</h3>
         {requestsFailed && (
-          <button type="button" className="panel-btn ghost sm vp-nowrap" onClick={() => void loadRequests()}>
+          <button type="button" className="btn btn--secondary btn--sm vp-nowrap" onClick={() => void loadRequests()}>
             {t.retry}
           </button>
         )}
@@ -626,7 +626,7 @@ export function CabinetProfilePanel({
       {pending.length > 0 && <p className="vp-muted vp-requests-hint">{withSupportLink(t.requestCancelHint)}</p>}
       {decided.length > 0 && (
         <div className="vp-requests-history">
-          <button type="button" className="vp-link-btn" aria-expanded={historyOpen} onClick={() => setHistoryOpen((open) => !open)}>
+          <button type="button" className="btn btn--link vp-link-btn" aria-expanded={historyOpen} onClick={() => setHistoryOpen((open) => !open)}>
             {fill(t.requestsHistory, { n: decided.length })}
             <span aria-hidden="true">{historyOpen ? "▴" : "▾"}</span>
           </button>
@@ -727,14 +727,14 @@ export function CabinetProfilePanel({
           </div>
           <div className="owner-form-footer-actions vp-footer-actions">
             {dirty && (
-              <button type="button" className="panel-btn ghost vp-nowrap" disabled={Boolean(saving)} onClick={() => setConfirm("reset")}>
+              <button type="button" className="btn btn--ghost btn--md vp-nowrap" disabled={Boolean(saving)} onClick={() => setConfirm("reset")}>
                 {t.reset}
               </button>
             )}
-            <button type="button" className="panel-btn ghost vp-nowrap" disabled={Boolean(saving)} onClick={() => void onSave()}>
+            <button type="button" className="btn btn--secondary btn--md vp-nowrap" disabled={Boolean(saving)} onClick={() => void onSave()}>
               {saving === "save" ? ui.loading : cabinet.save}
             </button>
-            <button type="button" className="panel-btn vp-nowrap" disabled={Boolean(saving)} onClick={() => void onSubmit()}>
+            <button type="button" className="btn btn--primary btn--md vp-nowrap" disabled={Boolean(saving)} onClick={() => void onSubmit()}>
               {saving === "submit" ? ui.loading : cabinet.submit}
             </button>
           </div>
@@ -751,13 +751,13 @@ export function CabinetProfilePanel({
           <div className="owner-form-footer-actions vp-footer-actions">
             <button
               type="button"
-              className="panel-btn ghost vp-nowrap"
+              className="btn btn--ghost btn--md vp-nowrap"
               disabled={Boolean(saving)}
               onClick={() => (dirty ? setConfirm("discard") : stopEditing())}
             >
               {t.cancel}
             </button>
-            <button type="button" className="panel-btn vp-nowrap" disabled={Boolean(saving) || !dirty} onClick={openReview}>
+            <button type="button" className="btn btn--primary btn--md vp-nowrap" disabled={Boolean(saving) || !dirty} onClick={openReview}>
               {t.sendChanges}
             </button>
           </div>
@@ -1123,7 +1123,7 @@ export function CabinetProfilePanel({
           <strong>{ui.dangerZoneTitle}</strong>
           <p>{ui.dangerZoneHint}</p>
         </div>
-        <button type="button" className="panel-btn ghost danger vp-nowrap" disabled={deleteBusy || Boolean(saving)} onClick={onDelete}>
+        <button type="button" className="btn btn--danger-outline btn--md vp-nowrap" disabled={deleteBusy || Boolean(saving)} onClick={onDelete}>
           {ui.deleteVenue}
         </button>
       </div>

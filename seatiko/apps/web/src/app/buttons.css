@@ -593,6 +593,13 @@ html[data-theme="light"] {
   border-color: var(--chip-active-border);
 }
 
+/* Count badge inside a filter chip ("Сегодня 3") */
+.chip > b {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+
 .chip:focus-visible {
   outline: 2.5px solid var(--btn-focus-ring);
   outline-offset: 2px;

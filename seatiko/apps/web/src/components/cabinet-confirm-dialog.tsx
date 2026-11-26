@@ -55,7 +55,7 @@ export function CabinetConfirmDialog({
         aria-describedby="cabinet-confirm-text"
       >
         <div className={`booking-popup-card cabinet-delete-card ${tone}`}>
-          <button type="button" className="booking-popup-x" onClick={onCancel} aria-label={cancelLabel}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x" onClick={onCancel} aria-label={cancelLabel}>
             ×
           </button>
           <div className="cabinet-delete-icon" aria-hidden="true">
@@ -78,16 +78,16 @@ export function CabinetConfirmDialog({
             {text}
           </p>
           <div className="cabinet-delete-actions">
+            <button type="button" className="btn btn--ghost btn--md" data-autofocus disabled={busy} onClick={onCancel}>
+              {cancelLabel}
+            </button>
             <button
               type="button"
-              className={tone === "danger" ? "panel-btn danger" : "panel-btn"}
+              className={tone === "danger" ? "btn btn--danger btn--md" : "btn btn--primary btn--md"}
               disabled={busy}
               onClick={onConfirm}
             >
               {confirmLabel}
-            </button>
-            <button type="button" className="panel-btn ghost" data-autofocus disabled={busy} onClick={onCancel}>
-              {cancelLabel}
             </button>
           </div>
         </div>

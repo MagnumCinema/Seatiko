@@ -64,22 +64,13 @@ html[data-theme="light"] .cs-panel {
 }
 
 /* Buttons next to text keep their label on one line. */
-.cs-btn { white-space: nowrap; }
 
 /* ---------- Views ---------- */
 
 .cs-views { justify-self: start; max-width: 100%; }
-.cs-views button { gap: 8px; }
 .cs-views button b {
-  min-width: 20px;
-  padding: 1px 6px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--site-fg) 10%, transparent);
-  font-size: .66rem;
-  line-height: 1.5;
   text-align: center;
 }
-.cs-views button:focus-visible { outline: 2px solid var(--site-accent, #e9b96e); outline-offset: 2px; }
 
 /* ---------- Cards ---------- */
 
@@ -229,9 +220,8 @@ html[data-theme="light"] .cs-row { border-color: #e2e8e2; }
 .cs-today span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-state { grid-area: state; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 .cs-switch .cabinet-role-switch-label { color: var(--site-fg); font-weight: 650; }
-.cs-remove { grid-area: remove; color: var(--site-muted); }
-.cs-remove:hover:not(:disabled) { color: #e0605a; }
-html[data-theme="light"] .cs-remove:hover:not(:disabled) { color: #b0452f; }
+.cs-remove { grid-area: remove;
+}
 .cs-pill {
   display: inline-flex;
   align-items: center;
@@ -314,7 +304,8 @@ html[data-theme="light"] .cs-live-tile { border-color: #e2e8e2; }
 .cs-range { min-width: 0; display: grid; gap: 2px; margin: 0; }
 .cs-range strong { color: var(--site-fg); font-family: var(--font-display), Georgia, serif; font-size: 1.05rem; font-weight: 600; }
 .cs-range span { color: var(--site-muted); font-size: .72rem; }
-.cs-export { margin-left: auto; }
+.cs-export { margin-left: auto;
+}
 
 .cs-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .cs-kpi {
@@ -553,7 +544,8 @@ html[data-theme="light"] .cs-table-wrap { border-color: #e2e8e2; }
 @media (max-width: 760px) {
   .cs-card { padding: 16px; }
   .cs-team-head { grid-template-columns: minmax(0, 1fr); }
-  .cs-team-head .panel-btn { justify-self: start; }
+  .cs-team-head .btn { justify-self: start;
+}
   .cs-invite-grid { grid-template-columns: minmax(0, 1fr); }
   .cs-toolbar { grid-template-columns: minmax(0, 1fr); }
   .cs-toolbar .cs-chips { flex-wrap: wrap; }
@@ -567,7 +559,8 @@ html[data-theme="light"] .cs-table-wrap { border-color: #e2e8e2; }
   }
   .cs-avatar { width: 40px; height: 40px; }
   .cs-report-bar { display: grid; grid-template-columns: minmax(0, 1fr); }
-  .cs-export { margin-left: 0; justify-self: start; }
+  .cs-export { margin-left: 0; justify-self: start;
+}
   .cs-chart { --cs-plot-h: 160px; }
   .cs-chart-x .is-minor { visibility: hidden; }
   .cs-meters li {
@@ -582,7 +575,8 @@ html[data-theme="light"] .cs-table-wrap { border-color: #e2e8e2; }
 
 @media (max-width: 430px) {
   .cs-views { justify-self: stretch; }
-  .cs-views button { flex: 1 1 0; justify-content: center; padding-inline: 8px; }
+  .cs-views button { flex: 1 1 0;
+}
   .cs-mini-stats { grid-template-columns: minmax(0, 1fr); }
   .cs-kpi { padding: 12px; }
   .cs-kpi > strong { font-size: 1.5rem; }

@@ -198,7 +198,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
           <h3 id="cabinet-roles-title">{copy.title}</h3>
           <p className="cabinet-ops-sub">{copy.subtitle}</p>
         </div>
-        <button type="button" className="panel-btn" onClick={openCreate} disabled={busy}>
+        <button type="button" className="btn btn--primary btn--md" onClick={openCreate} disabled={busy}>
           + {copy.addRole}
         </button>
       </div>
@@ -218,7 +218,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
           </div>
           <button
             type="button"
-            className="panel-btn ghost sm"
+            className="btn btn--secondary btn--sm"
             disabled={busy}
             onClick={() => void run(() => addVenuePresetRoles(venueId, suggested), copy.suggestedAdded)}
           >
@@ -263,7 +263,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                 <div className="cabinet-role-buttons">
                   <button
                     type="button"
-                    className="panel-btn ghost sm icon"
+                    className="btn btn--secondary btn--sm btn--icon"
                     aria-label={`${copy.moveUp}: ${label}`}
                     title={copy.moveUp}
                     disabled={busy || index === 0}
@@ -273,7 +273,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   </button>
                   <button
                     type="button"
-                    className="panel-btn ghost sm icon"
+                    className="btn btn--secondary btn--sm btn--icon"
                     aria-label={`${copy.moveDown}: ${label}`}
                     title={copy.moveDown}
                     disabled={busy || index === ordered.length - 1}
@@ -281,13 +281,13 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   >
                     ↓
                   </button>
-                  <button type="button" className="panel-btn ghost sm" disabled={busy} onClick={() => openEdit(role)}>
+                  <button type="button" className="btn btn--secondary btn--sm" disabled={busy} onClick={() => openEdit(role)}>
                     {copy.edit}
                   </button>
                   {!role.is_system && (
                     <button
                       type="button"
-                      className="panel-btn ghost sm danger"
+                      className="btn btn--danger-outline btn--sm"
                       disabled={busy}
                       onClick={() => openDelete(role)}
                     >
@@ -321,7 +321,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   void saveEditor();
                 }}
               >
-                <button type="button" className="booking-popup-x" onClick={() => setEditor(null)} aria-label={copy.cancel}>
+                <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x" onClick={() => setEditor(null)} aria-label={copy.cancel}>
                   ×
                 </button>
                 <h3 id="cabinet-role-editor-title">
@@ -352,7 +352,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   {canClearName && editor.mode === "edit" && editor.role.name && (
                     <button
                       type="button"
-                      className="cabinet-role-link"
+                      className="btn btn--link cabinet-role-link"
                       onClick={() => setName(presetNames[editor.role.key] ?? "")}
                     >
                       {copy.restoreName}
@@ -385,10 +385,10 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                 </label>
                 <StaffingRulesEditor rules={minRules} onChange={setMinRules} disabled={!inSchedule} copy={site.cabinet} locale={locale} />
                 <div className="cabinet-delete-actions">
-                  <button type="submit" className="panel-btn" disabled={busy || Boolean(nameBlocking)}>
+                  <button type="submit" className="btn btn--primary btn--md" disabled={busy || Boolean(nameBlocking)}>
                     {editor.mode === "create" ? copy.create : copy.save}
                   </button>
-                  <button type="button" className="panel-btn ghost" disabled={busy} onClick={() => setEditor(null)}>
+                  <button type="button" className="btn btn--ghost btn--md" disabled={busy} onClick={() => setEditor(null)}>
                     {copy.cancel}
                   </button>
                 </div>
@@ -412,7 +412,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
               aria-labelledby="cabinet-role-delete-title"
             >
               <div className="booking-popup-card cabinet-delete-card">
-                <button type="button" className="booking-popup-x" onClick={() => setDeleting(null)} aria-label={copy.cancel}>
+                <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x" onClick={() => setDeleting(null)} aria-label={copy.cancel}>
                   ×
                 </button>
                 <div className="cabinet-delete-icon" aria-hidden="true">
@@ -445,7 +445,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                 <div className="cabinet-delete-actions">
                   <button
                     type="button"
-                    className="panel-btn danger"
+                    className="btn btn--danger btn--md"
                     disabled={busy || (deletingState.blocked === "in_use" && !reassignTo)}
                     onClick={() => {
                       const target = deleting;
@@ -461,7 +461,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   >
                     {copy.deleteConfirm}
                   </button>
-                  <button type="button" className="panel-btn ghost" data-autofocus disabled={busy} onClick={() => setDeleting(null)}>
+                  <button type="button" className="btn btn--ghost btn--md" data-autofocus disabled={busy} onClick={() => setDeleting(null)}>
                     {copy.cancel}
                   </button>
                 </div>
