@@ -348,6 +348,7 @@ export default function CabinetPage() {
     [cabinetCopy, ui],
   );
 
+  // The setters are listed so React Compiler can keep this memo once the old inline tabs are gone.
   const load = useCallback(async () => {
     if (!getToken()) {
       router.replace("/login");
@@ -381,7 +382,7 @@ export default function CabinetPage() {
       }
       setLoadFailed(true);
     }
-  }, [router]);
+  }, [router, setUser, setApps, setReservations, setLoadFailed, setNow, setSelectedId]);
 
   const refreshActivity = useCallback(async (applicationId: string) => {
     setActivityLoading(true);
@@ -436,7 +437,7 @@ export default function CabinetPage() {
         : [],
     [reservations, selected],
   );
-  const clearFocusBooking = useCallback(() => setFocusBookingId(null), []);
+  const clearFocusBooking = useCallback(() => setFocusBookingId(null), [setFocusBookingId]);
 
   function showApiError(value: unknown, fallback: string) {
     if (value instanceof ApiError && value.code === "incomplete") {
