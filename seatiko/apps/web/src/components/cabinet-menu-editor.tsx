@@ -4,7 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "rea
 import { createPortal } from "react-dom";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
 import { LocaleScope, useLocale } from "@/components/locale-provider";
-import { MenuDishDetails, allergenLabel } from "@/components/menu-dish-popup";
+import { MenuDishAddBar, MenuDishDetails, allergenLabel } from "@/components/menu-dish-popup";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { MenuDish } from "@/components/venue-menu-board";
 import { FlameIcon, LeafIcon } from "@/components/venue-icons";
@@ -302,7 +302,8 @@ export function CabinetDishEditor({
                   placeholder={m.namePlaceholder}
                   maxLength={120}
                   autoComplete="off"
-                  data-autofocus
+                  // New dish: start typing the name. Edit: no keyboard pops up on phones.
+                  data-autofocus={mode === "new" ? true : undefined}
                   aria-invalid={visibleErrors.name ? true : undefined}
                   aria-describedby={visibleErrors.name || sameName ? fieldId("name-msg") : undefined}
                 />
@@ -678,7 +679,9 @@ function GuestPreview({ item, view }: { item: MenuItem; view: "list" | "card" })
   if (view === "card") {
     return (
       <div className="cm-preview-card">
-        <MenuDishDetails item={item} titleId="cm-preview-title" />
+        <MenuDishDetails item={item} titleId="cm-preview-title">
+          <MenuDishAddBar name={textIn(item.name, locale)} qty={1} total={item.price} />
+        </MenuDishDetails>
       </div>
     );
   }

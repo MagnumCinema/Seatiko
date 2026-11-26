@@ -21,9 +21,11 @@ html[data-theme="light"] .cm-rename {
 
 .cm-panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   min-width: 0;
 }
+.cm-panel > * { min-width: 0; }
 
 /* Buttons keep their label on one line. */
 .cm-btn {
@@ -328,10 +330,12 @@ html[data-theme="light"] .cm-chip.active.is-allergen { --cm-chip: #9a6412; }
 
 /* ---------- Groups and rows ---------- */
 
-.cm-groups { display: grid; gap: 22px; }
+.cm-groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
 .cm-group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
+  min-width: 0;
   /* Long menus: the browser skips painting groups far off screen. */
   content-visibility: auto;
   contain-intrinsic-size: auto 480px;
@@ -397,9 +401,10 @@ html[data-theme="light"] .cm-list { background: #ffffff; border-color: #e2e8e2; 
 }
 .cm-row.is-selected { background: color-mix(in srgb, var(--site-accent) 10%, transparent); }
 .cm-row.is-stopped .cm-thumb,
-.cm-row.is-stopped .cm-row-main,
-.cm-row.is-stopped .cm-row-price { opacity: .55; }
-.cm-row.is-stopped .cm-row-title .cm-pill { opacity: 1; }
+.cm-row.is-stopped .cm-row-desc,
+.cm-row.is-stopped .cm-row-meta,
+.cm-row.is-stopped .cm-row-price { opacity: .5; }
+.cm-row.is-stopped .cm-row-name { color: var(--site-muted); }
 
 .cm-check { grid-area: check; position: relative; display: grid; place-items: center; width: 26px; height: 26px; cursor: pointer; }
 .cm-check input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }

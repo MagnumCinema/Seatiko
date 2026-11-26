@@ -181,36 +181,56 @@ export function MenuDishPopup({
           </button>
 
           <MenuDishDetails item={dish}>
-            <div className="menu-dish-popup-actions">
-              <div className="menu-stepper menu-dish-popup-stepper">
-                <button
-                  type="button"
-                  aria-label={t("menu_page.less_label", { dish: name })}
-                  disabled={localQty <= 1}
-                  onClick={() => setLocalQty((n) => Math.max(1, n - 1))}
-                >
-                  −
-                </button>
-                <output aria-live="polite">{localQty}</output>
-                <button
-                  type="button"
-                  aria-label={t("menu_page.more_label", { dish: name })}
-                  onClick={() => setLocalQty((n) => Math.min(99, n + 1))}
-                >
-                  +
-                </button>
-              </div>
-              <button type="button" className="venue-cta venue-cta-hero menu-dish-popup-add" onClick={commitAndClose}>
-                <span>{t("menu_page.add_to_selection")}</span>
-                <b>
-                  {lineTotal} <small>MDL</small>
-                </b>
-              </button>
-            </div>
+            <MenuDishAddBar
+              name={name}
+              qty={localQty}
+              total={lineTotal}
+              onLess={() => setLocalQty((n) => Math.max(1, n - 1))}
+              onMore={() => setLocalQty((n) => Math.min(99, n + 1))}
+              onAdd={commitAndClose}
+            />
           </MenuDishDetails>
         </div>
       </section>
     </div>,
     document.body,
+  );
+}
+
+/** Portions stepper and «Add» button with the line total, at the bottom of the dish card. */
+export function MenuDishAddBar({
+  name,
+  qty,
+  total,
+  onLess,
+  onMore,
+  onAdd,
+}: {
+  name: string;
+  qty: number;
+  total: number;
+  onLess?: () => void;
+  onMore?: () => void;
+  onAdd?: () => void;
+}) {
+  const { t } = useLocale();
+  return (
+    <div className="menu-dish-popup-actions">
+      <div className="menu-stepper menu-dish-popup-stepper">
+        <button type="button" aria-label={t("menu_page.less_label", { dish: name })} disabled={qty <= 1} onClick={onLess}>
+          −
+        </button>
+        <output aria-live="polite">{qty}</output>
+        <button type="button" aria-label={t("menu_page.more_label", { dish: name })} onClick={onMore}>
+          +
+        </button>
+      </div>
+      <button type="button" className="venue-cta venue-cta-hero menu-dish-popup-add" onClick={onAdd}>
+        <span>{t("menu_page.add_to_selection")}</span>
+        <b>
+          {total} <small>MDL</small>
+        </b>
+      </button>
+    </div>
   );
 }

@@ -273,6 +273,10 @@ describe("search and filters", () => {
     expect(dishMatches(items[1], searchWords("drinks"))).toBe(true);
     expect(dishMatches(items[0], searchWords("85"))).toBe(true);
     expect(dishMatches(items[0], searchWords("пицца"))).toBe(false);
+    // Word endings: «брынза» finds «брынзой», «зелень» finds «зеленью».
+    expect(dishMatches(dish("x", { description: { ru: "С брынзой", en: "", ro: "" } }), searchWords("брынза"))).toBe(true);
+    expect(dishMatches(items[0], searchWords("зелень"))).toBe(true);
+    expect(dishMatches(items[0], searchWords("8"))).toBe(true);
   });
 
   it("combines search, status and category", () => {

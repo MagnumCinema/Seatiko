@@ -1,4 +1,5 @@
 import type { LocaleCode, LocalizedString, MenuItem } from "@/lib/api";
+import { wordMatches } from "@/lib/menu";
 
 /**
  * Owner cabinet → «Меню»: pure logic behind the menu tab (categories, dish form,
@@ -421,20 +422,31 @@ export function searchWords(query: string): string[] {
   return foldText(query).split(/\s+/).filter(Boolean);
 }
 
-function dishHaystack(item: MenuItem): string {
-  const parts: string[] = [String(item.price)];
-  for (const value of [item.name, item.description, item.ingredients, item.category]) {
-    const text = textOf(value);
-    parts.push(text.ru, text.en, text.ro);
+const haystacks = new WeakMap<MenuItem, string[]>();
+
+/** Words of the dish name, description, ingredients and category in every language, plus its price (cached per item). */
+function dishWords(item: MenuItem): string[] {
+  let words = haystacks.get(item);
+  if (!words) {
+    const parts: string[] = [String(item.price)];
+    for (const value of [item.name, item.description, item.ingredients, item.category]) {
+      const text = textOf(value);
+      parts.push(text.ru, text.en, text.ro);
+    }
+    words = foldText(parts.join(" ")).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    haystacks.set(item, words);
   }
-  return foldText(parts.join(" "));
+  return words;
 }
 
-/** Every search word appears in the dish name, description, ingredients or category in any language, or in its price. */
+/**
+ * Every search word matches a word of the dish in any language (or its price),
+ * tolerating word endings like the guest menu search: "брынза" finds "брынзой".
+ */
 export function dishMatches(item: MenuItem, words: string[]): boolean {
   if (words.length === 0) return true;
-  const haystack = dishHaystack(item);
-  return words.every((word) => haystack.includes(word));
+  const haystack = dishWords(item);
+  return words.every((word) => wordMatches(word, haystack));
 }
 
 export function matchesStatus(item: MenuItem, status: MenuStatusFilter): boolean {
