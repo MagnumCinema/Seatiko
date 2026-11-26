@@ -1690,7 +1690,7 @@ export default function CabinetPage() {
               )}
 
               {section === "rules" && (
-                <CabinetRulesPanel venueId={effectiveVenueId} />
+                <CabinetRulesPanel venueId={effectiveVenueId} published={Boolean(selected.venue_id)} hoursText={selected.hours_text} />
               )}
 
               {section === "staff" && (

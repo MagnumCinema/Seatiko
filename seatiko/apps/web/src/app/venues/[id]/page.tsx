@@ -28,8 +28,7 @@ import { useLocale } from "@/components/locale-provider";
 import { listZonesFromTables } from "@/lib/floor-zones";
 import { getSiteCopy } from "@/lib/site-copy";
 import { apiErrorKey } from "@/lib/api-error-message";
-import { parseOpeningHours } from "@/lib/booking-slots";
-import { getVenueHours } from "@/lib/venue-hours";
+import { venueOpeningHours } from "@/lib/venue-hours";
 import { AUTH_CHANGE_EVENT } from "@/lib/header-auth";
 import {
   fetchMe,
@@ -256,9 +255,10 @@ export default function VenuePage() {
     return [];
   }, [places, venue]);
 
+  const venueHoursText = venue?.hours_text;
   const openingHours = useMemo(
-    () => parseOpeningHours(getVenueHours(venueId, "ru")),
-    [venueId],
+    () => venueOpeningHours({ id: venueId, hours_text: venueHoursText }),
+    [venueId, venueHoursText],
   );
   const [scheduleReloadKey, setScheduleReloadKey] = useState(0);
 
