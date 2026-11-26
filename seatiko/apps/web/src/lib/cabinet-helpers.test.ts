@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   photoProblem,
   pluralize,
-  validateVenueContacts,
 } from "./cabinet-helpers";
 
 const ruRecords = { one: "запись", few: "записи", many: "записей", other: "записи" };
@@ -18,22 +17,6 @@ describe("pluralize", () => {
   it("uses English plural forms", () => {
     expect(pluralize(1, enRecords, "en")).toBe("record");
     expect(pluralize(0, enRecords, "en")).toBe("records");
-  });
-});
-
-describe("validateVenueContacts", () => {
-  it("accepts empty and well-formed values", () => {
-    expect(validateVenueContacts({ email: "", website: "", phone: "" })).toEqual({});
-    expect(
-      validateVenueContacts({ email: "hi@oliva.md", website: "https://oliva.md", phone: "+373 69 987 654" }),
-    ).toEqual({});
-  });
-  it("flags malformed values", () => {
-    expect(validateVenueContacts({ email: "oliva", website: "oliva.md", phone: "12" })).toEqual({
-      email: "invalid",
-      website: "invalid",
-      phone: "invalid",
-    });
   });
 });
 

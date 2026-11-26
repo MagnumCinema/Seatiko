@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
-import { GoogleLocationPicker } from "@/components/google-location-picker";
-import { googleMapCoordinates, googleMapSearch } from "@/lib/google-map";
-import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import {
   CabinetFloorPanel,
   CabinetMenuPanel,
@@ -17,44 +13,34 @@ import {
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
-import { SelectMenu } from "@/components/ui/select-menu";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
 import { CabinetBookingsPanel, CabinetBookingsPreview } from "@/components/cabinet-bookings";
+import { CabinetProfilePanel } from "@/components/cabinet-profile";
 import { upcomingOwnerBookings } from "@/lib/cabinet-bookings";
-import {
-  photoProblem,
-  validateVenueContacts,
-  type VenueContactErrors,
-} from "@/lib/cabinet-helpers";
 import {
   ApiError,
   createApplication,
   deleteApplication,
-  emptyLocalized,
   fetchMe,
-  fetchMapConfig,
   getToken,
   listApplicationActivity,
   listMyApplications,
   listRestaurantReservations,
   listVenueWorkShifts,
-  mediaUrl,
   pickLocale,
-  removeApplicationPhoto,
-  submitApplication,
-  updateApplication,
-  uploadApplicationPhoto,
   type ApplicationActivity,
-  type ApplicationUpdate,
-  type LocaleCode,
-  type MapConfig,
-  type MapCoordinates,
   type RestaurantReservation,
   type User,
   type VenueApplication,
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
-import { VENUE_TYPE_IDS } from "@/lib/venue-roles";
+import {
+  clearStoredEdits,
+  hasStoredEdits,
+  READINESS_KEYS,
+  readiness,
+  valuesFromApplication,
+} from "@/lib/venue-profile";
 import "./bookings.css";
 
 type Section =
@@ -67,27 +53,6 @@ type Section =
   | "shifts"
   | "reservations"
   | "activity";
-
-const DRAFT_STORAGE_PREFIX = "seatiko:restaurant-draft:";
-const BALTI_CENTER: MapCoordinates = { lat: 47.7622, lng: 27.9289 };
-const FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
-
-type Draft = {
-  name: string;
-  description: string;
-  address: string;
-  city_id: string;
-  cuisine: string;
-  venue_type: string;
-  phone: string;
-  hours_text: string;
-  email: string;
-  website: string;
-  lat: string;
-  lng: string;
-  price_level: string;
-  average_check: string;
-};
 
 /* Modern SVG Icons for crisp, accessible UI */
 function OverviewIcon() {
@@ -196,350 +161,23 @@ function CheckIcon() {
   );
 }
 
-function LockIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function toDraft(app: VenueApplication, locale: LocaleCode): Draft {
-  return {
-    name: pickLocale(app.name, locale) || pickLocale(app.name, "ru") || "",
-    description: pickLocale(app.description, locale) || pickLocale(app.description, "ru") || "",
-    address: pickLocale(app.address, locale) || pickLocale(app.address, "ru") || "",
-    city_id: app.city_id,
-    cuisine: (app.cuisine || []).join(", "),
-    venue_type: app.venue_type || "",
-    phone: app.phone || "",
-    hours_text: app.hours_text || "",
-    email: app.email || "",
-    website: app.website || "",
-    lat: app.lat ? String(app.lat) : "",
-    lng: app.lng ? String(app.lng) : "",
-    price_level: app.price_level ? String(app.price_level) : "2",
-    average_check: app.average_check ? String(app.average_check) : "",
-  };
-}
-
-function toPayload(draft: Draft): ApplicationUpdate {
-  return {
-    name: emptyLocalized(draft.name.trim()),
-    description: emptyLocalized(draft.description.trim()),
-    address: emptyLocalized(draft.address.trim()),
-    city_id: draft.city_id,
-    cuisine: draft.cuisine
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    venue_type: draft.venue_type,
-    phone: draft.phone.trim(),
-    hours_text: draft.hours_text.trim(),
-    email: draft.email.trim(),
-    website: draft.website.trim(),
-    lat: Number(draft.lat) || 0,
-    lng: Number(draft.lng) || 0,
-    price_level: Number(draft.price_level) || 2,
-    average_check: Number(draft.average_check) || 0,
-  };
-}
-
-function storedDraft(applicationId: string, cityId: string): Draft | null {
-  try {
-    const raw = localStorage.getItem(`${DRAFT_STORAGE_PREFIX}${applicationId}`);
-    if (!raw) return null;
-    const value = JSON.parse(raw) as Partial<Draft>;
-    return {
-      name: value.name ?? "",
-      description: value.description ?? "",
-      address: value.address ?? "",
-      city_id: value.city_id ?? cityId,
-      cuisine: value.cuisine ?? "",
-      venue_type: value.venue_type ?? "",
-      phone: value.phone ?? "",
-      hours_text: value.hours_text ?? "",
-      email: value.email ?? "",
-      website: value.website ?? "",
-      lat: value.lat ?? "",
-      lng: value.lng ?? "",
-      price_level: value.price_level ?? "2",
-      average_check: value.average_check ?? "",
-    };
-  } catch {
-    return null;
-  }
-}
-
-function clearStoredDraft(applicationId: string) {
-  localStorage.removeItem(`${DRAFT_STORAGE_PREFIX}${applicationId}`);
-}
-
-const PENDING_CHANGES_PREFIX = "seatiko_venue_pending_changes:";
-
-function getPendingChanges(applicationId: string): Draft | null {
-  try {
-    const raw = localStorage.getItem(`${PENDING_CHANGES_PREFIX}${applicationId}`);
-    return raw ? (JSON.parse(raw) as Draft) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setPendingChanges(applicationId: string, draft: Draft) {
-  try {
-    localStorage.setItem(
-      `${PENDING_CHANGES_PREFIX}${applicationId}`,
-      JSON.stringify(draft),
-    );
-  } catch {}
-}
-
-function clearPendingChanges(applicationId: string) {
-  try {
-    localStorage.removeItem(`${PENDING_CHANGES_PREFIX}${applicationId}`);
-  } catch {}
-}
-
-function clearStoredDraftWhenPersisted(
-  applicationId: string,
-  draft: Draft,
-  application: VenueApplication,
-) {
-  const website = draft.website.trim();
-  if (website && application.website !== website) {
-    localStorage.setItem(
-      `${DRAFT_STORAGE_PREFIX}${applicationId}`,
-      JSON.stringify(draft),
-    );
-    return;
-  }
-  clearStoredDraft(applicationId);
-}
-
-function ApplicationLocationPicker({
-  config, center, query, lat, lng, disabled, onChange, selectedHint, editHint,
-}: {
-  config: MapConfig | null;
-  center: MapCoordinates;
-  query: string;
-  lat: string;
-  lng: string;
-  disabled: boolean;
-  onChange: (lat: string, lng: string) => void;
-  selectedHint: string;
-  editHint: string;
-}) {
-  const { locale } = useLocale();
-  const [googleFailed, setGoogleFailed] = useState(false);
-  const fallback = useCallback(() => setGoogleFailed(true), []);
-  const point = useMemo(() => {
-    const latitude = Number(lat);
-    const longitude = Number(lng);
-    return latitude >= 45.45 && latitude <= 48.55 && longitude >= 26.60 && longitude <= 30.20
-      ? { lat: latitude, lng: longitude }
-      : null;
-  }, [lat, lng]);
-
-  return (
-    <div className="owner-location-picker owner-field-wide">
-      {config?.google_maps_key && !googleFailed ? (
-        <GoogleLocationPicker
-          apiKey={config.google_maps_key} mapId={config.google_maps_id} center={center}
-          point={point} disabled={disabled} locale={locale} onError={fallback}
-          onChange={(next) => onChange(next.lat.toFixed(6), next.lng.toFixed(6))}
-        />
-      ) : (
-        <OpenLocationPicker lat={lat} lng={lng} disabled={disabled} locale={locale} onChange={onChange} center={center} />
-      )}
-      <p>
-        {disabled ? selectedHint : editHint}{" "}
-        <a href={point ? googleMapCoordinates(point) : googleMapSearch(query)} target="_blank" rel="noreferrer">
-          Google Maps ↗
-        </a>
-      </p>
-    </div>
-  );
-}
-
-function OpenLocationPicker({
-  lat,
-  lng,
-  disabled,
-  locale,
-  onChange,
-  center,
-}: {
-  lat: string;
-  lng: string;
-  disabled: boolean;
-  locale: "ru" | "en" | "ro";
-  onChange: (lat: string, lng: string) => void;
-  center: MapCoordinates;
-}) {
-  const mapNodeRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const markerRef = useRef<maplibregl.Marker | null>(null);
-  const onChangeRef = useRef(onChange);
-  const localeRef = useRef(locale);
-
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-
-  useEffect(() => {
-    localeRef.current = locale;
-    if (mapRef.current) {
-      applyMapLibreLocalization(mapRef.current, locale);
-    }
-  }, [locale]);
-
-  useEffect(() => {
-    if (!mapNodeRef.current) return;
-    const parsedLat = Number(lat);
-    const parsedLng = Number(lng);
-    const hasPoint = Boolean(parsedLat && parsedLng);
-    let map: maplibregl.Map;
-    try {
-      map = new maplibregl.Map({
-        container: mapNodeRef.current,
-        style: FREE_MAP_STYLE,
-        center: hasPoint ? [parsedLng, parsedLat] : [center.lng, center.lat],
-        zoom: hasPoint ? 16 : 13.8,
-        minZoom: 8,
-        maxZoom: 19,
-        attributionControl: false,
-        cooperativeGestures: true,
-        locale: getMapLibreLocale(localeRef.current),
-      });
-    } catch {
-      return;
-    }
-    mapRef.current = map;
-    map.addControl(
-      new maplibregl.NavigationControl({ showCompass: false }),
-      "top-right",
-    );
-    map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
-      "bottom-right",
-    );
-    map.once("load", () => {
-      applyMapLibreLocalization(map, localeRef.current);
-    });
-
-    const placeMarker = (nextLng: number, nextLat: number, report: boolean) => {
-      if (!markerRef.current) {
-        markerRef.current = new maplibregl.Marker({
-          color: "#e9b96e",
-          draggable: !disabled,
-        })
-          .setLngLat([nextLng, nextLat])
-          .addTo(map);
-        markerRef.current.on("dragend", () => {
-          const point = markerRef.current?.getLngLat();
-          if (point) {
-            onChangeRef.current(point.lat.toFixed(6), point.lng.toFixed(6));
-          }
-        });
-      } else {
-        markerRef.current.setLngLat([nextLng, nextLat]);
-      }
-      if (report) {
-        onChangeRef.current(nextLat.toFixed(6), nextLng.toFixed(6));
-      }
-    };
-
-    if (hasPoint) placeMarker(parsedLng, parsedLat, false);
-    if (!disabled) {
-      map.on("click", (event) => {
-        placeMarker(event.lngLat.lng, event.lngLat.lat, true);
-      });
-    }
-
-    return () => {
-      markerRef.current?.remove();
-      markerRef.current = null;
-      mapRef.current = null;
-      map.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disabled, center]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const parsedLat = Number(lat);
-    const parsedLng = Number(lng);
-    if (!map || !parsedLat || !parsedLng) return;
-    if (!markerRef.current) {
-      markerRef.current = new maplibregl.Marker({
-        color: "#e9b96e",
-        draggable: !disabled,
-      })
-        .setLngLat([parsedLng, parsedLat])
-        .addTo(map);
-    } else {
-      markerRef.current.setLngLat([parsedLng, parsedLat]);
-    }
-  }, [disabled, lat, lng]);
-
-  return <div ref={mapNodeRef} className="owner-location-map" />;
-}
-
 function editable(status: string) {
   return status === "DRAFT" || status === "REJECTED";
 }
 
-function getSetupChecks(
-  app: VenueApplication,
-  draft: Draft | null,
-  copy: ReturnType<typeof getSiteCopy>["cabinet"],
-  locale: LocaleCode,
-) {
-  return [
-    {
-      label: copy.checkNameDesc,
-      done: Boolean(
-        (draft?.name ?? pickLocale(app.name, locale)) &&
-          (draft?.description ?? pickLocale(app.description, locale)),
-      ),
-    },
-    { label: copy.checkAddress, done: Boolean(draft?.address ?? pickLocale(app.address, locale)) },
-    {
-      label: copy.checkMapPoint,
-      done: Boolean(
-        draft ? Number(draft.lat) && Number(draft.lng) : app.lat && app.lng,
-      ),
-    },
-    {
-      label: copy.checkCuisine,
-      done: Boolean(draft ? draft.cuisine.trim() : app.cuisine?.length),
-    },
-    {
-      label: copy.checkContacts,
-      done: Boolean(draft ? draft.phone.trim() && draft.email.trim() : app.phone && app.email),
-    },
-    { label: copy.checkHours, done: Boolean(draft?.hours_text ?? app.hours_text) },
-    { label: copy.checkPhotos, done: Boolean(app.photo_urls?.length) },
-  ];
+/** Readiness of the saved profile, by the same rules the API checks before moderation. */
+function getSetupChecks(app: VenueApplication, copy: ReturnType<typeof getSiteCopy>["cabinet"]) {
+  const done = readiness(valuesFromApplication(app), app.photo_urls?.length ?? 0);
+  const labels = {
+    basics: copy.checkNameDesc,
+    address: copy.checkAddress,
+    point: copy.checkMapPoint,
+    cuisine: copy.checkCuisine,
+    contacts: copy.checkContacts,
+    hours: copy.checkHours,
+    photos: copy.checkPhotos,
+  };
+  return READINESS_KEYS.map((key) => ({ label: labels[key], done: done[key] }));
 }
 
 function getStatusHint(status: string, copy: ReturnType<typeof getSiteCopy>["cabinet"]) {
@@ -549,12 +187,6 @@ function getStatusHint(status: string, copy: ReturnType<typeof getSiteCopy>["cab
   if (status === "SUBMITTED") return copy.statusHintSubmitted;
   if (status === "REJECTED") return copy.statusHintRejected;
   return copy.statusHintDraft;
-}
-
-function getEditLockHint(status: string, copy: ReturnType<typeof getSiteCopy>["cabinet"]) {
-  if (status === "PUBLISHED") return copy.lockHintPublished;
-  if (status === "APPROVED") return copy.lockHintApproved;
-  return copy.lockHintReview;
 }
 
 function formatDateTime(value: string, locale: string) {
@@ -614,23 +246,9 @@ export default function CabinetPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [fieldErrors, setFieldErrors] = useState<VenueContactErrors>({});
-  const [removingPhoto, setRemovingPhoto] = useState<string | null>(null);
   const contentRef = useRef<HTMLElement>(null);
-  const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    fetchMapConfig().then((config) => { if (active) setMapConfig(config); }).catch(() => {});
-    return () => { active = false; };
-  }, []);
-
-  const locations = mapConfig?.cities.filter((city) => city.country === "MD") ?? [];
   const [apps, setApps] = useState<VenueApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [isEditingApproved, setIsEditingApproved] = useState(false);
-  const [hasPendingModeration, setHasPendingModeration] = useState(false);
   const [section, setSection] = useState<Section>("overview");
   const [reservations, setReservations] = useState<RestaurantReservation[]>([]);
   const [focusBookingId, setFocusBookingId] = useState<string | null>(null);
@@ -641,7 +259,6 @@ export default function CabinetPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deletingApp, setDeletingApp] = useState<VenueApplication | null>(null);
-  const draftApplicationRef = useRef<string | null>(null);
 
   // Keeps "upcoming" vs "history" honest when the cabinet stays open for hours.
   useEffect(() => {
@@ -773,23 +390,11 @@ export default function CabinetPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      const nextId = selected?.id ?? null;
-      if (draftApplicationRef.current !== nextId) {
-        draftApplicationRef.current = nextId;
-        const pending = selected ? getPendingChanges(selected.id) : null;
-        setHasPendingModeration(Boolean(pending));
-        setIsEditingApproved(false);
-        setDraft(
-          selected
-            ? pending ?? storedDraft(selected.id, selected.city_id) ?? toDraft(selected, locale)
-            : null,
-        );
-      }
       if (selected) void refreshActivity(selected.id);
       else setActivity([]);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [selected, locale, refreshActivity]);
+  }, [selected, refreshActivity]);
 
   useEffect(() => {
     const targetVenueId = selected ? selected.venue_id || selected.id : "";
@@ -813,19 +418,6 @@ export default function CabinetPage() {
     };
   }, [selected]);
 
-  useEffect(() => {
-    if (!selectedId || !draft || draftApplicationRef.current !== selectedId) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      localStorage.setItem(
-        `${DRAFT_STORAGE_PREFIX}${selectedId}`,
-        JSON.stringify(draft),
-      );
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [draft, selectedId]);
-
   const selectedReservations = useMemo(
     () =>
       selected?.venue_id
@@ -838,7 +430,7 @@ export default function CabinetPage() {
   function showApiError(value: unknown, fallback: string) {
     if (value instanceof ApiError && value.code === "incomplete") {
       const missing = selected
-        ? getSetupChecks(selected, draft, cabinetCopy, locale)
+        ? getSetupChecks(selected, cabinetCopy)
             .filter((check) => !check.done)
             .map((check) => check.label.toLowerCase())
         : [];
@@ -879,8 +471,7 @@ export default function CabinetPage() {
     setError(null);
     try {
       await deleteApplication(target.id);
-      clearStoredDraft(target.id);
-      clearPendingChanges(target.id);
+      clearStoredEdits(target.id);
       const remaining = apps.filter((item) => item.id !== target.id);
       setApps(remaining);
       setSelectedId(remaining[0]?.id ?? null);
@@ -890,135 +481,6 @@ export default function CabinetPage() {
     } catch (value) {
       setDeletingApp(null);
       showApiError(value, ui.deleteFailed);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /** Checks contact formats before anything is sent; marks the bad fields and scrolls to the first one. */
-  function contactsValid(): boolean {
-    if (!draft) return false;
-    const errors = validateVenueContacts(draft);
-    setFieldErrors(errors);
-    const first = (["phone", "email", "website"] as const).find((key) => errors[key]);
-    if (first) {
-      setMsg(null);
-      setError(ui.fixFields);
-      document.getElementById(`venue-${first}`)?.focus();
-      return false;
-    }
-    return true;
-  }
-
-  async function onSave() {
-    if (!selected || !draft || !editable(selected.status)) return;
-    if (!contactsValid()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const updated = await updateApplication(selected.id, toPayload(draft));
-      setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setMsg(ui.changesSaved);
-      await refreshActivity(selected.id);
-    } catch (value) {
-      showApiError(value, ui.saveFailed);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onSubmit() {
-    if (!selected || !draft || !editable(selected.status)) return;
-    if (!contactsValid()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const saved = await updateApplication(selected.id, toPayload(draft));
-      setApps((current) => current.map((app) => (app.id === saved.id ? saved : app)));
-      const updated = await submitApplication(selected.id);
-      setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setSection("overview");
-      setMsg(ui.submitted);
-      await refreshActivity(selected.id);
-    } catch (value) {
-      showApiError(value, ui.submitFailed);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onPhoto(file: File | null) {
-    if (!selected || !file || !editable(selected.status)) return;
-    const problem = photoProblem(file);
-    if (problem) {
-      setMsg(null);
-      setError(problem === "size" ? ui.photoTooLarge : ui.photoWrongType);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      if (draft) {
-        const saved = await updateApplication(selected.id, toPayload(draft));
-        setApps((current) =>
-          current.map((app) => (app.id === saved.id ? saved : app)),
-        );
-      }
-      const updated = await uploadApplicationPhoto(selected.id, file);
-      setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      if (draft) clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setMsg(ui.photoAdded);
-      await refreshActivity(selected.id);
-    } catch (value) {
-      showApiError(value, ui.photoUploadFailed);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onRemovePhoto(url: string) {
-    if (!selected || !editable(selected.status)) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const updated = await removeApplicationPhoto(selected.id, url);
-      setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      setMsg(ui.photoRemoved);
-      await refreshActivity(selected.id);
-    } catch (value) {
-      showApiError(value, ui.photoRemoveFailed);
-    } finally {
-      setBusy(false);
-      setRemovingPhoto(null);
-    }
-  }
-
-  function updateDraft<Key extends keyof Draft>(key: Key, value: Draft[Key]) {
-    setDraft((current) => (current ? { ...current, [key]: value } : current));
-    if (key in fieldErrors) {
-      setFieldErrors((current) => {
-        const next = { ...current };
-        delete next[key as keyof VenueContactErrors];
-        return next;
-      });
-    }
-  }
-
-  async function onSubmitProposedChanges() {
-    if (!selected || !draft) return;
-    if (!contactsValid()) return;
-    setBusy(true);
-    setError(null);
-    try {
-      setPendingChanges(selected.id, draft);
-      setHasPendingModeration(true);
-      setIsEditingApproved(false);
-      setMsg(cabinetCopy.changesSubmittedSuccess);
-      await refreshActivity(selected.id);
-    } catch (value) {
-      showApiError(value, ui.saveFailed);
     } finally {
       setBusy(false);
     }
@@ -1051,12 +513,11 @@ export default function CabinetPage() {
     );
   }
 
-  const checks = selected ? getSetupChecks(selected, draft, cabinetCopy, locale) : [];
+  const checks = selected ? getSetupChecks(selected, cabinetCopy) : [];
   const completedChecks = checks.filter((check) => check.done).length;
-  const missingChecks = checks.filter((check) => !check.done);
   const completion = checks.length ? Math.round((completedChecks / checks.length) * 100) : 0;
   const isDraftStatus = selected ? editable(selected.status) : false;
-  const canEdit = isDraftStatus || isEditingApproved;
+  const canEdit = isDraftStatus;
   const effectiveVenueId = selected ? selected.venue_id || selected.id : "";
   const futureBookings = upcomingOwnerBookings(selectedReservations, now);
   const venueTitle = (app: VenueApplication) =>
@@ -1091,7 +552,6 @@ export default function CabinetPage() {
                   className={app.id === selectedId ? "active" : ""}
                   onClick={() => {
                     setSelectedId(app.id);
-                    setFieldErrors({});
                     openSection("overview");
                   }}
                   aria-pressed={app.id === selectedId}
@@ -1136,6 +596,9 @@ export default function CabinetPage() {
                 >
                   <span className="owner-nav-icon">{item.icon}</span>
                   <span>{item.label}</span>
+                  {item.id === "profile" && section !== "profile" && hasStoredEdits(selected, locale) && (
+                    <i className="vp-nav-dot" title={cabinetCopy.profileTab.unsavedNav} aria-label={cabinetCopy.profileTab.unsavedNav} />
+                  )}
                   {item.id === "shifts" && shiftAlertCount > 0 && (
                     <b className="owner-nav-alert-badge">{shiftAlertCount}</b>
                   )}
@@ -1410,470 +873,33 @@ export default function CabinetPage() {
                 </div>
               )}
 
-              {section === "profile" && draft && (
-                <section className="owner-profile">
-                  {!isDraftStatus && (
-                    <>
-                      {isEditingApproved ? (
-                        <div className="owner-edit-mode-note" role="alert">
-                          <div className="owner-edit-mode-info">
-                            <span className="owner-edit-icon"><EditIcon /></span>
-                            <div>
-                              <strong>{cabinetCopy.editModeActiveTitle}</strong>
-                              <p>{cabinetCopy.editModeActiveHint}</p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            className="panel-btn ghost small"
-                            onClick={() => {
-                              setDraft(toDraft(selected, locale));
-                              setIsEditingApproved(false);
-                            }}
-                          >
-                            {cabinetCopy.cancelEdit}
-                          </button>
-                        </div>
-                      ) : hasPendingModeration ? (
-                        <div className="owner-pending-moderation-note" role="status">
-                          <span className="owner-pending-badge-icon"><ClockIcon /></span>
-                          <div className="owner-pending-content">
-                            <strong>{cabinetCopy.pendingModerationTitle}</strong>
-                            <p>{cabinetCopy.pendingModerationHint}</p>
-                          </div>
-                          <div className="owner-pending-actions">
-                            <button
-                              type="button"
-                              className="panel-btn ghost small"
-                              onClick={() => {
-                                clearPendingChanges(selected.id);
-                                setHasPendingModeration(false);
-                                setDraft(toDraft(selected, locale));
-                              }}
-                            >
-                              {cabinetCopy.cancelEdit}
-                            </button>
-                            <button
-                              type="button"
-                              className="panel-btn small"
-                              onClick={() => setIsEditingApproved(true)}
-                            >
-                              {cabinetCopy.editAgain}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="owner-lock-note" role="note">
-                          <div className="owner-lock-info">
-                            <span><LockIcon /></span>
-                            <p>{getEditLockHint(selected.status, cabinetCopy)}</p>
-                          </div>
-                          <button
-                            type="button"
-                            className="panel-btn owner-edit-data-btn"
-                            onClick={() => setIsEditingApproved(true)}
-                          >
-                            <EditIcon />
-                            <span>{cabinetCopy.editApprovedData}</span>
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  <form onSubmit={(e) => { e.preventDefault(); if (isEditingApproved) void onSubmitProposedChanges(); else if (canEdit) void onSave(); }}>
-                    <div className="owner-form-section">
-                      <div className="owner-form-title">
-                        <span>01</span>
-                        <div>
-                          <h3>{cabinetCopy.basic}</h3>
-                          <p>{cabinetCopy.basicHint}</p>
-                        </div>
-                      </div>
-                      <div className="owner-form-fields">
-                        <div className="field owner-field-wide">
-                          <label htmlFor="venue-name">{cabinetCopy.name}</label>
-                          <input
-                            id="venue-name"
-                            disabled={!canEdit}
-                            value={draft.name}
-                            onChange={(event) => updateDraft("name", event.target.value)}
-                            required
-                            enterKeyHint="next"
-                          />
-                        </div>
-                        <div className="field owner-field-wide">
-                          <label htmlFor="venue-description">{cabinetCopy.description}</label>
-                          <textarea
-                            id="venue-description"
-                            disabled={!canEdit}
-                            maxLength={400}
-                            placeholder={cabinetCopy.descriptionPlaceholder}
-                            value={draft.description}
-                            onChange={(event) => updateDraft("description", event.target.value)}
-                            required
-                            rows={3}
-                          />
-                          <small aria-live="polite">{draft.description.length}/400</small>
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-type">{cabinetCopy.roles.typeLabel}</label>
-                          <SelectMenu
-                            id="venue-type"
-                            disabled={!canEdit}
-                            value={draft.venue_type}
-                            placeholder={cabinetCopy.roles.typePlaceholder}
-                            onChange={(value) => updateDraft("venue_type", value)}
-                            ariaDescribedBy="venue-type-hint"
-                            options={[
-                              { value: "", label: cabinetCopy.roles.typePlaceholder },
-                              ...VENUE_TYPE_IDS.map((type) => ({
-                                value: type,
-                                label: siteCopy.discover.chips[type],
-                              })),
-                            ]}
-                          />
-                          <p id="venue-type-hint" className="owner-field-hint">
-                            {selected?.status === "PUBLISHED" ? cabinetCopy.roles.typeChangeModerated : cabinetCopy.roles.typeHint}
-                          </p>
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-cuisine">{cabinetCopy.cuisine}</label>
-                          <input
-                            id="venue-cuisine"
-                            disabled={!canEdit}
-                            placeholder={cabinetCopy.cuisinePlaceholder}
-                            value={draft.cuisine}
-                            onChange={(event) => updateDraft("cuisine", event.target.value)}
-                            enterKeyHint="next"
-                          />
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-hours">{cabinetCopy.hours}</label>
-                          <input
-                            id="venue-hours"
-                            disabled={!canEdit}
-                            placeholder={cabinetCopy.hoursPlaceholder}
-                            value={draft.hours_text}
-                            onChange={(event) => updateDraft("hours_text", event.target.value)}
-                            enterKeyHint="next"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="owner-form-section">
-                      <div className="owner-form-title">
-                        <span>02</span>
-                        <div>
-                          <h3>{cabinetCopy.location}</h3>
-                          <p>{cabinetCopy.locationHint}</p>
-                        </div>
-                      </div>
-                      <div className="owner-form-fields">
-                        <div className="field owner-field-wide">
-                          <label htmlFor="venue-city">
-                            {ui.city}
-                          </label>
-                          <SelectMenu
-                            id="venue-city"
-                            disabled={!canEdit}
-                            value={draft.city_id}
-                            onChange={(cityId) => {
-                              setDraft((current) => current ? { ...current, city_id: cityId, lat: "", lng: "" } : current);
-                            }}
-                            options={[
-                              ...(!locations.some((city) => city.id === draft.city_id)
-                                ? [{ value: draft.city_id, label: draft.city_id === "city-balti" ? "Bălți" : draft.city_id }]
-                                : []),
-                              ...locations.map((city) => ({
-                                value: city.id,
-                                label: pickLocale(city.name, locale),
-                              })),
-                            ]}
-                          />
-                        </div>
-                        <div className="field owner-field-wide">
-                          <label htmlFor="venue-address">{cabinetCopy.address}</label>
-                          <input
-                            id="venue-address"
-                            disabled={!canEdit}
-                            placeholder={cabinetCopy.addressPlaceholder}
-                            value={draft.address}
-                            onChange={(event) => updateDraft("address", event.target.value)}
-                            enterKeyHint="next"
-                          />
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-lat">{cabinetCopy.latitude}</label>
-                          <input
-                            id="venue-lat"
-                            type="number"
-                            step="0.000001"
-                            inputMode="decimal"
-                            disabled={!canEdit}
-                            placeholder="47.7617"
-                            value={draft.lat}
-                            onChange={(event) => updateDraft("lat", event.target.value)}
-                          />
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-lng">{cabinetCopy.longitude}</label>
-                          <input
-                            id="venue-lng"
-                            type="number"
-                            step="0.000001"
-                            inputMode="decimal"
-                            disabled={!canEdit}
-                            placeholder="27.9288"
-                            value={draft.lng}
-                            onChange={(event) => updateDraft("lng", event.target.value)}
-                          />
-                        </div>
-                        <ApplicationLocationPicker
-                          key={`${selected.id}:${draft.city_id}`}
-                          config={mapConfig}
-                          center={locations.find((city) => city.id === draft.city_id)?.center ?? BALTI_CENTER}
-                          query={`${draft.name} ${draft.address} Moldova`}
-                          lat={draft.lat}
-                          lng={draft.lng}
-                          disabled={!canEdit}
-                          selectedHint={cabinetCopy.mapPoint}
-                          editHint={cabinetCopy.mapHint}
-                          onChange={(nextLat, nextLng) => {
-                            setDraft((current) =>
-                              current
-                                ? { ...current, lat: nextLat, lng: nextLng }
-                                : current,
-                            );
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="owner-form-section">
-                      <div className="owner-form-title">
-                        <span>03</span>
-                        <div>
-                          <h3>{cabinetCopy.contacts}</h3>
-                          <p>{cabinetCopy.contactsHint}</p>
-                        </div>
-                      </div>
-                      <div className="owner-form-fields">
-                        <div className="field">
-                          <label htmlFor="venue-phone">{cabinetCopy.phone}</label>
-                          <input
-                            id="venue-phone"
-                            type="tel"
-                            inputMode="tel"
-                            autoComplete="tel"
-                            disabled={!canEdit}
-                            placeholder="+373 600 00 000"
-                            value={draft.phone}
-                            onChange={(event) => updateDraft("phone", event.target.value)}
-                            aria-invalid={fieldErrors.phone ? true : undefined}
-                            aria-describedby={fieldErrors.phone ? "venue-phone-error" : undefined}
-                          />
-                          {fieldErrors.phone && (
-                            <small id="venue-phone-error" className="owner-field-error">{ui.invalidPhone}</small>
-                          )}
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-email">{cabinetCopy.email}</label>
-                          <input
-                            id="venue-email"
-                            type="email"
-                            inputMode="email"
-                            autoComplete="email"
-                            disabled={!canEdit}
-                            placeholder="hello@restaurant.md"
-                            value={draft.email}
-                            onChange={(event) => updateDraft("email", event.target.value)}
-                            aria-invalid={fieldErrors.email ? true : undefined}
-                            aria-describedby={fieldErrors.email ? "venue-email-error" : undefined}
-                          />
-                          {fieldErrors.email && (
-                            <small id="venue-email-error" className="owner-field-error">{ui.invalidEmail}</small>
-                          )}
-                        </div>
-                        <div className="field owner-field-wide">
-                          <label htmlFor="venue-website">
-                            {cabinetCopy.website} <span className="field-optional">{cabinetCopy.optional}</span>
-                          </label>
-                          <input
-                            id="venue-website"
-                            type="url"
-                            inputMode="url"
-                            autoComplete="url"
-                            disabled={!canEdit}
-                            placeholder="https://restaurant.md"
-                            value={draft.website}
-                            onChange={(event) => updateDraft("website", event.target.value)}
-                            aria-invalid={fieldErrors.website ? true : undefined}
-                            aria-describedby="venue-website-hint"
-                          />
-                          {fieldErrors.website ? (
-                            <small id="venue-website-hint" className="owner-field-error">{ui.invalidWebsite}</small>
-                          ) : (
-                            <p id="venue-website-hint" className="owner-field-hint">{cabinetCopy.websiteHint}</p>
-                          )}
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-price">{cabinetCopy.price}</label>
-                          <SelectMenu
-                            id="venue-price"
-                            disabled={!canEdit}
-                            value={draft.price_level}
-                            onChange={(value) => updateDraft("price_level", value)}
-                            options={[
-                              { value: "1", label: cabinetCopy.price1 },
-                              { value: "2", label: cabinetCopy.price2 },
-                              { value: "3", label: cabinetCopy.price3 },
-                            ]}
-                          />
-                        </div>
-                        <div className="field">
-                          <label htmlFor="venue-check">{cabinetCopy.average}</label>
-                          <input
-                            id="venue-check"
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            disabled={!canEdit}
-                            placeholder="350"
-                            value={draft.average_check}
-                            onChange={(event) => updateDraft("average_check", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="owner-form-section">
-                      <div className="owner-form-title">
-                        <span>04</span>
-                        <div>
-                          <h3>{cabinetCopy.photos}</h3>
-                          <p>{cabinetCopy.photosHint}</p>
-                        </div>
-                      </div>
-                      <div className="owner-photo-area">
-                        <div className="photo-grid owner-photo-grid">
-                          {(selected.photo_urls || []).map((url, index) => (
-                            <div key={url} className="photo-thumb owner-photo-thumb">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={mediaUrl(url)} alt={ui.photoAlt.replace("{n}", String(index + 1))} />
-                              {index === 0 && <span>{cabinetCopy.cover}</span>}
-                              {canEdit && (
-                                <button
-                                  type="button"
-                                  aria-label={ui.deletePhoto}
-                                  title={ui.deletePhoto}
-                                  disabled={busy}
-                                  onClick={() => setRemovingPhoto(url)}
-                                >
-                                  ×
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                          {canEdit && (selected.photo_urls?.length || 0) < 8 && (
-                            <label className="owner-photo-upload">
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                onChange={(event) => {
-                                  void onPhoto(event.target.files?.[0] ?? null);
-                                  event.target.value = "";
-                                }}
-                              />
-                              <span aria-hidden="true">+</span>
-                              <strong>{cabinetCopy.addPhoto}</strong>
-                              <small>{ui.photoFormats}</small>
-                            </label>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {canEdit && (
-                      <div className="owner-form-footer">
-                        {isEditingApproved ? (
-                          <>
-                            <div>
-                              <strong>{cabinetCopy.editApprovedData}</strong>
-                              <p>{cabinetCopy.editModeActiveHint}</p>
-                            </div>
-                            <div className="owner-form-footer-actions">
-                              <button
-                                type="button"
-                                className="panel-btn ghost"
-                                disabled={busy}
-                                onClick={() => {
-                                  setDraft(toDraft(selected, locale));
-                                  setIsEditingApproved(false);
-                                }}
-                              >
-                                {cabinetCopy.cancelEdit}
-                              </button>
-                              <button
-                                type="button"
-                                className="panel-btn"
-                                disabled={busy}
-                                onClick={() => void onSubmitProposedChanges()}
-                              >
-                                {cabinetCopy.submitForModeration}
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div>
-                              <strong>{completion}% {cabinetCopy.filled}</strong>
-                              <p>
-                                {missingChecks.length
-                                  ? ui.remaining.replace("{list}", missingChecks.map((check) => check.label).join(", "))
-                                  : cabinetCopy.ready}
-                              </p>
-                            </div>
-                            <div className="owner-form-footer-actions">
-                              <button
-                                type="button"
-                                className="panel-btn ghost"
-                                disabled={busy}
-                                onClick={() => void onSave()}
-                              >
-                                {cabinetCopy.save}
-                              </button>
-                              <button
-                                type="button"
-                                className="panel-btn"
-                                disabled={busy || missingChecks.length > 0}
-                                onClick={() => void onSubmit()}
-                              >
-                                {cabinetCopy.submit}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </form>
-
-                  <div className="owner-danger-zone">
-                    <div>
-                      <strong>{ui.dangerZoneTitle}</strong>
-                      <p>{ui.dangerZoneHint}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="panel-btn ghost danger"
-                      disabled={busy}
-                      onClick={() => setDeletingApp(selected)}
-                    >
-                      {ui.deleteVenue}
-                    </button>
-                  </div>
-                </section>
+              {section === "profile" && (
+                <CabinetProfilePanel
+                  key={selected.id}
+                  application={selected}
+                  onApplicationChange={(updated) =>
+                    setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)))
+                  }
+                  onNotice={(text, tone) => {
+                    if (!text) {
+                      setMsg(null);
+                      setError(null);
+                    } else if (tone === "error") {
+                      setMsg(null);
+                      setError(text);
+                    } else {
+                      setError(null);
+                      setMsg(text);
+                    }
+                  }}
+                  onActivityChange={() => void refreshActivity(selected.id)}
+                  onSubmitted={() => {
+                    openSection("overview");
+                    setMsg(ui.submitted);
+                  }}
+                  onDelete={() => setDeletingApp(selected)}
+                  deleteBusy={busy}
+                />
               )}
 
               {section === "floor" && (
@@ -1982,16 +1008,6 @@ export default function CabinetPage() {
         busy={busy}
         onConfirm={() => void onDeleteConfirm()}
         onCancel={() => setDeletingApp(null)}
-      />
-      <CabinetConfirmDialog
-        open={!!removingPhoto}
-        title={ui.deletePhotoTitle}
-        text={ui.deletePhotoText}
-        confirmLabel={ui.deletePhoto}
-        cancelLabel={cabinetCopy.opsMenuCancel}
-        busy={busy}
-        onConfirm={() => removingPhoto && void onRemovePhoto(removingPhoto)}
-        onCancel={() => setRemovingPhoto(null)}
       />
     </PanelShell>
   );
