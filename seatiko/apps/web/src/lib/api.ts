@@ -311,6 +311,8 @@ export type RestaurantReservation = {
   status: string;
   arrival_confirmed_at?: string | null;
   created_at: string;
+  /** Active preorder of this booking, if any. */
+  preorder?: Order;
 };
 
 export type Session = {
@@ -1650,6 +1652,18 @@ export async function staffCompleteWaiterCall(id: string) {
     method: "POST",
     body: {},
   });
+}
+
+/**
+ * Bookings of one venue as the venue panel sees them (owner, admin or staff):
+ * adds duration, guest notes, source, all held tables and the announced arrival time,
+ * but no guest identity — the cabinet merges it with `listRestaurantReservations`.
+ */
+export async function staffListReservations(venueId: string): Promise<Reservation[]> {
+  const data = await apiFetch<{ reservations: Reservation[] }>(
+    `/api/v1/staff/reservations?venue_id=${encodeURIComponent(venueId)}`,
+  );
+  return data.reservations ?? [];
 }
 
 export async function staffListOrders(venueId: string): Promise<Order[]> {
