@@ -27,4 +27,9 @@ describe('env', () => {
     expect(env.DATABASE_URL).toBe('postgres://u:p@ep-demo.neon.tech/neondb?sslmode=require');
     expect(env.SEED_DEMO_ON_EMPTY_DB).toBe(true);
   });
+
+  it('caps notification streams only when SSE_MAX_STREAM_SECONDS is set', () => {
+    expect(validateEnv(base).SSE_MAX_STREAM_SECONDS).toBe(process.env.VERCEL ? 240 : 0);
+    expect(validateEnv({ ...base, SSE_MAX_STREAM_SECONDS: '55' }).SSE_MAX_STREAM_SECONDS).toBe(55);
+  });
 });

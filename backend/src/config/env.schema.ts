@@ -36,6 +36,13 @@ export const envSchema = z.object({
   SEATIKO_ADMIN_EMAIL: z.string().optional(),
   SEATIKO_ADMIN_PASSWORD: z.string().min(8, 'SEATIKO_ADMIN_PASSWORD must be at least 8 characters').optional(),
 
+  /**
+   * Longest life of one notification stream (SSE), in seconds; 0 = until the client leaves.
+   * On Vercel a function is killed at its max duration (300 s), so the stream ends first and
+   * the browser reconnects instead of every stream ending as a runtime timeout.
+   */
+  SSE_MAX_STREAM_SECONDS: z.coerce.number().int().min(0).default(process.env.VERCEL ? 240 : 0),
+
   /** Apply pending database migrations when the app starts. */
   DB_MIGRATE_ON_START: z.stringbool().default(true),
   /** Seed demo-state.json automatically on startup only when the users table is empty. */
