@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import maplibregl from "maplibre-gl";
 import { PanelShell } from "@/components/panel-shell";
@@ -17,8 +16,18 @@ import {
 } from "@/components/cabinet-ops";
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
 import { useLocale } from "@/components/locale-provider";
-import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { StatusBadge } from "@/components/status-badge";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
+import {
+  filterReservations,
+  photoProblem,
+  pluralize,
+  validateVenueContacts,
+  type PluralForms,
+  type ReservationFilter,
+  type VenueContactErrors,
+} from "@/lib/cabinet-helpers";
 import {
   ApiError,
   createApplication,
@@ -47,6 +56,7 @@ import {
   type VenueApplication,
 } from "@/lib/api";
 import { getSiteCopy } from "@/lib/site-copy";
+import { VENUE_TYPE_IDS } from "@/lib/venue-roles";
 
 type Section =
   | "overview"
@@ -58,7 +68,6 @@ type Section =
   | "shifts"
   | "reservations"
   | "activity";
-type ReservationFilter = "upcoming" | "history" | "all";
 
 const DRAFT_STORAGE_PREFIX = "seatiko:restaurant-draft:";
 const BALTI_CENTER: MapCoordinates = { lat: 47.7622, lng: 27.9289 };
@@ -70,6 +79,7 @@ type Draft = {
   address: string;
   city_id: string;
   cuisine: string;
+  venue_type: string;
   phone: string;
   hours_text: string;
   email: string;
@@ -213,8 +223,6 @@ function ClockIcon() {
   );
 }
 
-const cabinetReferenceTime = Date.now();
-
 function toDraft(app: VenueApplication, locale: LocaleCode): Draft {
   return {
     name: pickLocale(app.name, locale) || pickLocale(app.name, "ru") || "",
@@ -222,6 +230,7 @@ function toDraft(app: VenueApplication, locale: LocaleCode): Draft {
     address: pickLocale(app.address, locale) || pickLocale(app.address, "ru") || "",
     city_id: app.city_id,
     cuisine: (app.cuisine || []).join(", "),
+    venue_type: app.venue_type || "",
     phone: app.phone || "",
     hours_text: app.hours_text || "",
     email: app.email || "",
@@ -243,6 +252,7 @@ function toPayload(draft: Draft): ApplicationUpdate {
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean),
+    venue_type: draft.venue_type,
     phone: draft.phone.trim(),
     hours_text: draft.hours_text.trim(),
     email: draft.email.trim(),
@@ -265,6 +275,7 @@ function storedDraft(applicationId: string, cityId: string): Draft | null {
       address: value.address ?? "",
       city_id: value.city_id ?? cityId,
       cuisine: value.cuisine ?? "",
+      venue_type: value.venue_type ?? "",
       phone: value.phone ?? "",
       hours_text: value.hours_text ?? "",
       email: value.email ?? "",
@@ -598,8 +609,15 @@ function initials(user: User) {
 export default function CabinetPage() {
   const router = useRouter();
   const { locale } = useLocale();
-  const cabinetCopy = getSiteCopy(locale).cabinet;
+  const siteCopy = useMemo(() => getSiteCopy(locale), [locale]);
+  const cabinetCopy = siteCopy.cabinet;
+  const ui = cabinetCopy.ui;
   const [user, setUser] = useState<User | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [fieldErrors, setFieldErrors] = useState<VenueContactErrors>({});
+  const [removingPhoto, setRemovingPhoto] = useState<string | null>(null);
+  const contentRef = useRef<HTMLElement>(null);
   const [mapConfig, setMapConfig] = useState<MapConfig | null>(null);
 
   useEffect(() => {
@@ -625,19 +643,32 @@ export default function CabinetPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deletingApp, setDeletingApp] = useState<VenueApplication | null>(null);
-  const deleteAppModalRef = useRef<HTMLElement>(null);
   const draftApplicationRef = useRef<string | null>(null);
 
-  useDialogFocus(!!deletingApp, deleteAppModalRef, () => setDeletingApp(null));
-
+  // Keeps "upcoming" vs "history" honest when the cabinet stays open for hours.
   useEffect(() => {
-    if (!deletingApp) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [deletingApp]);
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // Success notices fade on their own; errors stay until dismissed.
+  useEffect(() => {
+    if (!msg || error) return;
+    const timer = window.setTimeout(() => setMsg(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [msg, error]);
+
+  function openSection(next: Section) {
+    setSection(next);
+    setMsg(null);
+    setError(null);
+    // On phones the tab grid sits above the content; bring the opened tab into view.
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 960px)").matches) {
+      window.requestAnimationFrame(() =>
+        contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    }
+  }
 
   const selected = apps.find((app) => app.id === selectedId) ?? null;
 
@@ -680,7 +711,7 @@ export default function CabinetPage() {
       phone: cabinetCopy.phone.replace(" *", ""),
       email: cabinetCopy.email.replace(" *", ""),
       website: cabinetCopy.website,
-      city: locale === "ro" ? "oraș" : locale === "en" ? "city" : "город",
+      city: ui.city,
       latitude: cabinetCopy.latitude.replace(" *", ""),
       longitude: cabinetCopy.longitude.replace(" *", ""),
       price_level: cabinetCopy.price,
@@ -688,7 +719,7 @@ export default function CabinetPage() {
       hours: cabinetCopy.hours.replace(" *", ""),
       photos: cabinetCopy.photos,
     }),
-    [cabinetCopy, locale],
+    [cabinetCopy, ui],
   );
 
   const reservationLabels: Record<string, string> = useMemo(
@@ -719,12 +750,19 @@ export default function CabinetPage() {
       setUser(me);
       setApps(applicationList);
       setReservations(bookingList);
+      setLoadFailed(false);
+      setNow(Date.now());
       setSelectedId((current) => {
         if (current && applicationList.some((app) => app.id === current)) return current;
         return applicationList[0]?.id ?? null;
       });
-    } catch {
-      router.replace("/login");
+    } catch (value) {
+      // Only an expired session sends the owner back to login; a network hiccup shows a retry screen.
+      if (value instanceof ApiError && (value.status === 401 || value.status === 403)) {
+        router.replace("/login");
+        return;
+      }
+      setLoadFailed(true);
     }
   }, [router]);
 
@@ -807,16 +845,18 @@ export default function CabinetPage() {
     [reservations, selected],
   );
 
-  const filteredReservations = useMemo(() => {
-    return selectedReservations.filter((reservation) => {
-      if (reservationFilter === "all") return true;
-      const isHistory =
-        new Date(reservation.reserved_for).getTime() < cabinetReferenceTime ||
-        reservation.status === "CANCELLED" ||
-        reservation.status === "NO_SHOW";
-      return reservationFilter === "history" ? isHistory : !isHistory;
-    });
-  }, [reservationFilter, selectedReservations]);
+  const filteredReservations = useMemo(
+    () => filterReservations(selectedReservations, reservationFilter, now),
+    [reservationFilter, selectedReservations, now],
+  );
+  const reservationCounts = useMemo(
+    () => ({
+      upcoming: filterReservations(selectedReservations, "upcoming", now).length,
+      history: filterReservations(selectedReservations, "history", now).length,
+      all: selectedReservations.length,
+    }),
+    [selectedReservations, now],
+  );
 
   function showApiError(value: unknown, fallback: string) {
     if (value instanceof ApiError && value.code === "incomplete") {
@@ -827,22 +867,16 @@ export default function CabinetPage() {
         : [];
       setError(
         missing.length
-          ? `${locale === "ru" ? "Осталось заполнить: " : locale === "ro" ? "Rămâne de completat: " : "Missing fields: "}${missing.join(", ")}.`
-          : locale === "ru" ? "Проверьте обязательные данные перед отправкой." : locale === "ro" ? "Verificați datele obligatorii înainte de trimitere." : "Please check required fields before submitting.",
+          ? ui.missingFields.replace("{list}", missing.join(", "))
+          : ui.checkRequired,
       );
       return;
     }
     if (value instanceof ApiError && value.code === "invalid_fields") {
-      setError(
-        locale === "ru"
-          ? "Проверьте email, сайт, координаты, ценовой уровень и средний чек."
-          : locale === "ro"
-          ? "Verificați emailul, site-ul, coordonatele, nivelul de preț și bonul mediu."
-          : "Please check email, website, coordinates, price tier, and average spend.",
-      );
+      setError(ui.invalidFields);
       return;
     }
-    setError(value instanceof ApiError ? value.code : fallback);
+    setError(fallback);
   }
 
   async function onCreate() {
@@ -853,18 +887,9 @@ export default function CabinetPage() {
       setApps((current) => [app, ...current]);
       setSelectedId(app.id);
       setSection("profile");
-      setMsg(
-        locale === "ru"
-          ? "Черновик создан. Заполните основные данные ресторана."
-          : locale === "ro"
-          ? "Ciorna a fost creată. Completați datele de bază."
-          : "Draft created. Start with basic restaurant details.",
-      );
+      setMsg(ui.draftCreated);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Не удалось создать ресторан" : locale === "ro" ? "Eroare la crearea localului" : "Failed to create restaurant",
-      );
+      showApiError(value, ui.createFailed);
     } finally {
       setBusy(false);
     }
@@ -884,40 +909,43 @@ export default function CabinetPage() {
       setSelectedId(remaining[0]?.id ?? null);
       setSection("overview");
       setDeletingApp(null);
-      setMsg(
-        locale === "ru"
-          ? "Заведение удалено"
-          : locale === "ro"
-          ? "Localul a fost șters"
-          : "Venue deleted",
-      );
+      setMsg(ui.venueDeleted);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Не удалось удалить заведение" : locale === "ro" ? "Nu s-a putut șterge localul" : "Failed to delete venue",
-      );
+      setDeletingApp(null);
+      showApiError(value, ui.deleteFailed);
     } finally {
       setBusy(false);
     }
   }
 
+  /** Checks contact formats before anything is sent; marks the bad fields and scrolls to the first one. */
+  function contactsValid(): boolean {
+    if (!draft) return false;
+    const errors = validateVenueContacts(draft);
+    setFieldErrors(errors);
+    const first = (["phone", "email", "website"] as const).find((key) => errors[key]);
+    if (first) {
+      setMsg(null);
+      setError(ui.fixFields);
+      document.getElementById(`venue-${first}`)?.focus();
+      return false;
+    }
+    return true;
+  }
+
   async function onSave() {
     if (!selected || !draft || !editable(selected.status)) return;
+    if (!contactsValid()) return;
     setBusy(true);
     setError(null);
     try {
       const updated = await updateApplication(selected.id, toPayload(draft));
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
       clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setMsg(
-        locale === "ru" ? "Изменения сохранены" : locale === "ro" ? "Modificările au fost salvate" : "Changes saved successfully",
-      );
+      setMsg(ui.changesSaved);
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Ошибка сохранения" : locale === "ro" ? "Eroare la salvare" : "Error saving draft",
-      );
+      showApiError(value, ui.saveFailed);
     } finally {
       setBusy(false);
     }
@@ -925,6 +953,7 @@ export default function CabinetPage() {
 
   async function onSubmit() {
     if (!selected || !draft || !editable(selected.status)) return;
+    if (!contactsValid()) return;
     setBusy(true);
     setError(null);
     try {
@@ -934,19 +963,10 @@ export default function CabinetPage() {
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
       clearStoredDraftWhenPersisted(selected.id, draft, updated);
       setSection("overview");
-      setMsg(
-        locale === "ru"
-          ? "Заявка отправлена на модерацию"
-          : locale === "ro"
-          ? "Cererea a fost trimisă spre moderare"
-          : "Application submitted for moderation",
-      );
+      setMsg(ui.submitted);
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Ошибка отправки" : locale === "ro" ? "Eroare la trimitere" : "Submission failed",
-      );
+      showApiError(value, ui.submitFailed);
     } finally {
       setBusy(false);
     }
@@ -954,6 +974,12 @@ export default function CabinetPage() {
 
   async function onPhoto(file: File | null) {
     if (!selected || !file || !editable(selected.status)) return;
+    const problem = photoProblem(file);
+    if (problem) {
+      setMsg(null);
+      setError(problem === "size" ? ui.photoTooLarge : ui.photoWrongType);
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -966,15 +992,10 @@ export default function CabinetPage() {
       const updated = await uploadApplicationPhoto(selected.id, file);
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
       if (draft) clearStoredDraftWhenPersisted(selected.id, draft, updated);
-      setMsg(
-        locale === "ru" ? "Фотография добавлена" : locale === "ro" ? "Fotografia a fost adăugată" : "Photo uploaded successfully",
-      );
+      setMsg(ui.photoAdded);
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Ошибка загрузки фото" : locale === "ro" ? "Eroare la încărcarea foto" : "Photo upload failed",
-      );
+      showApiError(value, ui.photoUploadFailed);
     } finally {
       setBusy(false);
     }
@@ -987,26 +1008,30 @@ export default function CabinetPage() {
     try {
       const updated = await removeApplicationPhoto(selected.id, url);
       setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
-      setMsg(
-        locale === "ru" ? "Фотография удалена" : locale === "ro" ? "Fotografia a fost ștearsă" : "Photo deleted",
-      );
+      setMsg(ui.photoRemoved);
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Ошибка удаления" : locale === "ro" ? "Eroare la ștergerea foto" : "Failed to remove photo",
-      );
+      showApiError(value, ui.photoRemoveFailed);
     } finally {
       setBusy(false);
+      setRemovingPhoto(null);
     }
   }
 
   function updateDraft<Key extends keyof Draft>(key: Key, value: Draft[Key]) {
     setDraft((current) => (current ? { ...current, [key]: value } : current));
+    if (key in fieldErrors) {
+      setFieldErrors((current) => {
+        const next = { ...current };
+        delete next[key as keyof VenueContactErrors];
+        return next;
+      });
+    }
   }
 
   async function onSubmitProposedChanges() {
     if (!selected || !draft) return;
+    if (!contactsValid()) return;
     setBusy(true);
     setError(null);
     try {
@@ -1016,20 +1041,35 @@ export default function CabinetPage() {
       setMsg(cabinetCopy.changesSubmittedSuccess);
       await refreshActivity(selected.id);
     } catch (value) {
-      showApiError(
-        value,
-        locale === "ru" ? "Ошибка сохранения" : locale === "ro" ? "Eroare la salvare" : "Error saving draft",
-      );
+      showApiError(value, ui.saveFailed);
     } finally {
       setBusy(false);
     }
   }
 
   if (!user) {
+    if (loadFailed) {
+      return (
+        <div className="panel-page owner-loading owner-load-failed" role="alert">
+          <strong>{ui.loadFailedTitle}</strong>
+          <p>{ui.loadFailedHint}</p>
+          <button
+            type="button"
+            className="panel-btn"
+            onClick={() => {
+              setLoadFailed(false);
+              void load();
+            }}
+          >
+            {ui.retry}
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="panel-page owner-loading" role="status" aria-live="polite">
         <span />
-        <p>{locale === "ru" ? "Открываем кабинет…" : locale === "ro" ? "Se deschide cabinetul…" : "Loading workspace…"}</p>
+        <p>{ui.loadingWorkspace}</p>
       </div>
     );
   }
@@ -1041,11 +1081,9 @@ export default function CabinetPage() {
   const isDraftStatus = selected ? editable(selected.status) : false;
   const canEdit = isDraftStatus || isEditingApproved;
   const effectiveVenueId = selected ? selected.venue_id || selected.id : "";
-  const futureBookings = selectedReservations.filter(
-    (reservation) =>
-      new Date(reservation.reserved_for).getTime() >= cabinetReferenceTime &&
-      reservation.status !== "CANCELLED",
-  );
+  const futureBookings = filterReservations(selectedReservations, "upcoming", now);
+  const venueTitle = (app: VenueApplication) =>
+    pickLocale(app.name, locale) || pickLocale(app.name, "ru") || ui.newVenue;
 
   return (
     <PanelShell
@@ -1076,14 +1114,13 @@ export default function CabinetPage() {
                   className={app.id === selectedId ? "active" : ""}
                   onClick={() => {
                     setSelectedId(app.id);
-                    setSection("overview");
-                    setMsg(null);
-                    setError(null);
+                    setFieldErrors({});
+                    openSection("overview");
                   }}
                   aria-pressed={app.id === selectedId}
                 >
-                  <i>{(pickLocale(app.name, locale) || pickLocale(app.name, "ru") || "R").slice(0, 1).toUpperCase()}</i>
-                  <span>{pickLocale(app.name, locale) || pickLocale(app.name, "ru") || (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан")}</span>
+                  <i>{venueTitle(app).slice(0, 1).toUpperCase()}</i>
+                  <span title={venueTitle(app)}>{venueTitle(app)}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
@@ -1118,7 +1155,7 @@ export default function CabinetPage() {
                   tabIndex={section === item.id ? 0 : -1}
                   type="button"
                   className={section === item.id ? "active" : ""}
-                  onClick={() => setSection(item.id)}
+                  onClick={() => openSection(item.id)}
                 >
                   <span className="owner-nav-icon">{item.icon}</span>
                   <span>{item.label}</span>
@@ -1141,6 +1178,7 @@ export default function CabinetPage() {
         </aside>
 
         <main
+          ref={contentRef}
           className="owner-content"
           id={`tabpanel-${section}`}
           role="tabpanel"
@@ -1148,12 +1186,12 @@ export default function CabinetPage() {
           tabIndex={0}
         >
           {(msg || error) && (
-            <div className={`owner-notice ${error ? "error" : "success"}`} role="alert" aria-live="polite">
+            <div className={`owner-notice ${error ? "error" : "success"}`} role={error ? "alert" : "status"} aria-live="polite">
               <span>{error ? "!" : <CheckIcon />}</span>
               <p>{error || msg}</p>
               <button
                 type="button"
-                aria-label={locale === "ro" ? "Închide" : locale === "en" ? "Close" : "Закрыть"}
+                aria-label={ui.close}
                 onClick={() => {
                   setError(null);
                   setMsg(null);
@@ -1167,7 +1205,7 @@ export default function CabinetPage() {
           {!selected ? (
             <section className="owner-empty-state">
               <span className="owner-empty-mark">S</span>
-              <span className="owner-kicker">{locale === "ro" ? "Primul pas" : locale === "en" ? "First step" : "Первый шаг"}</span>
+              <span className="owner-kicker">{ui.firstStep}</span>
               <h2>{cabinetCopy.emptyVenuesTitle}</h2>
               <p>{cabinetCopy.emptyVenuesBody}</p>
               <button
@@ -1179,9 +1217,9 @@ export default function CabinetPage() {
                 {cabinetCopy.emptyVenuesBtn}
               </button>
               <div className="owner-empty-assurances">
-                <span>{locale === "ro" ? "Fără plăți în faza de cerere" : locale === "en" ? "No fees during application" : "Без оплаты на этапе заявки"}</span>
-                <span>{locale === "ro" ? "Verificare în 1–3 zile lucrătoare" : locale === "en" ? "Verification in 1–3 business days" : "Проверка 1–3 рабочих дня"}</span>
-                <span>{locale === "ro" ? "Suport dedicat la completare" : locale === "en" ? "Dedicated onboarding guidance" : "Поддержка при заполнении"}</span>
+                <span>{ui.assuranceNoFees}</span>
+                <span>{ui.assuranceReview}</span>
+                <span>{ui.assuranceSupport}</span>
               </div>
             </section>
           ) : (
@@ -1189,18 +1227,18 @@ export default function CabinetPage() {
               <header className="owner-section-head">
                 <div>
                   <span className="owner-kicker">
-                    {section === "overview" && (locale === "ro" ? "Panou de control" : locale === "en" ? "Control Center" : "Центр управления")}
+                    {section === "overview" && ui.controlCenter}
                     {section === "profile" && cabinetCopy.dataForGuests}
                     {section === "floor" && cabinetCopy.floorTitle}
                     {section === "menu" && cabinetCopy.menuSectionTitle}
-                    {section === "rules" && cabinetCopy.rulesSubtitle}
+                    {section === "rules" && ui.rulesKicker}
                     {section === "staff" && cabinetCopy.staffSubtitle}
                     {section === "shifts" && cabinetCopy.shiftsSubtitle}
-                    {section === "reservations" && (locale === "ro" ? "Activitate operațională" : locale === "en" ? "Operations" : "Операционная работа")}
-                    {section === "activity" && (locale === "ro" ? "Jurnal de transparență" : locale === "en" ? "Audit & Transparency" : "Прозрачность аккаунта")}
+                    {section === "reservations" && ui.operations}
+                    {section === "activity" && ui.auditKicker}
                   </span>
                   <h2>
-                    {section === "overview" && (pickLocale(selected.name, locale) || pickLocale(selected.name, "ru") || (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан"))}
+                    {section === "overview" && venueTitle(selected)}
                     {section === "profile" && cabinetCopy.profile}
                     {section === "floor" && cabinetCopy.floor}
                     {section === "menu" && cabinetCopy.menu}
@@ -1223,8 +1261,8 @@ export default function CabinetPage() {
                     <div>
                       <span className="owner-kicker">
                         {selected.status === "PUBLISHED"
-                          ? (locale === "ro" ? "Restaurantul este activ" : locale === "en" ? "Restaurant is live" : "Ресторан работает")
-                          : (locale === "ro" ? "Pregătire pentru lansare" : locale === "en" ? "Pre-launch preparation" : "Подготовка к запуску")}
+                          ? ui.restaurantLive
+                          : ui.preLaunch}
                       </span>
                       <h3>{getStatusHint(selected.status, cabinetCopy)}</h3>
                       <div className="owner-hero-actions">
@@ -1232,7 +1270,7 @@ export default function CabinetPage() {
                           <button
                             type="button"
                             className="panel-btn"
-                            onClick={() => setSection("profile")}
+                            onClick={() => openSection("profile")}
                           >
                             {cabinetCopy.continueEditing}
                           </button>
@@ -1245,17 +1283,9 @@ export default function CabinetPage() {
                         <button
                           type="button"
                           className="panel-btn ghost"
-                          onClick={() => setSection("activity")}
+                          onClick={() => openSection("activity")}
                         >
                           {cabinetCopy.checkHistory}
-                        </button>
-                        <button
-                          type="button"
-                          className="panel-btn ghost danger"
-                          disabled={busy}
-                          onClick={() => setDeletingApp(selected)}
-                        >
-                          {locale === "ro" ? "Șterge localul" : locale === "en" ? "Delete venue" : "Удалить заведение"}
                         </button>
                       </div>
                     </div>
@@ -1267,7 +1297,7 @@ export default function CabinetPage() {
                     >
                       <span>
                         <strong>{completion}%</strong>
-                        <small>{locale === "ro" ? "gata" : locale === "en" ? "ready" : "готово"}</small>
+                        <small>{ui.ready}</small>
                       </span>
                     </div>
                   </section>
@@ -1276,17 +1306,17 @@ export default function CabinetPage() {
                     <article>
                       <span>{cabinetCopy.futureBookings}</span>
                       <strong>{futureBookings.length}</strong>
-                      <small>{locale === "ro" ? "pentru localul curent" : locale === "en" ? "for this venue" : "по выбранному ресторану"}</small>
+                      <small>{ui.forThisVenue}</small>
                     </article>
                     <article>
                       <span>{cabinetCopy.totalBookings}</span>
                       <strong>{selectedReservations.length}</strong>
-                      <small>{locale === "ro" ? "inclusiv istoricul" : locale === "en" ? "including history" : "включая историю"}</small>
+                      <small>{ui.includingHistory}</small>
                     </article>
                     <article>
                       <span>{cabinetCopy.photosCount}</span>
                       <strong>{selected.photo_urls?.length || 0}<i>/8</i></strong>
-                      <small>{locale === "ro" ? "în profilul localului" : locale === "en" ? "in venue gallery" : "в профиле заведения"}</small>
+                      <small>{ui.inGallery}</small>
                     </article>
                     <article>
                       <span>{cabinetCopy.lastUpdate}</span>
@@ -1323,7 +1353,7 @@ export default function CabinetPage() {
                             <span>{check.done ? <CheckIcon /> : null}</span>
                             <p>{check.label}</p>
                             {!check.done && canEdit && (
-                              <button type="button" onClick={() => setSection("profile")}>
+                              <button type="button" onClick={() => openSection("profile")}>
                                 {cabinetCopy.fillAction}
                               </button>
                             )}
@@ -1336,7 +1366,7 @@ export default function CabinetPage() {
                       <div className="owner-card-head">
                         <div>
                           <span className="owner-kicker">{cabinetCopy.launchPipeline}</span>
-                          <h3>{locale === "ro" ? "De la profil la hartă" : locale === "en" ? "From profile to live map" : "От профиля до карты"}</h3>
+                          <h3>{ui.fromProfileToMap}</h3>
                         </div>
                       </div>
                       <div className="owner-launch-steps">
@@ -1376,9 +1406,9 @@ export default function CabinetPage() {
                     <div className="owner-card-head">
                       <div>
                         <span className="owner-kicker">{cabinetCopy.recentGuests}</span>
-                        <h3>{locale === "ro" ? "Următoarele rezervări" : locale === "en" ? "Upcoming reservations" : "Следующие бронирования"}</h3>
+                        <h3>{ui.upcomingReservations}</h3>
                       </div>
-                      <button type="button" onClick={() => setSection("reservations")}>
+                      <button type="button" onClick={() => openSection("reservations")}>
                         {cabinetCopy.viewAllBookings}
                       </button>
                     </div>
@@ -1399,8 +1429,7 @@ export default function CabinetPage() {
                             reservationLabels={reservationLabels}
                             tableLabel={cabinetCopy.table}
                             guestLabel={cabinetCopy.guest}
-                            guestSingle={cabinetCopy.guestSingle}
-                            guestPlural={cabinetCopy.guestPlural}
+                            guestForms={ui.guestsForms}
                           />
                         ))}
                       </div>
@@ -1516,6 +1545,27 @@ export default function CabinetPage() {
                           <small aria-live="polite">{draft.description.length}/400</small>
                         </div>
                         <div className="field">
+                          <label htmlFor="venue-type">{cabinetCopy.roles.typeLabel}</label>
+                          <SelectMenu
+                            id="venue-type"
+                            disabled={!canEdit}
+                            value={draft.venue_type}
+                            placeholder={cabinetCopy.roles.typePlaceholder}
+                            onChange={(value) => updateDraft("venue_type", value)}
+                            ariaDescribedBy="venue-type-hint"
+                            options={[
+                              { value: "", label: cabinetCopy.roles.typePlaceholder },
+                              ...VENUE_TYPE_IDS.map((type) => ({
+                                value: type,
+                                label: siteCopy.discover.chips[type],
+                              })),
+                            ]}
+                          />
+                          <p id="venue-type-hint" className="owner-field-hint">
+                            {selected?.status === "PUBLISHED" ? cabinetCopy.roles.typeChangeModerated : cabinetCopy.roles.typeHint}
+                          </p>
+                        </div>
+                        <div className="field">
                           <label htmlFor="venue-cuisine">{cabinetCopy.cuisine}</label>
                           <input
                             id="venue-cuisine"
@@ -1551,24 +1601,25 @@ export default function CabinetPage() {
                       <div className="owner-form-fields">
                         <div className="field owner-field-wide">
                           <label htmlFor="venue-city">
-                            {locale === "ru" ? "Город" : locale === "ro" ? "Oraș" : "City"}
+                            {ui.city}
                           </label>
-                          <select
+                          <SelectMenu
                             id="venue-city"
                             disabled={!canEdit}
                             value={draft.city_id}
-                            onChange={(event) => {
-                              const cityId = event.target.value;
+                            onChange={(cityId) => {
                               setDraft((current) => current ? { ...current, city_id: cityId, lat: "", lng: "" } : current);
                             }}
-                          >
-                            {!locations.some((city) => city.id === draft.city_id) && (
-                              <option value={draft.city_id}>{draft.city_id === "city-balti" ? "Bălți" : draft.city_id}</option>
-                            )}
-                            {locations.map((city) => (
-                              <option key={city.id} value={city.id}>{pickLocale(city.name, locale)}</option>
-                            ))}
-                          </select>
+                            options={[
+                              ...(!locations.some((city) => city.id === draft.city_id)
+                                ? [{ value: draft.city_id, label: draft.city_id === "city-balti" ? "Bălți" : draft.city_id }]
+                                : []),
+                              ...locations.map((city) => ({
+                                value: city.id,
+                                label: pickLocale(city.name, locale),
+                              })),
+                            ]}
+                          />
                         </div>
                         <div className="field owner-field-wide">
                           <label htmlFor="venue-address">{cabinetCopy.address}</label>
@@ -1648,7 +1699,12 @@ export default function CabinetPage() {
                             placeholder="+373 600 00 000"
                             value={draft.phone}
                             onChange={(event) => updateDraft("phone", event.target.value)}
+                            aria-invalid={fieldErrors.phone ? true : undefined}
+                            aria-describedby={fieldErrors.phone ? "venue-phone-error" : undefined}
                           />
+                          {fieldErrors.phone && (
+                            <small id="venue-phone-error" className="owner-field-error">{ui.invalidPhone}</small>
+                          )}
                         </div>
                         <div className="field">
                           <label htmlFor="venue-email">{cabinetCopy.email}</label>
@@ -1658,9 +1714,15 @@ export default function CabinetPage() {
                             inputMode="email"
                             autoComplete="email"
                             disabled={!canEdit}
+                            placeholder="hello@restaurant.md"
                             value={draft.email}
                             onChange={(event) => updateDraft("email", event.target.value)}
+                            aria-invalid={fieldErrors.email ? true : undefined}
+                            aria-describedby={fieldErrors.email ? "venue-email-error" : undefined}
                           />
+                          {fieldErrors.email && (
+                            <small id="venue-email-error" className="owner-field-error">{ui.invalidEmail}</small>
+                          )}
                         </div>
                         <div className="field owner-field-wide">
                           <label htmlFor="venue-website">
@@ -1675,21 +1737,28 @@ export default function CabinetPage() {
                             placeholder="https://restaurant.md"
                             value={draft.website}
                             onChange={(event) => updateDraft("website", event.target.value)}
+                            aria-invalid={fieldErrors.website ? true : undefined}
+                            aria-describedby="venue-website-hint"
                           />
-                          <small>{cabinetCopy.websiteHint}</small>
+                          {fieldErrors.website ? (
+                            <small id="venue-website-hint" className="owner-field-error">{ui.invalidWebsite}</small>
+                          ) : (
+                            <p id="venue-website-hint" className="owner-field-hint">{cabinetCopy.websiteHint}</p>
+                          )}
                         </div>
                         <div className="field">
                           <label htmlFor="venue-price">{cabinetCopy.price}</label>
-                          <select
+                          <SelectMenu
                             id="venue-price"
                             disabled={!canEdit}
                             value={draft.price_level}
-                            onChange={(event) => updateDraft("price_level", event.target.value)}
-                          >
-                            <option value="1">{cabinetCopy.price1}</option>
-                            <option value="2">{cabinetCopy.price2}</option>
-                            <option value="3">{cabinetCopy.price3}</option>
-                          </select>
+                            onChange={(value) => updateDraft("price_level", value)}
+                            options={[
+                              { value: "1", label: cabinetCopy.price1 },
+                              { value: "2", label: cabinetCopy.price2 },
+                              { value: "3", label: cabinetCopy.price3 },
+                            ]}
+                          />
                         </div>
                         <div className="field">
                           <label htmlFor="venue-check">{cabinetCopy.average}</label>
@@ -1720,13 +1789,15 @@ export default function CabinetPage() {
                           {(selected.photo_urls || []).map((url, index) => (
                             <div key={url} className="photo-thumb owner-photo-thumb">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={mediaUrl(url)} alt={`Photo ${index + 1}`} />
+                              <img src={mediaUrl(url)} alt={ui.photoAlt.replace("{n}", String(index + 1))} />
                               {index === 0 && <span>{cabinetCopy.cover}</span>}
                               {canEdit && (
                                 <button
                                   type="button"
-                                  aria-label={locale === "ro" ? "Șterge foto" : locale === "en" ? "Delete photo" : "Удалить фото"}
-                                  onClick={() => void onRemovePhoto(url)}
+                                  aria-label={ui.deletePhoto}
+                                  title={ui.deletePhoto}
+                                  disabled={busy}
+                                  onClick={() => setRemovingPhoto(url)}
                                 >
                                   ×
                                 </button>
@@ -1745,7 +1816,7 @@ export default function CabinetPage() {
                               />
                               <span aria-hidden="true">+</span>
                               <strong>{cabinetCopy.addPhoto}</strong>
-                              <small>JPG, PNG, WebP · max 5 MB</small>
+                              <small>{ui.photoFormats}</small>
                             </label>
                           )}
                         </div>
@@ -1788,19 +1859,11 @@ export default function CabinetPage() {
                               <strong>{completion}% {cabinetCopy.filled}</strong>
                               <p>
                                 {missingChecks.length
-                                  ? `${locale === "ru" ? "Осталось: " : locale === "ro" ? "Rămase: " : "Remaining: "}${missingChecks.map((check) => check.label).join(", ")}.`
+                                  ? ui.remaining.replace("{list}", missingChecks.map((check) => check.label).join(", "))
                                   : cabinetCopy.ready}
                               </p>
                             </div>
-                            <div>
-                              <button
-                                type="button"
-                                className="panel-btn ghost danger"
-                                disabled={busy}
-                                onClick={() => setDeletingApp(selected)}
-                              >
-                                {locale === "ro" ? "Șterge localul" : locale === "en" ? "Delete venue" : "Удалить заведение"}
-                              </button>
+                            <div className="owner-form-footer-actions">
                               <button
                                 type="button"
                                 className="panel-btn ghost"
@@ -1823,6 +1886,21 @@ export default function CabinetPage() {
                       </div>
                     )}
                   </form>
+
+                  <div className="owner-danger-zone">
+                    <div>
+                      <strong>{ui.dangerZoneTitle}</strong>
+                      <p>{ui.dangerZoneHint}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="panel-btn ghost danger"
+                      disabled={busy}
+                      onClick={() => setDeletingApp(selected)}
+                    >
+                      {ui.deleteVenue}
+                    </button>
+                  </div>
                 </section>
               )}
 
@@ -1866,23 +1944,32 @@ export default function CabinetPage() {
                           aria-pressed={reservationFilter === value}
                         >
                           {label}
+                          {selected.venue_id && <b>{reservationCounts[value]}</b>}
                         </button>
                       ))}
                     </div>
-                    <span>{filteredReservations.length} {cabinetCopy.records}</span>
+                    <span>
+                      {filteredReservations.length} {pluralize(filteredReservations.length, ui.recordsForms, locale)}
+                    </span>
                   </div>
 
                   {!selected.venue_id ? (
                     <div className="owner-section-empty">
                       <span aria-hidden="true"><ReservationsIcon /></span>
-                      <h3>{locale === "ro" ? "Rezervările se activează după publicare" : locale === "en" ? "Bookings unlock after publishing" : "Брони откроются после публикации"}</h3>
+                      <h3>{ui.bookingsLockedTitle}</h3>
                       <p>{cabinetCopy.bookingsAppearAfterPublish}</p>
                     </div>
                   ) : filteredReservations.length === 0 ? (
                     <div className="owner-section-empty">
                       <span aria-hidden="true"><ReservationsIcon /></span>
-                      <h3>{locale === "ro" ? "Nicio rezervare în această secțiune" : locale === "en" ? "No bookings in this section" : "В этом разделе пока пусто"}</h3>
-                      <p>{cabinetCopy.noBookingsYet}</p>
+                      <h3>
+                        {reservationFilter === "upcoming"
+                          ? ui.emptyUpcoming
+                          : reservationFilter === "history"
+                          ? ui.emptyHistory
+                          : ui.emptyAll}
+                      </h3>
+                      <p>{reservationFilter === "history" ? ui.emptyHistoryHint : ui.emptyUpcomingHint}</p>
                     </div>
                   ) : (
                     <div className="owner-card owner-booking-list">
@@ -1894,8 +1981,7 @@ export default function CabinetPage() {
                           reservationLabels={reservationLabels}
                           tableLabel={cabinetCopy.table}
                           guestLabel={cabinetCopy.guest}
-                          guestSingle={cabinetCopy.guestSingle}
-                          guestPlural={cabinetCopy.guestPlural}
+                          guestForms={ui.guestsForms}
                         />
                       ))}
                     </div>
@@ -1914,13 +2000,15 @@ export default function CabinetPage() {
                   </div>
 
                   {activityLoading ? (
-                    <div className="owner-section-empty">
+                    <div className="owner-section-empty" role="status">
+                      <span className="owner-inline-spinner" aria-hidden="true" />
                       <p>{cabinetCopy.loadingHistory}</p>
                     </div>
                   ) : activity.length === 0 ? (
                     <div className="owner-section-empty">
                       <span aria-hidden="true"><ActivityIcon /></span>
                       <h3>{cabinetCopy.emptyHistory}</h3>
+                      <p>{ui.activityEmptyHint}</p>
                     </div>
                   ) : (
                     <div className="owner-card owner-timeline">
@@ -1955,82 +2043,26 @@ export default function CabinetPage() {
         </main>
       </div>
 
-      {deletingApp && typeof document !== "undefined" && createPortal(
-        <div className="booking-popup-root cabinet-delete-modal-root" role="presentation">
-          <button
-            type="button"
-            className="booking-popup-backdrop"
-            aria-label={cabinetCopy.opsMenuCancel}
-            onClick={() => setDeletingApp(null)}
-          />
-          <section
-            ref={deleteAppModalRef}
-            className="booking-popup cabinet-delete-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cabinet-venue-delete-title"
-          >
-            <div className="booking-popup-card cabinet-delete-card">
-              <button
-                type="button"
-                className="booking-popup-x"
-                onClick={() => setDeletingApp(null)}
-                aria-label={cabinetCopy.opsMenuCancel}
-              >
-                ×
-              </button>
-              <div className="cabinet-delete-icon" aria-hidden="true">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  <line x1="10" y1="11" x2="10" y2="17" />
-                  <line x1="14" y1="11" x2="14" y2="17" />
-                </svg>
-              </div>
-              <h3 id="cabinet-venue-delete-title">
-                {locale === "ro"
-                  ? "Ștergeți localul?"
-                  : locale === "en"
-                  ? "Delete venue?"
-                  : "Удалить заведение?"}
-              </h3>
-              <p className="cabinet-delete-text">
-                {(() => {
-                  const venueName =
-                    pickLocale(deletingApp.name, locale) ||
-                    pickLocale(deletingApp.name, "ru") ||
-                    (locale === "ro" ? "Local nou" : locale === "en" ? "New venue" : "Новый ресторан");
-                  return locale === "ro"
-                    ? `Sigur doriți să ștergeți «${venueName}»? Vor fi șterse și mesele, meniul, personalul și turele asociate.`
-                    : locale === "en"
-                    ? `Are you sure you want to delete «${venueName}»? Associated tables, menu, staff, and shifts will also be removed.`
-                    : `Вы уверены, что хотите удалить «${venueName}»? Все связанные столы, меню, персонал и смены будут удалены безвозвратно.`;
-                })()}
-              </p>
-              <div className="cabinet-delete-actions">
-                <button
-                  type="button"
-                  className="panel-btn danger"
-                  disabled={busy}
-                  onClick={() => void onDeleteConfirm()}
-                >
-                  {locale === "ro" ? "Șterge localul" : locale === "en" ? "Delete venue" : "Удалить заведение"}
-                </button>
-                <button
-                  type="button"
-                  className="panel-btn ghost"
-                  data-autofocus
-                  disabled={busy}
-                  onClick={() => setDeletingApp(null)}
-                >
-                  {cabinetCopy.opsMenuCancel}
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>,
-        document.body,
-      )}
+      <CabinetConfirmDialog
+        open={!!deletingApp}
+        title={ui.deleteVenueTitle}
+        text={ui.deleteVenueText.replace("{name}", deletingApp ? venueTitle(deletingApp) : "")}
+        confirmLabel={ui.deleteVenue}
+        cancelLabel={cabinetCopy.opsMenuCancel}
+        busy={busy}
+        onConfirm={() => void onDeleteConfirm()}
+        onCancel={() => setDeletingApp(null)}
+      />
+      <CabinetConfirmDialog
+        open={!!removingPhoto}
+        title={ui.deletePhotoTitle}
+        text={ui.deletePhotoText}
+        confirmLabel={ui.deletePhoto}
+        cancelLabel={cabinetCopy.opsMenuCancel}
+        busy={busy}
+        onConfirm={() => removingPhoto && void onRemovePhoto(removingPhoto)}
+        onCancel={() => setRemovingPhoto(null)}
+      />
     </PanelShell>
   );
 }
@@ -2041,16 +2073,14 @@ function ReservationRow({
   reservationLabels,
   tableLabel,
   guestLabel,
-  guestSingle,
-  guestPlural,
+  guestForms,
 }: {
   reservation: RestaurantReservation;
   locale: string;
   reservationLabels: Record<string, string>;
   tableLabel: string;
   guestLabel: string;
-  guestSingle: string;
-  guestPlural: string;
+  guestForms: PluralForms;
 }) {
   const loc = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
   const bookingDate = new Date(reservation.reserved_for);
@@ -2069,13 +2099,17 @@ function ReservationRow({
       <div className="owner-booking-guest">
         <span>{(reservation.guest_name || guestLabel).slice(0, 1).toUpperCase()}</span>
         <p>
-          <strong>{reservation.guest_name || guestLabel}</strong>
-          <small>{reservation.guest_email}</small>
+          <strong title={reservation.guest_name || guestLabel}>{reservation.guest_name || guestLabel}</strong>
+          {reservation.guest_email && (
+            <a href={`mailto:${reservation.guest_email}`} title={reservation.guest_email}>
+              {reservation.guest_email}
+            </a>
+          )}
         </p>
       </div>
       <div className="owner-booking-party">
         <strong>{reservation.guests}</strong>
-        <span>{reservation.guests === 1 ? guestSingle : guestPlural}</span>
+        <span>{pluralize(reservation.guests, guestForms, locale)}</span>
       </div>
       <span className={`owner-reservation-status ${statusClass}`}>
         {reservationLabels[reservation.status] || reservation.status}

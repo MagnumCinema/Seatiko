@@ -2,7 +2,7 @@ import { applicationComplete, applyPatch, type Profile, validPatch, validWebsite
 
 const t = (s: string) => ({ ru: s, en: s, ro: s });
 const empty: Profile = {
-  name: t(''), description: t(''), address: t(''), cuisine: [], phone: '', email: '', website: '', cityId: 'city-balti',
+  name: t(''), description: t(''), address: t(''), cuisine: [], venueType: '', phone: '', email: '', website: '', cityId: 'city-balti',
   lat: 0, lng: 0, priceLevel: 0, averageCheck: 0, hoursText: '', photoUrls: [],
 };
 
@@ -22,6 +22,16 @@ describe('application rules', () => {
     expect(validPatch({ city_id: 'city-chisinau', lat: 47, price_level: 2 }, empty, known)).toBe(true);
     expect(validPatch({ price_level: 4 }, empty, known)).toBe(false);
     expect(validWebsite('https://oliva.md')).toBe(true);
+  });
+
+  it('accepts known venue types only and records a type change', () => {
+    const known = () => true;
+    expect(validPatch({ venue_type: 'cafe' }, empty, known)).toBe(true);
+    expect(validPatch({ venue_type: '' }, empty, known)).toBe(true);
+    expect(validPatch({ venue_type: 'casino' }, empty, known)).toBe(false);
+    const { next, changed } = applyPatch(empty, { venue_type: 'wine_bar' });
+    expect(changed).toEqual(['venue_type']);
+    expect(next.venueType).toBe('wine_bar');
   });
 
   it('needs a full profile, a photo and a point in Moldova to submit', () => {

@@ -27,6 +27,7 @@ import { getSiteCopy } from "@/lib/site-copy";
 import { getVenueHours as getVenueHoursById } from "@/lib/venue-hours";
 import { useCurrency } from "@/components/currency-provider";
 import { useLocale } from "@/components/locale-provider";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { venueBookingHref } from "@/lib/booking-link";
 import { googleMapSearch } from "@/lib/google-map";
 import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
@@ -302,21 +303,21 @@ export function VenueMap(props: VenueMapProps) {
         <label className="venue-map-area-field">
           <span className="venue-map-area-label">{labels.area}</span>
           <span className="venue-map-select-wrap">
-            <select
-              className="venue-map-select"
+            <SelectMenu
+              buttonClassName="venue-map-select-trigger"
               value={cityId}
-              onChange={(event) => setCityId(event.target.value)}
-            >
-              {!cities.some((item) => item.id === DEFAULT_CITY) && (
-                <option value={DEFAULT_CITY}>{mapCopy[locale].defaultCity}</option>
-              )}
-              {cities.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {pickLocale(item.name, locale)}
-                </option>
-              ))}
-              <option value="all">{labels.country}</option>
-            </select>
+              onChange={setCityId}
+              options={[
+                ...(!cities.some((item) => item.id === DEFAULT_CITY)
+                  ? [{ value: DEFAULT_CITY, label: mapCopy[locale].defaultCity }]
+                  : []),
+                ...cities.map((item) => ({
+                  value: item.id,
+                  label: pickLocale(item.name, locale),
+                })),
+                { value: "all", label: labels.country },
+              ]}
+            />
           </span>
         </label>
         <div className="venue-map-search">

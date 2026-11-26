@@ -5,6 +5,9 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { PanelShell } from "@/components/panel-shell";
 import { StaffWaitlist } from "@/components/staff-waitlist";
+import { SelectMenu } from "@/components/ui/select-menu";
+import { RoleBadge } from "@/components/cabinet-roles";
+import { shiftRoleLabel } from "@/lib/venue-roles";
 import { useLocale } from "@/components/locale-provider";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -55,6 +58,7 @@ export default function StaffPage() {
   const router = useRouter();
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).cabinet;
+  const presetNames = copy.roles.presets as Record<string, string>;
   const [venues, setVenues] = useState<Venue[]>([]);
   const [venueId, setVenueId] = useState("");
   const [calls, setCalls] = useState<WaiterCall[]>([]);
@@ -126,9 +130,7 @@ export default function StaffPage() {
                     <strong className="staff-pending-shift-time">
                       {formatStaffShiftDate(shift.date, locale)} · {shift.start_time} – {shift.end_time}
                     </strong>
-                    <span className={`cabinet-staff-role-tag role-${shift.role || "waiter"}`}>
-                      {shift.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
-                    </span>
+                    <RoleBadge label={shiftRoleLabel(shift, presetNames)} color={shift.role_color} />
                     {shift.note && (
                       <span className="staff-pending-shift-note">
                         📍 {shift.note}
@@ -193,9 +195,7 @@ export default function StaffPage() {
                 <div className="cabinet-schedule-item-staff">
                   <div>
                     <div className="cabinet-schedule-staff-name-row">
-                      <span className={`cabinet-staff-role-tag role-${shift.role || "waiter"}`}>
-                        {shift.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
-                      </span>
+                      <RoleBadge label={shiftRoleLabel(shift, presetNames)} color={shift.role_color} />
                     </div>
                     {shift.note && (
                       <p className="cabinet-schedule-item-note">
@@ -270,13 +270,15 @@ export default function StaffPage() {
       <section className="owner-card staff-venue-bar">
         <label className="staff-venue-label">
           <span>{locale === "ro" ? "Restaurant" : locale === "en" ? "Venue" : "Заведение"}</span>
-          <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
-            {venues.map((venue) => (
-              <option key={venue.id} value={venue.id}>
-                {venue.name.ru || venue.name.en || venue.id}
-              </option>
-            ))}
-          </select>
+          <SelectMenu
+            className="staff-venue-select"
+            value={venueId}
+            onChange={setVenueId}
+            options={venues.map((venue) => ({
+              value: venue.id,
+              label: venue.name.ru || venue.name.en || venue.id,
+            }))}
+          />
         </label>
         {error && <p className="owner-notice error">{error}</p>}
       </section>

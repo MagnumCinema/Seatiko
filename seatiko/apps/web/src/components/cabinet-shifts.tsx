@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/components/locale-provider";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { getSiteCopy } from "@/lib/site-copy";
 import {
   calcDurationMinutes,
@@ -18,12 +19,25 @@ import {
   copyVenueWorkShiftsWeek,
   createVenueWorkShift,
   deleteVenueWorkShift,
+  listVenueRoles,
   listVenueStaff,
   listVenueWorkShifts,
   swapVenueWorkShiftStaff,
   type StaffMember,
+  type VenueRole,
   type WorkShift,
 } from "@/lib/api";
+import { RoleBadge } from "@/components/cabinet-roles";
+import {
+  groupStaffByRole,
+  plannerRoles,
+  roleColor,
+  roleCoverage,
+  roleLabel,
+  shiftRoleLabel,
+  splitTeamsByRole,
+  type RoleGroup,
+} from "@/lib/venue-roles";
 
 type Props = {
   venueId: string;
@@ -31,7 +45,8 @@ type Props = {
 };
 
 type ViewMode = "matrix" | "day";
-type RoleFilter = "all" | "waiter" | "cook";
+/** "all" or a venue role key. */
+type RoleFilter = string;
 type WaveMode = "alternate" | "team_a" | "team_b";
 
 function toDateString(d: Date): string {
@@ -108,6 +123,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).cabinet;
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [roles, setRoles] = useState<VenueRole[]>([]);
   const [shifts, setShifts] = useState<WorkShift[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -173,8 +189,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const [batchSplit, setBatchSplit] = useState(false);
   const [batchSplitStart, setBatchSplitStart] = useState("18:00");
   const [batchSplitEnd, setBatchSplitEnd] = useState("22:00");
-  const [batchWaiters, setBatchWaiters] = useState<string[]>([]);
-  const [batchCooks, setBatchCooks] = useState<string[]>([]);
+  const [batchSelected, setBatchSelected] = useState<string[]>([]);
   const [batchNote, setBatchNote] = useState("");
 
   // Quick 1-Cell Assign State
@@ -204,12 +219,14 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const [replacementStaffId, setReplacementStaffId] = useState("");
 
   async function reload() {
-    const [staffList, shiftsList] = await Promise.all([
+    const [staffList, shiftsList, roleData] = await Promise.all([
       listVenueStaff(venueId),
       listVenueWorkShifts(venueId),
+      listVenueRoles(venueId),
     ]);
     setStaff(staffList);
     setShifts(shiftsList);
+    setRoles(roleData.roles);
   }
 
   useEffect(() => {
@@ -320,11 +337,35 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
 
   // Selected day shifts (for Day View)
   const dayShifts = useMemo(() => shifts.filter((s) => s.date === selectedDate), [shifts, selectedDate]);
-  const dayWaiters = useMemo(() => dayShifts.filter((s) => (s.role || "waiter") === "waiter"), [dayShifts]);
-  const dayCooks = useMemo(() => dayShifts.filter((s) => s.role === "cook"), [dayShifts]);
-
-  const waiters = useMemo(() => staff.filter((m) => (m.role || "waiter") === "waiter"), [staff]);
-  const cooks = useMemo(() => staff.filter((m) => m.role === "cook"), [staff]);
+  const presetNames = copy.roles.presets as Record<string, string>;
+  /** Planner groups: the venue's roles with in_schedule, in the owner's order, with their people. */
+  const roleGroups = useMemo(() => groupStaffByRole(staff, roles, { inScheduleOnly: true }), [staff, roles]);
+  const scheduleRoleKeys = useMemo(() => plannerRoles(roles).map((r) => r.key), [roles]);
+  const scheduledStaffCount = useMemo(() => roleGroups.reduce((n, g) => n + g.members.length, 0), [roleGroups]);
+  const groupTitle = (g: RoleGroup) => roleLabel(g.role, presetNames);
+  const shiftRole = (shift: WorkShift) => ({
+    label: shiftRoleLabel(shift, presetNames),
+    color: shift.role_color || roleColor(shift.role, roles),
+  });
+  // Day view: shifts of the day per planner role, then any role taken out of the planner.
+  const dayGroups = useMemo(() => {
+    const names: Record<string, string> = getSiteCopy(locale).cabinet.roles.presets;
+    const keys = [...scheduleRoleKeys];
+    for (const s of dayShifts) if (!keys.includes(s.role)) keys.push(s.role);
+    return keys
+      .map((key) => {
+        const role = roles.find((r) => r.key === key);
+        const list = dayShifts.filter((s) => s.role === key);
+        return {
+          key,
+          title: role ? roleLabel(role, names) : shiftRoleLabel(list[0] ?? { role: key, role_name: "" }, names),
+          color: role?.color || list[0]?.role_color || roleColor(key, roles),
+          shifts: list,
+          inSchedule: Boolean(role?.in_schedule),
+        };
+      })
+      .filter((g) => g.inSchedule || g.shifts.length > 0);
+  }, [dayShifts, roles, scheduleRoleKeys, locale]);
 
   // Lookup map: `${staffId}::${date}` -> WorkShift[]
   const shiftCellMap = useMemo(() => {
@@ -386,15 +427,10 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   const batchSelfOverlap = batchSplit && splitIntervalsOverlap(batchStart, batchEnd, batchSplitStart, batchSplitEnd);
 
   // Batch modal valid selections
-  const validBatchWaiters = useMemo(
-    () => (batchSelfOverlap ? [] : batchWaiters.filter((id) => !batchConflictFor(id))),
+  const validBatchSelected = useMemo(
+    () => (batchSelfOverlap ? [] : batchSelected.filter((id) => !batchConflictFor(id))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [batchWaiters, shifts, batchDate, batchStart, batchEnd, batchSplit, batchSplitStart, batchSplitEnd, batchSelfOverlap],
-  );
-  const validBatchCooks = useMemo(
-    () => (batchSelfOverlap ? [] : batchCooks.filter((id) => !batchConflictFor(id))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [batchCooks, shifts, batchDate, batchStart, batchEnd, batchSplit, batchSplitStart, batchSplitEnd, batchSelfOverlap],
+    [batchSelected, shifts, batchDate, batchStart, batchEnd, batchSplit, batchSplitStart, batchSplitEnd, batchSelfOverlap],
   );
 
   // Quick 1-cell conflict & existing day shifts
@@ -455,12 +491,10 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
         teamAStaff = recurringStaffIds;
         datesA = teamBDates;
       } else {
-        // Alternate 50/50 split separately per role so waiters and cooks both cover every day
-        const selectedSet = new Set(recurringStaffIds);
-        const selWaiters = waiters.filter((w) => selectedSet.has(w.id)).map((w) => w.id);
-        const selCooks = cooks.filter((c) => selectedSet.has(c.id)).map((c) => c.id);
-        selWaiters.forEach((id, idx) => (idx % 2 === 0 ? teamAStaff.push(id) : teamBStaff.push(id)));
-        selCooks.forEach((id, idx) => (idx % 2 === 0 ? teamAStaff.push(id) : teamBStaff.push(id)));
+        // Alternate 50/50 split separately per role so every role covers every day
+        const teams = splitTeamsByRole(recurringStaffIds, roleGroups);
+        teamAStaff = teams.teamA;
+        teamBStaff.push(...teams.teamB);
         datesA = teamADates;
         datesB = teamBDates;
       }
@@ -502,8 +536,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
     recurringPattern,
     recurringWaveMode,
     recurringWeekdays,
-    waiters,
-    cooks,
+    roleGroups,
     shifts,
     recurringStart,
     recurringEnd,
@@ -516,9 +549,9 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   // Swap modal candidate cards
   const swapCandidates = useMemo(() => {
     if (!swappingShift) return [];
-    const role = swappingShift.role || "waiter";
+    const role = swappingShift.role;
     return staff
-      .filter((m) => (m.role || "waiter") === role && m.id !== swappingShift.staff_id)
+      .filter((m) => m.role === role && m.id !== swappingShift.staff_id)
       .map((m) => ({
         member: m,
         conflict: findShiftConflict(
@@ -537,8 +570,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   function openBatchModal() {
     setBatchDate(selectedDate);
     // Do NOT pre-select everyone by default so the owner clicks only who they need
-    setBatchWaiters([]);
-    setBatchCooks([]);
+    setBatchSelected([]);
     setBatchSplit(false);
     setBatchNote("");
     setIsBatchModalOpen(true);
@@ -568,10 +600,10 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   function openSwapModal(shift: WorkShift) {
     setInspectingShift(null);
     setSwappingShift(shift);
-    const role = shift.role || "waiter";
+    const role = shift.role;
     const freeCandidate = staff.find(
       (m) =>
-        (m.role || "waiter") === role &&
+        m.role === role &&
         m.id !== shift.staff_id &&
         !findShiftConflict(shifts, m.id, shift.date, shift.start_time, shift.end_time, shift.id),
     );
@@ -581,7 +613,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
   // Submit handlers
   async function handleBatchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const allSelectedStaff = [...validBatchWaiters, ...validBatchCooks];
+    const allSelectedStaff = validBatchSelected;
     if (allSelectedStaff.length === 0 || batchSelfOverlap) return;
 
     const note = batchNote.trim() || undefined;
@@ -726,16 +758,10 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
     }
   }, [selectedDate, locale]);
 
-  const rosterGroups = useMemo(() => {
-    const groups: { key: "waiter" | "cook"; title: string; icon: string; members: StaffMember[] }[] = [];
-    if (roleFilter === "all" || roleFilter === "waiter") {
-      groups.push({ key: "waiter", title: copy.plannerWaiters, icon: "👤", members: waiters });
-    }
-    if (roleFilter === "all" || roleFilter === "cook") {
-      groups.push({ key: "cook", title: copy.plannerCooks, icon: "👨‍🍳", members: cooks });
-    }
-    return groups;
-  }, [roleFilter, waiters, cooks, copy.plannerWaiters, copy.plannerCooks]);
+  const rosterGroups = useMemo(
+    () => roleGroups.filter((g) => roleFilter === "all" || g.role.key === roleFilter),
+    [roleGroups, roleFilter],
+  );
 
   function renderDayShiftCard(shift: WorkShift) {
     const duration = formatDurationMinutes(calcDurationMinutes(shift.start_time, shift.end_time), locale);
@@ -839,9 +865,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                     {formatShortShiftDate(shift.date, todayStr, locale)}
                   </span>
                   <span className="cabinet-planner-swap-name">{shift.staff_name}</span>
-                  <span className={`cabinet-staff-role-tag role-${shift.role || "waiter"}`}>
-                    {shift.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
-                  </span>
+                  <RoleBadge {...shiftRole(shift)} />
                   <span className="cabinet-planner-swap-hours">
                     {shift.start_time} – {shift.end_time}
                   </span>
@@ -978,18 +1002,22 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
 
           {viewMode === "matrix" && (
             <div className="cabinet-planner-role-filter" role="group">
-              {(["all", "waiter", "cook"] as const).map((rf) => (
+              <button
+                type="button"
+                className={roleFilter === "all" ? "active" : ""}
+                onClick={() => setRoleFilter("all")}
+              >
+                {`${copy.opsScheduleTabAll} (${scheduledStaffCount})`}
+              </button>
+              {roleGroups.map((g) => (
                 <button
-                  key={rf}
+                  key={g.role.key}
                   type="button"
-                  className={roleFilter === rf ? "active" : ""}
-                  onClick={() => setRoleFilter(rf)}
+                  className={roleFilter === g.role.key ? "active" : ""}
+                  onClick={() => setRoleFilter(g.role.key)}
                 >
-                  {rf === "all"
-                    ? `${copy.opsScheduleTabAll} (${staff.length})`
-                    : rf === "waiter"
-                    ? `${copy.opsScheduleTabWaiters} (${waiters.length})`
-                    : `${copy.opsScheduleTabCooks} (${cooks.length})`}
+                  <span className="cabinet-role-pill-dot" style={{ "--role-color": g.role.color } as CSSProperties} aria-hidden="true" />
+                  {`${groupTitle(g)} (${g.members.length})`}
                 </button>
               ))}
             </div>
@@ -999,15 +1027,9 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
         {/* MODE 1: WEEKLY STAFF ROSTER MATRIX */}
         {viewMode === "matrix" && (
           <div className="cabinet-roster-matrix-wrap">
-            {staff.length === 0 ? (
+            {scheduledStaffCount === 0 ? (
               <div className="cabinet-planner-col-empty">
-                <p>
-                  {locale === "ro"
-                    ? "Adăugați ospătari sau bucătari în fila Personal pentru a planifica turele."
-                    : locale === "en"
-                    ? "Add waiters or cooks in the Staff tab to schedule shifts."
-                    : "Добавьте официантов или поваров во вкладке «Персонал», чтобы планировать смены."}
-                </p>
+                <p>{staff.length === 0 ? copy.roles.plannerEmptyStaff : copy.roles.plannerEmptyRoles}</p>
               </div>
             ) : (
               <table className="cabinet-roster-table">
@@ -1017,17 +1039,8 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                       {locale === "ro" ? "Angajat" : locale === "en" ? "Staff member" : "Сотрудник"}
                     </th>
                     {weekDays.map((d) => {
-                      const activeWaiters = new Set(
-                        shifts
-                          .filter((s) => s.date === d.date && (s.role || "waiter") === "waiter" && s.status !== "DECLINED")
-                          .map((s) => s.staff_id),
-                      ).size;
-                      const activeCooks = new Set(
-                        shifts
-                          .filter((s) => s.date === d.date && s.role === "cook" && s.status !== "DECLINED")
-                          .map((s) => s.staff_id),
-                      ).size;
-                      const lowCoverage = activeWaiters === 0 || activeCooks === 0;
+                      const coverage = roleCoverage(shifts, d.date, scheduleRoleKeys);
+                      const lowCoverage = roleGroups.some((g) => (coverage[g.role.key] ?? 0) === 0);
 
                       return (
                         <th
@@ -1047,7 +1060,17 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                               {d.dayName} {d.dayNum}
                             </span>
                             <span className={`cabinet-roster-coverage ${lowCoverage ? "low" : ""}`}>
-                              👤{activeWaiters} · 👨‍🍳{activeCooks}
+                              {roleGroups.map((g) => (
+                                <span
+                                  key={g.role.key}
+                                  className="cabinet-coverage-chip"
+                                  style={{ "--role-color": g.role.color } as CSSProperties}
+                                  title={`${groupTitle(g)}: ${coverage[g.role.key] ?? 0}`}
+                                >
+                                  <i aria-hidden="true" />
+                                  {coverage[g.role.key] ?? 0}
+                                </span>
+                              ))}
                             </span>
                           </button>
                         </th>
@@ -1058,7 +1081,8 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                 <tbody>
                   {rosterGroups.map((group) => (
                     <RosterGroupRows
-                      key={group.key}
+                      key={group.role.key}
+                      title={groupTitle(group)}
                       group={group}
                       weekDays={weekDays}
                       shiftCellMap={shiftCellMap}
@@ -1095,16 +1119,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
             <div className="cabinet-planner-week-strip">
               <div className="cabinet-planner-days-grid" role="tablist">
                 {weekDays.map((d) => {
-                  const countWaiters = new Set(
-                    shifts
-                      .filter((s) => s.date === d.date && (s.role || "waiter") === "waiter" && s.status !== "DECLINED")
-                      .map((s) => s.staff_id),
-                  ).size;
-                  const countCooks = new Set(
-                    shifts
-                      .filter((s) => s.date === d.date && s.role === "cook" && s.status !== "DECLINED")
-                      .map((s) => s.staff_id),
-                  ).size;
+                  const coverage = roleCoverage(shifts, d.date, dayGroups.map((g) => g.key));
                   const hasAlert = shifts.some(
                     (s) => s.date === d.date && (s.status === "SWAP_REQUESTED" || s.status === "DECLINED"),
                   );
@@ -1121,17 +1136,21 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                       <span className="cabinet-planner-day-name">{d.dayName}</span>
                       <strong className="cabinet-planner-day-num">{d.dayNum}</strong>
                       <div className="cabinet-planner-day-counts">
-                        {countWaiters > 0 && (
-                          <span className="cabinet-planner-badge-waiter" title={`${countWaiters} ${copy.plannerWaiters}`}>
-                            👤 {countWaiters}
-                          </span>
-                        )}
-                        {countCooks > 0 && (
-                          <span className="cabinet-planner-badge-cook" title={`${countCooks} ${copy.plannerCooks}`}>
-                            👨‍🍳 {countCooks}
-                          </span>
-                        )}
-                        {countWaiters === 0 && countCooks === 0 && (
+                        {dayGroups.some((g) => coverage[g.key] > 0) ? (
+                          dayGroups
+                            .filter((g) => coverage[g.key] > 0)
+                            .map((g) => (
+                              <span
+                                key={g.key}
+                                className="cabinet-coverage-chip"
+                                style={{ "--role-color": g.color } as CSSProperties}
+                                title={`${g.title}: ${coverage[g.key]}`}
+                              >
+                                <i aria-hidden="true" />
+                                {coverage[g.key]}
+                              </span>
+                            ))
+                        ) : (
                           <span className="cabinet-planner-badge-empty">—</span>
                         )}
                       </div>
@@ -1148,11 +1167,8 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
               <div>
                 <h4 className="cabinet-planner-day-title">{formattedDayTitle}</h4>
                 <span className="cabinet-planner-day-summary">
-                  {locale === "ro"
-                    ? `În tură: ${dayWaiters.length} ospătari · ${dayCooks.length} bucătari`
-                    : locale === "en"
-                    ? `On shift: ${dayWaiters.length} waiters · ${dayCooks.length} cooks`
-                    : `На смене: ${dayWaiters.length} официантов · ${dayCooks.length} поваров`}
+                  {copy.roles.plannerOnShift}:{" "}
+                  {dayGroups.map((g) => `${g.title} ${new Set(g.shifts.filter((x) => x.status !== "DECLINED").map((x) => x.staff_id)).size}`).join(" · ")}
                 </span>
               </div>
 
@@ -1166,47 +1182,31 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
             </div>
 
             <div className="cabinet-planner-columns">
-              <div className="cabinet-planner-col">
-                <div className="cabinet-planner-col-head">
-                  <div className="cabinet-planner-col-title-wrap">
-                    <span className="cabinet-staff-role-tag role-waiter">👤</span>
-                    <h5>{copy.plannerWaiters} ({dayWaiters.length})</h5>
-                  </div>
+              {dayGroups.length === 0 && (
+                <div className="cabinet-planner-col-empty">
+                  <p>{copy.roles.plannerEmptyRoles}</p>
                 </div>
-                {dayWaiters.length === 0 ? (
-                  <div className="cabinet-planner-col-empty">
-                    <p>{locale === "ro" ? "Niciun ospătar pe această tură" : locale === "en" ? "No waiters on this shift" : "Официанты на эту смену не назначены"}</p>
-                    <button type="button" className="panel-btn ghost sm" onClick={openBatchModal}>
-                      + {copy.plannerAssignForDay}
-                    </button>
+              )}
+              {dayGroups.map((g) => (
+                <div key={g.key} className="cabinet-planner-col">
+                  <div className="cabinet-planner-col-head">
+                    <div className="cabinet-planner-col-title-wrap">
+                      <RoleBadge label={g.title} color={g.color} />
+                      <h5>({g.shifts.length})</h5>
+                    </div>
                   </div>
-                ) : (
-                  <ul className="cabinet-planner-cards-list">
-                    {dayWaiters.map((s) => renderDayShiftCard(s))}
-                  </ul>
-                )}
-              </div>
-
-              <div className="cabinet-planner-col">
-                <div className="cabinet-planner-col-head">
-                  <div className="cabinet-planner-col-title-wrap">
-                    <span className="cabinet-staff-role-tag role-cook">👨‍🍳</span>
-                    <h5>{copy.plannerCooks} ({dayCooks.length})</h5>
-                  </div>
+                  {g.shifts.length === 0 ? (
+                    <div className="cabinet-planner-col-empty">
+                      <p>{copy.roles.plannerNoneOnShift}</p>
+                      <button type="button" className="panel-btn ghost sm" onClick={openBatchModal}>
+                        + {copy.plannerAssignForDay}
+                      </button>
+                    </div>
+                  ) : (
+                    <ul className="cabinet-planner-cards-list">{g.shifts.map((x) => renderDayShiftCard(x))}</ul>
+                  )}
                 </div>
-                {dayCooks.length === 0 ? (
-                  <div className="cabinet-planner-col-empty">
-                    <p>{locale === "ro" ? "Niciun bucătar pe această tură" : locale === "en" ? "No cooks on this shift" : "Повара на эту смену не назначены"}</p>
-                    <button type="button" className="panel-btn ghost sm" onClick={openBatchModal}>
-                      + {copy.plannerAssignForDay}
-                    </button>
-                  </div>
-                ) : (
-                  <ul className="cabinet-planner-cards-list">
-                    {dayCooks.map((s) => renderDayShiftCard(s))}
-                  </ul>
-                )}
-              </div>
+              ))}
             </div>
           </>
         )}
@@ -1273,155 +1273,85 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                 />
 
                 <div className="cabinet-shift-roles-split">
-                  <div className="cabinet-shift-field-group">
-                    <div className="cabinet-shift-staff-header">
-                      <label>👤 {copy.plannerSelectWaiters} ({validBatchWaiters.length})</label>
-                      {waiters.length > 0 && (
-                        <div className="cabinet-shift-staff-bulk-actions">
-                          <button
-                            type="button"
-                            className="cabinet-shift-bulk-btn"
-                            onClick={() =>
-                              setBatchWaiters(
-                                waiters.filter((w) => !batchConflictFor(w.id)).map((w) => w.id),
-                              )
-                            }
-                          >
-                            {copy.opsScheduleSelectAll}
-                          </button>
-                          <button
-                            type="button"
-                            className="cabinet-shift-bulk-btn"
-                            onClick={() => setBatchWaiters([])}
-                          >
-                            {copy.opsScheduleDeselectAll}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {waiters.length === 0 ? (
-                      <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                        {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
-                      </p>
-                    ) : (
-                      <div className="cabinet-shift-staff-grid">
-                        {waiters.map((w) => {
-                          const conflict = batchConflictFor(w.id);
-                          const existingDay = !conflict ? getMemberActiveDayShifts(shifts, w.id, batchDate) : [];
-                          const isSelected = !conflict && !batchSelfOverlap && validBatchWaiters.includes(w.id);
-                          const name = w.name?.trim() || w.email.split("@")[0];
-                          return (
+                  {roleGroups.length === 0 && <p className="fa-muted">{copy.roles.plannerEmptyRoles}</p>}
+                  {roleGroups.map((group) => {
+                    const ids = new Set(group.members.map((m) => m.id));
+                    const selectedHere = validBatchSelected.filter((id) => ids.has(id)).length;
+                    return (
+                      <div key={group.role.key} className="cabinet-shift-field-group">
+                        <div className="cabinet-shift-staff-header">
+                          <label>
+                            <RoleBadge label={groupTitle(group)} color={group.role.color} /> ({selectedHere})
+                          </label>
+                          <div className="cabinet-shift-staff-bulk-actions">
                             <button
-                              key={w.id}
                               type="button"
-                              disabled={!!conflict || batchSelfOverlap}
-                              title={conflict ? formatConflictLabel(conflict, locale) : undefined}
-                              className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
-                              onClick={() => {
-                                if (conflict || batchSelfOverlap) return;
-                                setBatchWaiters((prev) =>
-                                  isSelected ? prev.filter((id) => id !== w.id) : [...prev, w.id]
-                                );
-                              }}
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() =>
+                                setBatchSelected((prev) =>
+                                  Array.from(
+                                    new Set([
+                                      ...prev,
+                                      ...group.members.filter((m) => !batchConflictFor(m.id)).map((m) => m.id),
+                                    ]),
+                                  ),
+                                )
+                              }
                             >
-                              <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
-                              <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                                {name.slice(0, 2).toUpperCase()}
-                              </span>
-                              <span className="cabinet-shift-staff-pill-meta">
-                                <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                {conflict ? (
-                                  <small className="cabinet-shift-pill-conflict">
-                                    {formatConflictLabel(conflict, locale)}
-                                  </small>
-                                ) : existingDay.length > 0 ? (
-                                  <small className="cabinet-shift-pill-existing">
-                                    {existingDay.map((s) => `${s.start_time}–${s.end_time}`).join(", ")}
-                                  </small>
-                                ) : null}
-                              </span>
+                              {copy.opsScheduleSelectAll}
                             </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="cabinet-shift-field-group">
-                    <div className="cabinet-shift-staff-header">
-                      <label>👨‍🍳 {copy.plannerSelectCooks} ({validBatchCooks.length})</label>
-                      {cooks.length > 0 && (
-                        <div className="cabinet-shift-staff-bulk-actions">
-                          <button
-                            type="button"
-                            className="cabinet-shift-bulk-btn"
-                            onClick={() =>
-                              setBatchCooks(
-                                cooks.filter((c) => !batchConflictFor(c.id)).map((c) => c.id),
-                              )
-                            }
-                          >
-                            {copy.opsScheduleSelectAll}
-                          </button>
-                          <button
-                            type="button"
-                            className="cabinet-shift-bulk-btn"
-                            onClick={() => setBatchCooks([])}
-                          >
-                            {copy.opsScheduleDeselectAll}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {cooks.length === 0 ? (
-                      <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                        {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
-                      </p>
-                    ) : (
-                      <div className="cabinet-shift-staff-grid">
-                        {cooks.map((c) => {
-                          const conflict = batchConflictFor(c.id);
-                          const existingDay = !conflict ? getMemberActiveDayShifts(shifts, c.id, batchDate) : [];
-                          const isSelected = !conflict && !batchSelfOverlap && validBatchCooks.includes(c.id);
-                          const name = c.name?.trim() || c.email.split("@")[0];
-                          return (
                             <button
-                              key={c.id}
                               type="button"
-                              disabled={!!conflict || batchSelfOverlap}
-                              title={conflict ? formatConflictLabel(conflict, locale) : undefined}
-                              className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
-                              onClick={() => {
-                                if (conflict || batchSelfOverlap) return;
-                                setBatchCooks((prev) =>
-                                  isSelected ? prev.filter((id) => id !== c.id) : [...prev, c.id]
-                                );
-                              }}
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() => setBatchSelected((prev) => prev.filter((id) => !ids.has(id)))}
                             >
-                              <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
-                              <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                                {name.slice(0, 2).toUpperCase()}
-                              </span>
-                              <span className="cabinet-shift-staff-pill-meta">
-                                <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                {conflict ? (
-                                  <small className="cabinet-shift-pill-conflict">
-                                    {formatConflictLabel(conflict, locale)}
-                                  </small>
-                                ) : existingDay.length > 0 ? (
-                                  <small className="cabinet-shift-pill-existing">
-                                    {existingDay.map((s) => `${s.start_time}–${s.end_time}`).join(", ")}
-                                  </small>
-                                ) : null}
-                              </span>
+                              {copy.opsScheduleDeselectAll}
                             </button>
-                          );
-                        })}
+                          </div>
+                        </div>
+                        <div className="cabinet-shift-staff-grid">
+                          {group.members.map((w) => {
+                            const conflict = batchConflictFor(w.id);
+                            const existingDay = !conflict ? getMemberActiveDayShifts(shifts, w.id, batchDate) : [];
+                            const isSelected = !conflict && !batchSelfOverlap && validBatchSelected.includes(w.id);
+                            const name = w.name?.trim() || w.email.split("@")[0];
+                            return (
+                              <button
+                                key={w.id}
+                                type="button"
+                                disabled={!!conflict || batchSelfOverlap}
+                                title={conflict ? formatConflictLabel(conflict, locale) : undefined}
+                                className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""} ${conflict ? "conflict" : ""}`}
+                                onClick={() => {
+                                  if (conflict || batchSelfOverlap) return;
+                                  setBatchSelected((prev) =>
+                                    isSelected ? prev.filter((id) => id !== w.id) : [...prev, w.id],
+                                  );
+                                }}
+                              >
+                                <span className="cabinet-shift-checkbox">{conflict ? "!" : isSelected ? "✓" : ""}</span>
+                                <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                  {name.slice(0, 2).toUpperCase()}
+                                </span>
+                                <span className="cabinet-shift-staff-pill-meta">
+                                  <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                  {conflict ? (
+                                    <small className="cabinet-shift-pill-conflict">
+                                      {formatConflictLabel(conflict, locale)}
+                                    </small>
+                                  ) : existingDay.length > 0 ? (
+                                    <small className="cabinet-shift-pill-existing">
+                                      {existingDay.map((x) => `${x.start_time}–${x.end_time}`).join(", ")}
+                                    </small>
+                                  ) : null}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
 
                 <div className="cabinet-shift-field-group">
@@ -1440,9 +1370,9 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   <button
                     type="submit"
                     className="panel-btn primary"
-                    disabled={busy || (validBatchWaiters.length === 0 && validBatchCooks.length === 0)}
+                    disabled={busy || validBatchSelected.length === 0}
                   >
-                    {copy.opsScheduleSubmitBtn} ({validBatchWaiters.length + validBatchCooks.length})
+                    {copy.opsScheduleSubmitBtn} ({validBatchSelected.length})
                   </button>
                   <button
                     type="button"
@@ -1495,7 +1425,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
               </h3>
               <p className="cabinet-shift-dialog-sub">
                 {quickCell.member.name?.trim() || quickCell.member.email} ·{" "}
-                {quickCell.member.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
+                {roleLabel(roles.find((x) => x.key === quickCell.member.role) ?? { key: quickCell.member.role }, presetNames)}
               </p>
 
               <form className="cabinet-shift-form" onSubmit={handleQuickCellSubmit}>
@@ -1720,19 +1650,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   <div>
                     {recurringPattern === "2/2" ? (
                       recurringWaveMode === "alternate" ? (
-                        locale === "ro" ? (
-                          <>
-                            <strong>Cum funcționează:</strong> ospătarii și bucătarii selectați se împart automat în jumătate (Echipa A și Echipa B). A lucrează 2 zile de la start, apoi se odihnește 2 zile; B intră în zilele libere ale lui A. Localul are acoperire în fiecare zi.
-                          </>
-                        ) : locale === "en" ? (
-                          <>
-                            <strong>How it works:</strong> selected waiters and cooks are split 50/50 per role into Team A and Team B. Team A works days 1–2 and rests 3–4; Team B covers days 3–4, giving full daily coverage.
-                          </>
-                        ) : (
-                          <>
-                            <strong>Как работает:</strong> выбранные официанты и повара автоматически делятся пополам (по ролям) на команды А и Б. Команда А выходит 2 дня с даты старта, затем 2 дня отдыхает; в это время работает команда Б — зал и кухня закрыты каждый день.
-                          </>
-                        )
+                        <>{copy.roles.plannerTeamsHint}</>
                       ) : recurringWaveMode === "team_a" ? (
                         locale === "ro" ? (
                           <>
@@ -1794,15 +1712,15 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                   </div>
                   <div className="cabinet-shift-field-group">
                     <label htmlFor="rec-period">{copy.plannerPeriod}</label>
-                    <select
+                    <SelectMenu
                       id="rec-period"
-                      value={recurringPeriodWeeks}
-                      onChange={(e) => setRecurringPeriodWeeks(Number(e.target.value))}
-                      className="cabinet-shift-input"
-                    >
-                      <option value={2}>{copy.planner2Weeks}</option>
-                      <option value={4}>{copy.planner1Month}</option>
-                    </select>
+                      value={String(recurringPeriodWeeks)}
+                      onChange={(value) => setRecurringPeriodWeeks(Number(value))}
+                      options={[
+                        { value: "2", label: copy.planner2Weeks },
+                        { value: "4", label: copy.planner1Month },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -1823,155 +1741,69 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                 />
 
                 <div className="cabinet-shift-roles-split">
-                  {/* Separate Waiters Section */}
-                  {(() => {
-                    const selectedWaiterCount = waiters.filter((w) => recurringStaffIds.includes(w.id)).length;
+                  {roleGroups.length === 0 && <p className="fa-muted">{copy.roles.plannerEmptyRoles}</p>}
+                  {roleGroups.map((group) => {
+                    const ids = new Set(group.members.map((m) => m.id));
+                    const selectedHere = recurringStaffIds.filter((id) => ids.has(id)).length;
                     const teamASet = new Set(recurringAssignments.teamAStaff);
                     const teamBSet = new Set(recurringAssignments.teamBStaff);
                     const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
                     return (
-                      <div className="cabinet-shift-field-group">
+                      <div key={group.role.key} className="cabinet-shift-field-group">
                         <div className="cabinet-shift-staff-header">
-                          <label>👤 {copy.plannerSelectWaiters} ({selectedWaiterCount})</label>
-                          {waiters.length > 0 && (
-                            <div className="cabinet-shift-staff-bulk-actions">
+                          <label>
+                            <RoleBadge label={groupTitle(group)} color={group.role.color} /> ({selectedHere})
+                          </label>
+                          <div className="cabinet-shift-staff-bulk-actions">
+                            <button
+                              type="button"
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() => setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...ids])))}
+                            >
+                              {copy.opsScheduleSelectAll}
+                            </button>
+                            <button
+                              type="button"
+                              className="cabinet-shift-bulk-btn"
+                              onClick={() => setRecurringStaffIds((prev) => prev.filter((id) => !ids.has(id)))}
+                            >
+                              {copy.opsScheduleDeselectAll}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="cabinet-shift-staff-grid">
+                          {group.members.map((m) => {
+                            const isSelected = recurringStaffIds.includes(m.id);
+                            const name = m.name?.trim() || m.email.split("@")[0];
+                            const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
+                            return (
                               <button
+                                key={m.id}
                                 type="button"
-                                className="cabinet-shift-bulk-btn"
-                                onClick={() =>
-                                  setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...waiters.map((w) => w.id)])))
-                                }
-                              >
-                                {copy.opsScheduleSelectAll}
-                              </button>
-                              <button
-                                type="button"
-                                className="cabinet-shift-bulk-btn"
+                                className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
                                 onClick={() => {
-                                  const waiterIds = new Set(waiters.map((w) => w.id));
-                                  setRecurringStaffIds((prev) => prev.filter((id) => !waiterIds.has(id)));
+                                  setRecurringStaffIds((prev) =>
+                                    isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id],
+                                  );
                                 }}
                               >
-                                {copy.opsScheduleDeselectAll}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {waiters.length === 0 ? (
-                          <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                            {locale === "ro" ? "Niciun ospătar adăugat" : "Официанты не добавлены"}
-                          </p>
-                        ) : (
-                          <div className="cabinet-shift-staff-grid">
-                            {waiters.map((m) => {
-                              const isSelected = recurringStaffIds.includes(m.id);
-                              const name = m.name?.trim() || m.email.split("@")[0];
-                              const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
-                              return (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
-                                  onClick={() => {
-                                    setRecurringStaffIds((prev) =>
-                                      isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
-                                    );
-                                  }}
-                                >
-                                  <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
-                                  <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                                    {name.slice(0, 2).toUpperCase()}
+                                <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
+                                <span className="cabinet-staff-avatar xs" aria-hidden="true">
+                                  {name.slice(0, 2).toUpperCase()}
+                                </span>
+                                <span className="cabinet-shift-staff-pill-name">{name}</span>
+                                {waveTag && (
+                                  <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
+                                    {waveTag}
                                   </span>
-                                  <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                  {waveTag && (
-                                    <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
-                                      {waveTag}
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
-                  })()}
-
-                  {/* Separate Cooks Section */}
-                  {(() => {
-                    const selectedCookCount = cooks.filter((c) => recurringStaffIds.includes(c.id)).length;
-                    const teamASet = new Set(recurringAssignments.teamAStaff);
-                    const teamBSet = new Set(recurringAssignments.teamBStaff);
-                    const showWaveTag = recurringPattern === "2/2" && recurringWaveMode === "alternate";
-                    return (
-                      <div className="cabinet-shift-field-group">
-                        <div className="cabinet-shift-staff-header">
-                          <label>👨‍🍳 {copy.plannerSelectCooks} ({selectedCookCount})</label>
-                          {cooks.length > 0 && (
-                            <div className="cabinet-shift-staff-bulk-actions">
-                              <button
-                                type="button"
-                                className="cabinet-shift-bulk-btn"
-                                onClick={() =>
-                                  setRecurringStaffIds((prev) => Array.from(new Set([...prev, ...cooks.map((c) => c.id)])))
-                                }
-                              >
-                                {copy.opsScheduleSelectAll}
-                              </button>
-                              <button
-                                type="button"
-                                className="cabinet-shift-bulk-btn"
-                                onClick={() => {
-                                  const cookIds = new Set(cooks.map((c) => c.id));
-                                  setRecurringStaffIds((prev) => prev.filter((id) => !cookIds.has(id)));
-                                }}
-                              >
-                                {copy.opsScheduleDeselectAll}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {cooks.length === 0 ? (
-                          <p className="fa-muted" style={{ fontSize: "0.82rem" }}>
-                            {locale === "ro" ? "Niciun bucătar adăugat" : "Повара не добавлены"}
-                          </p>
-                        ) : (
-                          <div className="cabinet-shift-staff-grid">
-                            {cooks.map((m) => {
-                              const isSelected = recurringStaffIds.includes(m.id);
-                              const name = m.name?.trim() || m.email.split("@")[0];
-                              const waveTag = showWaveTag && isSelected ? (teamASet.has(m.id) ? "А" : teamBSet.has(m.id) ? "Б" : null) : null;
-                              return (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  className={`cabinet-shift-staff-pill ${isSelected ? "selected" : ""}`}
-                                  onClick={() => {
-                                    setRecurringStaffIds((prev) =>
-                                      isSelected ? prev.filter((id) => id !== m.id) : [...prev, m.id]
-                                    );
-                                  }}
-                                >
-                                  <span className="cabinet-shift-checkbox">{isSelected ? "✓" : ""}</span>
-                                  <span className="cabinet-staff-avatar xs" aria-hidden="true">
-                                    {name.slice(0, 2).toUpperCase()}
-                                  </span>
-                                  <span className="cabinet-shift-staff-pill-name">{name}</span>
-                                  {waveTag && (
-                                    <span className={`cabinet-wave-chip wave-${waveTag === "А" ? "a" : "b"}`}>
-                                      {waveTag}
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  })}
                 </div>
 
                 <div className="cabinet-shift-field-group">
@@ -2066,7 +1898,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
                     {focusedStaff.name?.trim() || focusedStaff.email}
                   </h3>
                   <p className="cabinet-shift-dialog-sub">
-                    {focusedStaff.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter} · {focusedStaff.email}
+                    {roleLabel(roles.find((x) => x.key === focusedStaff.role) ?? { key: focusedStaff.role }, presetNames)} · {focusedStaff.email}
                   </p>
                 </div>
               </div>
@@ -2203,9 +2035,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
               <div className="cabinet-planner-swap-target-box">
                 <div>
                   <strong>{inspectingShift.start_time} – {inspectingShift.end_time}</strong>
-                  <span className={`cabinet-staff-role-tag role-${inspectingShift.role || "waiter"}`}>
-                    {inspectingShift.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
-                  </span>
+                  <RoleBadge {...shiftRole(inspectingShift)} />
                 </div>
                 <div style={{ marginTop: 8 }}>
                   <span className={`cabinet-shift-status-badge ${inspectingShift.status.toLowerCase()}`}>
@@ -2366,9 +2196,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
               <div className="cabinet-planner-swap-target-box">
                 <div>
                   <strong>{swappingShift.date} · {swappingShift.start_time} – {swappingShift.end_time}</strong>
-                  <span className={`cabinet-staff-role-tag role-${swappingShift.role || "waiter"}`}>
-                    {swappingShift.role === "cook" ? copy.opsStaffRoleCook : copy.opsStaffRoleWaiter}
-                  </span>
+                  <RoleBadge {...shiftRole(swappingShift)} />
                 </div>
                 {swappingShift.reason && (
                   <p className="cabinet-planner-swap-target-reason">
@@ -2530,6 +2358,7 @@ export function CabinetShiftsPlanner({ venueId, onAlertCountChange }: Props) {
 
 function RosterGroupRows({
   group,
+  title,
   weekDays,
   shiftCellMap,
   staffWeekStats,
@@ -2538,7 +2367,8 @@ function RosterGroupRows({
   onInspectShift,
   onQuickAdd,
 }: {
-  group: { key: "waiter" | "cook"; title: string; icon: string; members: StaffMember[] };
+  group: RoleGroup;
+  title: string;
   weekDays: { date: string; isToday: boolean }[];
   shiftCellMap: Map<string, WorkShift[]>;
   staffWeekStats: Map<string, { shiftCount: number; totalMinutes: number }>;
@@ -2553,7 +2383,7 @@ function RosterGroupRows({
     <>
       <tr className="cabinet-roster-group-row">
         <th colSpan={weekDays.length + 1} scope="colgroup" className="cabinet-roster-group-head">
-          <span>{group.icon}</span> {group.title} ({group.members.length})
+          <RoleBadge label={title} color={group.role.color} /> ({group.members.length})
         </th>
       </tr>
       {group.members.map((member) => {

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { z } from 'zod';
 import { type AuthUser, CurrentUser, Roles } from '../../core/auth/auth.decorators.js';
@@ -16,6 +16,7 @@ const batchBody = z.object({
 const copyBody = z.object({ source_start_date: z.string().default(''), target_start_date: z.string().default('') });
 const swapBody = z.object({ new_staff_id: z.string().min(1) });
 const respondBody = z.object({ status: z.string().min(1), reason: z.string().optional() });
+const roleBody = z.object({ role: z.string().min(1).max(64) });
 const onShiftBody = z.object({ on_shift: z.boolean().optional() });
 
 /** Team and schedule in the restaurant cabinet (roles restaurant, admin). */
@@ -37,6 +38,12 @@ export class StaffTeamController {
   @Delete('staff/:staffId')
   remove(@CurrentUser() user: AuthUser, @Param('venueId') id: string, @Param('staffId') staffId: string) {
     return this.team.remove(user.id, id, staffId);
+  }
+
+  /** Assigns a venue role (key from GET roles). */
+  @Patch('staff/:staffId')
+  async assign(@CurrentUser() user: AuthUser, @Param('venueId') id: string, @Param('staffId') staffId: string, @Body({ schema: roleBody }) body: z.infer<typeof roleBody>) {
+    return { staff: await this.team.assignRole(user.id, id, staffId, body.role) };
   }
 
   /** Body optional: {on_shift} sets it, without it the flag flips. */

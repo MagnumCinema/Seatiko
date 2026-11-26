@@ -23,6 +23,7 @@ import { OrdersModule } from './modules/orders/orders.module.js';
 import { ReservationsModule } from './modules/reservations/reservations.module.js';
 import { FloorModule } from './modules/floor/floor.module.js';
 import { StaffTeamModule } from './modules/staff-team/staff-team.module.js';
+import { VenueRolesModule } from './modules/venue-roles/venue-roles.module.js';
 import { VenueAdminModule } from './modules/venue-admin/venue-admin.module.js';
 import { WaitlistModule } from './modules/waitlist/waitlist.module.js';
 import { VenueAccessModule } from './modules/venue-access/venue-access.service.js';
@@ -62,6 +63,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ApplicationsModule,
     VenueAdminModule,
     StaffTeamModule,
+    VenueRolesModule,
     AdminModule,
     DiscoverModule,
     CrmModule,

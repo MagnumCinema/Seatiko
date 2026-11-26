@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDrizzle } from '@nestjs/drizzle';
-import { and, asc, eq, inArray, ne, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, ne, or, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.module.js';
 import { staffMembers, users, workShifts } from '../../database/schema/index.js';
 
@@ -89,7 +89,7 @@ export class StaffTeamRepository {
     return this.db
       .select()
       .from(workShifts)
-      .where(and(eq(workShifts.venueId, venueId), role ? sql`lower(${workShifts.role}) = ${role}` : undefined))
+      .where(and(eq(workShifts.venueId, venueId), role ? sql`lower(${workShifts.role}) = lower(${role})` : undefined))
       .orderBy(asc(workShifts.date), asc(workShifts.startTime));
   }
 
@@ -106,6 +106,11 @@ export class StaffTeamRepository {
   async updateShift(id: string, patch: Partial<typeof workShifts.$inferInsert>): Promise<ShiftRow> {
     const [row] = await this.db.update(workShifts).set(patch).where(eq(workShifts.id, id)).returning();
     return row;
+  }
+
+  /** Upcoming (today and later) shifts of a member take their new role. */
+  async setUpcomingShiftsRole(staffId: string, role: string, today: string): Promise<void> {
+    await this.db.update(workShifts).set({ role }).where(and(eq(workShifts.staffId, staffId), gte(workShifts.date, today)));
   }
 
   async deleteShift(id: string): Promise<void> {

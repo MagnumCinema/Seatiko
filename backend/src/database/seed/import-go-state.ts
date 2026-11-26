@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../schema/index.js';
+import { DEMO_STAFF_ROLES, DEMO_VENUE_TYPES, demoVenueRoles } from './demo-roles.js';
 import { EMPTY_TEXT, values, type GoState } from './go-state.js';
 
 type Db = NodePgDatabase<typeof schema>;
@@ -46,6 +47,10 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
   const text = (v: any) => (v && typeof v === 'object' ? { ru: v.ru ?? '', en: v.en ?? '', ro: v.ro ?? '' } : EMPTY_TEXT);
 
   const venuesById = state.venues ?? {};
+  // The demo snapshot gets venue types and roles to try (a real-data import keeps its own).
+  const demo = state.demo_seed_version !== undefined;
+  const venueType = (id: string, own?: string) => own || (demo ? (DEMO_VENUE_TYPES[id] ?? '') : '');
+  const staffRole = (id: string, own: string) => (demo ? (DEMO_STAFF_ROLES[id] ?? own) : own);
   const report: ImportReport = {};
 
   await db.transaction(async (tx) => {
@@ -54,7 +59,7 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
       // Not TRUNCATE … CASCADE on venues: it would also empty open_places (real map data).
       await run.execute(sql`UPDATE open_places SET venue_id = NULL`);
       await run.execute(sql`TRUNCATE notifications, adult_permission_log, order_items, orders, waiter_calls, sessions,
-        reservation_tables, reservations, table_watches, waitlist_entries, event_inquiries, work_shifts, staff_members,
+        reservation_tables, reservations, table_watches, waitlist_entries, event_inquiries, work_shifts, staff_members, venue_roles,
         profile_change_requests, application_activities, applications, menu_items, tables, collections, user_identities, users, app_meta`);
       await run.execute(sql`DELETE FROM venues`);
       await run.execute(sql`DELETE FROM cities`);
@@ -77,7 +82,7 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
       deletedAt: t(u.deleted_at), createdAt: tReq(u.created_at), updatedAt: tReq(u.updated_at ?? u.created_at),
     })));
     await ins('venues', schema.venues, values(state.venues).map((v: any) => ({
-      id: v.id, cityId: v.city_id, name: text(v.name), description: text(v.description), cuisine: v.cuisine ?? [], rating: v.rating ?? 0,
+      id: v.id, cityId: v.city_id, name: text(v.name), description: text(v.description), cuisine: v.cuisine ?? [], venueType: venueType(v.id, v.venue_type), rating: v.rating ?? 0,
       reviewCount: v.review_count ?? 0, priceLevel: v.price_level ?? 0, address: text(v.address), lat: v.lat ?? 0, lng: v.lng ?? 0,
       averageCheck: v.average_check ?? 0, openNow: v.open_now ?? true, imageUrl: v.image_url ?? '', photoUrls: v.photo_urls ?? [],
       phone: v.phone ?? '', website: v.website ?? '', googlePlaceId: v.google_place_id ?? '', reviews: v.reviews ?? [],
@@ -142,7 +147,7 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
     })));
     await ins('applications', schema.applications, values(state.applications).map((a: any) => ({
       id: a.id, ownerUserId: a.owner_user_id, status: a.status, name: text(a.name), description: text(a.description), address: text(a.address),
-      cuisine: a.cuisine ?? [], phone: a.phone ?? '', email: a.email ?? '', website: a.website ?? '', cityId: a.city_id ?? '', lat: a.lat ?? 0, lng: a.lng ?? 0,
+      cuisine: a.cuisine ?? [], venueType: a.venue_type || (a.venue_id ? venueType(a.venue_id) : ''), phone: a.phone ?? '', email: a.email ?? '', website: a.website ?? '', cityId: a.city_id ?? '', lat: a.lat ?? 0, lng: a.lng ?? 0,
       priceLevel: a.price_level ?? 0, averageCheck: a.average_check ?? 0, photoUrls: a.photo_urls ?? [], hoursText: a.hours_text ?? '',
       rejectReason: a.reject_reason ?? '', venueId: a.venue_id ?? null, bookingIntervalMin: a.booking_interval_min ?? 0, holdMinutes: a.hold_minutes ?? 0,
       allowPreorder: !!a.allow_preorder, sessionStartBeforeMin: a.session_start_before_min ?? 0, releaseBeforeMin: a.release_before_min ?? 0,
@@ -157,14 +162,24 @@ export async function importGoState(db: Db, state: GoState, opts: ImportOptions 
       id: p.id, applicationId: p.application_id, ownerUserId: p.owner_user_id, status: p.status, patch: p.patch ?? {}, note: p.note ?? '', createdAt: tReq(p.created_at),
     })));
     await ins('staff_members', schema.staffMembers, values(state.staff_members).map((m: any) => ({
-      id: m.id, venueId: m.venue_id, userId: m.user_id ?? '', name: m.name ?? '', email: m.email, role: m.role || 'waiter', status: m.status,
+      id: m.id, venueId: m.venue_id, userId: m.user_id ?? '', name: m.name ?? '', email: m.email, role: staffRole(m.id, m.role || 'waiter'), status: m.status,
       onShift: !!m.on_shift, createdAt: tReq(m.created_at),
     })));
     await ins('work_shifts', schema.workShifts, values(state.work_shifts).map((w: any) => ({
-      id: w.id, venueId: w.venue_id, staffId: w.staff_id, staffName: w.staff_name ?? '', role: w.role, date: shiftDay(w.date),
+      id: w.id, venueId: w.venue_id, staffId: w.staff_id, staffName: w.staff_name ?? '', role: staffRole(w.staff_id, w.role), date: shiftDay(w.date),
       startTime: w.start_time, endTime: w.end_time, status: w.status, note: w.note ?? '', reason: w.reason ?? '',
       createdAt: tReq(w.created_at), updatedAt: tReq(w.updated_at ?? w.created_at),
     })));
+    const usedKeys = new Map<string, Set<string>>();
+    for (const m of values(state.staff_members) as any[]) {
+      const keys = usedKeys.get(m.venue_id) ?? new Set<string>();
+      keys.add(staffRole(m.id, m.role || 'waiter'));
+      usedKeys.set(m.venue_id, keys);
+    }
+    await ins('venue_roles', schema.venueRoles, state.venue_roles ? values(state.venue_roles).map((r: any) => ({
+      id: r.id, venueId: r.venue_id, key: r.key, name: r.name ?? '', color: r.color ?? '', inSchedule: r.in_schedule ?? true, position: r.position ?? 0,
+      isSystem: !!r.is_system, permissions: r.permissions ?? [], createdAt: tReq(r.created_at),
+    })) : demo ? demoVenueRoles(values(state.venues).map((v: any) => ({ id: v.id, type: venueType(v.id, v.venue_type) })), usedKeys, new Date().toISOString()) : []);
     await ins('waitlist_entries', schema.waitlistEntries, values(state.waitlist).map((w: any) => ({
       id: w.id, venueId: w.venue_id, userId: w.user_id ?? '', guestName: w.guest_name ?? '', phone: w.phone ?? '', guests: w.guests,
       zone: w.zone || 'hall', note: w.note ?? '', status: w.status, source: w.source || 'APP', tableId: w.table_id ?? '', quotedWait: w.quoted_wait ?? 0,

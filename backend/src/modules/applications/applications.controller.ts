@@ -13,6 +13,7 @@ const patchBody = z.object({
   description: text.optional(),
   address: text.optional(),
   cuisine: z.array(z.string()).optional(),
+  venue_type: z.string().max(32).optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
   website: z.string().optional(),

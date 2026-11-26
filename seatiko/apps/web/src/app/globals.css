@@ -4664,7 +4664,7 @@ html[data-theme="dark"] .venue-day-cal-event.checked-in {
 .host-waitlist-main span { color: var(--fa-muted); font-size: 0.85rem; }
 .host-waitlist-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .host-waitlist-actions select,
-.host-waitlist-actions button {
+.host-waitlist-actions button:not(.select-menu-trigger) {
   min-height: 36px;
   padding: 0 12px;
   border-radius: 10px;
@@ -4674,7 +4674,7 @@ html[data-theme="dark"] .venue-day-cal-event.checked-in {
   font: inherit;
   cursor: pointer;
 }
-.host-waitlist-actions button:not(.ghost) {
+.host-waitlist-actions button:not(.ghost):not(.select-menu-trigger) {
   background: #6f8f3d;
   border-color: transparent;
   color: #fff;

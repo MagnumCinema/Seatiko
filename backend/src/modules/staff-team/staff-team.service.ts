@@ -3,7 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { badRequest, conflict, forbidden, notFound } from '../../core/errors/domain-error.js';
 import { Clock, formatDbTime } from '../../core/time/time.js';
 import { VenueAccessService } from '../venue-access/venue-access.service.js';
-import { addDays, dayDiff, SHIFT_RESPONSES, shiftMinutes, shiftsOverlap, STAFF_ROLES, validDate } from './domain/shift-rules.js';
+import { type RoleLabel, VenueRolesService } from '../venue-roles/venue-roles.service.js';
+import { addDays, dayDiff, SHIFT_RESPONSES, shiftMinutes, shiftsOverlap, validDate } from './domain/shift-rules.js';
 import { type MemberRow, type ShiftRow, StaffTeamRepository } from './staff-team.repository.js';
 
 export type ShiftInput = { staff_id?: string; date?: string; start_time?: string; end_time?: string; note?: string };
@@ -24,12 +25,19 @@ const presentMember = (m: MemberRow, displayName?: string | null) => {
   };
 };
 
-const presentShift = (s: ShiftRow) => ({
+type Labels = Map<string, RoleLabel>;
+
+/** A shift with its role label: role_name is the owner's custom name ('' = translated preset name). */
+const presentShift = (s: ShiftRow, labels?: Labels) => {
+  const label = labels?.get(`${s.venueId}\u0000${s.role}`);
+  return {
   id: s.id,
   venue_id: s.venueId,
   staff_id: s.staffId,
   staff_name: s.staffName,
   role: s.role,
+  role_name: label?.name ?? '',
+  role_color: label?.color ?? VenueRolesService.fallbackColor(s.role),
   date: s.date,
   start_time: s.startTime,
   end_time: s.endTime,
@@ -38,7 +46,8 @@ const presentShift = (s: ShiftRow) => ({
   ...(s.reason ? { reason: s.reason } : {}),
   created_at: formatDbTime(s.createdAt),
   updated_at: formatDbTime(s.updatedAt),
-});
+  };
+};
 
 /** Venue team (invites, on-shift flag) and the work schedule. */
 @Injectable()
@@ -46,8 +55,19 @@ export class StaffTeamService {
   constructor(
     private readonly repo: StaffTeamRepository,
     private readonly access: VenueAccessService,
+    private readonly roles: VenueRolesService,
     private readonly clock: Clock,
   ) {}
+
+  /** Shifts presented with role names and colours of their venues. */
+  private async presentShifts(rows: ShiftRow[]) {
+    const labels = await this.roles.labels(rows.map((s) => s.venueId));
+    return rows.map((s) => presentShift(s, labels));
+  }
+
+  private async presentOne(row: ShiftRow) {
+    return (await this.presentShifts([row]))[0];
+  }
 
   private now() {
     return this.clock.now().toISOString();
@@ -58,7 +78,7 @@ export class StaffTeamService {
     const venueId = await this.access.requireOwner(ownerId, id);
     const addr = email.trim().toLowerCase();
     if (!addr) throw badRequest('bad_request');
-    const r = role.trim().toLowerCase();
+    const roleKey = await this.roles.resolveKey(venueId, role);
     const user = await this.repo.userByEmail(addr);
     const member = await this.repo.insertMember({
       id: randomUUID(),
@@ -66,7 +86,7 @@ export class StaffTeamService {
       userId: user?.id ?? '',
       name: name.trim() || user?.displayName || '',
       email: addr,
-      role: STAFF_ROLES.includes(r) ? r : 'waiter',
+      role: roleKey,
       status: user ? 'ACTIVE' : 'INVITED',
       onShift: false,
       createdAt: this.now(),
@@ -77,9 +97,11 @@ export class StaffTeamService {
 
   async team(ownerId: string, id: string) {
     const venueId = await this.access.requireOwner(ownerId, id);
+    const order = new Map((await this.roles.ensure(venueId)).map((r) => [r.key, r.position]));
+    const pos = (key: string) => order.get(key) ?? Number.MAX_SAFE_INTEGER;
     return (await this.repo.team(venueId))
       .map(({ m, displayName }) => presentMember(m, displayName))
-      .sort((a, b) => a.role.localeCompare(b.role) || (a.name ?? '').localeCompare(b.name ?? '') || a.id.localeCompare(b.id));
+      .sort((a, b) => pos(a.role) - pos(b.role) || a.role.localeCompare(b.role) || (a.name ?? '').localeCompare(b.name ?? '') || a.id.localeCompare(b.id));
   }
 
   private async teamMember(venueId: string, staffId: string): Promise<MemberRow> {
@@ -93,6 +115,17 @@ export class StaffTeamService {
     await this.teamMember(venueId, staffId);
     await this.repo.deleteMember(staffId);
     return { ok: true };
+  }
+
+  /** Gives a team member another venue role; their upcoming shifts follow. */
+  async assignRole(ownerId: string, id: string, staffId: string, role: string) {
+    const venueId = await this.access.requireOwner(ownerId, id);
+    await this.teamMember(venueId, staffId);
+    if (!role.trim()) throw badRequest('unknown_role');
+    const key = await this.roles.resolveKey(venueId, role);
+    const updated = await this.repo.updateMember(staffId, { role: key });
+    await this.repo.setUpcomingShiftsRole(staffId, key, this.clock.now().toISOString().slice(0, 10));
+    return presentMember(updated);
   }
 
   /** Sets "on shift" (or flips it without a value). */
@@ -145,7 +178,7 @@ export class StaffTeamService {
     const end = (input.end_time ?? '').trim();
     if (!validDate(date) || shiftMinutes(start) === undefined || shiftMinutes(end) === undefined) throw badRequest('bad_request');
     if (await this.overlaps(venueId, m.id, date, start, end)) throw conflict('conflict');
-    return presentShift(await this.repo.insertShift(this.shiftRow(venueId, m, date, start, end, input.note ?? '')));
+    return this.presentOne(await this.repo.insertShift(this.shiftRow(venueId, m, date, start, end, input.note ?? '')));
   }
 
   /** Same hours for several people and days; overlapping ones are skipped (409 when all are). */
@@ -170,7 +203,7 @@ export class StaffTeamService {
       }
     }
     if (!created.length && skipped) throw conflict('conflict');
-    return created.map(presentShift);
+    return this.presentShifts(created);
   }
 
   /** Copies the 7 days from the source date to the week from the target date (declined shifts left out). */
@@ -192,18 +225,18 @@ export class StaffTeamService {
       created.push(await this.repo.insertShift({ ...this.shiftRow(venueId, m, date, s.startTime, s.endTime, s.note), role: m.role || s.role }));
     }
     if (!created.length && skipped) throw conflict('conflict');
-    return { shifts: created.map(presentShift), created_count: created.length, skipped_count: skipped };
+    return { shifts: await this.presentShifts(created), created_count: created.length, skipped_count: skipped };
   }
 
-  /** Owner, admin or staff see a venue schedule; ?role=waiter|cook filters. */
+  /** Owner, admin or staff see a venue schedule; ?role=<role key> filters. */
   async shifts(userId: string, id: string, role?: string) {
     if (!(await this.access.ownerCanManage(userId, id))) {
       const user = await this.repo.user(userId);
       if (!user || (user.role !== 'admin' && user.role !== 'staff')) throw forbidden();
     }
     const venueId = await this.access.resolveVenueId(id);
-    const filter = role && role !== 'all' ? role.trim().toLowerCase() : undefined;
-    return (await this.repo.shiftsOf(venueId, filter)).map(presentShift);
+    const filter = role && role !== 'all' ? role.trim() : undefined;
+    return this.presentShifts(await this.repo.shiftsOf(venueId, filter));
   }
 
   async deleteShift(ownerId: string, id: string, shiftId: string) {
@@ -222,7 +255,7 @@ export class StaffTeamService {
     const m = await this.repo.member(newStaffId);
     if (!m || m.venueId !== venueId || m.id === s.staffId) throw badRequest('bad_request');
     if (await this.overlaps(venueId, m.id, s.date, s.startTime, s.endTime, s.id)) throw conflict('conflict');
-    return presentShift(
+    return this.presentOne(
       await this.repo.updateShift(shiftId, { staffId: m.id, staffName: m.name || m.email, role: m.role || s.role, status: 'PENDING', reason: '', updatedAt: this.now() }),
     );
   }
@@ -232,7 +265,7 @@ export class StaffTeamService {
     const user = await this.repo.user(userId);
     if (!user) throw notFound('not_found');
     const memberships = await this.repo.membershipsOf(user);
-    return (await this.repo.shiftsOfMembers(memberships.map((m) => m.id))).map(presentShift);
+    return this.presentShifts(await this.repo.shiftsOfMembers(memberships.map((m) => m.id)));
   }
 
   /** Confirm, decline or ask for a swap: the assigned person, the owner or an admin. */
@@ -246,6 +279,6 @@ export class StaffTeamService {
     const m = await this.repo.member(s.staffId);
     const assigned = Boolean(m && (m.userId === userId || m.email.toLowerCase() === user.email.toLowerCase()));
     if (!assigned && user.role !== 'admin' && !(await this.access.ownerCanManage(userId, s.venueId))) throw forbidden();
-    return presentShift(await this.repo.updateShift(shiftId, { status, ...(reason.trim() ? { reason: reason.trim() } : {}), updatedAt: this.now() }));
+    return this.presentOne(await this.repo.updateShift(shiftId, { status, ...(reason.trim() ? { reason: reason.trim() } : {}), updatedAt: this.now() }));
   }
 }

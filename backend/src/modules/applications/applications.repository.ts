@@ -10,6 +10,7 @@ import {
   staffMembers,
   tables,
   users,
+  venueRoles,
   venues,
   waiterCalls,
   workShifts,
@@ -76,6 +77,7 @@ export class ApplicationsRepository {
     const venueIds = [app.id, ...(app.venueId ? [app.venueId] : [])];
     await tx.delete(staffMembers).where(inArray(staffMembers.venueId, venueIds));
     await tx.delete(workShifts).where(inArray(workShifts.venueId, venueIds));
+    await tx.delete(venueRoles).where(inArray(venueRoles.venueId, venueIds));
     await tx.delete(waiterCalls).where(inArray(waiterCalls.venueId, venueIds));
     if (app.venueId) await tx.delete(venues).where(eq(venues.id, app.venueId)); // tables, menu, bookings, waitlist cascade
     await tx.delete(applications).where(eq(applications.id, app.id));
@@ -121,5 +123,6 @@ export class ApplicationsRepository {
     await tx.update(menuItems).set({ venueId }).where(eq(menuItems.venueId, appId));
     await tx.update(staffMembers).set({ venueId }).where(eq(staffMembers.venueId, appId));
     await tx.update(workShifts).set({ venueId }).where(eq(workShifts.venueId, appId));
+    await tx.update(venueRoles).set({ venueId }).where(eq(venueRoles.venueId, appId));
   }
 }

@@ -202,6 +202,8 @@ export type VenueApplication = {
   description: LocalizedString;
   address: LocalizedString;
   cuisine: string[];
+  /** Venue format (RestaurantTypeId); "" or missing = not chosen yet. */
+  venue_type?: string;
   phone: string;
   email: string;
   website?: string;
@@ -243,6 +245,7 @@ export type ApplicationUpdate = {
   description?: LocalizedString;
   address?: LocalizedString;
   cuisine?: string[];
+  venue_type?: string;
   phone?: string;
   email?: string;
   website?: string;
@@ -1281,7 +1284,8 @@ export type StaffMember = {
   user_id?: string;
   name?: string;
   email: string;
-  role: "waiter" | "cook" | "admin" | string;
+  /** Venue role key (see VenueRole.key). */
+  role: string;
   status: string;
   on_shift?: boolean;
   created_at: string;
@@ -1292,7 +1296,11 @@ export type WorkShift = {
   venue_id: string;
   staff_id: string;
   staff_name: string;
-  role: "waiter" | "cook" | string;
+  /** Venue role key (see VenueRole.key). */
+  role: string;
+  /** Owner's role name; "" = translated preset name of `role`. */
+  role_name?: string;
+  role_color?: string;
   date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM
@@ -1520,6 +1528,86 @@ export async function respondStaffShift(
     { method: "POST", body: { status, reason } },
   );
   return data.shift;
+}
+
+/** A team role of a venue: preset (waiter, barista…) or the owner's own. */
+export type VenueRole = {
+  id: string;
+  venue_id: string;
+  key: string;
+  /** Owner's name; "" = translated preset name of `key`. */
+  name: string;
+  color: string;
+  in_schedule: boolean;
+  position: number;
+  is_system: boolean;
+  /** Stored for phase 2 (venue-scoped access); not shown or enforced yet. */
+  permissions: string[];
+  created_at: string;
+};
+
+export type VenueRolesResponse = {
+  venue_type: string;
+  roles: VenueRole[];
+  /** Preset role keys of the venue type the venue does not have yet. */
+  suggested: string[];
+};
+
+export type VenueRoleInput = {
+  name?: string;
+  color?: string;
+  in_schedule?: boolean;
+  position?: number;
+};
+
+export async function listVenueRoles(venueId: string): Promise<VenueRolesResponse> {
+  const data = await apiFetch<VenueRolesResponse>(`/api/v1/restaurant/venues/${venueId}/roles`);
+  return { venue_type: data.venue_type ?? "", roles: data.roles ?? [], suggested: data.suggested ?? [] };
+}
+
+export async function createVenueRole(venueId: string, input: VenueRoleInput): Promise<VenueRole> {
+  const data = await apiFetch<{ role: VenueRole }>(`/api/v1/restaurant/venues/${venueId}/roles`, {
+    method: "POST",
+    body: input,
+  });
+  return data.role;
+}
+
+export async function updateVenueRole(venueId: string, roleId: string, input: VenueRoleInput): Promise<VenueRole> {
+  const data = await apiFetch<{ role: VenueRole }>(`/api/v1/restaurant/venues/${venueId}/roles/${roleId}`, {
+    method: "PATCH",
+    body: input,
+  });
+  return data.role;
+}
+
+/** Custom roles only; members move to `reassignTo` first (409 role_in_use without it). */
+export async function deleteVenueRole(
+  venueId: string,
+  roleId: string,
+  reassignTo?: string,
+): Promise<{ ok: boolean; reassigned: number }> {
+  return apiFetch<{ ok: boolean; reassigned: number }>(`/api/v1/restaurant/venues/${venueId}/roles/${roleId}`, {
+    method: "DELETE",
+    query: reassignTo ? { reassign_to: reassignTo } : undefined,
+  });
+}
+
+/** Adds the venue type's preset roles it is missing (all or `keys`). */
+export async function addVenuePresetRoles(venueId: string, keys?: string[]): Promise<VenueRole[]> {
+  const data = await apiFetch<{ roles: VenueRole[] }>(`/api/v1/restaurant/venues/${venueId}/roles/preset`, {
+    method: "POST",
+    body: keys?.length ? { keys } : {},
+  });
+  return data.roles ?? [];
+}
+
+export async function assignVenueStaffRole(venueId: string, staffId: string, role: string): Promise<StaffMember> {
+  const data = await apiFetch<{ staff: StaffMember }>(`/api/v1/restaurant/venues/${venueId}/staff/${staffId}`, {
+    method: "PATCH",
+    body: { role },
+  });
+  return data.staff;
 }
 
 export async function listVenueStaff(venueId: string): Promise<StaffMember[]> {

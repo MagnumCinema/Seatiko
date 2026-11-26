@@ -1,4 +1,4 @@
-import { boolean, doublePrecision, index, integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
+import { boolean, doublePrecision, index, integer, jsonb, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
 import { localized, textList, ts, type LocalizedString } from './columns.js';
 import { users } from './users.js';
 
@@ -14,6 +14,8 @@ export const applications = pgTable(
     description: localized('description').notNull(),
     address: localized('address').notNull(),
     cuisine: textList('cuisine'),
+    /** Venue format (restaurant, cafe, bar…), see venue-roles/domain/role-presets; '' = not chosen yet. */
+    venueType: text().notNull().default(''),
     phone: text().notNull().default(''),
     email: text().notNull().default(''),
     website: text().notNull().default(''),
@@ -64,6 +66,7 @@ export type ApplicationPatch = Partial<{
   description: LocalizedString;
   address: LocalizedString;
   cuisine: string[];
+  venue_type: string;
   phone: string;
   email: string;
   website: string;
@@ -91,7 +94,33 @@ export const profileChangeRequests = pgTable(
   (t) => [index().on(t.status)],
 );
 
-/** Venue team: invited or active waiters and cooks. */
+/**
+ * Roles of a venue team (waiter, cook, barista, custom ones…). `venueId` is the
+ * application id until publication, like staff_members. Staff and shifts refer to
+ * a role by its `key`. `permissions` is stored for the future venue-scoped access
+ * (BACKEND_TASKS №20) and is not enforced yet.
+ */
+export const venueRoles = pgTable(
+  'venue_roles',
+  {
+    id: text().primaryKey(),
+    venueId: text().notNull(),
+    /** Stable per venue: a preset key (waiter, cook, barista…) or custom-<id>. */
+    key: text().notNull(),
+    /** Owner's own name; '' shows the translated preset name. */
+    name: text().notNull().default(''),
+    color: text().notNull().default(''),
+    inSchedule: boolean().notNull().default(true),
+    position: integer().notNull().default(0),
+    /** Preset roles can be renamed or recoloured but not deleted. */
+    isSystem: boolean().notNull().default(false),
+    permissions: textList('permissions'),
+    createdAt: ts('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex().on(t.venueId, t.key)],
+);
+
+/** Venue team: invited or active members, each with a venue role key. */
 export const staffMembers = pgTable(
   'staff_members',
   {
@@ -100,7 +129,7 @@ export const staffMembers = pgTable(
     userId: text().notNull().default(''),
     name: text().notNull().default(''),
     email: text().notNull(),
-    /** waiter | cook */
+    /** Key of a venue_roles row (waiter, cook, barista, custom-…). */
     role: text().notNull().default('waiter'),
     /** INVITED | ACTIVE | REVOKED */
     status: text().notNull(),
