@@ -106,6 +106,8 @@ export type MapPlace = {
   price_level?: number;
   average_check?: number;
   website?: string;
+  /** Partner venues: the owner's weekly hours line (canonical "Mon–Sun 10:00–23:00" form). */
+  hours_text?: string;
   /** Open-data places (not partners yet): phone, OSM opening_hours, kind and datasets. */
   phone?: string;
   opening_hours?: string;

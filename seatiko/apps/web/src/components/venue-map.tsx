@@ -24,12 +24,13 @@ import {
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
 import { getSiteCopy } from "@/lib/site-copy";
-import { getVenueHours as getVenueHoursById } from "@/lib/venue-hours";
+import { venueHoursLabel } from "@/lib/venue-hours";
 import { useCurrency } from "@/components/currency-provider";
 import { useLocale } from "@/components/locale-provider";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { venueBookingHref } from "@/lib/booking-link";
-import { googleMapSearch } from "@/lib/google-map";
+import { googleMapDirections, googleMapSearch } from "@/lib/google-map";
+import { useTheme } from "@/components/theme-provider";
 import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import { GoogleVenueMap } from "@/components/google-venue-map";
 
@@ -45,110 +46,38 @@ type PlacePointProperties = {
 const DEFAULT_CITY = "city-balti";
 const BALTI_BOUNDS: MapBounds = { south: 47.70, west: 27.84, north: 47.82, east: 28.02 };
 const MOLDOVA_BOUNDS: MapBounds = { south: 45.45, west: 26.60, north: 48.55, east: 30.20 };
-const OPEN_FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+const OPEN_FREE_MAP_STYLE = {
+  light: "https://tiles.openfreemap.org/styles/liberty",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+} as const;
 const SOURCE_ID = "seatiko-venues";
 const VENUE_LAYER_ID = "seatiko-venue-pins";
 const DOT_LAYER_ID = "seatiko-venue-dots";
 /** Below this zoom (whole city) places are dots, so they don't pile up; closer they become pins. */
 const PIN_MIN_ZOOM = 14;
-/** Site palette: partners deep green, other places sage, the selected one gold. */
-const PIN_COLORS = { partner: "#175f43", other: "#7fa792", selected: "#d99a3e" };
-
-const mapCopy = {
-  ru: {
-    unavailable: "Карта временно недоступна",
-    unavailableBody: "Рестораны и свободные столы остаются доступными в списке справа.",
-    openExternal: "Открыть поиск в Google Maps",
-    online: "заведений онлайн",
-    aria: "Интерактивная карта ресторанов",
-    loadingMap: "Загружаем карту…",
-    loadingVenues: "Загружаем заведения",
-    updated: "OpenStreetMap · обновляется автоматически",
-    nearby: "Выбрано на карте",
-    cityVenues: "Рестораны на карте",
-    open: "Открыто сейчас",
-    closed: "Сейчас закрыто",
-    free: "свободных столов",
-    freeTables: { one: "свободный стол", few: "свободных стола", many: "свободных столов", other: "свободного стола" },
-    tables: "столов",
-    empty: "После публикации рестораны автоматически появятся здесь.",
-    action: "Забронировать стол",
-    openPage: "Страница ресторана",
-    popupFree: "свободно",
-    popupBook: "Забронировать",
-    legendAria: "Легенда карты",
-    legendOurs: "Заведения Seatiko",
-    legendOther: "Другие заведения",
-    comingSoon: "Google Maps",
-    bookableBadge: "Можно забронировать",
-    listPartners: "Партнёры",
-    websiteLabel: "Сайт ресторана",
-    defaultCity: "Бельцы",
-  },
-  en: {
-    unavailable: "Map temporarily unavailable",
-    unavailableBody: "Restaurants and available tables are still listed on the right.",
-    openExternal: "Open search in Google Maps",
-    online: "venues online",
-    aria: "Interactive restaurant map",
-    loadingMap: "Loading map…",
-    loadingVenues: "Loading venues",
-    updated: "OpenStreetMap · updates automatically",
-    nearby: "Selected on map",
-    cityVenues: "Restaurants on the map",
-    open: "Open now",
-    closed: "Closed now",
-    free: "tables available",
-    freeTables: { one: "table available", few: "tables available", many: "tables available", other: "tables available" },
-    tables: "tables",
-    empty: "Restaurants appear here automatically after publication.",
-    action: "Book a table",
-    openPage: "Restaurant page",
-    popupFree: "free",
-    popupBook: "Book",
-    legendAria: "Map legend",
-    legendOurs: "Seatiko venues",
-    legendOther: "Other places",
-    comingSoon: "Google Maps",
-    bookableBadge: "Bookable",
-    listPartners: "Partners",
-    websiteLabel: "Restaurant website",
-    defaultCity: "Bălți",
-  },
-  ro: {
-    unavailable: "Harta este temporar indisponibilă",
-    unavailableBody: "Restaurantele și mesele libere rămân disponibile în lista din dreapta.",
-    openExternal: "Deschide căutarea în Google Maps",
-    online: "localuri online",
-    aria: "Harta interactivă a restaurantelor",
-    loadingMap: "Se încarcă harta…",
-    loadingVenues: "Se încarcă localurile",
-    updated: "OpenStreetMap · se actualizează automat",
-    nearby: "Selectat pe hartă",
-    cityVenues: "Restaurante pe hartă",
-    open: "Deschis acum",
-    closed: "Închis acum",
-    free: "mese libere",
-    freeTables: { one: "masă liberă", few: "mese libere", many: "de mese libere", other: "de mese libere" },
-    tables: "mese",
-    empty: "Restaurantele apar automat aici după publicare.",
-    action: "Rezervă o masă",
-    openPage: "Pagina restaurantului",
-    popupFree: "libere",
-    popupBook: "Rezervă",
-    legendAria: "Legenda hărții",
-    legendOurs: "Localuri Seatiko",
-    legendOther: "Alte localuri",
-    comingSoon: "Google Maps",
-    bookableBadge: "Se poate rezerva",
-    listPartners: "Parteneri",
-    websiteLabel: "Site-ul restaurantului",
-    defaultCity: "Bălți",
-  },
+/** Site palette: partners deep green, other places sage, the selected one gold (lighter greens on dark tiles). */
+const PIN_THEME_COLORS = {
+  light: { partner: "#175f43", other: "#7fa792", selected: "#d99a3e" },
+  dark: { partner: "#3aa877", other: "#8fae9d", selected: "#e9b96e" },
+} as const;
+/** Place names drawn on the map: dark on the light tiles, light on the dark ones. */
+const NAME_COLORS = {
+  light: { text: "#183e31", halo: "rgba(255, 253, 248, 0.97)" },
+  dark: { text: "#f3ead9", halo: "rgba(12, 22, 18, 0.92)" },
 } as const;
 
+/** Search for an open-data place by name and address (it has no Google place id). */
+function placeSearchUrl(place: MapPlace, locale: LocaleCode) {
+  return googleMapSearch([pickLocale(place.name, locale), pickLocale(place.address, locale)].filter(Boolean).join(", "), place.google_place_id);
+}
+
+/** Map strings live in site-copy (RU/EN/RO). */
+function mapText(locale: LocaleCode) {
+  return getSiteCopy(locale).venueMap;
+}
+
 function formatFreeTablesLabel(locale: LocaleCode, count: number): string {
-  const forms = mapCopy[locale].freeTables;
+  const forms = mapText(locale).freeTables;
   const rule = new Intl.PluralRules(locale).select(count);
   return rule === "one" || rule === "few" || rule === "many" ? forms[rule] : forms.other;
 }
@@ -157,7 +86,8 @@ const RECOMMENDED_LIST_COUNT = 3;
 
 function getVenueHours(place: MapPlace, locale: LocaleCode): string {
   if (place.venue_id) {
-    return getVenueHoursById(place.venue_id, locale);
+    // The owner's own hours from the API; the bundled demo hours only when none are set.
+    return venueHoursLabel({ id: place.venue_id, hours_text: place.hours_text }, locale);
   }
   // Open-data places: only what OpenStreetMap knows, never a made-up default.
   return place.opening_hours ?? "";
@@ -237,33 +167,6 @@ function placeCollection(
   };
 }
 
-const areaCopy = {
-  ru: {
-    country: "Вся Молдова", countryName: "Молдова", area: "Город или страна",
-    search: "Поиск в этой области", food: "Рестораны",
-    query: "Название или адрес", find: "Найти", bookableOnly: "Только с бронированием",
-    partner: "Партнёр Seatiko", noMatches: "По этому запросу ничего не найдено.",
-    noBookable: "В этой области пока нет заведений с бронированием.",
-    providerError: "Поиск Google Places недоступен", loadError: "Не удалось загрузить заведения", retry: "Повторить",
-  },
-  en: {
-    country: "All Moldova", countryName: "Moldova", area: "City or country",
-    search: "Search this area", food: "Restaurants",
-    query: "Name or address", find: "Search", bookableOnly: "Bookable only",
-    partner: "Seatiko partner", noMatches: "No venues match your search.",
-    noBookable: "There are no bookable venues in this area yet.",
-    providerError: "Google Places search is unavailable", loadError: "Could not load venues", retry: "Retry",
-  },
-  ro: {
-    country: "Toată Moldova", countryName: "Moldova", area: "Oraș sau țară",
-    search: "Caută în această zonă", food: "Restaurante",
-    query: "Nume sau adresă", find: "Caută", bookableOnly: "Doar cu rezervare",
-    partner: "Partener Seatiko", noMatches: "Niciun local nu corespunde căutării.",
-    noBookable: "În această zonă nu sunt încă localuri cu rezervare.",
-    providerError: "Căutarea Google Places nu este disponibilă", loadError: "Localurile nu au putut fi încărcate", retry: "Încearcă din nou",
-  },
-} as const;
-
 type VenueMapProps = { compact?: boolean; preferences?: DiscoverPreferences };
 
 export function VenueMap(props: VenueMapProps) {
@@ -281,13 +184,15 @@ export function VenueMap(props: VenueMapProps) {
     return () => { active = false; };
   }, []);
 
-  const labels = areaCopy[locale];
+  const labels = mapText(locale);
   const cities = (config?.cities ?? []).filter((city) => city.country === "MD" && city.bounds);
   const city = cities.find((item) => item.id === cityId);
-  const name = cityId === "all" ? labels.countryName : city ? pickLocale(city.name, locale) : mapCopy[locale].defaultCity;
+  const name = cityId === "all" ? labels.countryName : city ? pickLocale(city.name, locale) : labels.defaultCity;
   const bounds = cityId === "all"
     ? config?.country_bounds ?? MOLDOVA_BOUNDS
     : city?.bounds ?? BALTI_BOUNDS;
+  // Cities the API marks available:false have no venues yet: shown as "Скоро".
+  const comingSoon = Boolean(city && !city.available);
   const externalUrl = googleMapSearch(`${searchText.trim() || labels.food} ${name}`);
 
   return (
@@ -309,11 +214,12 @@ export function VenueMap(props: VenueMapProps) {
               onChange={setCityId}
               options={[
                 ...(!cities.some((item) => item.id === DEFAULT_CITY)
-                  ? [{ value: DEFAULT_CITY, label: mapCopy[locale].defaultCity }]
+                  ? [{ value: DEFAULT_CITY, label: labels.defaultCity }]
                   : []),
                 ...cities.map((item) => ({
                   value: item.id,
                   label: pickLocale(item.name, locale),
+                  badge: item.available ? undefined : labels.soon,
                 })),
                 { value: "all", label: labels.country },
               ]}
@@ -321,40 +227,61 @@ export function VenueMap(props: VenueMapProps) {
           </span>
         </label>
         <div className="venue-map-search">
-          <input
-            type="search"
-            aria-label={labels.query}
-            placeholder={labels.query}
-            value={searchText}
-            maxLength={100}
-            onChange={(event) => {
-              const value = event.target.value;
-              setSearchText(value);
-              if (!value.trim()) setQuery("");
-            }}
-          />
-          <button type="submit">{labels.find}</button>
+          <span className="venue-map-search-field">
+            <input
+              type="search"
+              aria-label={labels.query}
+              placeholder={labels.query}
+              value={searchText}
+              maxLength={100}
+              onChange={(event) => {
+                const value = event.target.value;
+                setSearchText(value);
+                if (!value.trim()) setQuery("");
+              }}
+            />
+            {searchText ? (
+              <button
+                type="button"
+                className="venue-map-search-clear"
+                aria-label={labels.clearSearch}
+                title={labels.clearSearch}
+                onClick={() => {
+                  setSearchText("");
+                  setQuery("");
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            ) : null}
+          </span>
+          <button type="submit" className="venue-map-search-submit">{labels.find}</button>
         </div>
-        <label className="venue-map-bookable">
-          <input
-            type="checkbox"
-            checked={bookableOnly}
-            onChange={(event) => setBookableOnly(event.target.checked)}
-          />
+        <button
+          type="button"
+          role="switch"
+          aria-checked={bookableOnly}
+          className={`venue-map-bookable${bookableOnly ? " is-on" : ""}`}
+          onClick={() => setBookableOnly((value) => !value)}
+        >
+          <span className="venue-map-switch" aria-hidden="true"><i /></span>
           <span>{labels.bookableOnly}</span>
-        </label>
+        </button>
         <a
           className="venue-map-external"
           href={externalUrl}
           target="_blank"
           rel="noreferrer"
         >
-          {mapCopy[locale].openExternal} ↗
+          {labels.openExternal} <span aria-hidden="true">↗</span>
         </a>
       </form>
       {config === undefined ? (
         <div className="venue-map-canvas" role="status">
-          <div className="live-map-loading"><span /><p>{mapCopy[locale].loadingMap}</p></div>
+          <div className="live-map-loading"><span /><p>{labels.loadingMap}</p></div>
         </div>
       ) : (
         <VenueMapArea
@@ -366,6 +293,8 @@ export function VenueMap(props: VenueMapProps) {
           externalUrl={externalUrl}
           query={query}
           bookableOnly={bookableOnly}
+          comingSoon={comingSoon}
+          onShowDefaultCity={() => setCityId(DEFAULT_CITY)}
         />
       )}
     </div>
@@ -373,7 +302,7 @@ export function VenueMap(props: VenueMapProps) {
 }
 
 function VenueMapArea({
-  compact = false, preferences, cityId, bounds, config, externalUrl, query, bookableOnly,
+  compact = false, preferences, cityId, bounds, config, externalUrl, query, bookableOnly, comingSoon, onShowDefaultCity,
 }: VenueMapProps & {
   cityId: string;
   bounds: MapBounds;
@@ -381,12 +310,15 @@ function VenueMapArea({
   externalUrl: string;
   query: string;
   bookableOnly: boolean;
+  comingSoon: boolean;
+  onShowDefaultCity: () => void;
 }) {
   const { locale, t } = useLocale();
   const router = useRouter();
   const { currency } = useCurrency();
-  const copy = mapCopy[locale];
-  const labels = areaCopy[locale];
+  const { theme } = useTheme();
+  const copy = mapText(locale);
+  const labels = copy;
   const siteCopy = getSiteCopy(locale);
   const discoverCopy = siteCopy.discover;
   const currencyLabel = siteCopy.discover.budgetCurrencies[currency];
@@ -401,6 +333,8 @@ function VenueMapArea({
   const [nearbyDenied, setNearbyDenied] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapState, setMapState] = useState<MapState>("loading");
+  /** The MapLibre map whose style has loaded; a theme switch rebuilds the map and the layers follow. */
+  const [loadedMap, setLoadedMap] = useState<maplibregl.Map | null>(null);
   const [googleFailed, setGoogleFailed] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [viewport, setViewport] = useState<MapBounds>();
@@ -489,7 +423,7 @@ function VenueMapArea({
   }, [preferences]);
 
   function showVenuePopup(place: MapPlace, map: maplibregl.Map) {
-    const labels = mapCopy[localeRef.current];
+    const labels = mapText(localeRef.current);
     const name = pickLocale(place.name, localeRef.current);
     const venueId = place.in_database ? place.venue_id : undefined;
     const hours = getVenueHours(place, localeRef.current);
@@ -537,6 +471,18 @@ function VenueMapArea({
 
     if (schedule.childElementCount > 0) root.appendChild(schedule);
 
+    const addLink = (parent: HTMLElement, href: string, text: string, className: string, external = false) => {
+      const link = document.createElement("a");
+      link.href = href;
+      link.className = className;
+      link.textContent = text;
+      if (external) {
+        link.target = "_blank";
+        link.rel = "noreferrer";
+      }
+      parent.appendChild(link);
+    };
+
     if (venueId) {
       if (place.bookable && typeof place.free_tables === "number") {
         const free = document.createElement("div");
@@ -555,44 +501,47 @@ function VenueMapArea({
         free.appendChild(freeText);
 
         root.appendChild(free);
+      } else if (!place.bookable) {
+        const note = document.createElement("div");
+        note.className = "venue-map-popup-note";
+        note.textContent = labels.notBookableNote;
+        root.appendChild(note);
       }
 
       const actions = document.createElement("div");
       actions.className = "venue-map-popup-actions";
-
-      if (place.bookable) {
-        const bookLink = document.createElement("a");
-        bookLink.href = venueBookingHref(venueId);
-        bookLink.className = "primary";
-        bookLink.textContent = labels.popupBook;
-        actions.appendChild(bookLink);
-      }
-
-      const pageLink = document.createElement("a");
-      pageLink.href = `/venues/${encodeURIComponent(venueId)}`;
-      pageLink.className = "secondary";
-      pageLink.textContent = labels.openPage;
-      actions.appendChild(pageLink);
-
+      if (place.bookable) addLink(actions, venueBookingHref(venueId), labels.popupBook, "primary");
+      addLink(actions, `/venues/${encodeURIComponent(venueId)}`, labels.openPage, place.bookable ? "secondary" : "primary");
       root.appendChild(actions);
     } else {
-      const address = document.createElement("div");
-      address.className = "venue-map-popup-address";
-      address.textContent = pickLocale(place.address, localeRef.current);
-      root.appendChild(address);
-
-      if (place.phone) {
-        const phone = document.createElement("a");
-        phone.className = "venue-map-popup-address";
-        phone.href = `tel:${place.phone.replace(/[^+\d]/g, "")}`;
-        phone.textContent = place.phone;
-        root.appendChild(phone);
+      const address = pickLocale(place.address, localeRef.current);
+      if (address) {
+        const addressRow = document.createElement("div");
+        addressRow.className = "venue-map-popup-address";
+        addressRow.textContent = address;
+        root.appendChild(addressRow);
       }
 
-      const comingSoon = document.createElement("div");
-      comingSoon.className = "venue-map-popup-comingsoon";
-      comingSoon.textContent = labels.comingSoon;
-      root.appendChild(comingSoon);
+      const badge = document.createElement("div");
+      badge.className = "venue-map-popup-opendata";
+      badge.textContent = labels.openData;
+      root.appendChild(badge);
+
+      const note = document.createElement("div");
+      note.className = "venue-map-popup-note";
+      note.textContent = labels.openDataNote;
+      root.appendChild(note);
+
+      // Open-data places always get a way to go there, plus a call when the phone is known.
+      const actions = document.createElement("div");
+      actions.className = "venue-map-popup-actions";
+      addLink(actions, googleMapDirections(place), labels.route, "primary", true);
+      if (place.phone) {
+        addLink(actions, `tel:${place.phone.replace(/[^+\d]/g, "")}`, labels.callVenue, "secondary");
+      } else {
+        addLink(actions, placeSearchUrl(place, localeRef.current), labels.findInMaps, "secondary", true);
+      }
+      root.appendChild(actions);
     }
 
     popupRef.current?.remove();
@@ -629,7 +578,7 @@ function VenueMapArea({
     try {
       map = new maplibregl.Map({
         container: mapNodeRef.current,
-        style: OPEN_FREE_MAP_STYLE,
+        style: OPEN_FREE_MAP_STYLE[theme],
         bounds: [[bounds.west, bounds.south], [bounds.east, bounds.north]],
         fitBoundsOptions: { padding: 24, duration: 0 },
         minZoom: 5,
@@ -667,6 +616,7 @@ function VenueMapArea({
       map.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((el) => el.classList.remove("maplibregl-compact-show"));
       applyMapLibreLocalization(map, localeRef.current);
       setMapState("ready");
+      setLoadedMap(map);
     });
     map.on("error", () => {
       if (!map.loaded()) setMapState("error");
@@ -678,15 +628,17 @@ function VenueMapArea({
       mapRef.current = null;
       map.remove();
     };
-  }, [bounds, compact, useGoogle]);
+    // A theme switch rebuilds the map on the matching (light or dark) tiles.
+  }, [bounds, compact, useGoogle, theme]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || mapState !== "ready") return;
+    if (!map || mapState !== "ready" || map !== loadedMap) return;
     applyMapLibreLocalization(map, locale);
     const effectiveSelectedId =
       places.find((place) => place.id === selectedId)?.id ?? places[0]?.id ?? null;
     const data = placeCollection(places, locale, effectiveSelectedId);
+    const PIN_COLORS = PIN_THEME_COLORS[theme];
     const existingSource = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
 
     if (existingSource) {
@@ -760,8 +712,8 @@ function VenueMapArea({
           "text-max-width": 12,
         },
         paint: {
-          "text-color": "#183e31",
-          "text-halo-color": "rgba(255, 253, 248, 0.97)",
+          "text-color": NAME_COLORS[theme].text,
+          "text-halo-color": NAME_COLORS[theme].halo,
           "text-halo-width": 2,
           "text-halo-blur": 0.4,
         },
@@ -788,7 +740,7 @@ function VenueMapArea({
       });
     }
 
-  }, [locale, mapState, selectedId, places]);
+  }, [locale, mapState, loadedMap, selectedId, places, theme]);
 
   const selected = useMemo(
     () => places.find((place) => place.id === selectedId) ?? places[0],
@@ -850,22 +802,23 @@ function VenueMapArea({
       >
         <b aria-hidden="true" className={`venue-num venue-dot ${place.in_database ? "is-partner" : ""} ${isSelected ? "active" : ""}`} />
         <span className="venue-name">{pickLocale(place.name, locale)}</span>
-        <small className="venue-status-pill">
-          {place.in_database && place.bookable && place.venue_id ? (
-            <>
-              <span
-                className={`status-dot ${place.open_now ? "open" : "closed"}`}
-              />
-              {place.free_tables ?? 0} {formatFreeTablesLabel(locale, place.free_tables ?? 0)}
-            </>
-          ) : place.in_database ? (
-            labels.partner
-          ) : typeof place.rating === "number" ? (
-            `★ ${place.rating.toFixed(1)}`
-          ) : (
-            copy.comingSoon
-          )}
-        </small>
+        {place.in_database && place.bookable && place.venue_id ? (
+          // Short "9 своб." so the venue name keeps the room; the full label is for screen readers.
+          <small
+            className="venue-status-pill"
+            title={`${place.free_tables ?? 0} ${formatFreeTablesLabel(locale, place.free_tables ?? 0)}`}
+          >
+            <span className={`status-dot ${place.open_now ? "open" : "closed"}`} />
+            <span aria-hidden="true">{place.free_tables ?? 0} {copy.freeShort}</span>
+            <span className="sr-only">{place.free_tables ?? 0} {formatFreeTablesLabel(locale, place.free_tables ?? 0)}</span>
+          </small>
+        ) : place.in_database ? (
+          <small className="venue-status-pill">{labels.partner}</small>
+        ) : typeof place.rating === "number" ? (
+          <small className="venue-status-pill">★ {place.rating.toFixed(1)}</small>
+        ) : (
+          <small className="venue-status-pill is-open-data">{copy.openData}</small>
+        )}
       </button>
     );
   }
@@ -903,20 +856,26 @@ function VenueMapArea({
         {mapState === "ready" && (
           <>
             <div className="live-map-status">
-              <span>
-                <i /> {loading ? copy.loadingVenues : `${places.length} ${copy.online}`}
-              </span>
+              {comingSoon ? (
+                <span className="is-soon">{copy.soonTitle}</span>
+              ) : !loading && places.length === 0 ? (
+                <span className="is-empty">{copy.emptyArea}</span>
+              ) : (
+                <span>
+                  <i /> {loading ? copy.loadingVenues : `${places.length} ${copy.online}`}
+                </span>
+              )}
               {!loading && preferences && data?.filters ? (
                 <span className="live-map-found" role="status">
                   {t("map.found", { matched: data.filters.matched, total: data.filters.total })}
                 </span>
               ) : null}
-              {!useGoogle && <small>{copy.updated}</small>}
+              {!useGoogle && !comingSoon && places.length > 0 && <small>{copy.updated}</small>}
             </div>
-            <div className="venue-map-legend" aria-label={copy.legendAria}>
+            {places.length > 0 && <div className="venue-map-legend" aria-label={copy.legendAria}>
               <span><i className="legend-dot legend-dot-ours" /> {copy.legendOurs}</span>
               {!bookableOnly && places.some((place) => !place.in_database) && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
-            </div>
+            </div>}
           </>
         )}
       </div>
@@ -928,7 +887,17 @@ function VenueMapArea({
           </p>
         )}
         {useGoogle && (googleStatus === "unavailable" || googleStatus === "disabled") && <p role="status" className="venue-map-address">{labels.providerError}</p>}
-        <div className="venue-map-list" aria-label={copy.cityVenues}>
+        {comingSoon && !loading && places.length === 0 ? (
+          <div className="venue-map-soon" role="status">
+            <span className="venue-map-soon-badge">{copy.soon}</span>
+            <strong>{copy.soonTitle}</strong>
+            <p>{copy.soonBody}</p>
+            <button type="button" className="map-primary-action" onClick={onShowDefaultCity}>
+              {copy.soonAction} <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        ) : null}
+        {visiblePlaces.length > 0 && <div className="venue-map-list" aria-label={copy.cityVenues}>
           {recommendedPlaces.length > 0 ? (
             <>
               <div className="venue-map-list-heading" role="presentation">
@@ -954,7 +923,7 @@ function VenueMapArea({
               )}
             </>
           ) : null}
-        </div>
+        </div>}
 
         {selected ? (
           <div className="venue-card-details">
@@ -964,8 +933,12 @@ function VenueMapArea({
                 <h3>{pickLocale(selected.name, locale)}</h3>
               </div>
               <div className="venue-card-badges">
-                {selectedBookable && (
+                {selectedBookable ? (
                   <span className="venue-bookable-badge">{copy.bookableBadge}</span>
+                ) : selectedVenueId ? (
+                  <span className="venue-bookable-badge is-off">{copy.notBookableBadge}</span>
+                ) : (
+                  <span className="venue-bookable-badge is-open-data">{copy.openData}</span>
                 )}
                 {typeof selected.rating === "number" && (
                   <span className="venue-rating">★ {selected.rating.toFixed(1)}</span>
@@ -1003,7 +976,7 @@ function VenueMapArea({
               </div>
             )}
 
-            {selectedBookable ? (
+            {selectedVenueId ? (
               <div className={`venue-availability ${selected.open_now ? "is-open" : "is-closed"}`}>
                 <div className="venue-availability-status">
                   <span className="venue-status-indicator">
@@ -1017,26 +990,55 @@ function VenueMapArea({
                     {getVenueHours(selected, locale)}
                   </span>
                 </div>
-                <strong>{selected.free_tables ?? 0} {formatFreeTablesLabel(locale, selected.free_tables ?? 0)}</strong>
+                {selectedBookable ? (
+                  <strong>{selected.free_tables ?? 0} {formatFreeTablesLabel(locale, selected.free_tables ?? 0)}</strong>
+                ) : (
+                  <p className="venue-availability-note">{copy.notBookableNote}</p>
+                )}
               </div>
             ) : null}
 
-            {!selected.in_database && (selected.opening_hours || selected.phone) ? (
-              <div className="venue-map-meta">
-                {selected.opening_hours && <span>{selected.opening_hours}</span>}
-                {selected.phone && <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>}
-              </div>
+            {!selected.in_database ? (
+              <>
+                {selected.opening_hours || selected.phone ? (
+                  <div className="venue-map-meta">
+                    {selected.opening_hours && <span>{selected.opening_hours}</span>}
+                    {selected.phone && <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>}
+                  </div>
+                ) : null}
+                <p className="venue-open-data-note">{copy.openDataNote}</p>
+              </>
             ) : null}
 
             <div className="venue-card-footer">
-              {selected.google_place_id && (
+              {!selected.in_database && (
+                <div className="venue-map-actions">
+                  <a
+                    className="map-primary-action"
+                    href={googleMapDirections(selected)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {copy.route} <span aria-hidden="true">↗</span>
+                  </a>
+                  <a
+                    className="map-secondary-action"
+                    href={placeSearchUrl(selected, locale)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {copy.findInMaps}
+                  </a>
+                </div>
+              )}
+              {selected.in_database && selected.google_place_id && (
                 <a
-                  className="map-secondary-action"
+                  className="venue-map-website"
                   href={googleMapSearch(pickLocale(selected.name, locale), selected.google_place_id)}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Google Maps ↗
+                  <span>{copy.openExternal}</span> <span aria-hidden="true">↗</span>
                 </a>
               )}
               {selected.website && (
@@ -1072,7 +1074,7 @@ function VenueMapArea({
               )}
             </div>
           </div>
-        ) : !loadError ? (
+        ) : !loadError && !(comingSoon && !loading) ? (
           <p className="venue-map-address" role="status">
             {loading ? copy.loadingVenues : emptyMessage}
             {!loading && preferences && data?.filters?.relax ? (

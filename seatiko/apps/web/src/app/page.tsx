@@ -39,6 +39,11 @@ function HomeMapSection() {
   );
 }
 
+function scrollToSection(id: "map" | "how") {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.history.replaceState(null, "", `#${id}`);
+}
+
 const FEATURE_ICONS = [
   (
     <svg key="search" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -97,44 +102,26 @@ export default function HomePage() {
             {copy.leadShort}
           </p>
           <div className="landing-ctas">
-            <Link href="/discover" className="btn btn-gold btn-hero-find">
+            <Link href="/venues" className="btn btn-gold btn-hero-find">
               {copy.find} <span aria-hidden>→</span>
             </Link>
-            <Link href="/venues" className="btn btn-outline btn-hero-catalog">
+            <a
+              href="#map"
+              className="btn btn-outline btn-hero-map"
+              onClick={(event) => {
+                event.preventDefault();
+                scrollToSection("map");
+              }}
+            >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                <line x1="8" y1="2" x2="8" y2="18" />
+                <line x1="16" y1="6" x2="16" y2="22" />
               </svg>
-              <span>{copy.catalog}</span>
-            </Link>
-            <div className="landing-ctas-secondary">
-              <a
-                href="#map"
-                className="btn btn-outline btn-hero-map"
-                onClick={(event) => {
-                  event.preventDefault();
-                  document
-                    .getElementById("map")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-                  <line x1="8" y1="2" x2="8" y2="18" />
-                  <line x1="16" y1="6" x2="16" y2="22" />
-                </svg>
-                <span>{copy.browseMap}</span>
-              </a>
-              <Link href="/book" className="btn btn-outline btn-hero-book">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-                <span>{copy.quickBook}</span>
-              </Link>
-            </div>
+              <span>{copy.browseMap}</span>
+            </a>
           </div>
+          {/* Platform figures stay fixed until the public stats API exists (BACKEND_TASKS №57). */}
           <div className="hero-trust">
             <span><strong>4.7</strong> {copy.rating}</span>
             <span><strong>24/7</strong> {copy.booking247}</span>
@@ -143,20 +130,36 @@ export default function HomePage() {
 
         <div className="landing-visual">
           <div className="hero-image" />
-          <div className="hero-floating-card hero-booking-card">
-            <span className="hero-card-icon">⌖</span>
-            <div>
-              <small>{copy.heroCard1Title}</small>
-              <strong>{copy.heroCard1Body}</strong>
-            </div>
-          </div>
-          <div className="hero-floating-card hero-table-card">
-            <span className="hero-card-icon">QR</span>
-            <div>
+          <a
+            href="#map"
+            className="hero-floating-card hero-booking-card"
+            onClick={(event) => {
+              event.preventDefault();
+              scrollToSection("map");
+            }}
+          >
+            <span className="hero-card-icon" aria-hidden="true">⌖</span>
+            <span className="hero-card-text">
+              <strong>{copy.heroCard1Title}</strong>
+              <small>{copy.heroCard1Body}</small>
+            </span>
+            <span className="hero-card-arrow" aria-hidden="true">→</span>
+          </a>
+          <a
+            href="#how"
+            className="hero-floating-card hero-table-card"
+            onClick={(event) => {
+              event.preventDefault();
+              scrollToSection("how");
+            }}
+          >
+            <span className="hero-card-icon" aria-hidden="true">QR</span>
+            <span className="hero-card-text">
               <strong>{copy.heroCard2Title}</strong>
               <small>{copy.heroCard2Body}</small>
-            </div>
-          </div>
+            </span>
+            <span className="hero-card-arrow" aria-hidden="true">→</span>
+          </a>
         </div>
       </section>
 
@@ -257,6 +260,7 @@ export default function HomePage() {
             <span className="owner-stats-badge">{copy.ownerStatsBadge}</span>
             <span className="owner-stats-sub">{copy.ownerStatsSub}</span>
           </div>
+          {/* +28% / −35% / venue count: fixed copy until BACKEND_TASKS №57 (public platform stats). */}
           <div className="owner-stats-grid">
             <div className="owner-stat-card">
               <span className="owner-stat-icon growth">

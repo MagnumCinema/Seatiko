@@ -20,6 +20,8 @@ export type SelectMenuOption = {
   color?: string;
   icon?: ReactNode;
   disabled?: boolean;
+  /** Short tag shown after the label in the list ("Скоро"). */
+  badge?: string;
 };
 
 export type SelectMenuProps = {
@@ -541,6 +543,9 @@ export function SelectMenu({
                         </span>
                       ) : null}
                       <span className="select-menu-option-label">{opt.label}</span>
+                      {opt.badge ? (
+                        <span className="select-menu-option-badge">{opt.badge}</span>
+                      ) : null}
                     </span>
                     {selected ? <CheckMarkIcon /> : null}
                   </li>

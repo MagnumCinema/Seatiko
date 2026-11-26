@@ -48,6 +48,22 @@ afterEach(() => {
 });
 
 describe("SelectMenu", () => {
+  it("shows an option's badge next to its label", () => {
+    const { trigger } = mount({
+      value: "balti",
+      options: [
+        { value: "balti", label: "Бельцы" },
+        { value: "cahul", label: "Кагул", badge: "Скоро" },
+      ],
+    });
+    act(() => {
+      trigger.click();
+    });
+    const opts = Array.from(document.querySelectorAll('[role="option"]')) as HTMLElement[];
+    expect(opts[0].querySelector(".select-menu-option-badge")).toBeNull();
+    expect(opts[1].querySelector(".select-menu-option-badge")?.textContent).toBe("Скоро");
+  });
+
   it("opens on click, exposes listbox/options, and selects an option", () => {
     const onChange = vi.fn();
     const { trigger } = mount({ onChange });

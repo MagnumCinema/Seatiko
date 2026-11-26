@@ -379,7 +379,6 @@ a {
 
   .landing-visual {
     min-height: 260px;
-    order: -1;
   }
 
   .feature-list {
@@ -2610,15 +2609,6 @@ html[data-theme="light"] .panel-btn.danger {
   color: #6a7871;
   font-size: 0.76rem;
   line-height: 1.4;
-}
-.venue-map-popup-comingsoon {
-  margin-top: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(138, 143, 140, 0.14);
-  color: #5c6560;
-  font-size: 0.74rem;
-  font-weight: 650;
 }
 .venue-map-popup-actions {
   margin-top: 12px;

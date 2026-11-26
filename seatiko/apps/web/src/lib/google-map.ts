@@ -43,3 +43,9 @@ export function googleMapSearch(query: string, placeId?: string) {
 export function googleMapCoordinates(point: MapCoordinates) {
   return googleMapSearch(`${point.lat},${point.lng}`);
 }
+
+/** Google Maps directions to a point (no API key needed). */
+export function googleMapDirections(point: MapCoordinates) {
+  const params = new URLSearchParams({ api: "1", destination: `${point.lat},${point.lng}` });
+  return `https://www.google.com/maps/dir/?${params}`;
+}
