@@ -16,11 +16,13 @@ export type BookingRules = {
   session_start_before_min: number;
   /** How early walk-in guests must free the table before the booking time. */
   release_before_min: number;
+  /** How long before the booking the kitchen gets a preorder; until then the guest may change it. */
+  preorder_lead_min: number;
 };
 
 export type BookingRuleKey = keyof BookingRules;
 
-/** Must match the API defaults (services/api/internal/store/booking_rules.go). */
+/** Must match the API defaults (backend/src/modules/catalog/domain/booking-rules.ts, reservations/domain/rules.ts). */
 export const DEFAULT_BOOKING_RULES: BookingRules = {
   booking_interval_min: 30,
   visit_duration_min: 90,
@@ -29,18 +31,30 @@ export const DEFAULT_BOOKING_RULES: BookingRules = {
   max_late_arrival_min: 30,
   session_start_before_min: 60,
   release_before_min: 15,
+  preorder_lead_min: 30,
 };
 
-/** Must match the API validation. */
+/**
+ * Must match the API validation. Where the API reads 0 as "use the default"
+ * (max_late_arrival_min → 30, preorder_lead_min → 30) the lowest value is 5,
+ * so the owner never saves a 0 that comes back as something else.
+ */
 export const BOOKING_RULE_LIMITS: Record<BookingRuleKey, { min: number; max: number }> = {
   booking_interval_min: { min: 15, max: 120 },
   visit_duration_min: { min: 30, max: 360 },
   max_visit_duration_min: { min: 60, max: 480 },
   hold_minutes: { min: 0, max: 60 },
-  max_late_arrival_min: { min: 0, max: 120 },
+  max_late_arrival_min: { min: 5, max: 120 },
   session_start_before_min: { min: 0, max: 180 },
   release_before_min: { min: 0, max: 60 },
+  preorder_lead_min: { min: 5, max: 180 },
 };
+
+/**
+ * Rules where 0 is a real value. The API keeps hold_minutes 0 as "the table does not wait";
+ * seating lead and walk-in release are stored as given and only shown to guests.
+ */
+const ZERO_IS_VALUE = new Set<BookingRuleKey>(["hold_minutes", "session_start_before_min", "release_before_min"]);
 
 export const BOOKING_RULE_KEYS = Object.keys(DEFAULT_BOOKING_RULES) as BookingRuleKey[];
 
@@ -50,12 +64,9 @@ export function resolveBookingRules(venue: Partial<Venue> | null | undefined): B
   if (!venue) return out;
   for (const key of BOOKING_RULE_KEYS) {
     const value = venue[key];
-    if (typeof value === "number" && Number.isFinite(value) && (value > 0 || key === "hold_minutes")) {
+    if (typeof value === "number" && Number.isFinite(value) && (value > 0 || (value === 0 && ZERO_IS_VALUE.has(key)))) {
       out[key] = value;
     }
-  }
-  if (venue.hold_minutes === undefined || venue.hold_minutes === null) {
-    out.hold_minutes = DEFAULT_BOOKING_RULES.hold_minutes;
   }
   if (out.max_late_arrival_min < out.hold_minutes) out.max_late_arrival_min = out.hold_minutes;
   if (out.visit_duration_min > out.max_visit_duration_min) {

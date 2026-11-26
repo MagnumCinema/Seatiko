@@ -15,15 +15,15 @@ import {
 } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-error-message";
 import {
+  BOOKING_DAYS_AHEAD,
   DEFAULT_SLOT_STEP_MIN,
   addLocalDays,
   buildAnyTableSlots,
   groupSlotsByDayPart,
-  parseOpeningHours,
   startOfLocalDay,
   type DayPartId,
 } from "@/lib/booking-slots";
-import { getVenueHours } from "@/lib/venue-hours";
+import { venueOpeningHours } from "@/lib/venue-hours";
 import { durationOptions, resolveBookingRules } from "@/lib/venue-rules";
 import { BookingRulesNote } from "@/components/booking-rules-note";
 import { VenueBookingRules } from "@/components/venue-booking-rules";
@@ -31,7 +31,6 @@ import { AuthForm } from "@/components/auth-form";
 import { BookingConfirmation, type BookedReservation } from "@/components/booking-confirmation";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 
-const BOOKING_DAYS_AHEAD = 7;
 const DAY_PART_LABEL: Record<DayPartId, MessageKey> = {
   morning: "res.period_morning",
   lunch: "res.period_lunch",
@@ -120,7 +119,10 @@ export function BookingForm({
   const [booked, setBooked] = useState<BookedReservation | null>(null);
   const [chosenDuration, setChosenDuration] = useState<number | null>(initialDurationMin ?? null);
 
-  const hours = useMemo(() => parseOpeningHours(getVenueHours(venue.id, "ru")), [venue.id]);
+  const hours = useMemo(
+    () => venueOpeningHours({ id: venue.id, hours_text: venue.hours_text }),
+    [venue.id, venue.hours_text],
+  );
   const rules = useMemo(() => resolveBookingRules(venue), [venue]);
   const stepMin = rules.booking_interval_min || DEFAULT_SLOT_STEP_MIN;
   const durations = useMemo(() => durationOptions(rules), [rules]);

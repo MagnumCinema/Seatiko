@@ -161,12 +161,21 @@ export function BookingConfirmation({
 
         {!cancelled ? (
           <ul className="booking-done-facts">
-            <li>{t("res.done_late_free", { time: clock(shift(rules.hold_minutes)) })}</li>
+            <li>
+              {rules.hold_minutes > 0
+                ? t("res.done_late_free", { time: clock(shift(rules.hold_minutes)) })
+                : t("res.rule_late_none")}
+            </li>
             {rules.max_late_arrival_min > rules.hold_minutes ? (
               <li>{t("res.done_late_coming", { time: clock(shift(rules.max_late_arrival_min)) })}</li>
             ) : null}
             {rules.session_start_before_min > 0 ? (
-              <li>{t("res.done_seat_early", { time: clock(shift(-rules.session_start_before_min)) })}</li>
+              <li>
+                {/* Walk-ins may still sit there until release_before_min: earlier seating needs a free table. */}
+                {rules.session_start_before_min > rules.release_before_min
+                  ? t("table.rule_you_from_if_free", { time: clock(shift(-rules.session_start_before_min)) })
+                  : t("res.done_seat_early", { time: clock(shift(-rules.session_start_before_min)) })}
+              </li>
             ) : null}
           </ul>
         ) : null}

@@ -1,22 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PanelShell } from "@/components/panel-shell";
 import {
   CabinetFloorPanel,
-  CabinetMenuPanel,
   CabinetRulesPanel,
-  CabinetStaffPanel,
 } from "@/components/cabinet-ops";
+import { CabinetMenuPanel } from "@/components/cabinet-menu";
 import { CabinetShiftsPlanner } from "@/components/cabinet-shifts";
+import { CabinetStaffPanel } from "@/components/cabinet-staff";
 import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/status-badge";
 import { CabinetConfirmDialog } from "@/components/cabinet-confirm-dialog";
-import { CabinetBookingsPanel, CabinetBookingsPreview } from "@/components/cabinet-bookings";
+import { CabinetBookingsPanel } from "@/components/cabinet-bookings";
+import { CabinetHistoryPanel } from "@/components/cabinet-history";
+import { CabinetOverviewPanel } from "@/components/cabinet-overview";
 import { CabinetProfilePanel } from "@/components/cabinet-profile";
-import { upcomingOwnerBookings } from "@/lib/cabinet-bookings";
+import { dayKey, upcomingOwnerBookings, type BookingPeriod } from "@/lib/cabinet-bookings";
 import {
   ApiError,
   createApplication,
@@ -24,12 +25,11 @@ import {
   fetchMe,
   fetchMapConfig,
   getToken,
-  listApplicationActivity,
   listMyApplications,
   listRestaurantReservations,
   listVenueWorkShifts,
   pickLocale,
-  type ApplicationActivity,
+  submitApplication,
   type MapConfig,
   type RestaurantReservation,
   type User,
@@ -44,6 +44,8 @@ import {
   valuesFromApplication,
 } from "@/lib/venue-profile";
 import "./bookings.css";
+import "./history.css";
+import "./overview.css";
 
 type Section =
   | "overview"
@@ -191,17 +193,6 @@ function getStatusHint(status: string, copy: ReturnType<typeof getSiteCopy>["cab
   return copy.statusHintDraft;
 }
 
-function formatDateTime(value: string, locale: string) {
-  const loc = locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU";
-  return new Intl.DateTimeFormat(loc, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
 function formatOwnerName(user: User): string {
   if (user.display_name) {
     const cleaned = user.display_name
@@ -263,9 +254,10 @@ export default function CabinetPage() {
   const [section, setSection] = useState<Section>("overview");
   const [reservations, setReservations] = useState<RestaurantReservation[]>([]);
   const [focusBookingId, setFocusBookingId] = useState<string | null>(null);
+  const [bookingsPeriod, setBookingsPeriod] = useState<BookingPeriod | undefined>(undefined);
   const [shiftAlertCount, setShiftAlertCount] = useState(0);
-  const [activity, setActivity] = useState<ApplicationActivity[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
+  // Bumped after the cabinet changes the venue, so the history tab reloads its log.
+  const [historyVersion, setHistoryVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -286,6 +278,7 @@ export default function CabinetPage() {
 
   function openSection(next: Section) {
     setSection(next);
+    setBookingsPeriod(undefined);
     setMsg(null);
     setError(null);
     // On phones the tab grid sits above the content; bring the opened tab into view.
@@ -294,6 +287,12 @@ export default function CabinetPage() {
         contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
       );
     }
+  }
+
+  /** Bookings tab opened from the overview on a given quick filter (today, tomorrow, upcoming). */
+  function openBookings(period?: BookingPeriod) {
+    openSection("reservations");
+    setBookingsPeriod(period);
   }
 
   const selected = apps.find((app) => app.id === selectedId) ?? null;
@@ -311,41 +310,6 @@ export default function CabinetPage() {
       { id: "activity", label: cabinetCopy.activity, icon: <ActivityIcon /> },
     ],
     [cabinetCopy],
-  );
-
-  const activityLabels: Record<string, string> = useMemo(
-    () => ({
-      APPLICATION_CREATED: cabinetCopy.actCreated,
-      PROFILE_UPDATED: cabinetCopy.actUpdated,
-      PHOTO_ADDED: cabinetCopy.actPhotoAdded,
-      PHOTO_REMOVED: cabinetCopy.actPhotoRemoved,
-      APPLICATION_SUBMITTED: cabinetCopy.actSubmitted,
-      REVIEW_STARTED: cabinetCopy.actReviewStarted,
-      APPLICATION_APPROVED: cabinetCopy.actApproved,
-      APPLICATION_REJECTED: cabinetCopy.actRejected,
-      APPLICATION_PUBLISHED: cabinetCopy.actPublished,
-    }),
-    [cabinetCopy],
-  );
-
-  const fieldLabels: Record<string, string> = useMemo(
-    () => ({
-      name: cabinetCopy.name.replace(" *", ""),
-      description: cabinetCopy.description.replace(" *", ""),
-      address: cabinetCopy.address.replace(" *", ""),
-      cuisine: cabinetCopy.cuisine.replace(" *", ""),
-      phone: cabinetCopy.phone.replace(" *", ""),
-      email: cabinetCopy.email.replace(" *", ""),
-      website: cabinetCopy.website,
-      city: ui.city,
-      latitude: cabinetCopy.latitude.replace(" *", ""),
-      longitude: cabinetCopy.longitude.replace(" *", ""),
-      price_level: cabinetCopy.price,
-      average_check: cabinetCopy.average,
-      hours: cabinetCopy.hours.replace(" *", ""),
-      photos: cabinetCopy.photos,
-    }),
-    [cabinetCopy, ui],
   );
 
   // The setters are listed so React Compiler can keep this memo once the old inline tabs are gone.
@@ -384,15 +348,10 @@ export default function CabinetPage() {
     }
   }, [router, setUser, setApps, setReservations, setLoadFailed, setNow, setSelectedId]);
 
-  const refreshActivity = useCallback(async (applicationId: string) => {
-    setActivityLoading(true);
-    try {
-      setActivity(await listApplicationActivity(applicationId));
-    } catch {
-      setActivity([]);
-    } finally {
-      setActivityLoading(false);
-    }
+  // The history tab loads its own log; this only tells it that something changed.
+  const refreshActivity = useCallback((applicationId: string) => {
+    void applicationId;
+    setHistoryVersion((version) => version + 1);
   }, []);
 
   useEffect(() => {
@@ -401,19 +360,11 @@ export default function CabinetPage() {
   }, [load]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (selected) void refreshActivity(selected.id);
-      else setActivity([]);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [selected, refreshActivity]);
-
-  useEffect(() => {
     const targetVenueId = selected ? selected.venue_id || selected.id : "";
     if (!targetVenueId) return;
     let cancelled = false;
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    // Shift dates are venue days (Chișinău), not the owner's local calendar.
+    const todayStr = dayKey(Date.now());
     listVenueWorkShifts(targetVenueId)
       .then((list) => {
         if (cancelled) return;
@@ -498,6 +449,27 @@ export default function CabinetPage() {
     }
   }
 
+  /** Overview's "Submit": sends the saved profile; unsaved profile edits are finished in the profile tab first. */
+  async function onSubmit() {
+    if (!selected || !editable(selected.status)) return;
+    if (hasStoredEdits(selected, locale)) {
+      openSection("profile");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await submitApplication(selected.id);
+      setApps((current) => current.map((app) => (app.id === updated.id ? updated : app)));
+      setMsg(ui.submitted);
+      refreshActivity(selected.id);
+    } catch (value) {
+      showApiError(value, ui.submitFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!user) {
     if (loadFailed) {
       return (
@@ -526,8 +498,6 @@ export default function CabinetPage() {
   }
 
   const checks = selected ? getSetupChecks(selected, cabinetCopy) : [];
-  const completedChecks = checks.filter((check) => check.done).length;
-  const completion = checks.length ? Math.round((completedChecks / checks.length) * 100) : 0;
   const isDraftStatus = selected ? editable(selected.status) : false;
   const canEdit = isDraftStatus;
   const effectiveVenueId = selected ? selected.venue_id || selected.id : "";
@@ -712,181 +682,29 @@ export default function CabinetPage() {
               </header>
 
               {section === "overview" && (
-                <div className="owner-overview">
-                  <section className="owner-overview-hero">
-                    <div>
-                      <span className="owner-kicker">
-                        {selected.status === "PUBLISHED"
-                          ? ui.restaurantLive
-                          : ui.preLaunch}
-                      </span>
-                      <h3>{getStatusHint(selected.status, cabinetCopy)}</h3>
-                      <div className="owner-hero-actions">
-                        {canEdit && (
-                          <button
-                            type="button"
-                            className="panel-btn"
-                            onClick={() => openSection("profile")}
-                          >
-                            {cabinetCopy.continueEditing}
-                          </button>
-                        )}
-                        {selected.status === "PUBLISHED" && (
-                          <Link className="panel-btn" href="/#map">
-                            {cabinetCopy.viewOnMap}
-                          </Link>
-                        )}
-                        <button
-                          type="button"
-                          className="panel-btn ghost"
-                          onClick={() => openSection("activity")}
-                        >
-                          {cabinetCopy.checkHistory}
-                        </button>
-                      </div>
-                    </div>
-                    <div
-                      className="owner-progress-ring"
-                      style={{
-                        background: `conic-gradient(var(--site-accent, #e9b96e) ${completion * 3.6}deg, rgba(255,255,255,.16) 0deg)`,
-                      }}
-                    >
-                      <span>
-                        <strong>{completion}%</strong>
-                        <small>{ui.ready}</small>
-                      </span>
-                    </div>
-                  </section>
-
-                  <section className="owner-metrics" aria-label="KPI">
-                    <article>
-                      <span>{cabinetCopy.futureBookings}</span>
-                      <strong>{futureBookings.length}</strong>
-                      <small>{ui.forThisVenue}</small>
-                    </article>
-                    <article>
-                      <span>{cabinetCopy.totalBookings}</span>
-                      <strong>{selectedReservations.length}</strong>
-                      <small>{ui.includingHistory}</small>
-                    </article>
-                    <article>
-                      <span>{cabinetCopy.photosCount}</span>
-                      <strong>{selected.photo_urls?.length || 0}<i>/8</i></strong>
-                      <small>{ui.inGallery}</small>
-                    </article>
-                    <article>
-                      <span>{cabinetCopy.lastUpdate}</span>
-                      <strong className="owner-metric-date">
-                        {new Date(selected.updated_at).toLocaleDateString(locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU", {
-                          day: "numeric",
-                          month: "short",
-                        })}
-                      </strong>
-                      <small>
-                        {new Date(selected.updated_at).toLocaleTimeString(locale === "ro" ? "ro-RO" : locale === "en" ? "en-US" : "ru-RU", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </small>
-                    </article>
-                  </section>
-
-                  <div className="owner-overview-grid">
-                    <section className="owner-card owner-checklist-card">
-                      <div className="owner-card-head">
-                        <div>
-                          <span className="owner-kicker">{cabinetCopy.profileReadiness}</span>
-                          <h3>{cabinetCopy.completedOf.replace("{done}", String(completedChecks)).replace("{total}", String(checks.length))}</h3>
-                        </div>
-                        <strong>{completion}%</strong>
-                      </div>
-                      <div className="owner-progress-bar">
-                        <i style={{ width: `${completion}%` }} />
-                      </div>
-                      <ul>
-                        {checks.map((check) => (
-                          <li key={check.label} className={check.done ? "done" : ""}>
-                            <span>{check.done ? <CheckIcon /> : null}</span>
-                            <p>{check.label}</p>
-                            {!check.done && canEdit && (
-                              <button type="button" onClick={() => openSection("profile")}>
-                                {cabinetCopy.fillAction}
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-
-                    <section className="owner-card owner-launch-card">
-                      <div className="owner-card-head">
-                        <div>
-                          <span className="owner-kicker">{cabinetCopy.launchPipeline}</span>
-                          <h3>{ui.fromProfileToMap}</h3>
-                        </div>
-                      </div>
-                      <div className="owner-launch-steps">
-                        {[
-                          ["DRAFT", cabinetCopy.pipelineProfile, cabinetCopy.pipelineProfileHint],
-                          ["SUBMITTED", cabinetCopy.pipelineSubmitted, cabinetCopy.pipelineSubmittedHint],
-                          ["UNDER_REVIEW", cabinetCopy.pipelineReview, cabinetCopy.pipelineReviewHint],
-                          ["APPROVED", cabinetCopy.pipelineApproved, cabinetCopy.pipelineApprovedHint],
-                          ["PUBLISHED", cabinetCopy.pipelinePublished, cabinetCopy.pipelinePublishedHint],
-                        ].map(([status, label, detail], index, stages) => {
-                          const stageOrder = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "PUBLISHED"];
-                          const normalized = selected.status === "REJECTED" ? "DRAFT" : selected.status;
-                          const currentIndex = stageOrder.indexOf(normalized);
-                          const active = index <= currentIndex;
-                          return (
-                            <div key={status} className={active ? "active" : ""}>
-                              <span>{active ? <CheckIcon /> : index + 1}</span>
-                              <p>
-                                <strong>{label}</strong>
-                                <small>{detail}</small>
-                              </p>
-                              {index < stages.length - 1 && <i />}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {selected.reject_reason && (
-                        <div className="owner-review-note">
-                          <strong>{cabinetCopy.moderatorNote}</strong>
-                          <p>{selected.reject_reason}</p>
-                        </div>
-                      )}
-                    </section>
-                  </div>
-
-                  <section className="owner-card owner-recent-card">
-                    <div className="owner-card-head">
-                      <div>
-                        <span className="owner-kicker">{cabinetCopy.recentGuests}</span>
-                        <h3>{ui.upcomingReservations}</h3>
-                      </div>
-                      <button type="button" onClick={() => openSection("reservations")}>
-                        {cabinetCopy.viewAllBookings}
-                      </button>
-                    </div>
-                    {futureBookings.length === 0 ? (
-                      <div className="owner-inline-empty">
-                        <span aria-hidden="true">
-                          <ReservationsIcon />
-                        </span>
-                        <p>{selected.venue_id ? cabinetCopy.noBookingsYet : cabinetCopy.bookingsAppearAfterPublish}</p>
-                      </div>
-                    ) : (
-                      <CabinetBookingsPreview
-                        rows={futureBookings.slice(0, 3)}
-                        now={now}
-                        onOpen={(id) => {
-                          setFocusBookingId(id);
-                          openSection("reservations");
-                        }}
-                      />
-                    )}
-                  </section>
-                </div>
+                <CabinetOverviewPanel
+                  key={selected.id}
+                  application={selected}
+                  apps={apps}
+                  ownerRows={reservations}
+                  checks={checks}
+                  canEdit={canEdit}
+                  busy={busy}
+                  statusHint={getStatusHint(selected.status, cabinetCopy)}
+                  venueTitle={venueTitle}
+                  onOpenSection={openSection}
+                  onOpenBookings={openBookings}
+                  onOpenBooking={(id) => {
+                    setFocusBookingId(id);
+                    openBookings();
+                  }}
+                  onSelectVenue={(id) => {
+                    setSelectedId(id);
+                    openSection("overview");
+                  }}
+                  onSubmit={() => void onSubmit()}
+                  onOwnerRows={setReservations}
+                />
               )}
 
               {section === "profile" && (
@@ -925,11 +743,12 @@ export default function CabinetPage() {
               )}
 
               {section === "menu" && (
-                <CabinetMenuPanel venueId={effectiveVenueId} />
+                // The menu lives on the published venue; before publishing there is none yet.
+                <CabinetMenuPanel venueId={selected.venue_id ?? ""} />
               )}
 
               {section === "rules" && (
-                <CabinetRulesPanel venueId={effectiveVenueId} />
+                <CabinetRulesPanel venueId={effectiveVenueId} published={Boolean(selected.venue_id)} hoursText={selected.hours_text} />
               )}
 
               {section === "staff" && (
@@ -939,6 +758,7 @@ export default function CabinetPage() {
               {section === "shifts" && (
                 <CabinetShiftsPlanner
                   venueId={effectiveVenueId}
+                  hoursText={selected.hours_text}
                   onAlertCountChange={setShiftAlertCount}
                 />
               )}
@@ -949,6 +769,7 @@ export default function CabinetPage() {
                     key={selected.venue_id}
                     venueId={selected.venue_id}
                     initialRows={selectedReservations}
+                    initialPeriod={bookingsPeriod}
                     focusBookingId={focusBookingId}
                     onFocusHandled={clearFocusBooking}
                     onOwnerRows={setReservations}
@@ -964,53 +785,19 @@ export default function CabinetPage() {
                 ))}
 
               {section === "activity" && (
-                <section className="owner-activity">
-                  <div className="owner-audit-intro">
-                    <span><CheckIcon /></span>
-                    <div>
-                      <strong>{cabinetCopy.auditAutoNotice}</strong>
-                      <p>{cabinetCopy.auditAutoNoticeHint}</p>
-                    </div>
-                  </div>
-
-                  {activityLoading ? (
-                    <div className="owner-section-empty" role="status">
-                      <span className="owner-inline-spinner" aria-hidden="true" />
-                      <p>{cabinetCopy.loadingHistory}</p>
-                    </div>
-                  ) : activity.length === 0 ? (
-                    <div className="owner-section-empty">
-                      <span aria-hidden="true"><ActivityIcon /></span>
-                      <h3>{cabinetCopy.emptyHistory}</h3>
-                      <p>{ui.activityEmptyHint}</p>
-                    </div>
-                  ) : (
-                    <div className="owner-card owner-timeline">
-                      {activity.map((entry) => (
-                        <article key={entry.id}>
-                          <div className="owner-timeline-mark">
-                            <span>{entry.actor_role === "admin" ? "S" : initials(user)}</span>
-                            <i />
-                          </div>
-                          <div className="owner-timeline-content">
-                            <div>
-                              <strong>{activityLabels[entry.action] || entry.action}</strong>
-                              <time>{formatDateTime(entry.created_at, locale)}</time>
-                            </div>
-                            <p>{entry.actor_role === "admin" ? cabinetCopy.seatikoTeam : user.display_name || cabinetCopy.venueOwner}</p>
-                            {entry.changed_fields?.length > 0 && (
-                              <small>
-                                {cabinetCopy.changedFields}:{" "}
-                                {entry.changed_fields.map((field) => fieldLabels[field] || field).join(", ")}
-                              </small>
-                            )}
-                            {entry.note && <blockquote>{entry.note}</blockquote>}
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </section>
+                <CabinetHistoryPanel
+                  apps={apps}
+                  selectedId={selected.id}
+                  ownerId={user.id}
+                  ownerName={formatOwnerName(user)}
+                  cityNames={Object.fromEntries(locations.map((city) => [city.id, pickLocale(city.name, locale)]))}
+                  refreshKey={historyVersion}
+                  onOpen={(applicationId, target) => {
+                    setSelectedId(applicationId);
+                    openSection(target);
+                  }}
+                  onSelectVenue={setSelectedId}
+                />
               )}
             </>
           )}

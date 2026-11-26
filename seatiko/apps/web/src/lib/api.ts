@@ -66,6 +66,8 @@ export type Venue = {
   hold_minutes?: number;
   max_late_arrival_min?: number;
   allow_preorder?: boolean;
+  preorder_lead_min?: number;
+  hours_text?: string;
 };
 
 export type VenueReview = {
@@ -235,7 +237,8 @@ export type ApplicationActivity = {
   actor_user_id: string;
   actor_role: string;
   action: string;
-  changed_fields: string[];
+  /** null when nothing was listed (the API never sends an empty array). */
+  changed_fields: string[] | null;
   note?: string;
   created_at: string;
 };
@@ -1401,6 +1404,7 @@ export async function updateBookingRules(
     | "max_late_arrival_min"
     | "session_start_before_min"
     | "release_before_min"
+    | "preorder_lead_min"
     | "allow_preorder"
   >>,
 ): Promise<Venue> {

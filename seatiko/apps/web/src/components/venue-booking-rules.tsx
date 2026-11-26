@@ -16,7 +16,12 @@ export function VenueBookingRules({
   /** Inside the booking popup: just the list, no heading. */
   compact?: boolean;
 }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  /** Same wording as the duration chips in the booking window: "1,5 ч", "45 мин". */
+  const duration = (min: number) =>
+    min % 30 === 0 && min >= 60
+      ? t("res.duration_hours", { h: (min / 60).toLocaleString(locale, { maximumFractionDigits: 1 }) })
+      : t("res.duration_minutes", { min });
   const rows: Row[] = [
     {
       label: "venue.rules_late_no_warning",
@@ -31,19 +36,27 @@ export function VenueBookingRules({
     },
     {
       label: "venue.rules_visit",
-      value: t("venue.rules_duration_choice", { max: rules.max_visit_duration_min }),
+      value: t("venue.rules_duration_choice", { max: duration(rules.max_visit_duration_min) }),
     },
     {
       label: "venue.rules_seat_early",
-      value: t("venue.rules_before_min", { min: rules.session_start_before_min }),
+      value:
+        rules.session_start_before_min > 0
+          ? t("venue.rules_before_min", { min: rules.session_start_before_min })
+          : t("venue.rules_at_booking_time"),
     },
     {
       label: "venue.rules_walkin_release",
-      value: t("venue.rules_before_min", { min: rules.release_before_min }),
+      value:
+        rules.release_before_min > 0
+          ? t("venue.rules_before_min", { min: rules.release_before_min })
+          : t("venue.rules_walkin_at_booking_time"),
     },
     {
       label: "venue.rules_preorder",
-      value: allowPreorder ? t("venue.rules_available") : t("venue.rules_unavailable"),
+      value: allowPreorder
+        ? t("venue.rules_preorder_until", { min: rules.preorder_lead_min })
+        : t("venue.rules_unavailable"),
     },
   ];
   const list = (

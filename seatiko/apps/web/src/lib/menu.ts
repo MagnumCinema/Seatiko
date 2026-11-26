@@ -58,7 +58,7 @@ function normalize(text: string): string {
  * A query word matches a text word when they share a long enough prefix, so
  * "грибы" finds "грибами" and "tomato" finds "tomatoes" without a stemmer.
  */
-function wordMatches(query: string, words: string[]): boolean {
+export function wordMatches(query: string, words: string[]): boolean {
   const len = query.length;
   const need = len <= 4 ? len : len <= 6 ? len - 1 : len - 2;
   return words.some((word) => {
