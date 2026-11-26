@@ -165,7 +165,7 @@ export function NotificationsBell({ token, role }: { token: string; role?: strin
     <div className={`site-notify${open ? " open" : ""}`} ref={rootRef}>
       <button
         type="button"
-        className="site-theme-toggle site-notify-trigger"
+        className="btn btn--secondary btn--sm btn--icon site-notify-trigger"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={t("notify.open", { count: unread })}
@@ -184,7 +184,7 @@ export function NotificationsBell({ token, role }: { token: string; role?: strin
           <div className="site-notify-head">
             <strong>{t("notify.title")}</strong>
             {unread > 0 ? (
-              <button type="button" onClick={markAll}>
+              <button type="button" className="btn btn--link" onClick={markAll}>
                 {t("notify.mark_all")}
               </button>
             ) : null}

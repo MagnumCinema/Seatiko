@@ -80,10 +80,6 @@ a {
   color: var(--fa-text);
 }
 
-.site-nav-login:not(.site-nav-primary) {
-  color: var(--fa-gold) !important;
-  font-weight: 600;
-}
 
 .site-lang {
   display: flex;
@@ -186,22 +182,7 @@ a {
   align-items: center;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 22px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.12s, background 0.15s, border-color 0.15s;
-}
 
-.btn:active {
-  transform: scale(0.98);
-}
 
 .btn-gold {
   background: var(--fa-gold);

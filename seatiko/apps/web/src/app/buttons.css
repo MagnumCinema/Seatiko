@@ -1,7 +1,6 @@
 /* ==========================================================================
    Seatiko Unified Button System Tokens, Variants, Sizes & Control Primitives
-   No !important declarations. Scoped via .btn:is([class*="btn--"]) until
-   legacy .btn rules in globals.css / premium.css are retired during migration.
+   No !important declarations. The only button system on the site.
    ========================================================================== */
 
 :root,
@@ -222,8 +221,9 @@ html[data-theme="light"] {
   }
 }
 
-/* Base .btn (new unified primitives only) */
-.btn:is([class*="btn--"]) {
+/* Base .btn — zero specificity so page layout hooks (display, margin, order, width)
+   can still place a button; variants and sizes below carry the look. */
+:where(.btn) {
   -webkit-appearance: none;
   appearance: none;
   box-sizing: border-box;

@@ -66,7 +66,7 @@ function PrefDropdown({
     <div className={`site-pref-dropdown${open ? " open" : ""}`} ref={rootRef}>
       <button
         type="button"
-        className="site-pref-trigger"
+        className="btn btn--secondary btn--sm site-pref-trigger"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={label}
@@ -412,7 +412,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
           </Link>
           <Link
             href={roleLink.href}
-            className="site-nav-secondary"
+            className="btn btn--secondary btn--sm site-nav-secondary"
             aria-current={isRouteActive(pathname, roleLink.href) ? "page" : undefined}
           >
             {roleLink.label}
@@ -440,7 +440,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
           </div>
           <button
             type="button"
-            className="site-theme-toggle"
+            className="btn btn--secondary btn--sm btn--icon site-theme-toggle"
             onClick={toggleTheme}
             aria-label={copy.theme}
             title={theme === "dark" ? copy.themeLight : copy.themeDark}
@@ -452,7 +452,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
           ) : null}
           <Link
             href={authLink.href}
-            className="site-nav-login site-nav-primary"
+            className="btn btn--primary btn--sm site-nav-login site-nav-primary"
             aria-label={headerUser.kind === "user" ? `${copy.account}: ${headerUser.name}` : authLabel}
             aria-current={isRouteActive(pathname, authLink.href) ? "page" : undefined}
             title={headerUser.kind === "user" ? headerUser.name : undefined}
@@ -465,7 +465,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
           <button
             ref={menuToggleRef}
             type="button"
-            className="site-menu-toggle"
+            className="btn btn--secondary btn--sm btn--icon site-menu-toggle"
             aria-expanded={mobileOpen}
             aria-controls={mobileNavId}
             aria-label={mobileOpen ? copy.menuClose : copy.menuOpen}
@@ -496,7 +496,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
               <span className="site-mobile-drawer-title">{copy.menuTitle}</span>
               <button
                 type="button"
-                className="site-mobile-drawer-close"
+                className="btn btn--ghost btn--sm btn--icon site-mobile-drawer-close"
                 aria-label={copy.menuClose}
                 onClick={() => {
                   setMobileOpen(false);
@@ -562,7 +562,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
             <div className="site-mobile-ctas">
               <Link
                 href={authLink.href}
-                className="btn btn-gold site-mobile-cta"
+                className="btn btn--primary btn--md btn--block site-mobile-cta"
                 aria-current={isRouteActive(pathname, authLink.href) ? "page" : undefined}
                 onClick={() => setMobileOpen(false)}
               >
@@ -571,7 +571,7 @@ export function SiteHeader({ variant = "solid" }: Props) {
               </Link>
               <Link
                 href={roleLink.href}
-                className="btn btn-outline site-mobile-cta"
+                className="btn btn--secondary btn--md btn--block site-mobile-cta"
                 aria-current={isRouteActive(pathname, roleLink.href) ? "page" : undefined}
                 onClick={() => setMobileOpen(false)}
               >
@@ -580,12 +580,12 @@ export function SiteHeader({ variant = "solid" }: Props) {
             </div>
 
             <div className="site-mobile-prefs">
-              <div className="site-mobile-pref-row" role="group" aria-label={copy.language}>
+              <div className="seg site-mobile-pref-row" role="group" aria-label={copy.language}>
                 {LOCALES.map((id) => (
                   <button
                     key={id}
                     type="button"
-                    className={`site-mobile-pill${locale === id ? " on" : ""}`}
+                    className={`seg-item site-mobile-pill${locale === id ? " is-active" : ""}`}
                     aria-pressed={locale === id}
                     onClick={() => setLocale(id)}
                   >
@@ -593,12 +593,12 @@ export function SiteHeader({ variant = "solid" }: Props) {
                   </button>
                 ))}
               </div>
-              <div className="site-mobile-pref-row" role="group" aria-label={copy.currency}>
+              <div className="seg site-mobile-pref-row" role="group" aria-label={copy.currency}>
                 {currencies.map((id) => (
                   <button
                     key={id}
                     type="button"
-                    className={`site-mobile-pill${currency === id ? " on" : ""}`}
+                    className={`seg-item site-mobile-pill${currency === id ? " is-active" : ""}`}
                     aria-pressed={currency === id}
                     onClick={() => setCurrency(id)}
                   >
