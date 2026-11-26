@@ -3,8 +3,9 @@ import type * as Sentry from "@sentry/nextjs";
 /**
  * Settings shared by the browser, Node.js and Edge Sentry SDKs.
  *
- * Sentry stays off while the DSN is empty (NEXT_PUBLIC_SENTRY_DSN in the browser,
- * SENTRY_DSN on the server): Sentry.init is not called and the site runs as without it.
+ * One DSN for the browser, server and edge: NEXT_PUBLIC_SENTRY_DSN (seatiko-web), built in.
+ * SENTRY_DSN is the API's and is never read here (on Vercel both apps share the env vars).
+ * Sentry stays off while it is empty: Sentry.init is not called and the site runs as without it.
  */
 
 /** Set at build time by next.config.ts from SENTRY_ENVIRONMENT (or VERCEL_ENV); "development" by default. */

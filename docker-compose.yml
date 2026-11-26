@@ -36,7 +36,8 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
         # Demo sign-in buttons: only for a demo database (the site uses real data).
         NEXT_PUBLIC_DEMO_LOGIN: ${NEXT_PUBLIC_DEMO_LOGIN:-false}
-        # Sentry in the browser bundle (built in); empty DSN = Sentry off.
+        # Sentry DSN of the site (seatiko-web), built into the browser, server and edge
+      # code; empty = Sentry off. SENTRY_DSN is the API's and is not passed to the site.
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
         SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
         SENTRY_RELEASE: ${SENTRY_RELEASE:-}
@@ -47,9 +48,6 @@ services:
     environment:
       PORT: 3001
       HOSTNAME: 0.0.0.0
-      # Sentry on the Next.js server: same seatiko-web project as the browser
-      # (SENTRY_DSN in .env is the API's). Empty = off.
-      SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     depends_on:
       nest-api:
         condition: service_healthy

@@ -793,20 +793,20 @@ curl -fsS http://localhost/healthz | jq
 
 | Переменная (`.env`) | Кто читает | Назначение |
 |---|---|---|
-| `SENTRY_DSN` | API (`nest-api`, `npm run start:dev`) | DSN проекта `seatiko-api`. Пусто — Sentry в API выключен |
-| `NEXT_PUBLIC_SENTRY_DSN` | сайт: браузер (встраивается при сборке) и сервер Next.js | DSN проекта `seatiko-web`. В Docker серверу `web` он передаётся как `SENTRY_DSN` |
-| `SENTRY_ENVIRONMENT` | оба | `development` по умолчанию, локально `local`, на проде `production`. На сайте встраивается при сборке (без него — `VERCEL_ENV`, затем `development`) |
+| `SENTRY_DSN` | только API (`nest-api`, `npm run start:dev`, backend на Vercel) | DSN проекта `seatiko-api`. Пусто — Sentry в API выключен |
+| `NEXT_PUBLIC_SENTRY_DSN` | только сайт: браузер, сервер и edge Next.js (встраивается при сборке) | DSN проекта `seatiko-web`. Пусто — Sentry на сайте выключен. Сайт никогда не читает `SENTRY_DSN`: на Vercel оба сервиса — один проект с общими переменными |
+| `SENTRY_ENVIRONMENT` | оба | `development` по умолчанию, локально `local`, на проде `production`. Без него — `VERCEL_ENV` (на Vercel: `production` / `preview`), у API затем `APP_ENV`. На сайте встраивается при сборке |
 | `SENTRY_RELEASE` | оба | имя релиза, обычно SHA коммита. Сайт без него берёт коммит из git при сборке (на Vercel — `VERCEL_GIT_COMMIT_SHA`); в Docker-образах `.git` нет, поэтому: `SENTRY_RELEASE=$(git rev-parse HEAD) docker compose up -d --build` |
-| `SENTRY_AUTH_TOKEN` | сборка сайта | токен организации: загрузка source maps в `seatiko-web`, создание релиза и привязка коммитов (GitHub-интеграция Sentry → suspect commits; коммит берётся из `VERCEL_GIT_COMMIT_SHA` или `git rev-parse HEAD`, в Docker без `.git` пропускается). Пусто — всё это молча пропускается. В git не коммитить; `docker compose` передаёт его в сборку `web` как build secret (не попадает в слои образа) |
+| `SENTRY_AUTH_TOKEN` | сборка сайта и Vercel-сборка API | токен организации: загрузка source maps (сайт → `seatiko-web`, бандл API на Vercel → `seatiko-api`; проекты зашиты в конфиг, общий токен не путает их), создание релиза и привязка коммитов (GitHub-интеграция Sentry → suspect commits; коммит берётся из `VERCEL_GIT_COMMIT_SHA` или `git rev-parse HEAD`, в Docker без `.git` пропускается). Пусто — всё это молча пропускается. В git не коммитить; `docker compose` передаёт его в сборку `web` как build secret (не попадает в слои образа) |
 
 DSN — публичные ключи клиента, их можно держать в `.env.example`. Секрет только `SENTRY_AUTH_TOKEN`.
 
-**Выключить:** очистить `SENTRY_DSN` и `NEXT_PUBLIC_SENTRY_DSN` (для браузера — пересобрать сайт). Без DSN `Sentry.init` не вызывается, приложения работают как без Sentry.
+**Выключить:** очистить `SENTRY_DSN` (API) и `NEXT_PUBLIC_SENTRY_DSN` (сайт, затем пересобрать его). Без DSN `Sentry.init` не вызывается, приложения работают как без Sentry.
 
 **Где настроено:**
 
 - Сайт (`seatiko/apps/web`): `src/instrumentation-client.ts` (браузер), `src/instrumentation.ts` → `src/sentry.server.config.ts` / `src/sentry.edge.config.ts`, общие опции в `src/sentry.options.ts`, `src/app/global-error.tsx` (ошибки корневого layout), `withSentryConfig` в `next.config.ts` (release, source maps).
-- API (`backend`): `src/instrument.ts` импортируется первым в `src/main.ts`, `SentryModule.forRoot()` в `AppModule` (трейсинг), отчёт об ошибках — в `HttpErrorFilter`: только неожиданные ошибки (ответ 500). `DomainError` и `HttpException` (4xx, ожидаемые 503) не отправляются. Процесс запускается с `--enable-source-maps`, стектрейсы указывают на `src/*.ts`.
+- API (`backend`): `src/instrument.ts` импортируется первым в `src/main.ts`, `SentryModule.forRoot()` в `AppModule` (трейсинг), отчёт об ошибках — в `HttpErrorFilter`: только неожиданные ошибки (ответ 500). `DomainError` и `HttpException` (4xx, ожидаемые 503) не отправляются. В Docker процесс запускается с `--enable-source-maps`, стектрейсы указывают на `src/*.ts`. На Vercel API собирается в один бандл (`scripts/vercel-bundle.cjs`); с `SENTRY_AUTH_TOKEN` к нему строится source map (через карты tsc с исходниками), загружается в `seatiko-api` вместе с релизом и коммитами и удаляется из сборки.
 
 **Сбор данных и приватность:** в именах, email и телефонах гостей — персональные данные. В SDK v11 вместо `sendDefaultPii` настраивается `dataCollection`, а по умолчанию он собирает многое, поэтому выключено всё: пользователь, cookies, заголовки, тела запросов и ответов, query-параметры, параметры SQL, локальные переменные. Session Replay пишется только при ошибке (`replaysSessionSampleRate: 0`, `replaysOnErrorSampleRate: 1.0`), весь текст и поля ввода замаскированы, медиа скрыты. Трейсы: 10% в `production`, 100% в остальных окружениях.
 

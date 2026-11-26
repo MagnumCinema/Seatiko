@@ -51,7 +51,8 @@ const commitSha = sentryAuthToken ? buildCommitSha() : undefined;
 
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG || "magnum-ft",
-  project: process.env.SENTRY_PROJECT || "seatiko-web",
+  // Fixed on purpose: web and API share the Vercel project's env (and SENTRY_AUTH_TOKEN).
+  project: "seatiko-web",
   sentryUrl: process.env.SENTRY_URL || "https://de.sentry.io/",
   authToken: sentryAuthToken,
   sourcemaps: { disable: !sentryAuthToken },

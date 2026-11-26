@@ -9,7 +9,8 @@ import * as Sentry from '@sentry/nestjs';
 const dsn = process.env.SENTRY_DSN?.trim();
 
 if (dsn) {
-  const environment = process.env.SENTRY_ENVIRONMENT?.trim() || process.env.APP_ENV?.trim() || 'development';
+  // SENTRY_ENVIRONMENT, else Vercel's (production / preview), else APP_ENV; as the site does.
+  const environment = process.env.SENTRY_ENVIRONMENT?.trim() || process.env.VERCEL_ENV?.trim() || process.env.APP_ENV?.trim() || 'development';
   Sentry.init({
     dsn,
     environment,
