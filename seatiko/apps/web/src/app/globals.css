@@ -2621,18 +2621,6 @@ html[data-theme="light"] .panel-btn.danger {
   display: grid;
   gap: 8px;
 }
-.venue-map-actions .map-primary-action { margin-top: 0; }
-.map-secondary-action {
-  display: flex;
-  justify-content: center;
-  padding: 11px 15px;
-  border-radius: 11px;
-  border: 1px solid rgba(23, 63, 49, 0.16);
-  color: #173f31;
-  background: rgba(255, 253, 248, 0.8);
-  font-size: 0.76rem;
-  font-weight: 650;
-}
 
 .venue-page {
   min-height: 100vh;
@@ -3458,56 +3446,25 @@ html[data-theme="light"] .venue-page .waitlist-form select {
 .booking-slot-times::-webkit-scrollbar {
   display: none;
 }
-.booking-slot-days button,
-.booking-slot-times button {
+.booking-slot-days .chip,
+.booking-slot-times .chip {
   flex: 0 0 auto;
-  min-height: 40px;
   min-width: 68px;
-  padding: 0 12px;
-  border: 1px solid var(--fa-border);
-  border-radius: 12px;
-  background: var(--fa-surface-2);
-  color: var(--fa-text);
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 650;
-  white-space: nowrap;
-  cursor: pointer;
+  font-variant-numeric: tabular-nums;
   scroll-snap-align: start;
-  transition: border-color 140ms ease, background 140ms ease;
 }
 @media (max-width: 520px) {
-  .booking-slot-times button {
-    min-height: 38px;
+  .booking-slot-times .chip {
     min-width: 60px;
     padding: 0 10px;
-    font-size: 0.82rem;
-    border-radius: 10px;
   }
   .booking-slot-time-groups {
     gap: 10px;
   }
 }
-.booking-slot-days button:hover:not(:disabled),
-.booking-slot-times button:hover:not(:disabled) {
-  border-color: var(--fa-gold);
-}
-.booking-slot-days button.on,
-.booking-slot-times button.on {
-  background: var(--fa-gold);
-  border-color: var(--fa-gold);
-  color: #1a1510;
-}
-.booking-slot-days button:disabled,
-.booking-slot-times button:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-.booking-slot-times button:disabled {
+.booking-slot-times .chip:disabled {
   text-decoration: line-through;
 }
-.booking-slot-days button:focus-visible,
-.booking-slot-times button:focus-visible,
 .coming-popup-chips button:focus-visible,
 .fa-table:focus-visible {
   outline: 3px solid var(--fa-gold);

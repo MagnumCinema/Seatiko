@@ -234,7 +234,6 @@ html[data-theme="light"] {
 }
 
 
-
 /* Primary standout action: user profile / sign in */
 .site-nav-primary {
   display: inline-flex;
@@ -246,11 +245,6 @@ html[data-theme="light"] {
   padding: 7px 14px;
   font-size: 0.82rem;
 }
-
-
-
-
-
 
 
 .site-nav-primary svg {
@@ -385,7 +379,6 @@ html[data-theme="light"] {
 }
 
 
-
 .landing {
   background: var(--site-bg);
   color: var(--site-fg);
@@ -423,9 +416,7 @@ html[data-theme="light"] {
 /* Calm secondary connect action in landing hero */
 
 
-
 /* Standout primary account button in landing hero */
-
 
 
 /* Fallback for legacy cta class */
@@ -452,7 +443,6 @@ html[data-theme="light"] {
 .site-header.transparent .site-lang {
   border-left-color: rgba(255, 255, 255, 0.15);
 }
-
 
 
 .site-header.transparent .site-pref-menu {
@@ -496,7 +486,6 @@ html[data-theme="light"] {
   display: inline-grid;
   place-items: center;
 }
-
 
 
 .landing-hero {
@@ -616,9 +605,6 @@ html[data-theme="light"] {
 }
 
 
-
-
-
 .btn-gold {
   background: #e9b96e;
   color: #17362c;
@@ -629,8 +615,6 @@ html[data-theme="light"] {
   background: #f2c980;
   box-shadow: 0 18px 42px rgba(233, 185, 110, 0.25);
 }
-
-
 
 
 .btn-outline {
@@ -1096,7 +1080,6 @@ html[data-theme="light"] {
 .open-map-brand-mark { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; border-radius: 13px 13px 13px 5px; background: linear-gradient(135deg, #1f6848, #e9b96e); font-size: 1rem; font-weight: 900; }
 .live-map-fallback-card strong { font-size: .8rem; }
 .live-map-fallback-card p { margin: 5px 0 9px; color: var(--site-muted); font-size: .64rem; line-height: 1.5; }
-.live-map-fallback-card a { color: var(--site-accent); font-size: .61rem; font-weight: 800; }
 
 .venue-map-panel {
   z-index: 2;
@@ -1434,58 +1417,11 @@ html[data-theme="light"] {
   gap: 8px;
 }
 
-.map-primary-action {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  padding: 13px 18px;
-  border-radius: 12px;
-  color: #fff;
-  background: #173f31;
-  font-size: 0.86rem;
-  font-weight: 650;
-  text-decoration: none;
-  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-  box-shadow: 0 4px 14px rgba(23, 63, 49, 0.22);
-}
 
-.map-primary-action:hover {
-  background: #1e5240;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(23, 63, 49, 0.3);
-}
 
-.map-primary-action span {
-  transition: transform 180ms ease;
-}
 
-.map-primary-action:hover span {
-  transform: translateX(3px);
-}
 
-.map-secondary-action {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--site-border);
-  color: var(--site-muted);
-  background: transparent;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 180ms ease;
-}
 
-.map-secondary-action:hover {
-  color: var(--site-fg);
-  border-color: color-mix(in srgb, var(--site-accent) 30%, var(--site-border));
-  background: color-mix(in srgb, var(--site-accent) 6%, transparent);
-}
 
 /* Premium MapLibre Popup Overrides */
 .venue-map-popup {
@@ -1941,9 +1877,6 @@ html[data-theme="light"] .venue-map-popup {
   gap: 14px;
   flex-wrap: wrap;
 }
-
-
-
 
 
 .owner-trust-row {
@@ -2508,8 +2441,6 @@ html[data-theme="light"] .venue-map-popup {
   background: rgba(0, 0, 0, 0.18);
   scrollbar-width: thin;
 }
-
-
 
 
 .legal-modal-body {
@@ -3242,11 +3173,6 @@ html[data-theme="light"] .venue-map-popup {
     background-position: 0% 50%;
   }
 }
-
-
-
-
-
 
 
 @media (max-width: 980px) {
@@ -7311,9 +7237,6 @@ html[data-theme="light"] .cabinet-delete-card {
 }
 
 
-
-
-
 /* Light mode high contrast ONLY for solid navbar (not over the always-dark hero transparent header) */
 html[data-theme="light"] .site-header:not(.transparent) .site-brand,
 html[data-theme="light"] .site-header:not(.transparent) .site-nav,
@@ -7652,9 +7575,9 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .discover-stepper-rail button.on {
-  color: #1a1510;
+  color: var(--seg-active-fg);
   border-color: transparent;
-  background: var(--fa-gold);
+  background: var(--seg-active-bg);
 }
 
 .discover-stepper-rail button.done:not(.on) {
@@ -7674,7 +7597,7 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .discover-stepper-rail button.on .discover-stepper-num {
-  background: color-mix(in srgb, #1a1510 14%, transparent);
+  background: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 .discover-stepper-check {
@@ -7734,35 +7657,12 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .discover-show-more {
-  display: inline;
   margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  color: var(--fa-muted);
-  font: inherit;
-  font-size: 0.84rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.3;
-  text-decoration: underline;
   text-underline-offset: 0.18em;
   text-decoration-thickness: 1px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 0.15s;
 }
 
-.discover-show-more:hover {
-  color: var(--fa-gold);
-  background: none;
-}
 
-.discover-show-more[aria-expanded="true"] {
-  color: var(--fa-text);
-  background: none;
-}
 
 .discover-budget {
   display: grid;
@@ -7828,8 +7728,7 @@ html[data-theme="light"] .owner-nav button.active {
 .discover-budget-presets .discover-chip {
   flex: 1 1 0;
   min-width: 0;
-  padding: 0.45rem 0.4rem;
-  font-size: 0.76rem;
+  padding-inline: 0.5rem;
 }
 
 .discover-budget-presets .discover-chip-label {
@@ -7969,26 +7868,7 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .discover-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  min-height: 2.55rem;
-  padding: 0.55rem 0.95rem;
-  border: 1px solid var(--fa-border);
-  border-radius: 12px;
-  color: var(--fa-text);
-  background: color-mix(in srgb, var(--fa-surface) 88%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
   text-align: center;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s, box-shadow 0.15s;
 }
 
 .discover-chip-icon {
@@ -8000,25 +7880,9 @@ html[data-theme="light"] .owner-nav button.active {
   white-space: nowrap;
 }
 
-.discover-chip:hover {
-  border-color: color-mix(in srgb, var(--fa-gold) 55%, transparent);
-  background: color-mix(in oklab, var(--fa-gold) 12%, var(--fa-surface));
-}
 
-.discover-chip:active {
-  transform: scale(0.98);
-}
 
-.discover-chip.on {
-  background: var(--fa-gold);
-  border-color: var(--fa-gold);
-  color: #1a1510;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--fa-gold) 28%, transparent);
-}
 
-.discover-chip.on .discover-chip-label {
-  font-weight: 700;
-}
 
 .discover-stepper-nav {
   display: grid;
@@ -8349,22 +8213,7 @@ html[data-theme="light"] .owner-nav button.active {
   font-size: 0.62rem;
 }
 
-.discover-chat-close {
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--fa-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--fa-muted);
-  font-size: 1.2rem;
-  line-height: 1;
-  cursor: pointer;
-}
 
-.discover-chat-close:hover {
-  color: var(--fa-text);
-  border-color: color-mix(in srgb, var(--fa-gold) 40%, transparent);
-}
 
 .discover-chat-log {
   display: flex;
@@ -8434,21 +8283,9 @@ html[data-theme="light"] .owner-nav button.active {
 
 .discover-chat-hints-toggle {
   justify-self: start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fa-muted);
-  font: inherit;
-  font-size: 0.74rem;
-  font-weight: 650;
-  cursor: pointer;
-  text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 
-.discover-chat-hints-toggle:hover {
-  color: var(--fa-text);
-}
 
 .discover-chat-examples {
   display: flex;
@@ -8456,11 +8293,6 @@ html[data-theme="light"] .owner-nav button.active {
   gap: 0.4rem;
 }
 
-.discover-chat-examples .discover-chip {
-  min-height: 2rem;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.76rem;
-}
 
 .discover-chat-form {
   display: grid;
@@ -8486,29 +8318,12 @@ html[data-theme="light"] .owner-nav button.active {
   outline-offset: 1px;
 }
 
-.discover-chat-send {
-  min-height: 2.45rem;
-  padding-inline: 0.9rem;
-  white-space: nowrap;
-}
 
 .discover-chat-to-filters {
   justify-self: start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fa-gold);
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 650;
-  cursor: pointer;
-  text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 
-.discover-chat-to-filters:hover {
-  color: var(--fa-text);
-}
 
 .discover-chat-replies {
   display: flex;
@@ -8516,11 +8331,6 @@ html[data-theme="light"] .owner-nav button.active {
   gap: 0.45rem;
 }
 
-.discover-chat-replies .discover-chip {
-  min-height: 2.15rem;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-}
 
 .discover-summary {
   position: sticky;
@@ -8639,24 +8449,6 @@ html[data-theme="light"] .owner-nav button.active {
   list-style: none;
 }
 
-.discover-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2rem;
-  padding: 0.3rem 0.45rem 0.3rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--fa-gold) 28%, var(--fa-border));
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--fa-surface) 82%, var(--fa-gold));
-  color: var(--fa-text);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, transform 0.12s;
-}
 
 .discover-filter-chip-x {
   display: inline-grid;
@@ -8670,15 +8462,7 @@ html[data-theme="light"] .owner-nav button.active {
   opacity: 0.75;
 }
 
-.discover-filter-chip:hover {
-  border-color: var(--fa-gold);
-  background: color-mix(in srgb, var(--fa-gold) 18%, var(--fa-surface));
-}
 
-.discover-filter-chip:hover .discover-filter-chip-x {
-  opacity: 1;
-  background: color-mix(in srgb, var(--fa-text) 12%, transparent);
-}
 
 .discover-filter-chip.soft {
   cursor: default;
@@ -8696,10 +8480,6 @@ html[data-theme="light"] .owner-nav button.active {
   flex-shrink: 0;
 }
 
-.discover-filters-actions .btn {
-  padding: 0.55rem 0.95rem;
-  font-size: 0.8rem;
-}
 
 .venue-map-panel:not(:has(.venue-map-list button)) .venue-map-address {
   margin-top: 18px;
@@ -8764,9 +8544,9 @@ html[data-theme="light"] .owner-nav button.active {
 
   .discover-filters-actions .btn {
     flex: 1;
-    justify-content: center;
   }
-}
+
+  }
 
 /* ==========================================================================
    ELEVATED GUEST PROFILE & ACCOUNT PORTAL (/account)
@@ -13207,33 +12987,8 @@ html[data-theme="light"] .login-forgot-hint {
 
 .catalog-discover-btn {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 52px;
-  padding: 0 20px;
-  border-radius: 14px;
-  font-size: 0.86rem;
-  font-weight: 700;
-  white-space: nowrap;
-  text-decoration: none;
-  background: color-mix(in srgb, var(--site-accent) 10%, var(--site-surface));
-  border: 1px solid color-mix(in srgb, var(--site-accent) 45%, var(--site-border));
-  color: var(--site-fg);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-  transition: all 160ms ease;
 }
 
-.catalog-discover-btn svg {
-  color: var(--site-accent);
-}
-
-.catalog-discover-btn:hover {
-  border-color: var(--site-accent);
-  background: color-mix(in srgb, var(--site-accent) 18%, var(--site-surface));
-  transform: translateY(-1px);
-}
 
 @media (max-width: 720px) {
   .catalog-search-row {
@@ -13241,13 +12996,8 @@ html[data-theme="light"] .login-forgot-hint {
   }
   .catalog-search-row .catalog-discover-btn {
     inline-size: 100%;
-    height: auto;
-    min-block-size: 48px;
-    padding: 12px 16px;
-    white-space: normal;
-    text-align: center;
   }
-}
+  }
 
 .catalog-title {
   font-family: var(--font-display), Georgia, serif;
@@ -13312,24 +13062,8 @@ html[data-theme="light"] .login-forgot-hint {
 .catalog-search-clear {
   position: absolute;
   right: 14px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--site-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  transition: all 140ms ease;
 }
 
-.catalog-search-clear:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: var(--site-fg);
-}
 
 /* Chips Bar */
 .catalog-chips-bar {
@@ -13345,33 +13079,6 @@ html[data-theme="light"] .login-forgot-hint {
   display: none;
 }
 
-.catalog-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--site-border);
-  background: var(--site-surface);
-  color: var(--site-muted);
-  font-size: 0.82rem;
-  font-weight: 650;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 160ms ease;
-  user-select: none;
-}
-
-.catalog-chip:hover {
-  color: var(--site-fg);
-  border-color: color-mix(in srgb, var(--site-accent) 40%, var(--site-border));
-}
-
-.catalog-chip.active {
-  background: rgba(233, 185, 110, 0.18);
-  border-color: var(--site-accent);
-  color: #e9b96e;
-  font-weight: 750;
-}
 
 /* Meta Bar */
 .catalog-meta-bar {
@@ -13461,37 +13168,6 @@ html[data-theme="light"] .login-forgot-hint {
   }
 }
 
-.catalog-view-switch {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 9px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid var(--site-border);
-}
-
-.catalog-view-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  color: var(--site-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.catalog-view-btn:hover {
-  color: var(--site-fg);
-}
-
-.catalog-view-btn.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--site-fg);
-}
 
 /* Loading & Empty States */
 .catalog-loading-state {
@@ -13692,38 +13368,32 @@ html[data-theme="light"] .catalog-card-img-fallback span {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
+
+/* Favourite heart sits on the photo: same .btn icon, frosted dark disc in every theme */
 .catalog-card-fav-btn {
+  --btn-secondary-bg: rgba(0, 0, 0, 0.58);
+  --btn-secondary-bg-hover: rgba(0, 0, 0, 0.78);
+  --btn-secondary-fg: #ffffff;
+  --btn-secondary-border: rgba(255, 255, 255, 0.24);
+  --btn-secondary-border-hover: rgba(255, 255, 255, 0.5);
+  --btn-focus-ring: #f6d394;
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 2;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.58);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 160ms ease;
-  line-height: 1;
 }
 
-.catalog-card-fav-btn:hover {
-  transform: scale(1.1);
-  background: rgba(0, 0, 0, 0.8);
-  color: #f87171;
+.catalog-card .catalog-card-fav-btn.btn {
+  font-size: 1.1rem;
 }
 
-.catalog-card-fav-btn.active {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.22);
-  border-color: #ef4444;
+.catalog-card-fav-btn.is-on {
+  --btn-secondary-fg: #f87171;
+  --btn-secondary-bg: rgba(60, 10, 10, 0.62);
+  --btn-secondary-border: rgba(248, 113, 113, 0.75);
+  --btn-secondary-border-hover: #f87171;
 }
 
 .catalog-media-badges-bottom {
@@ -13867,26 +13537,8 @@ html[data-theme="light"] .catalog-card-img-fallback span {
 .catalog-book-action,
 .catalog-info-action {
   flex: 1 1 auto;
-  min-height: 42px;
-  padding: 0 14px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  text-decoration: none;
 }
 
-.catalog-book-action {
-  gap: 6px;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
-
-.catalog-info-action {
-  font-size: 0.82rem;
-  font-weight: 650;
-}
 
 /* Light Theme Overrides for Catalog */
 html[data-theme="light"] .catalog-page {
@@ -13908,36 +13560,12 @@ html[data-theme="light"] .catalog-meta-bar {
   border-color: rgba(26, 36, 32, 0.1);
 }
 
-html[data-theme="light"] .catalog-chip {
-  background: #ffffff;
-  border-color: rgba(26, 36, 32, 0.12);
-}
-
-html[data-theme="light"] .catalog-chip.active {
-  background: #173f31;
-  color: #ffffff;
-  border-color: #173f31;
-}
 
 html[data-theme="light"] .catalog-cuisine-tag {
   background: rgba(36, 96, 70, 0.08);
   color: #1e5240;
 }
 
-html[data-theme="light"] .catalog-book-action {
-  background: #173f31;
-  box-shadow: 0 4px 14px rgba(23, 63, 49, 0.2);
-}
-
-html[data-theme="light"] .catalog-book-action:hover {
-  background: #1e5240;
-  box-shadow: 0 8px 20px rgba(23, 63, 49, 0.28);
-}
-
-html[data-theme="light"] .catalog-view-btn.active {
-  background: rgba(26, 36, 32, 0.1);
-  color: #1a2420;
-}
 
 @media (max-width: 840px) {
   .catalog-main {
@@ -16915,15 +16543,6 @@ html[data-theme="light"] .booking-done-extras svg {
   font-size: 0.95rem;
   line-height: 1.5;
 }
-.qb-catalog-link {
-  color: var(--fa-gold);
-  font-size: 0.9rem;
-  font-weight: 650;
-  text-decoration: none;
-}
-.qb-catalog-link:hover {
-  text-decoration: underline;
-}
 
 .qb-grid {
   display: grid;
@@ -17028,33 +16647,9 @@ html[data-theme="light"] .booking-done-extras svg {
 .qb-slots:empty {
   display: none;
 }
-.qb-slots button {
-  min-height: 40px;
+.qb-slots .chip {
   min-width: 72px;
-  padding: 0 12px;
-  border: 1px solid var(--fa-border);
-  border-radius: 11px;
-  background: var(--fa-surface-2);
-  color: var(--fa-text);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
-}
-.qb-slots button:hover {
-  border-color: var(--fa-gold);
-  transform: translateY(-1px);
-}
-.qb-slots button.on {
-  border-color: #246f48;
-  background: #246f48;
-  color: #ffffff;
-}
-.qb-slots button:focus-visible {
-  outline: 3px solid var(--fa-gold);
-  outline-offset: 2px;
 }
 .qb-card-note {
   margin: 0;
@@ -17103,9 +16698,6 @@ html[data-theme="light"] .booking-done-extras svg {
   justify-content: center;
   gap: 10px;
 }
-.qb-empty .venue-cta {
-  min-height: 46px;
-}
 
 .qb-others {
   border: 1px solid var(--fa-border);
@@ -17153,13 +16745,9 @@ html[data-theme="light"] .qb-search {
 html[data-theme="light"] .qb-card:hover {
   box-shadow: 0 8px 22px rgba(26, 36, 32, 0.1);
 }
-html[data-theme="light"] .qb-catalog-link,
 html[data-theme="light"] .qb-card-rating,
 html[data-theme="light"] .qb-card-title h3 a:hover {
   color: #8a6528;
-}
-html[data-theme="light"] .qb-slots button:hover {
-  border-color: #8a6528;
 }
 
 @media (max-width: 1080px) {
@@ -17187,7 +16775,7 @@ html[data-theme="light"] .qb-slots button:hover {
     overflow: visible;
     gap: 6px;
   }
-  .qb-search .qb-field-days .booking-slot-days button {
+  .qb-search .qb-field-days .booking-slot-days .chip {
     flex: 1 0 74px;
     max-inline-size: 132px;
     min-inline-size: 0;
@@ -17199,7 +16787,7 @@ html[data-theme="light"] .qb-slots button:hover {
     overflow: visible;
     gap: 6px;
   }
-  .qb-search > .qb-field:last-child .booking-slot-days button {
+  .qb-search > .qb-field:last-child .booking-slot-days .chip {
     inline-size: 100%;
     min-inline-size: 0;
     padding-inline: 6px;
@@ -17244,8 +16832,7 @@ html[data-theme="light"] .qb-slots button:hover {
 }
 @media (prefers-reduced-motion: reduce) {
   .qb-card,
-  .qb-card-photo img,
-  .qb-slots button {
+.qb-card-photo img {
     transition: none;
   }
   .qb-card:hover .qb-card-photo img {
@@ -17321,10 +16908,6 @@ button.venue-tile {
   display: none;
 }
 /* Keep discover CTA on one line; stack with search below 720px via .catalog-search-row */
-.qb-find .catalog-discover-btn {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
 .qb-card.muted {
   border-style: dashed;
   opacity: 0.92;
@@ -17334,21 +16917,6 @@ button.venue-tile {
 }
 .qb-card-action {
   justify-self: start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fa-gold);
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-}
-.qb-card-action:hover {
-  text-decoration: underline;
-}
-html[data-theme="light"] .qb-card-action {
-  color: #8a6528;
 }
 
 /* ==========================================================================
@@ -18567,9 +18135,7 @@ html[data-theme="light"] .menu-dish-popup-x {
 }
 
 .venue-map-select,
-.venue-map-search input,
-.venue-map-search button,
-.map-search-area {
+.venue-map-search input {
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid var(--site-border);
@@ -18608,63 +18174,12 @@ html[data-theme="light"] .menu-dish-popup-x {
   font-weight: 500;
 }
 
-.venue-map-search button {
-  flex: none;
-  border-color: transparent;
-  background: var(--site-accent);
-  color: #fff;
-  font-weight: 650;
-  cursor: pointer;
-  padding-inline: 14px;
-  transition: background 0.15s, filter 0.15s;
-}
-
-.venue-map-search button:hover {
-  filter: brightness(1.08);
-}
-
-.venue-map-bookable {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 40px;
-  padding: 0 0.75rem;
-  border: 1px solid var(--site-border);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--site-bg) 55%, var(--site-surface));
-  color: var(--site-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-}
-
-.venue-map-bookable:hover {
-  color: var(--site-fg);
-  border-color: color-mix(in srgb, var(--site-fg) 22%, var(--site-border));
-}
 
 
 
-.venue-map-external {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 0.7rem;
-  border-radius: 12px;
-  color: var(--site-muted);
-  font-size: 0.8rem;
-  font-weight: 650;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: color 0.15s, background 0.15s;
-}
 
-.venue-map-external:hover {
-  color: var(--site-fg);
-  background: color-mix(in srgb, var(--site-fg) 6%, transparent);
-}
+
+
 
 .venue-map-areas :is(input, button, select, a):focus-visible {
   outline: 2px solid var(--site-accent);
@@ -18672,15 +18187,16 @@ html[data-theme="light"] .menu-dish-popup-x {
 }
 
 .map-search-area {
+  /* Floats on the map: opaque surface in both themes */
+  --btn-secondary-bg: var(--site-surface);
+  --btn-secondary-bg-hover: color-mix(in srgb, var(--site-accent) 12%, var(--site-surface));
   position: absolute;
   top: 15px;
   left: 50%;
   z-index: 4;
-  transform: translateX(-50%);
-  width: max-content;
+  translate: -50% 0;
   max-width: 65%;
   box-shadow: 0 3px 10px #0002;
-  cursor: pointer;
 }
 
 .live-map-canvas.is-google .venue-map-legend {
@@ -18953,16 +18469,6 @@ html[data-theme="light"] .menu-dish-popup-x {
   font-weight: 700;
   color: var(--site-accent, #e9b96e);
 }
-.live-map-relax {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--site-accent, #e9b96e);
-  font: inherit;
-  font-weight: 700;
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 /* /discover assistant answers (components/discover/guided-chat.tsx) */
 .discover-chat-msg p {
@@ -18983,8 +18489,7 @@ html[data-theme="light"] .menu-dish-popup-x {
   margin: 4px 0 0;
   padding-left: 18px;
 }
-.discover-chat-venues a,
-.discover-chat-map-link {
+.discover-chat-venues a {
   color: inherit;
   font-weight: 700;
 }
@@ -19056,8 +18561,6 @@ html[data-theme="light"] .site-header:not(.transparent) .site-nav a.site-nav-lin
   padding: 0;
   flex-shrink: 0;
 }
-
-
 
 
 .site-mobile-backdrop,
@@ -19216,7 +18719,6 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
   flex: 1 1 0;
   min-inline-size: 56px;
 }
-
 
 
 @media (max-width: 1080px) {
@@ -19410,16 +18912,6 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
 }
 }
 
-@media (max-width: 720px) {
-  .qb-find .catalog-discover-btn {
-    inline-size: 100%;
-    height: auto;
-    min-block-size: 48px;
-    padding: 12px 16px;
-    white-space: normal;
-    text-align: center;
-  }
-}
 
 @media (max-width: 640px) {
   .catalog-floating-toast {
@@ -19542,10 +19034,7 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
     flex-direction: column;
   }
 
-  .qb-empty .venue-cta {
-    width: 100%;
-  }
-
+  
   .qb-card {
     grid-template-columns: 76px minmax(0, 1fr);
     column-gap: 12px;
@@ -19602,7 +19091,7 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
     gap: 8px;
   }
 
-  .qb-slots button {
+  .qb-slots .chip {
     flex: 1 1 74px;
     max-inline-size: 132px;
     min-inline-size: 0;
@@ -19621,17 +19110,7 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
   }
 }
 
-@media (max-width: 480px) {
-  .discover-chip {
-    white-space: normal;
-    max-width: 100%;
-  }
 
-  .discover-chip-label {
-    white-space: normal;
-    text-align: center;
-  }
-}
 
 @media (max-width: 420px) {
   .catalog-card-actions {
@@ -21046,31 +20525,10 @@ html[data-theme="light"] .floor-save-status.unsaved { color: #8a5a17; background
   position: absolute;
   inset-block: 0;
   inset-inline-end: 4px;
-  display: grid;
-  place-items: center;
-  inline-size: 32px;
-  min-height: 0;
   margin-block: auto;
-  block-size: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 9px;
-  color: var(--site-muted);
-  background: transparent;
-  cursor: pointer;
-}
-.venue-map-search .venue-map-search-clear:hover {
-  color: var(--site-fg);
-  background: color-mix(in srgb, var(--site-fg) 8%, transparent);
-  filter: none;
 }
 
 /* "Только с бронированием": a site-style switch chip instead of a native checkbox. */
-.venue-map-bookable {
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
 .venue-map-switch {
   position: relative;
   flex: none;
@@ -21102,12 +20560,7 @@ html[data-theme="light"] .floor-save-status.unsaved { color: #8a5a17; background
 /* The Google Maps search stays, as a quiet text link. */
 .venue-map-external {
   margin-inline-start: auto;
-  padding-inline: 0.4rem;
-  font-size: 0.74rem;
-  font-weight: 550;
-  opacity: 0.8;
 }
-.venue-map-external:hover { opacity: 1; background: none; text-decoration: underline; }
 
 /* Overlays on the map follow the site theme. */
 .live-map-status {
@@ -21200,10 +20653,10 @@ html[data-theme="dark"] .legend-dot-ours { background: #3aa877; }
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.venue-map-soon .map-primary-action { border: 0; font: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
 @media (max-width: 820px) {
-  .venue-map-external { margin-inline-start: 0; }
+  .venue-map-external { margin-inline-start: 0;
+}
 }
 
 @media (max-width: 540px) {

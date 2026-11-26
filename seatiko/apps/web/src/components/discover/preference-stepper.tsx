@@ -382,7 +382,7 @@ export function PreferenceStepper({
                     <button
                       key={id}
                       type="button"
-                      className={`discover-chip ${on ? "on" : ""}`}
+                      className={`chip discover-chip${on ? " is-active" : ""}`}
                       aria-pressed={on}
                       onClick={() =>
                         onPrefsChange({
@@ -397,7 +397,7 @@ export function PreferenceStepper({
                 })}
                 <button
                   type="button"
-                  className={`discover-chip ${prefs.budget == null ? "on" : ""}`}
+                  className={`chip discover-chip${prefs.budget == null ? " is-active" : ""}`}
                   aria-pressed={prefs.budget == null}
                   onClick={() => onPrefsChange({ ...prefs, budget: null })}
                 >
@@ -426,7 +426,7 @@ export function PreferenceStepper({
                   <button
                     key={chip.id}
                     type="button"
-                    className={`discover-chip ${chip.selected ? "on" : ""}`}
+                    className={`chip discover-chip${chip.selected ? " is-active" : ""}`}
                     aria-pressed={chip.selected}
                     onClick={() => toggle(chip.id)}
                   >
@@ -438,7 +438,7 @@ export function PreferenceStepper({
                 <div className="discover-show-more-row">
                   <button
                     type="button"
-                    className="discover-show-more"
+                    className="btn btn--link discover-show-more"
                     onClick={() => setShowMore((v) => !v)}
                     aria-expanded={expanded}
                   >
@@ -462,7 +462,7 @@ export function PreferenceStepper({
         {stepIndex > 0 ? (
           <button
             type="button"
-            className="btn btn-outline discover-stepper-back"
+            className="btn btn--ghost btn--md discover-stepper-back"
             onClick={() => onStepChange(stepIndex - 1)}
           >
             {copy.back}
@@ -475,7 +475,7 @@ export function PreferenceStepper({
           {mapVisible && stepIndex < STEPS.length - 1 ? (
             <button
               type="button"
-              className="btn btn-outline discover-stepper-map"
+              className="btn btn--secondary btn--md discover-stepper-map"
               onClick={() => onGoToMap?.()}
             >
               {copy.goToMap}
@@ -484,7 +484,7 @@ export function PreferenceStepper({
           {stepIndex < STEPS.length - 1 ? (
             <button
               type="button"
-              className="btn btn-outline discover-stepper-continue"
+              className="btn btn--primary btn--md discover-stepper-continue"
               onClick={() => onStepChange(stepIndex + 1)}
             >
               {copy.continue}
@@ -492,7 +492,7 @@ export function PreferenceStepper({
           ) : (
             <button
               type="button"
-              className="btn btn-gold discover-stepper-continue"
+              className="btn btn--primary btn--md discover-stepper-continue"
               onClick={() => onGoToMap?.()}
             >
               {copy.seePlaces}

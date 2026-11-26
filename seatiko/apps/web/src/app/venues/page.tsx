@@ -340,7 +340,7 @@ function VenuesCatalogContent() {
               {searchQuery && (
                 <button
                   type="button"
-                  className="catalog-search-clear"
+                  className="btn btn--ghost btn--sm btn--icon catalog-search-clear"
                   onClick={() => setSearchQuery("")}
                   aria-label={copy.searchClear}
                 >
@@ -348,19 +348,20 @@ function VenuesCatalogContent() {
                 </button>
               )}
             </div>
-            <Link href="/discover" className="catalog-discover-btn">
+            <Link href="/discover" className="btn btn--secondary btn--lg catalog-discover-btn">
               <SparklesIcon />
               <span>{copy.discoverChip}</span>
             </Link>
           </div>
 
           {/* Category Chips Bar */}
-          <div className="catalog-chips-bar" role="tablist" aria-label={copy.filtersAria}>
+          <div className="catalog-chips-bar" role="group" aria-label={copy.filtersAria}>
             {VENUE_FILTER_IDS.map((id) => (
               <button
                 key={id}
                 type="button"
-                className={`catalog-chip ${activeFilter === id ? "active" : ""}`}
+                className={`chip catalog-chip${activeFilter === id ? " is-active" : ""}`}
+                aria-pressed={activeFilter === id}
                 onClick={() => setActiveFilter(id)}
               >
                 {copy.filters[id]}
@@ -398,10 +399,11 @@ function VenuesCatalogContent() {
                 />
               </div>
 
-              <div className="catalog-view-switch" role="group" aria-label={copy.viewAria}>
+              <div className="seg catalog-view-switch" role="group" aria-label={copy.viewAria}>
                 <button
                   type="button"
-                  className={`catalog-view-btn ${viewMode === "grid" ? "active" : ""}`}
+                  className={`seg-item catalog-view-btn${viewMode === "grid" ? " is-active" : ""}`}
+                  aria-pressed={viewMode === "grid"}
                   onClick={() => setViewMode("grid")}
                   title={copy.viewGrid}
                   aria-label={copy.viewGrid}
@@ -410,7 +412,8 @@ function VenuesCatalogContent() {
                 </button>
                 <button
                   type="button"
-                  className={`catalog-view-btn ${viewMode === "list" ? "active" : ""}`}
+                  className={`seg-item catalog-view-btn${viewMode === "list" ? " is-active" : ""}`}
+                  aria-pressed={viewMode === "list"}
                   onClick={() => setViewMode("list")}
                   title={copy.viewList}
                   aria-label={copy.viewList}
@@ -433,7 +436,7 @@ function VenuesCatalogContent() {
             <div className="catalog-empty-icon">⚠️</div>
             <h3>{copy.errorTitle}</h3>
             <p>{copy.errorBody}</p>
-            <button type="button" className="btn btn-gold" onClick={retryLoad}>
+            <button type="button" className="btn btn--primary btn--md" onClick={retryLoad}>
               {copy.errorRetry}
             </button>
           </div>
@@ -448,7 +451,7 @@ function VenuesCatalogContent() {
             </p>
             <button
               type="button"
-              className="btn btn-gold"
+              className="btn btn--primary btn--md"
               onClick={clearFilters}
             >
               {copy.emptyReset}
@@ -510,7 +513,8 @@ function VenuesCatalogContent() {
                     {/* Favorite Heart Button */}
                     <button
                       type="button"
-                      className={`catalog-card-fav-btn ${isFav ? "active" : ""}`}
+                      className={`btn btn--secondary btn--sm btn--icon catalog-card-fav-btn${isFav ? " is-on" : ""}`}
+                      aria-pressed={isFav}
                       onClick={() => handleToggleFavorite(venue)}
                       aria-label={isFav ? copy.favRemove : copy.favAdd}
                       title={isFav ? copy.favRemove : copy.favAdd}
@@ -563,14 +567,14 @@ function VenuesCatalogContent() {
                       <div className="catalog-card-actions">
                         <Link
                           href={venueBookingHref(venue.id)}
-                          className="btn btn-gold catalog-book-action"
+                          className="btn btn--primary btn--md catalog-book-action"
                         >
                           <span>{copy.bookAction}</span>
                           <span aria-hidden="true">→</span>
                         </Link>
                         <Link
                           href={`/venues/${venue.id}`}
-                          className="btn btn-outline catalog-info-action"
+                          className="btn btn--secondary btn--md catalog-info-action"
                         >
                           {copy.infoAction}
                         </Link>
