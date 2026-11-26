@@ -22905,6 +22905,9 @@ html[data-theme="light"] .floor-editor-warn { color: #b3412c; }
   display: grid;
   gap: 6px;
 }
+@media (pointer: coarse) {
+  .floor-editor-side .floor-keys-hint { display: none; }
+}
 .floor-field > label,
 .floor-field > span {
   color: var(--site-muted);
@@ -22994,15 +22997,15 @@ html[data-theme="light"] .floor-save-status.unsaved { color: #8a5a17; background
 }
 @media (max-width: 700px) {
   .cabinet-ops-floor-actions .floor-save-status { flex: 1 1 100%; justify-content: center; min-height: 30px; }
-  /* Phone: zones and view tools, then the plan, then the add / on-plan / preset tools, then properties. */
+  /* Phone: zones and view tools, the plan, its selection's properties, then the add / on-plan / preset tools. */
   .floor-editor { display: flex; flex-direction: column; gap: 12px; }
   .floor-editor-toolbar,
   .floor-editor-stage { display: contents; }
   .floor-toolbar-row { order: 1; flex-direction: column; align-items: stretch; min-width: 0; }
   .floor-toolbar-row > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
   .floor-editor-canvas-col { order: 2; }
-  .floor-editor-actions { order: 3; gap: 8px; }
-  .floor-editor-side { order: 4; }
+  .floor-editor-side { order: 3; }
+  .floor-editor-actions { order: 4; gap: 8px; }
   .floor-toolbar-row .floor-zone-tabs { width: auto; }
   .floor-toolbar-row .floor-zone-tabs button { padding: 7px 12px; }
   .floor-view-tools { justify-content: space-between; }

@@ -994,7 +994,7 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
               <p className="floor-editor-note">{copy.inspectorEmpty}</p>
             </>
           )}
-          <p className="floor-editor-hint" id={hintId}>
+          <p className="floor-editor-hint floor-keys-hint" id={hintId}>
             {copy.keysHint}
           </p>
           <p className="floor-editor-hint">{copy.zonesHint}</p>
