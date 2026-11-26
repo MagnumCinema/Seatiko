@@ -1198,7 +1198,7 @@ export function GuestProfile({
           <div className="guest-welcome-actions">
             <button
               type="button"
-              className="btn btn-gold guest-welcome-btn-primary"
+              className="btn btn--primary btn--md guest-welcome-btn-primary"
               onClick={onRequestSignIn}
             >
               <span>{copy.signInButton || t("profile.sign_in")}</span>
@@ -1207,7 +1207,7 @@ export function GuestProfile({
             {onQuickDemoSignIn && (
               <button
                 type="button"
-                className="btn-demo-chip guest-welcome-demo-btn"
+                className="chip btn-demo-chip guest-welcome-demo-btn"
                 onClick={onQuickDemoSignIn}
                 title="Быстрый вход в демонстрационный аккаунт"
               >
@@ -1215,7 +1215,7 @@ export function GuestProfile({
                 <span>{copy.quickDemoButton}</span>
               </button>
             )}
-            <Link href="/book" className="guest-welcome-browse-link">
+            <Link href="/book" className="btn btn--link guest-welcome-browse-link">
               {copy.browseWithoutAuth}
             </Link>
           </div>
@@ -1234,7 +1234,7 @@ export function GuestProfile({
             <h4>{copy.venueOwnerNotice}</h4>
             <p>{copy.venueOwnerHint}</p>
           </div>
-          <Link href="/cabinet" className="btn btn-gold btn-sm guest-role-banner-btn">
+          <Link href="/cabinet" className="btn btn--primary btn--sm guest-role-banner-btn">
             {copy.goToCabinet} →
           </Link>
         </div>
@@ -1247,7 +1247,7 @@ export function GuestProfile({
             <h4>{copy.staffNotice}</h4>
             <p>{copy.staffHint}</p>
           </div>
-          <Link href="/staff" className="btn btn-gold btn-sm guest-role-banner-btn">
+          <Link href="/staff" className="btn btn--primary btn--sm guest-role-banner-btn">
             {copy.goToStaff} →
           </Link>
         </div>
@@ -1260,7 +1260,7 @@ export function GuestProfile({
             <h4>{copy.adminNotice}</h4>
             <p>{copy.adminHint}</p>
           </div>
-          <Link href="/admin" className="btn btn-gold btn-sm guest-role-banner-btn">
+          <Link href="/admin" className="btn btn--primary btn--sm guest-role-banner-btn">
             {copy.goToAdmin} →
           </Link>
         </div>
@@ -1329,7 +1329,7 @@ export function GuestProfile({
               {isDemoGuest && (
                 <button
                   type="button"
-                  className={`guest-demo-mode-chip ${demoPopulated ? "is-active" : "is-empty"}`}
+                  className={`chip guest-demo-mode-chip${demoPopulated ? " is-active" : " is-empty"}`}
                   onClick={toggleDemoMode}
                   title={copy.demoToggleHint}
                 >
@@ -1379,10 +1379,10 @@ export function GuestProfile({
       </section>
 
       {/* Main Tab Switcher */}
-      <nav className="guest-nav-tabs" aria-label="Разделы профиля">
+      <nav className="seg guest-nav-tabs" aria-label="Разделы профиля">
         <button
           type="button"
-          className={`guest-nav-tab ${activeTab === "bookings" ? "active" : ""}`}
+          className={`seg-item guest-nav-tab${activeTab === "bookings" ? " is-active" : ""}`}
           onClick={() => setActiveTab("bookings")}
         >
           <CalendarIcon />
@@ -1393,7 +1393,7 @@ export function GuestProfile({
         </button>
         <button
           type="button"
-          className={`guest-nav-tab ${activeTab === "personal" ? "active" : ""}`}
+          className={`seg-item guest-nav-tab${activeTab === "personal" ? " is-active" : ""}`}
           onClick={() => setActiveTab("personal")}
         >
           <UserIcon />
@@ -1401,7 +1401,7 @@ export function GuestProfile({
         </button>
         <button
           type="button"
-          className={`guest-nav-tab ${activeTab === "diet" ? "active" : ""}`}
+          className={`seg-item guest-nav-tab${activeTab === "diet" ? " is-active" : ""}`}
           onClick={() => setActiveTab("diet")}
         >
           <SaladIcon />
@@ -1409,7 +1409,7 @@ export function GuestProfile({
         </button>
         <button
           type="button"
-          className={`guest-nav-tab ${activeTab === "favorites" ? "active" : ""}`}
+          className={`seg-item guest-nav-tab${activeTab === "favorites" ? " is-active" : ""}`}
           onClick={() => setActiveTab("favorites")}
         >
           <HeartIcon />
@@ -1420,7 +1420,7 @@ export function GuestProfile({
         </button>
         <button
           type="button"
-          className={`guest-nav-tab ${activeTab === "settings" ? "active" : ""}`}
+          className={`seg-item guest-nav-tab${activeTab === "settings" ? " is-active" : ""}`}
           onClick={() => setActiveTab("settings")}
         >
           <SettingsIcon />
@@ -1438,19 +1438,19 @@ export function GuestProfile({
                 <h2>{copy.tabBookings}</h2>
                 <p>Все ваши подтвержденные столы и история бронирований</p>
               </div>
-              <Link href="/book" className="btn btn-gold guest-new-booking-btn">
+              <Link href="/book" className="btn btn--primary btn--md guest-new-booking-btn">
                 <span>+ {copy.bookTableCta}</span>
               </Link>
             </div>
 
             {/* Sub-tabs: Активные брони vs История броней */}
             <div className="guest-booking-subtabs-row">
-              <div className="guest-booking-subtabs" role="tablist" aria-label="Фильтр бронирований">
+              <div className="seg guest-booking-subtabs" role="tablist" aria-label="Фильтр бронирований">
                 <button
                   type="button"
                   role="tab"
                   aria-selected={bookingSubTab === "active"}
-                  className={`guest-booking-subtab ${bookingSubTab === "active" ? "active" : ""}`}
+                  className={`seg-item guest-booking-subtab${bookingSubTab === "active" ? " is-active" : ""}`}
                   onClick={() => setBookingSubTab("active")}
                 >
                   <span>{copy.subtabActive}</span>
@@ -1460,7 +1460,7 @@ export function GuestProfile({
                   type="button"
                   role="tab"
                   aria-selected={bookingSubTab === "history"}
-                  className={`guest-booking-subtab ${bookingSubTab === "history" ? "active" : ""}`}
+                  className={`seg-item guest-booking-subtab${bookingSubTab === "history" ? " is-active" : ""}`}
                   onClick={() => setBookingSubTab("history")}
                 >
                   <span>{copy.subtabHistory}</span>
@@ -1640,7 +1640,7 @@ export function GuestProfile({
                           <div className="guest-event-actions">
                             <Link
                               href={`/venues/${inq.venue_id}`}
-                              className="btn btn-outline guest-event-venue-btn"
+                              className="btn btn--secondary btn--md guest-event-venue-btn"
                             >
                               <span>{copy.eventVenueBtn || "Страница заведения →"}</span>
                             </Link>
@@ -1648,14 +1648,14 @@ export function GuestProfile({
                               href="https://t.me/seatiko_admin"
                               target="_blank"
                               rel="noreferrer"
-                              className="btn btn-gold guest-event-chat-btn"
+                              className="btn btn--primary btn--md guest-event-chat-btn"
                             >
                               <MessageSquareIcon />
                               <span>{copy.eventChatBtn || "Чат в Telegram"}</span>
                             </a>
                             <a
                               href={`tel:${inq.admin_phone || "+37323124411"}`}
-                              className="btn btn-outline guest-event-call-btn"
+                              className="btn btn--secondary btn--md guest-event-call-btn"
                             >
                               <PhoneIcon />
                               <span>{copy.eventCallBtn || "Позвонить"}</span>
@@ -1683,10 +1683,10 @@ export function GuestProfile({
                   <h3>{copy.noActiveBookings}</h3>
                   <p>{copy.noActiveBookingsHint}</p>
                   <div className="guest-empty-actions">
-                    <Link href="/book" className="btn btn-gold">
+                    <Link href="/book" className="btn btn--primary btn--md">
                       {copy.bookTableCta} →
                     </Link>
-                    <Link href="/venues" className="btn btn-outline">
+                    <Link href="/venues" className="btn btn--secondary btn--md">
                       {copy.browseVenuesCta}
                     </Link>
                   </div>
@@ -1774,7 +1774,7 @@ export function GuestProfile({
                             {!isCheckedIn && (
                               <button
                                 type="button"
-                                className="guest-booking-cancel-top-btn"
+                                className="btn btn--danger-outline btn--sm guest-booking-cancel-top-btn"
                                 onClick={() => setCancellingRes(res)}
                                 title="Отменить бронирование этого стола"
                               >
@@ -1825,7 +1825,7 @@ export function GuestProfile({
                           {!isCheckedIn && res.status === "CONFIRMED" && (
                             <Link
                               href={`/venues/${res.venue_id}/menu?preorder=${encodeURIComponent(res.id)}`}
-                              className="btn btn-outline guest-preorder-btn"
+                              className="btn btn--secondary btn--md guest-preorder-btn"
                             >
                               <span>{res.preorder ? t("account.preorder_edit") : t("account.preorder_add")}</span>
                             </Link>
@@ -1833,7 +1833,7 @@ export function GuestProfile({
                           {!isCheckedIn && (
                             <button
                               type="button"
-                              className="btn btn-gold guest-confirm-btn"
+                              className="btn btn--primary btn--md guest-confirm-btn"
                               disabled={confirmingId === res.id}
                               onClick={() => void handleConfirmArrival(res.id)}
                               title="Нажмите, когда прибудете в ресторан и займете стол"
@@ -1849,7 +1849,7 @@ export function GuestProfile({
 
                           <button
                             type="button"
-                            className="btn btn-outline guest-ticket-btn"
+                            className="btn btn--ghost btn--md guest-ticket-btn"
                             onClick={() => setTicketModalRes(res)}
                             title="Открыть цифровой билет с подтверждением"
                           >
@@ -1860,7 +1860,7 @@ export function GuestProfile({
                           {!isCheckedIn && (
                             <button
                               type="button"
-                              className="btn btn-outline guest-edit-res-btn"
+                              className="btn btn--secondary btn--md guest-edit-res-btn"
                               onClick={() => openEditBookingModal(res)}
                               title="Изменить дату, время или количество гостей"
                             >
@@ -1871,7 +1871,7 @@ export function GuestProfile({
 
                           <Link
                             href={`/venues/${res.venue_id}`}
-                            className="btn btn-outline guest-venue-link"
+                            className="btn btn--link guest-venue-link"
                           >
                             <span>Меню и заведение →</span>
                           </Link>
@@ -1913,7 +1913,7 @@ export function GuestProfile({
 
                     <button
                       type="button"
-                      className="guest-clear-history-toolbar-btn"
+                      className="btn btn--danger-outline btn--sm guest-clear-history-toolbar-btn"
                       disabled={clearingHistory}
                       onClick={() => setShowClearHistoryModal(true)}
                       title="Очистить историю всех завершённых и отменённых визитов"
@@ -1978,7 +1978,7 @@ export function GuestProfile({
                               </div>
                               <button
                                 type="button"
-                                className="guest-booking-delete-top-btn"
+                                className="btn btn--danger-outline btn--sm guest-booking-delete-top-btn"
                                 disabled={deletingId === res.id}
                                 onClick={() => void handleDeleteReservation(res.id)}
                                 title="Удалить эту запись из истории"
@@ -2015,14 +2015,14 @@ export function GuestProfile({
                           <div className="guest-booking-actions">
                             <Link
                               href={venueBookingHref(res.venue_id)}
-                              className="btn btn-gold guest-rebook-btn"
+                              className="btn btn--primary btn--md guest-rebook-btn"
                             >
                               <span>{copy.rebookCta}</span>
                               <span aria-hidden="true">→</span>
                             </Link>
                             <Link
                               href={`/venues/${res.venue_id}`}
-                              className="btn btn-outline guest-venue-link"
+                              className="btn btn--link guest-venue-link"
                             >
                               <span>Меню и заведение</span>
                             </Link>
@@ -2041,7 +2041,7 @@ export function GuestProfile({
                     </span>
                     <button
                       type="button"
-                      className="guest-history-footer-clear-btn"
+                      className="btn btn--danger-outline btn--sm guest-history-footer-clear-btn"
                       onClick={() => setShowClearHistoryModal(true)}
                     >
                       <TrashIcon />
@@ -2103,7 +2103,7 @@ export function GuestProfile({
                   <div className="guest-personal-avatar-actions">
                     <button
                       type="button"
-                      className="btn btn-outline btn-sm guest-avatar-change-btn"
+                      className="btn btn--secondary btn--sm guest-avatar-change-btn"
                       onClick={() => setShowAvatarModal(true)}
                     >
                       <CameraIcon />
@@ -2112,7 +2112,7 @@ export function GuestProfile({
                     {avatarUrl && (
                       <button
                         type="button"
-                        className="btn btn-outline btn-sm guest-avatar-remove-btn"
+                        className="btn btn--danger-outline btn--sm guest-avatar-remove-btn"
                         onClick={handleRemoveAvatar}
                       >
                         <TrashIcon />
@@ -2190,7 +2190,7 @@ export function GuestProfile({
                   />
                   <button
                     type="button"
-                    className="btn btn-outline guest-field-action-btn"
+                    className="btn btn--secondary btn--md guest-field-action-btn"
                     onClick={openEmailModal}
                     title="Сменить адрес электронной почты"
                   >
@@ -2205,7 +2205,7 @@ export function GuestProfile({
 
               <button
                 type="submit"
-                className="btn btn-gold guest-submit-btn"
+                className="btn btn--primary btn--md guest-submit-btn"
                 disabled={busySave}
               >
                 <span>{busySave ? "Сохранение…" : copy.saveProfile}</span>
@@ -2239,7 +2239,7 @@ export function GuestProfile({
                   </div>
                   <button
                     type="button"
-                    className="btn btn-outline guest-security-action-btn"
+                    className="btn btn--secondary btn--md guest-security-action-btn"
                     onClick={openEmailModal}
                   >
                     <PencilIcon />
@@ -2264,7 +2264,7 @@ export function GuestProfile({
                   </div>
                   <button
                     type="button"
-                    className="btn btn-outline guest-security-action-btn"
+                    className="btn btn--secondary btn--md guest-security-action-btn"
                     onClick={openPasswordModal}
                   >
                     <LockIcon />
@@ -2299,7 +2299,7 @@ export function GuestProfile({
                     <button
                       key={item.key}
                       type="button"
-                      className={`guest-diet-chip ${active ? "active" : ""}`}
+                      className={`chip guest-diet-chip${active ? " is-active" : ""}`}
                       onClick={() => toggleDietTag(item.ru)}
                     >
                       <span>{active ? "✓ " : "+ "}</span>
@@ -2327,7 +2327,7 @@ export function GuestProfile({
 
             <button
               type="button"
-              className="btn btn-gold guest-submit-btn"
+              className="btn btn--primary btn--md guest-submit-btn"
               disabled={busySave}
               onClick={() => void saveAllergies()}
             >
@@ -2353,7 +2353,7 @@ export function GuestProfile({
                 </div>
                 <h3>{copy.noFavorites}</h3>
                 <p>{copy.noFavoritesHint}</p>
-                <Link href="/venues" className="btn btn-gold">
+                <Link href="/venues" className="btn btn--primary btn--md">
                   {copy.browseVenuesCta} →
                 </Link>
               </div>
@@ -2390,7 +2390,7 @@ export function GuestProfile({
                             {!isFav && (
                               <button
                                 type="button"
-                                className="guest-favorite-removed-pill"
+                                className="btn btn--ghost btn--sm guest-favorite-removed-pill"
                                 onClick={() => void toggleFavorite(fav)}
                                 title={copy.favRestoreTitle || "Вернуть в избранное"}
                               >
@@ -2400,7 +2400,7 @@ export function GuestProfile({
                           </div>
                           <button
                             type="button"
-                            className={`guest-fav-heart-btn ${!isFav ? "is-inactive" : ""}`}
+                            className={`btn btn--secondary btn--sm btn--icon guest-fav-heart-btn${isFav ? " is-on" : " is-inactive"}`}
                             onClick={() => void toggleFavorite(fav)}
                             title={isFav ? (copy.favRemoveTitle || "Удалить из избранного") : (copy.favRestoreTitle || "Вернуть в избранное")}
                             aria-label={isFav ? (copy.favRemoveTitle || "Удалить из избранного") : (copy.favRestoreTitle || "Вернуть в избранное")}
@@ -2442,14 +2442,14 @@ export function GuestProfile({
                       <div className="guest-favorite-actions">
                         <Link
                           href={venueBookingHref(fav.venueId)}
-                          className="btn btn-gold guest-fav-book-btn"
+                          className="btn btn--primary btn--md guest-fav-book-btn"
                         >
                           <span>{copy.bookTableCta}</span>
                           <span aria-hidden="true">→</span>
                         </Link>
                         <Link
                           href={`/venues/${fav.venueId}`}
-                          className="btn btn-outline guest-fav-menu-btn"
+                          className="btn btn--secondary btn--md guest-fav-menu-btn"
                         >
                           <span>{locale === "ro" ? "Meniu" : locale === "en" ? "Menu" : "Меню"}</span>
                         </Link>
@@ -2479,12 +2479,12 @@ export function GuestProfile({
                   <strong>{copy.languageLabel}</strong>
                   <span>Выберите язык интерфейса платформы</span>
                 </div>
-                <div className="guest-lang-switch">
+                <div className="seg guest-lang-switch">
                   {(["ru", "en", "ro"] as Locale[]).map((l) => (
                     <button
                       key={l}
                       type="button"
-                      className={`guest-lang-btn ${locale === l ? "active" : ""}`}
+                      className={`seg-item guest-lang-btn${locale === l ? " is-active" : ""}`}
                       onClick={() => void changeLocale(l)}
                     >
                       {l.toUpperCase()}
@@ -2503,7 +2503,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="btn btn-outline guest-theme-btn"
+                  className="btn btn--secondary btn--md guest-theme-btn"
                   onClick={toggleTheme}
                 >
                   {theme === "dark" ? "☀️ Светлая тема" : "🌙 Тёмная тема"}
@@ -2533,7 +2533,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="btn btn-outline guest-logout-btn"
+                  className="btn btn--secondary btn--md guest-logout-btn"
                   onClick={onLogout}
                 >
                   <LogOutIcon />
@@ -2550,7 +2550,7 @@ export function GuestProfile({
                   </div>
                   <button
                     type="button"
-                    className="btn btn-outline guest-delete-account-btn"
+                    className="btn btn--danger-outline btn--sm guest-delete-account-btn"
                     onClick={() => {
                       setDeletePassword("");
                       setDeleteError(null);
@@ -2601,10 +2601,10 @@ export function GuestProfile({
                   </p>
                 ) : null}
                 <div className="guest-delete-actions">
-                  <button type="button" className="btn btn-outline" disabled={deleteBusy} onClick={() => setShowDeleteAccount(false)}>
+                  <button type="button" className="btn btn--ghost btn--md" disabled={deleteBusy} onClick={() => setShowDeleteAccount(false)}>
                     {t("common.cancel")}
                   </button>
-                  <button type="submit" className="btn guest-delete-confirm" disabled={deleteBusy || (!noPassword && !deletePassword)}>
+                  <button type="submit" className="btn btn--danger btn--md guest-delete-confirm" disabled={deleteBusy || (!noPassword && !deletePassword)}>
                     {deleteBusy ? t("account.delete_progress") : t("account.delete_submit")}
                   </button>
                 </div>
@@ -2640,7 +2640,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setTicketModalRes(null)}
                   aria-label="Закрыть"
                 >
@@ -2709,7 +2709,7 @@ export function GuestProfile({
               <div className="guest-modal-footer">
                 <button
                   type="button"
-                  className="btn btn-gold"
+                  className="btn btn--primary btn--md"
                   onClick={() => setTicketModalRes(null)}
                 >
                   Готово
@@ -2746,7 +2746,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setIsEmailModalOpen(false)}
                   aria-label="Закрыть"
                 >
@@ -2810,7 +2810,7 @@ export function GuestProfile({
                 <div className="guest-modal-footer">
                   <button
                     type="button"
-                    className="btn btn-outline"
+                    className="btn btn--ghost btn--md"
                     onClick={() => setIsEmailModalOpen(false)}
                     disabled={emailBusy}
                   >
@@ -2818,7 +2818,7 @@ export function GuestProfile({
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-gold"
+                    className="btn btn--primary btn--md"
                     disabled={emailBusy || !emailInput.trim() || !emailConfirmInput.trim()}
                   >
                     {emailBusy ? "Сохранение…" : copy.saveChanges}
@@ -2856,7 +2856,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setIsPasswordModalOpen(false)}
                   aria-label="Закрыть"
                 >
@@ -2893,7 +2893,7 @@ export function GuestProfile({
                       />
                       <button
                         type="button"
-                        className="guest-pass-toggle-btn"
+                        className="btn btn--ghost btn--sm btn--icon guest-pass-toggle-btn"
                         onClick={() => setShowOldPassword((v) => !v)}
                         aria-label={showOldPassword ? "Скрыть пароль" : "Показать пароль"}
                         tabIndex={-1}
@@ -2922,7 +2922,7 @@ export function GuestProfile({
                       />
                       <button
                         type="button"
-                        className="guest-pass-toggle-btn"
+                        className="btn btn--ghost btn--sm btn--icon guest-pass-toggle-btn"
                         onClick={() => setShowNewPassword((v) => !v)}
                         aria-label={showNewPassword ? "Скрыть пароль" : "Показать пароль"}
                         tabIndex={-1}
@@ -2953,7 +2953,7 @@ export function GuestProfile({
                       />
                       <button
                         type="button"
-                        className="guest-pass-toggle-btn"
+                        className="btn btn--ghost btn--sm btn--icon guest-pass-toggle-btn"
                         onClick={() => setShowConfirmPassword((v) => !v)}
                         aria-label={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
                         tabIndex={-1}
@@ -2967,7 +2967,7 @@ export function GuestProfile({
                 <div className="guest-modal-footer">
                   <button
                     type="button"
-                    className="btn btn-outline"
+                    className="btn btn--ghost btn--md"
                     onClick={() => setIsPasswordModalOpen(false)}
                     disabled={passwordBusy}
                   >
@@ -2975,7 +2975,7 @@ export function GuestProfile({
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-gold"
+                    className="btn btn--primary btn--md"
                     disabled={
                       passwordBusy ||
                       (!noPassword && !oldPasswordInput) ||
@@ -3026,7 +3026,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setEditingRes(null)}
                   aria-label="Закрыть"
                 >
@@ -3086,7 +3086,7 @@ export function GuestProfile({
                 <div className="guest-modal-footer">
                   <button
                     type="button"
-                    className="btn btn-outline"
+                    className="btn btn--ghost btn--md"
                     onClick={() => setEditingRes(null)}
                     disabled={editBusy}
                   >
@@ -3094,7 +3094,7 @@ export function GuestProfile({
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-gold"
+                    className="btn btn--primary btn--md"
                     disabled={editBusy || !editTime}
                   >
                     {editBusy ? "Сохранение…" : copy.saveChanges}
@@ -3140,7 +3140,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setCancellingRes(null)}
                   aria-label="Закрыть"
                 >
@@ -3164,14 +3164,14 @@ export function GuestProfile({
               <div className="guest-modal-footer">
                 <button
                   type="button"
-                  className="btn btn-outline"
+                  className="btn btn--ghost btn--md"
                   onClick={() => setCancellingRes(null)}
                 >
                   Оставить бронь
                 </button>
                 <button
                   type="button"
-                  className="btn btn-danger"
+                  className="btn btn--danger btn--md"
                   disabled={busyCancelAction}
                   onClick={() => void handleConfirmCancelModal(cancellingRes.id)}
                 >
@@ -3219,7 +3219,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setShowClearHistoryModal(false)}
                   aria-label="Закрыть"
                 >
@@ -3237,14 +3237,14 @@ export function GuestProfile({
               <div className="guest-modal-footer">
                 <button
                   type="button"
-                  className="btn btn-outline"
+                  className="btn btn--ghost btn--md"
                   onClick={() => setShowClearHistoryModal(false)}
                 >
                   {copy.clearHistoryCancel || "Оставить историю"}
                 </button>
                 <button
                   type="button"
-                  className="btn btn-danger"
+                  className="btn btn--danger btn--md"
                   disabled={clearingHistory}
                   onClick={() => void handleClearHistory()}
                 >
@@ -3284,7 +3284,7 @@ export function GuestProfile({
                 </div>
                 <button
                   type="button"
-                  className="guest-modal-close"
+                  className="btn btn--ghost btn--sm btn--icon guest-modal-close"
                   onClick={() => setShowAvatarModal(false)}
                   aria-label="Закрыть"
                 >
@@ -3339,7 +3339,7 @@ export function GuestProfile({
                   <button
                     type="button"
                     disabled={avatarBusy}
-                    className="btn btn-gold guest-avatar-upload-file-btn"
+                    className="btn btn--primary btn--md guest-avatar-upload-file-btn"
                     onClick={() => avatarInputRef.current?.click()}
                   >
                     <CameraIcon />
@@ -3383,7 +3383,7 @@ export function GuestProfile({
                   <div className="guest-avatar-modal-remove-wrap">
                     <button
                       type="button"
-                      className="guest-avatar-modal-remove-btn"
+                      className="btn btn--danger-outline btn--sm guest-avatar-modal-remove-btn"
                       onClick={handleRemoveAvatar}
                     >
                       <TrashIcon />
@@ -3405,7 +3405,7 @@ export function GuestProfile({
               <div className="guest-modal-footer">
                 <button
                   type="button"
-                  className="btn btn-gold"
+                  className="btn btn--primary btn--md"
                   onClick={() => setShowAvatarModal(false)}
                 >
                   {copy.avatarDone || "Готово"}

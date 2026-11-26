@@ -8573,21 +8573,7 @@ html[data-theme="light"] .owner-nav button.active {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
-.account-toast-close {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-  opacity: 0.75;
-  transition: opacity 160ms ease;
-}
 
-.account-toast-close:hover {
-  opacity: 1;
-}
 
 /* Guest Profile Root */
 .guest-profile {
@@ -8676,33 +8662,15 @@ html[data-theme="light"] .owner-nav button.active {
   width: 100%;
 }
 
-.guest-welcome-btn-primary {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 0.94rem;
-  font-weight: 700;
-  border-radius: 12px;
-}
 
 .guest-welcome-demo-btn {
   margin-top: 2px;
 }
 
 .guest-welcome-browse-link {
-  font-size: 0.85rem;
-  color: var(--site-muted);
-  text-decoration: none;
   margin-top: 6px;
-  transition: color 160ms ease;
 }
 
-.guest-welcome-browse-link:hover {
-  color: var(--site-fg);
-  text-decoration: underline;
-}
 
 /* Authenticated Hero Identity Banner */
 .guest-hero-card {
@@ -8947,16 +8915,19 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 /* Navigation Tabs */
-.guest-nav-tabs {
+.seg.guest-nav-tabs {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  padding: 6px;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--site-border);
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Favourite heart: red ink on the unified secondary icon button */
+.guest-fav-heart-btn.is-on {
+  --btn-secondary-fg: #ef4444;
+  --btn-secondary-bg: color-mix(in srgb, #ef4444 10%, transparent);
+  --btn-secondary-border: color-mix(in srgb, #ef4444 35%, transparent);
+  --btn-secondary-border-hover: #ef4444;
 }
 
 .guest-nav-tabs::-webkit-scrollbar {
@@ -8964,44 +8935,12 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .guest-nav-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 11px 12px;
-  border-radius: 11px;
-  border: none;
-  background: transparent;
-  color: var(--site-muted);
-  font-size: 0.88rem;
-  font-weight: 650;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 160ms ease;
-  width: 100%;
   box-sizing: border-box;
 }
 
-.guest-nav-tab svg {
-  flex-shrink: 0;
-  opacity: 0.75;
-}
 
-.guest-nav-tab:hover {
-  color: var(--site-fg);
-  background: rgba(255, 255, 255, 0.05);
-}
 
-.guest-nav-tab.active {
-  background: rgba(233, 185, 110, 0.18);
-  color: #e9b96e;
-  font-weight: 750;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
 
-.guest-nav-tab.active svg {
-  opacity: 1;
-}
 
 .guest-tab-count {
   display: inline-flex;
@@ -9056,13 +8995,6 @@ html[data-theme="light"] .owner-nav button.active {
   margin: 0;
 }
 
-.guest-new-booking-btn {
-  padding: 9px 18px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  border-radius: 10px;
-  text-decoration: none;
-}
 
 /* Bookings List */
 .guest-bookings-list {
@@ -9164,44 +9096,11 @@ html[data-theme="light"] .owner-nav button.active {
 
 /* Guest Booking Sub-tabs */
 .guest-booking-subtabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px;
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid var(--site-border);
-  width: fit-content;
   margin-bottom: 6px;
 }
 
-.guest-booking-subtab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  color: var(--site-muted);
-  font-size: 0.84rem;
-  font-weight: 650;
-  cursor: pointer;
-  transition: all 160ms ease;
-  user-select: none;
-}
 
-.guest-booking-subtab:hover {
-  color: var(--site-fg);
-  background: rgba(255, 255, 255, 0.05);
-}
 
-.guest-booking-subtab.active {
-  background: rgba(233, 185, 110, 0.18);
-  color: #e9b96e;
-  font-weight: 750;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
 
 .guest-subtab-badge {
   display: inline-flex;
@@ -9217,10 +9116,6 @@ html[data-theme="light"] .owner-nav button.active {
   color: inherit;
 }
 
-.guest-booking-subtab.active .guest-subtab-badge {
-  background: #e9b96e;
-  color: #121c16;
-}
 
 /* Cancel Action & Confirmation */
 .guest-cancel-btn {
@@ -9261,39 +9156,13 @@ html[data-theme="light"] .owner-nav button.active {
   font-weight: 600;
 }
 
-.btn-danger-pill {
-  min-height: 30px;
-  padding: 5px 12px;
-  border-radius: 8px;
-  background: #ef4444;
-  color: #ffffff;
-  border: none;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 150ms ease;
-}
 
-.btn-danger-pill:hover:not(:disabled) {
-  background: #dc2626;
-}
 
 /* History Card & Rebook */
 .guest-history-card {
   opacity: 0.92;
 }
 
-.guest-rebook-btn {
-  min-height: 40px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 10px;
-  text-decoration: none;
-}
 
 .guest-booking-details {
   display: flex;
@@ -9328,27 +9197,7 @@ html[data-theme="light"] .owner-nav button.active {
   margin-top: 2px;
 }
 
-.guest-confirm-btn {
-  min-height: 40px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 10px;
-}
 
-.guest-venue-link {
-  min-height: 40px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 650;
-  text-decoration: none;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-}
 
 /* Empty State */
 .guest-empty-state {
@@ -9402,12 +9251,6 @@ html[data-theme="light"] .owner-nav button.active {
   justify-content: center;
 }
 
-.guest-empty-actions .btn {
-  text-decoration: none;
-  font-size: 0.86rem;
-  padding: 10px 18px;
-  border-radius: 11px;
-}
 
 /* Form Styles */
 .guest-form {
@@ -9479,12 +9322,6 @@ html[data-theme="light"] .owner-nav button.active {
 
 .guest-submit-btn {
   align-self: flex-start;
-  min-height: 46px;
-  padding: 11px 26px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  border-radius: 11px;
-  cursor: pointer;
   margin-top: 6px;
 }
 
@@ -9508,33 +9345,8 @@ html[data-theme="light"] .owner-nav button.active {
   gap: 8px;
 }
 
-.guest-diet-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--site-border);
-  background: rgba(0, 0, 0, 0.16);
-  color: var(--site-muted);
-  font-size: 0.82rem;
-  font-weight: 650;
-  cursor: pointer;
-  transition: all 160ms ease;
-  user-select: none;
-}
 
-.guest-diet-chip:hover {
-  color: var(--site-fg);
-  border-color: color-mix(in srgb, var(--site-accent) 40%, var(--site-border));
-}
 
-.guest-diet-chip.active {
-  background: rgba(233, 185, 110, 0.18);
-  border-color: var(--site-accent);
-  color: #e9b96e;
-  font-weight: 750;
-}
 
 .guest-field-hint {
   font-size: 0.75rem;
@@ -9613,81 +9425,17 @@ html[data-theme="light"] .owner-nav button.active {
   line-height: 1.25;
 }
 
-.guest-favorite-removed-pill {
-  font-size: 0.70rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.14);
-  border: 1px solid rgba(239, 68, 68, 0.32);
-  color: #f87171;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all 160ms ease;
-  line-height: 1;
-}
 
-.guest-favorite-removed-pill:hover {
-  background: rgba(239, 68, 68, 0.26);
-  border-color: #ef4444;
-  color: #ffffff;
-  transform: translateY(-1px);
-}
 
 .guest-fav-heart-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.28);
-  color: #f87171;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
   flex-shrink: 0;
-  transition: all 160ms ease;
-  padding: 0;
 }
 
-.guest-fav-heart-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: #f87171;
-  stroke: #f87171;
-}
 
-.guest-fav-heart-btn:hover {
-  background: rgba(239, 68, 68, 0.24);
-  border-color: #ef4444;
-  color: #ffffff;
-  transform: scale(1.08);
-}
 
-.guest-fav-heart-btn.is-inactive {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: var(--site-muted);
-}
 
-.guest-fav-heart-btn.is-inactive svg {
-  fill: transparent !important;
-  stroke: var(--site-muted) !important;
-}
 
-.guest-fav-heart-btn.is-inactive:hover {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.38);
-  color: #f87171;
-  transform: scale(1.08);
-}
 
-.guest-fav-heart-btn.is-inactive:hover svg {
-  fill: rgba(239, 68, 68, 0.25) !important;
-  stroke: #f87171 !important;
-}
 
 .guest-favorite-badges {
   display: flex;
@@ -9761,36 +9509,13 @@ html[data-theme="light"] .owner-nav button.active {
 
 .guest-fav-book-btn {
   flex: 1;
-  height: 40px;
-  min-height: 40px;
   max-height: 40px;
   box-sizing: border-box;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 0.86rem;
-  font-weight: 750;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-decoration: none;
 }
 
 .guest-fav-menu-btn {
-  height: 40px;
-  min-height: 40px;
   max-height: 40px;
   box-sizing: border-box;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 0.84rem;
-  font-weight: 650;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
 }
 
 /* Settings List */
@@ -9827,38 +9552,10 @@ html[data-theme="light"] .owner-nav button.active {
   color: var(--site-muted);
 }
 
-.guest-lang-switch {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 9px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--site-border);
-}
 
-.guest-lang-btn {
-  padding: 5px 11px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  color: var(--site-muted);
-  font-size: 0.76rem;
-  font-weight: 750;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
 
-.guest-lang-btn.active {
-  background: var(--site-accent);
-  color: #121c16;
-}
 
-.guest-theme-btn {
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 650;
-  border-radius: 10px;
-}
+
 
 .guest-age-status-badge {
   padding: 5px 12px;
@@ -9876,24 +9573,7 @@ html[data-theme="light"] .owner-nav button.active {
   margin-top: 10px;
 }
 
-.guest-logout-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #f87171;
-  padding: 8px 16px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
 
-.guest-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-}
 
 /* Guest Email Input Group */
 .guest-email-input-group {
@@ -9907,28 +9587,9 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .guest-field-action-btn {
-  height: 44px;
-  padding: 0 16px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 10px;
-  white-space: nowrap;
   flex-shrink: 0;
-  border-color: var(--site-border);
-  color: var(--site-fg);
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-  transition: all 160ms ease;
 }
 
-.guest-field-action-btn:hover {
-  background: rgba(233, 185, 110, 0.12);
-  border-color: var(--site-accent);
-  color: var(--site-accent);
-}
 
 /* Guest Security & Credentials Section */
 .guest-security-section {
@@ -10050,26 +9711,8 @@ html[data-theme="light"] .owner-nav button.active {
 
 .guest-security-action-btn {
   align-self: flex-start;
-  min-height: 38px;
-  padding: 6px 14px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 9px;
-  border-color: var(--site-border);
-  color: var(--site-fg);
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-  transition: all 160ms ease;
 }
 
-.guest-security-action-btn:hover {
-  background: rgba(233, 185, 110, 0.14);
-  border-color: var(--site-accent);
-  color: var(--site-accent);
-}
 
 /* Modals */
 .guest-modal-backdrop {
@@ -10148,25 +9791,7 @@ html[data-theme="light"] .owner-nav button.active {
   margin: 2px 0 0;
 }
 
-.guest-modal-close {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--site-muted);
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 140ms ease;
-}
 
-.guest-modal-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--site-fg);
-}
 
 .guest-modal-body {
   padding: 22px;
@@ -10258,22 +9883,8 @@ html[data-theme="light"] .owner-nav button.active {
 .guest-pass-toggle-btn {
   position: absolute;
   right: 6px;
-  background: transparent;
-  border: none;
-  color: var(--site-muted);
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 140ms ease;
 }
 
-.guest-pass-toggle-btn:hover {
-  color: var(--site-fg);
-}
 
 .guest-modal-hint {
   font-size: 0.74rem;
@@ -10358,31 +9969,11 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .guest-role-banner-btn {
-  white-space: nowrap;
   flex-shrink: 0;
 }
 
 /* Demo Mode Toggle Chip */
-.guest-demo-mode-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 750;
-  cursor: pointer;
-  border: 1px solid rgba(233, 185, 110, 0.3);
-  background: rgba(233, 185, 110, 0.1);
-  color: var(--site-accent);
-  transition: all 160ms ease;
-}
 
-.guest-demo-mode-chip:hover {
-  background: rgba(233, 185, 110, 0.2);
-  border-color: var(--site-accent);
-  transform: translateY(-1px);
-}
 
 .guest-demo-chip-dot {
   width: 7px;
@@ -10537,74 +10128,13 @@ html[data-theme="light"] .owner-nav button.active {
   margin-bottom: 2px;
 }
 
-.guest-ticket-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
-}
 
 /* Seatiko Signature Warm Calm Matte Gold Buttons */
-.guest-profile .btn.btn-gold,
-.guest-modal-dialog .btn.btn-gold,
-.guest-event-actions .btn.btn-gold {
-  background: #e9b96e;
-  color: #142e23;
-  font-weight: 700;
-  border: 1px solid rgba(233, 185, 110, 0.4);
-  box-shadow: 0 4px 14px rgba(233, 185, 110, 0.18);
-  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
-}
 
-.guest-profile .btn.btn-gold:hover,
-.guest-modal-dialog .btn.btn-gold:hover,
-.guest-event-actions .btn.btn-gold:hover {
-  background: #f2c980;
-  box-shadow: 0 6px 20px rgba(233, 185, 110, 0.28);
-  transform: translateY(-1px);
-}
 
 /* Outline Buttons */
-.guest-profile .btn.btn-outline,
-.guest-modal-dialog .btn.btn-outline,
-.guest-event-actions .btn.btn-outline {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--site-border);
-  color: var(--site-fg);
-  font-weight: 650;
-  transition: all 160ms ease;
-}
 
-.guest-profile .btn.btn-outline:hover,
-.guest-modal-dialog .btn.btn-outline:hover,
-.guest-event-actions .btn.btn-outline:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(233, 185, 110, 0.4);
-  color: #e9b96e;
-  transform: translateY(-1px);
-}
 
-/* Universal 40px Button Height in Action Rows */
-.guest-booking-actions .btn,
-.guest-booking-actions a.btn,
-.guest-event-actions .btn,
-.guest-event-actions a.btn,
-.guest-favorite-actions .btn,
-.guest-favorite-actions a.btn {
-  height: 40px;
-  min-height: 40px;
-  max-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  font-size: 0.84rem;
-  font-weight: 650;
-  border-radius: 10px;
-  box-sizing: border-box;
-  line-height: 1;
-  text-decoration: none;
-}
 
 /* Top-Right Booking Meta & Cancel Trigger */
 .guest-booking-top-meta {
@@ -10614,80 +10144,14 @@ html[data-theme="light"] .owner-nav button.active {
   gap: 8px;
 }
 
-.guest-booking-cancel-top-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.32);
-  color: #f87171;
-  font-size: 0.78rem;
-  font-weight: 650;
-  padding: 5px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 160ms ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
 
-.guest-booking-cancel-top-btn svg {
-  width: 13px;
-  height: 13px;
-}
 
-.guest-booking-cancel-top-btn:hover {
-  background: rgba(239, 68, 68, 0.22);
-  border-color: rgba(239, 68, 68, 0.55);
-  color: #fca5a5;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
-}
 
-.guest-booking-delete-top-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--site-muted);
-  font-size: 0.74rem;
-  font-weight: 650;
-  padding: 4px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 160ms ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
 
-.guest-booking-delete-top-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
-  transform: translateY(-1px);
-}
 
-.guest-booking-delete-top-btn svg {
-  width: 12px;
-  height: 12px;
-}
 
 /* Danger Button for Modals */
-.btn-danger {
-  background: #dc2626;
-  color: #ffffff;
-  font-weight: 700;
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
-  border-radius: 10px;
-  min-height: 40px;
-  padding: 8px 18px;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
 
-.btn-danger:hover {
-  background: #ef4444;
-  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
-  transform: translateY(-1px);
-}
 
 .guest-cancel-modal-dialog {
   max-width: 480px;
@@ -10774,41 +10238,12 @@ html[data-theme="light"] .owner-nav button.active {
 }
 
 .guest-clear-history-toolbar-btn {
-  height: 38px;
-  min-height: 38px;
   max-height: 38px;
   box-sizing: border-box;
-  padding: 0 14px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--site-muted);
-  font-size: 0.82rem;
-  font-weight: 650;
-  cursor: pointer;
-  transition: all 160ms ease;
-  user-select: none;
 }
 
-.guest-clear-history-toolbar-btn svg {
-  width: 14px;
-  height: 14px;
-}
 
-.guest-clear-history-toolbar-btn:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.38);
-  color: #fca5a5;
-  transform: translateY(-1px);
-}
 
-.guest-clear-history-toolbar-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .guest-history-footer-bar {
   display: flex;
@@ -10827,30 +10262,8 @@ html[data-theme="light"] .owner-nav button.active {
   color: var(--site-muted);
 }
 
-.guest-history-footer-clear-btn {
-  background: none;
-  border: none;
-  padding: 4px 8px;
-  color: var(--site-muted);
-  font-size: 0.80rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 160ms ease;
-  border-radius: 6px;
-}
 
-.guest-history-footer-clear-btn svg {
-  width: 13px;
-  height: 13px;
-}
 
-.guest-history-footer-clear-btn:hover {
-  color: #f87171;
-  background: rgba(239, 68, 68, 0.1);
-}
 
 .guest-modal-icon-badge.guest-modal-icon-danger {
   background: rgba(239, 68, 68, 0.14);
@@ -10917,36 +10330,8 @@ html[data-theme="light"] .owner-nav button.active {
   flex-wrap: wrap;
 }
 
-.guest-avatar-change-btn {
-  height: 36px;
-  min-height: 36px;
-  padding: 0 14px;
-  font-size: 0.82rem;
-  font-weight: 650;
-  border-radius: 9px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.guest-avatar-remove-btn {
-  height: 36px;
-  min-height: 36px;
-  padding: 0 12px;
-  font-size: 0.82rem;
-  font-weight: 650;
-  border-radius: 9px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--site-muted);
-}
 
-.guest-avatar-remove-btn:hover {
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #fca5a5;
-}
 
 /* Avatar Modal Details */
 .guest-avatar-modal-dialog {
@@ -11000,17 +10385,6 @@ html[data-theme="light"] .owner-nav button.active {
   margin-bottom: 20px;
 }
 
-.guest-avatar-upload-file-btn {
-  height: 42px;
-  min-height: 42px;
-  padding: 0 20px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
 
 .guest-avatar-modal-specs {
   font-size: 0.76rem;
@@ -11087,25 +10461,7 @@ html[data-theme="light"] .owner-nav button.active {
   margin-bottom: 16px;
 }
 
-.guest-avatar-modal-remove-btn {
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  color: #f87171;
-  font-size: 0.80rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 8px;
-  transition: all 160ms ease;
-}
 
-.guest-avatar-modal-remove-btn:hover {
-  background: rgba(239, 68, 68, 0.12);
-  color: #fca5a5;
-}
 
 .guest-avatar-task-notice {
   padding: 12px 14px;
@@ -11179,105 +10535,32 @@ html[data-theme="light"] .guest-favorite-card.is-unfavorited {
   border-color: rgba(239, 68, 68, 0.35);
 }
 
-html[data-theme="light"] .guest-favorite-removed-pill {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.28);
-  color: #dc2626;
-}
 
-html[data-theme="light"] .guest-favorite-removed-pill:hover {
-  background: #fee2e2;
-  border-color: #dc2626;
-  color: #b91c1c;
-}
 
-html[data-theme="light"] .guest-fav-heart-btn {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.25);
-  color: #dc2626;
-}
 
-html[data-theme="light"] .guest-fav-heart-btn svg {
-  fill: #dc2626;
-  stroke: #dc2626;
-}
 
-html[data-theme="light"] .guest-fav-heart-btn.is-inactive {
-  background: #f3f4f6;
-  border-color: rgba(26, 36, 32, 0.14);
-  color: #6b7280;
-}
 
-html[data-theme="light"] .guest-fav-heart-btn.is-inactive svg {
-  fill: transparent !important;
-  stroke: #6b7280 !important;
-}
 
-html[data-theme="light"] .guest-fav-heart-btn.is-inactive:hover {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.38);
-  color: #dc2626;
-}
 
-html[data-theme="light"] .guest-fav-heart-btn.is-inactive:hover svg {
-  fill: rgba(239, 68, 68, 0.2) !important;
-  stroke: #dc2626 !important;
-}
 
 html[data-theme="light"] .guest-stat-box.active {
   background: rgba(36, 96, 70, 0.08);
   border-color: #246046;
 }
 
-html[data-theme="light"] .guest-nav-tabs {
-  background: #eef3ee;
-  border-color: rgba(26, 36, 32, 0.1);
-}
 
-html[data-theme="light"] .guest-nav-tab.active {
-  background: #173f31;
-  color: #ffffff;
-}
 
 html[data-theme="light"] .guest-tab-count {
   background: #ffffff;
   color: #173f31;
 }
 
-html[data-theme="light"] .guest-diet-chip {
-  background: #f4f8f4;
-  border-color: rgba(26, 36, 32, 0.12);
-}
 
-html[data-theme="light"] .guest-diet-chip.active {
-  background: rgba(36, 96, 70, 0.12);
-  border-color: #246046;
-  color: #17422f;
-}
 
-html[data-theme="light"] .guest-lang-switch {
-  background: #eef2ed;
-}
 
-html[data-theme="light"] .guest-lang-btn.active {
-  background: #173f31;
-  color: #ffffff;
-}
 
-html[data-theme="light"] .guest-booking-subtabs {
-  background: #eef3ee;
-  border-color: rgba(26, 36, 32, 0.1);
-}
 
-html[data-theme="light"] .guest-booking-subtab.active {
-  background: #173f31;
-  color: #ffffff;
-}
 
-html[data-theme="light"] .guest-booking-subtab.active .guest-subtab-badge {
-  background: #ffffff;
-  color: #173f31;
-}
 
 html[data-theme="light"] .guest-cancel-confirm-box {
   background: #fef2f2;
@@ -11292,18 +10575,7 @@ html[data-theme="light"] .guest-readonly-input {
   background: #f2f5f2 !important;
 }
 
-html[data-theme="light"] .guest-field-action-btn,
-html[data-theme="light"] .guest-security-action-btn {
-  background: #ffffff;
-  border-color: rgba(26, 36, 32, 0.14);
-}
 
-html[data-theme="light"] .guest-field-action-btn:hover,
-html[data-theme="light"] .guest-security-action-btn:hover {
-  background: rgba(36, 96, 70, 0.08);
-  border-color: #246046;
-  color: #17422f;
-}
 
 html[data-theme="light"] .guest-security-card {
   background: #f7faf7;
@@ -11373,17 +10645,7 @@ html[data-theme="light"] .guest-history-count-badge {
   color: #246046;
 }
 
-html[data-theme="light"] .guest-clear-history-toolbar-btn {
-  background: #ffffff;
-  border-color: rgba(26, 36, 32, 0.14);
-  color: #3b5044;
-}
 
-html[data-theme="light"] .guest-clear-history-toolbar-btn:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #dc2626;
-}
 
 html[data-theme="light"] .guest-history-footer-bar {
   background: #fbfdfb;
@@ -11396,17 +10658,7 @@ html[data-theme="light"] .guest-modal-icon-badge.guest-modal-icon-danger {
   color: #dc2626;
 }
 
-html[data-theme="light"] .guest-booking-cancel-top-btn {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #dc2626;
-}
 
-html[data-theme="light"] .guest-booking-cancel-top-btn:hover {
-  background: #fee2e2;
-  border-color: rgba(239, 68, 68, 0.6);
-  color: #b91c1c;
-}
 
 html[data-theme="light"] .guest-avatar-edit-badge {
   background: #ffffff;
@@ -11496,7 +10748,7 @@ html[data-theme="light"] .guest-avatar-task-tag {
     align-items: flex-start;
     gap: 12px;
   }
-  .guest-nav-tabs {
+  .seg.guest-nav-tabs {
     display: flex;
     overflow-x: auto;
     scrollbar-width: none;
@@ -11506,9 +10758,7 @@ html[data-theme="light"] .guest-avatar-task-tag {
   }
   .guest-nav-tab {
     flex: 1 0 auto;
-    min-width: max-content;
-    padding: 10px 14px;
-  }
+}
 }
 
 /* ==========================================================================
@@ -13354,16 +12604,6 @@ html[data-theme="light"] .catalog-cuisine-tag {
   text-align: right;
 }
 
-.guest-edit-res-btn {
-  min-height: 40px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 650;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 10px;
-}
 
 /* Guest Events & Active Bookings Section in Profile */
 .guest-events-section,
@@ -13730,17 +12970,8 @@ html[data-theme="light"] .catalog-cuisine-tag {
 .guest-event-chat-btn,
 .guest-event-call-btn,
 .guest-event-venue-btn {
-  height: 40px;
-  min-height: 40px;
   max-height: 40px;
   box-sizing: border-box;
-  padding: 0 16px;
-  border-radius: 10px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
 }
 
 @media (max-width: 768px) {
@@ -15857,18 +15088,6 @@ html[data-theme="dark"] .venue-day-cal-event.mine {
 }
 
 /* Account bookings: outline buttons were light-on-light in the light theme */
-html[data-theme="light"] .guest-booking-card .btn-outline.guest-edit-res-btn,
-html[data-theme="light"] .guest-booking-card .btn-outline.guest-venue-link {
-  border: 1px solid rgba(26, 36, 32, 0.24);
-  background: #ffffff;
-  color: #1f3b30;
-}
-html[data-theme="light"] .guest-booking-card .btn-outline.guest-edit-res-btn:hover,
-html[data-theme="light"] .guest-booking-card .btn-outline.guest-venue-link:hover {
-  border-color: #246046;
-  background: rgba(36, 96, 70, 0.06);
-  color: #17362c;
-}
 
 /* Confirmation extras: calendar, directions, share, pre-order */
 .booking-done-extras {
@@ -17700,10 +16919,6 @@ html[data-theme="light"] .menu-dish-popup-x {
 .guest-delete-row .guest-setting-meta strong {
   color: #e5484d;
 }
-.guest-delete-account-btn {
-  border-color: color-mix(in srgb, #e5484d 55%, transparent) !important;
-  color: #e5484d !important;
-}
 .guest-delete-dialog {
   max-width: 460px;
   padding: 24px;
@@ -17747,14 +16962,6 @@ html[data-theme="light"] .menu-dish-popup-x {
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
-}
-.guest-delete-confirm {
-  background: #e5484d !important;
-  border-color: #e5484d !important;
-  color: #fff !important;
-}
-.guest-delete-confirm:disabled {
-  opacity: 0.6;
 }
 
 /* /discover match counter on the map (components/venue-map.tsx) */
@@ -18248,14 +17455,9 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
   }
 
   .guest-booking-actions .btn,
-  .guest-booking-actions a.btn,
   .guest-event-actions .btn,
-  .guest-event-actions a.btn,
-  .guest-favorite-actions .btn,
-  .guest-favorite-actions a.btn {
+  .guest-favorite-actions .btn {
     width: 100%;
-    min-height: 44px;
-    max-height: none;
   }
 
   .guest-modal-footer {
