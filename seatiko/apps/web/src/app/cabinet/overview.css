@@ -211,8 +211,10 @@ button.ov-tile:hover { border-color: color-mix(in srgb, var(--site-accent) 55%, 
 }
 .ov-grid.is-single { grid-template-columns: minmax(0, 1fr); }
 .ov-card { min-width: 0; padding: 22px 24px; }
-.ov-card-head { align-items: flex-start; margin-bottom: 16px; }
-.ov-card-head > div { min-width: 0; }
+.ov-card-head { flex-wrap: wrap; align-items: flex-start; gap: 8px 16px; margin-bottom: 16px; }
+.ov-card-head > div { flex: 1 1 auto; min-width: 0; }
+/* A kicker pill never breaks; when the head runs out of room the link moves to its own line. */
+.ov-card-head .owner-kicker { white-space: nowrap; }
 .ov-card-head h3 { margin-top: 8px; }
 
 .ov-count {
