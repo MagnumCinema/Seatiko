@@ -1,3 +1,5 @@
+// Sentry first: its instrumentation must load before Nest and the modules it wraps.
+import './instrument.js';
 import { mkdirSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';

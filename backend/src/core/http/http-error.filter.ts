@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import type { Response } from 'express';
 import { DomainError } from '../errors/domain-error.js';
 
@@ -14,7 +15,9 @@ const STATUS_CODES: Partial<Record<number, string>> = {
 
 /**
  * Every error leaves the API as {"error": "<code>"} with the HTTP status of the Go API.
- * Unexpected errors are logged and answered with 500 internal_error, without details.
+ * Unexpected errors are logged, reported to Sentry (when SENTRY_DSN is set) and answered with
+ * 500 internal_error, without details. Domain errors and Nest's HTTP exceptions are expected
+ * outcomes (4xx, 503 states) and are not reported.
  */
 @Catch()
 export class HttpErrorFilter implements ExceptionFilter {
@@ -37,6 +40,7 @@ export class HttpErrorFilter implements ExceptionFilter {
       return;
     }
     this.logger.error(exception instanceof Error ? (exception.stack ?? exception.message) : String(exception));
+    Sentry.captureException(exception, { mechanism: { handled: false, type: 'auto.function.nestjs.exception_captured' } });
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'internal_error' });
   }
 }
