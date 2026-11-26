@@ -49,6 +49,8 @@ import {
   type VenueAnalytics,
   type VenueRole,
 } from "@/lib/api";
+import { deleteVenueWorkShift, listVenueWorkShifts, type WorkShift } from "@/lib/api";
+import { occupiesTime, shiftSpan } from "@/lib/shift-schedule";
 
 type Props = { venueId: string };
 
@@ -390,6 +392,27 @@ export function CabinetStaffPanel({ venueId }: Props) {
     };
   }, [removingMember]);
 
+  // Upcoming shifts of the person being removed: offered for deletion so none are left without a person.
+  const [futureShifts, setFutureShifts] = useState<WorkShift[]>([]);
+  const [dropFuture, setDropFuture] = useState(true);
+  useEffect(() => {
+    if (!removingMember) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      setFutureShifts([]);
+      setDropFuture(true);
+      listVenueWorkShifts(venueId)
+        .then((list) => {
+          const now = Date.now();
+          if (!cancelled) setFutureShifts(list.filter((s) => s.staff_id === removingMember.id && occupiesTime(s) && (shiftSpan(s)?.end ?? 0) > now));
+        })
+        .catch(() => undefined);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [removingMember, venueId]);
+
   async function reload() {
     const [members, stats, roleData] = await Promise.all([
       listVenueStaff(venueId),
@@ -593,7 +616,7 @@ export function CabinetStaffPanel({ venueId }: Props) {
               className={staffFilter === "all" ? "active" : ""}
               onClick={() => setStaffFilter("all")}
             >
-              {copy.opsScheduleTabAll} ({staff.length})
+              {copy.shiftPlan.allPeople.replace("{count}", String(staff.length))}
             </button>
             {groupStaffByRole(staff, roles).map(({ role, members }) => (
               <button
@@ -768,6 +791,15 @@ export function CabinetStaffPanel({ venueId }: Props) {
                   ? `Are you sure you want to remove ${removingMember.name?.trim() || removingMember.email} from the venue staff?`
                   : `Вы уверены, что хотите удалить ${removingMember.name?.trim() || removingMember.email} из списка персонала заведения?`}
               </p>
+              {futureShifts.length > 0 && (
+                <label className="cabinet-shift-split-toggle staff-remove-shifts">
+                  <input type="checkbox" checked={dropFuture} onChange={(e) => setDropFuture(e.target.checked)} />
+                  <span>
+                    {copy.shiftPlan.removeFutureShifts.replace("{count}", String(futureShifts.length))}
+                    <small>{copy.shiftPlan.removeFutureHint}</small>
+                  </span>
+                </label>
+              )}
               <div className="cabinet-delete-actions">
                 <button
                   type="button"
@@ -775,7 +807,9 @@ export function CabinetStaffPanel({ venueId }: Props) {
                   disabled={busy}
                   onClick={() => {
                     const target = removingMember;
+                    const drop = dropFuture ? futureShifts : [];
                     void run(async () => {
+                      for (const shift of drop) await deleteVenueWorkShift(venueId, shift.id);
                       await removeVenueStaff(venueId, target.id);
                       setStaff((prev) => prev.filter((s) => s.id !== target.id));
                       setRemovingMember(null);

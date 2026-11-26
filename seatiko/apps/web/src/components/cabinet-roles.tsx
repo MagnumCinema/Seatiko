@@ -15,6 +15,9 @@ import {
 import { getSiteCopy } from "@/lib/site-copy";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { StaffingRulesEditor, staffingSummary } from "@/components/staffing-rules-editor";
+import type { StaffingRule } from "@/lib/shift-schedule";
+import { readStaffing, STAFFING_EVENT, writeRoleStaffing } from "@/lib/staffing-store";
 import {
   deleteState,
   nextRoleColor,
@@ -66,6 +69,15 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
   const [reassignTo, setReassignTo] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  // Minimum staffing per role: kept in this browser until the API stores it (BACKEND_TASKS №31).
+  const [minRules, setMinRules] = useState<StaffingRule[]>([]);
+  const [staffing, setStaffing] = useState<Record<string, StaffingRule[]>>({});
+  useEffect(() => {
+    const sync = () => setStaffing(readStaffing(venueId));
+    queueMicrotask(sync);
+    window.addEventListener(STAFFING_EVENT, sync);
+    return () => window.removeEventListener(STAFFING_EVENT, sync);
+  }, [venueId]);
 
   const editorRef = useRef<HTMLElement>(null);
   const deleteRef = useRef<HTMLElement>(null);
@@ -93,6 +105,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
     setName("");
     setColor(nextRoleColor(roles));
     setInSchedule(true);
+    setMinRules([]);
   }
 
   function openEdit(role: VenueRole) {
@@ -100,6 +113,12 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
     setName(role.name || presetNames[role.key] || role.key);
     setColor(role.color || ROLE_COLORS[0]);
     setInSchedule(role.in_schedule);
+    setMinRules(readStaffing(venueId)[role.key] ?? []);
+  }
+
+  /** Saves the dialog's minimums for a role key; says so when the browser keeps nothing. */
+  function saveMinimums(key: string) {
+    if (!writeRoleStaffing(venueId, key, minRules)) setMessage({ kind: "error", text: site.cabinet.shiftPlan.minSaveFailed });
   }
 
   async function run(action: () => Promise<unknown>, ok: string) {
@@ -123,14 +142,24 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
     if (!editor || nameBlocking) return;
     const trimmed = name.trim().replace(/\s+/g, " ");
     if (editor.mode === "create") {
-      if (await run(() => createVenueRole(venueId, { name: trimmed, color, in_schedule: inSchedule }), copy.created)) setEditor(null);
+      let key = "";
+      const ok = await run(async () => {
+        key = (await createVenueRole(venueId, { name: trimmed, color, in_schedule: inSchedule })).key;
+      }, copy.created);
+      if (ok) {
+        if (key && minRules.length) saveMinimums(key);
+        setEditor(null);
+      }
       return;
     }
     const role = editor.role;
     // Keep a preset role on its translated name unless the owner typed another one.
     const presetName = presetNames[role.key];
     const nextName = role.is_system && presetName && (trimmed === presetName || !trimmed) ? "" : trimmed;
-    if (await run(() => updateVenueRole(venueId, role.id, { name: nextName, color, in_schedule: inSchedule }), copy.saved)) setEditor(null);
+    if (await run(() => updateVenueRole(venueId, role.id, { name: nextName, color, in_schedule: inSchedule }), copy.saved)) {
+      saveMinimums(role.key);
+      setEditor(null);
+    }
   }
 
   async function move(role: VenueRole, delta: -1 | 1) {
@@ -207,6 +236,9 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                   {!role.in_schedule && <span className="cabinet-role-kind off">{copy.notInSchedule}</span>}
                 </div>
                 <small>{fill(copy.membersCount, { count })}</small>
+                {role.in_schedule && staffing[role.key]?.length ? (
+                  <small className="cabinet-role-min">{staffingSummary(staffing[role.key], site.cabinet, locale)}</small>
+                ) : null}
               </div>
               <div className="cabinet-role-actions">
                 <label className="cabinet-role-switch" title={copy.inScheduleHint}>
@@ -342,6 +374,7 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                     <small>{copy.inScheduleHint}</small>
                   </span>
                 </label>
+                <StaffingRulesEditor rules={minRules} onChange={setMinRules} disabled={!inSchedule} copy={site.cabinet} locale={locale} />
                 <div className="cabinet-delete-actions">
                   <button type="submit" className="panel-btn" disabled={busy || Boolean(nameBlocking)}>
                     {editor.mode === "create" ? copy.create : copy.save}
@@ -410,7 +443,11 @@ export function CabinetRolesCard({ venueId, roles, staff, venueType, suggested, 
                       void run(
                         () => deleteVenueRole(venueId, target.id, deletingState.blocked === "in_use" ? reassignTo : undefined),
                         copy.deleted,
-                      ).then((ok) => ok && setDeleting(null));
+                      ).then((ok) => {
+                        if (!ok) return;
+                        writeRoleStaffing(venueId, target.key, []);
+                        setDeleting(null);
+                      });
                     }}
                   >
                     {copy.deleteConfirm}

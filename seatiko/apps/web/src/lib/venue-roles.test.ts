@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { StaffMember, VenueRole, WorkShift } from "@/lib/api";
+import type { StaffMember, VenueRole } from "@/lib/api";
 import {
   deleteState,
   groupStaffByRole,
   isVenueTypeId,
   nextRoleColor,
   plannerRoles,
-  roleCoverage,
   roleLabel,
   roleNameByKey,
   shiftRoleLabel,
-  splitTeamsByRole,
   validRoleName,
   VENUE_TYPE_IDS,
 } from "./venue-roles";
@@ -35,23 +33,6 @@ function role(key: string, extra: Partial<VenueRole> = {}): VenueRole {
 
 function member(id: string, roleKey: string): StaffMember {
   return { id, venue_id: "v1", email: `${id}@x.md`, role: roleKey, status: "ACTIVE", created_at: "" };
-}
-
-function shift(staffId: string, roleKey: string, extra: Partial<WorkShift> = {}): WorkShift {
-  return {
-    id: `${staffId}-${roleKey}-${extra.start_time ?? "08:00"}`,
-    venue_id: "v1",
-    staff_id: staffId,
-    staff_name: staffId,
-    role: roleKey,
-    date: "2026-11-25",
-    start_time: "08:00",
-    end_time: "12:00",
-    status: "CONFIRMED",
-    created_at: "",
-    updated_at: "",
-    ...extra,
-  };
 }
 
 const roles = [
@@ -91,28 +72,6 @@ describe("venue roles", () => {
     ]);
     const all = groupStaffByRole(staff, roles, { includeEmpty: true });
     expect(all.map((g) => g.role.key)).toEqual(["waiter", "cook", "custom-acc", "custom-sushi", "gone"]);
-  });
-
-  it("counts people per role on a day, split shifts once, declined not at all", () => {
-    const shifts = [
-      shift("a", "waiter"),
-      shift("a", "waiter", { start_time: "18:00", end_time: "22:00" }),
-      shift("b", "custom-sushi"),
-      shift("c", "waiter", { status: "DECLINED" }),
-      shift("d", "waiter", { date: "2026-11-26" }),
-    ];
-    expect(roleCoverage(shifts, "2026-11-25", ["waiter", "cook", "custom-sushi"])).toEqual({
-      waiter: 1,
-      cook: 0,
-      "custom-sushi": 1,
-    });
-  });
-
-  it("splits teams alternately inside each role", () => {
-    const staff = [member("w1", "waiter"), member("w2", "waiter"), member("w3", "waiter"), member("s1", "custom-sushi"), member("s2", "custom-sushi")];
-    const groups = groupStaffByRole(staff, roles, { inScheduleOnly: true });
-    expect(splitTeamsByRole(["w1", "w2", "w3", "s1", "s2"], groups)).toEqual({ teamA: ["w1", "w3", "s1"], teamB: ["w2", "s2"] });
-    expect(splitTeamsByRole(["w2"], groups)).toEqual({ teamA: ["w2"], teamB: [] });
   });
 
   it("validates role names against other roles", () => {

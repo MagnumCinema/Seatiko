@@ -97,33 +97,6 @@ export function groupStaffByRole(
   return opts.includeEmpty ? groups : groups.filter((g) => g.members.length > 0);
 }
 
-/** People (not shifts) of each role on shift on a date; declined shifts do not count. */
-export function roleCoverage(shifts: WorkShift[], date: string, roleKeys: string[]): Record<string, number> {
-  const out: Record<string, number> = Object.fromEntries(roleKeys.map((k) => [k, 0]));
-  const seen = new Map<string, Set<string>>();
-  for (const s of shifts) {
-    if (s.date !== date || s.status === "DECLINED" || !(s.role in out)) continue;
-    const people = seen.get(s.role) ?? new Set<string>();
-    people.add(s.staff_id);
-    seen.set(s.role, people);
-  }
-  for (const [key, people] of seen) out[key] = people.size;
-  return out;
-}
-
-/** Split selected people into two alternating teams within each role, so every role covers every day. */
-export function splitTeamsByRole(selectedIds: string[], groups: RoleGroup[]): { teamA: string[]; teamB: string[] } {
-  const selected = new Set(selectedIds);
-  const teamA: string[] = [];
-  const teamB: string[] = [];
-  for (const g of groups) {
-    g.members
-      .filter((m) => selected.has(m.id))
-      .forEach((m, i) => (i % 2 === 0 ? teamA : teamB).push(m.id));
-  }
-  return { teamA, teamB };
-}
-
 /** First palette colour no role uses yet. */
 export function nextRoleColor(roles: VenueRole[]): string {
   const used = new Set(roles.map((r) => r.color.toLowerCase()));
