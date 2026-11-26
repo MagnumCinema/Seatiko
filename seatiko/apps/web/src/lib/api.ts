@@ -999,6 +999,9 @@ export async function adminPublishApplication(
   return data.application;
 }
 
+/** How long the booking form waits for the API before telling the guest it failed. */
+export const BOOKING_TIMEOUT_MS = 30_000;
+
 export async function createReservation(input: {
   venue_id: string;
   table_id: string;
@@ -1011,7 +1014,12 @@ export async function createReservation(input: {
 }): Promise<Reservation> {
   const data = await apiFetch<{ reservation: Reservation }>(
     "/api/v1/reservations",
-    { method: "POST", body: { ...input, source: "WEB" } },
+    {
+      method: "POST",
+      body: { ...input, source: "WEB" },
+      // A request that never answers must not leave the form stuck on "Booking…".
+      signal: AbortSignal.timeout(BOOKING_TIMEOUT_MS),
+    },
   );
   return data.reservation;
 }

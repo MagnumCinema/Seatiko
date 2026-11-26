@@ -41,5 +41,7 @@ export function apiErrorKey(error: unknown): MessageKey {
     return error.status === 401 ? "table.login_needed" : "common.error";
   }
   if (error instanceof TypeError) return "error.network";
+  // fetch aborted by a timeout signal (no answer from the server in time).
+  if (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) return "error.network";
   return "common.error";
 }
