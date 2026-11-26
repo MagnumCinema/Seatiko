@@ -1685,24 +1685,24 @@ export async function staffUpdateOrder(
   return data.order;
 }
 
-/** Asks moderation to change a published venue's profile; the patch holds only the changed fields. */
-export async function submitProfileChangeRequest(
-  applicationId: string,
-  patch: ApplicationUpdate,
-): Promise<ProfileChangeRequest> {
-  const data = await apiFetch<{ change_request: ProfileChangeRequest }>(
-    `/api/v1/restaurant/applications/${applicationId}/change-requests`,
-    { method: "POST", body: patch },
-  );
-  return data.change_request;
-}
-
-/** The owner's change requests for all venues, newest first. */
+/** The owner's own profile change requests, newest first (all venues). */
 export async function listMyChangeRequests(): Promise<ProfileChangeRequest[]> {
   const data = await apiFetch<{ change_requests: ProfileChangeRequest[] }>(
     "/api/v1/restaurant/change-requests",
   );
   return data.change_requests ?? [];
+}
+
+export async function submitProfileChangeRequest(
+  applicationId: string,
+  patch: ApplicationUpdate,
+): Promise<ProfileChangeRequest> {
+  // Only the changed fields: the moderator approves exactly this patch.
+  const data = await apiFetch<{ change_request: ProfileChangeRequest }>(
+    `/api/v1/restaurant/applications/${applicationId}/change-requests`,
+    { method: "POST", body: patch },
+  );
+  return data.change_request;
 }
 
 export type AdminOverview = {
