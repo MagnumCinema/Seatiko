@@ -112,18 +112,19 @@ function LanguagePills({
       {TEXT_LOCALES.map((code) => {
         const filled = value[code].trim() !== "";
         const label = code.toUpperCase();
+        const state = fill(filled ? t.langFilled : t.langEmpty, { lang: label });
         return (
           <button
             key={code}
             type="button"
             className={code === active ? "active" : ""}
             aria-pressed={code === active}
-            title={fill(filled ? t.langFilled : t.langEmpty, { lang: label })}
+            aria-label={state}
+            title={state}
             onClick={() => onPick(code)}
           >
             {label}
             <i className={filled ? "filled" : ""} aria-hidden="true" />
-            <span className="vp-sr">{fill(filled ? t.langFilled : t.langEmpty, { lang: "" })}</span>
           </button>
         );
       })}
@@ -439,7 +440,7 @@ export function HoursEditor({
               type="button"
               role="switch"
               aria-checked={open}
-              aria-label={`${dayName}: ${open ? t.dayOpen : t.dayClosed}`}
+              aria-label={`${dayName}: ${t.dayOpen}`}
               className="vp-switch"
               onClick={() => setDay(index, open ? { closed: true } : { ...(week.find((item) => !item.closed) ?? DEFAULT_DAY) })}
             >

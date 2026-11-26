@@ -520,6 +520,9 @@ export default function CabinetPage() {
   const canEdit = isDraftStatus;
   const effectiveVenueId = selected ? selected.venue_id || selected.id : "";
   const futureBookings = upcomingOwnerBookings(selectedReservations, now);
+  // Profile edits that are neither saved nor sent (the open profile tab shows its own state).
+  const unsavedProfile = (app: VenueApplication) =>
+    !(app.id === selectedId && section === "profile") && hasStoredEdits(app, locale);
   const venueTitle = (app: VenueApplication) =>
     pickLocale(app.name, locale) || pickLocale(app.name, "ru") || ui.newVenue;
 
@@ -549,7 +552,7 @@ export default function CabinetPage() {
                 <button
                   key={app.id}
                   type="button"
-                  className={app.id === selectedId ? "active" : ""}
+                  className={`${app.id === selectedId ? "active" : ""}${unsavedProfile(app) ? " vp-unsaved" : ""}`.trim()}
                   onClick={() => {
                     setSelectedId(app.id);
                     openSection("overview");
@@ -558,6 +561,7 @@ export default function CabinetPage() {
                 >
                   <i>{venueTitle(app).slice(0, 1).toUpperCase()}</i>
                   <span title={venueTitle(app)}>{venueTitle(app)}</span>
+                  {unsavedProfile(app) && <span className="vp-sr">{cabinetCopy.profileTab.unsavedNav}</span>}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
@@ -596,8 +600,8 @@ export default function CabinetPage() {
                 >
                   <span className="owner-nav-icon">{item.icon}</span>
                   <span>{item.label}</span>
-                  {item.id === "profile" && section !== "profile" && hasStoredEdits(selected, locale) && (
-                    <i className="vp-nav-dot" title={cabinetCopy.profileTab.unsavedNav} aria-label={cabinetCopy.profileTab.unsavedNav} />
+                  {item.id === "profile" && unsavedProfile(selected) && (
+                    <i className="vp-nav-dot" role="img" title={cabinetCopy.profileTab.unsavedNav} aria-label={cabinetCopy.profileTab.unsavedNav} />
                   )}
                   {item.id === "shifts" && shiftAlertCount > 0 && (
                     <b className="owner-nav-alert-badge">{shiftAlertCount}</b>

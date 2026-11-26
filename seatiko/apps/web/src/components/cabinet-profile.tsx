@@ -679,8 +679,6 @@ export function CabinetProfilePanel({
     draftValues.price_level ? priceLevelLabel(draftValues.price_level) : "",
     draftValues.average_check ? `~${draftValues.average_check} MDL` : "",
   ].filter(Boolean);
-  const previewWeek = parseHoursText(draftValues.hours_text);
-  const previewHours = previewWeek ? describeHours(previewWeek, hoursLabels(t)) : draftValues.hours_text;
   const cover = application.photo_urls?.[0];
 
   const preview = (
@@ -700,7 +698,6 @@ export function CabinetProfilePanel({
         <h3>{previewName || <span className="vp-muted">{t.previewNoName}</span>}</h3>
         {previewMeta.length > 0 && <p className="vp-preview-meta">{previewMeta.join(" · ")}</p>}
         {pickLocale(draftValues.address, textLocale) && <p className="vp-preview-line">⌖ {pickLocale(draftValues.address, textLocale)}</p>}
-        {previewHours && <p className="vp-preview-line">◷ {previewHours}</p>}
         {pickLocale(draftValues.description, textLocale) && <p className="vp-preview-desc">{pickLocale(draftValues.description, textLocale)}</p>}
         {published && application.venue_id ? (
           <a className="vp-preview-link" href={`/venues/${application.venue_id}`} target="_blank" rel="noreferrer">
@@ -718,21 +715,24 @@ export function CabinetProfilePanel({
     <div className="owner-form-footer vp-footer" role="region" aria-label={cabinet.profile}>
       {draftStatus ? (
         <>
-          <div className="vp-footer-state" aria-live="polite">
+          <div className="vp-footer-state">
             <strong>
               {completion}% {cabinet.filled}
               {dirty ? <span className="vp-dot" title={t.unsaved} /> : null}
             </strong>
             <p>
-              {dirty
-                ? restoredAt
-                  ? fill(t.restoredAt, { time: formatTimeOfDay(restoredAt, locale) })
-                  : t.unsaved
-                : savedAt
-                  ? fill(t.savedAt, { time: formatTimeOfDay(savedAt, locale) })
-                  : missingNow.length
-                    ? fill(t.missing, { list: missingNow.join(", ") })
-                    : t.readyToSubmit}
+              {[
+                dirty
+                  ? restoredAt
+                    ? fill(t.restoredAt, { time: formatTimeOfDay(restoredAt, locale) })
+                    : t.unsaved
+                  : savedAt
+                    ? fill(t.savedAt, { time: formatTimeOfDay(savedAt, locale) })
+                    : "",
+                missingNow.length ? fill(t.missing, { list: missingNow.join(", ") }) : t.readyToSubmit,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
           </div>
           <div className="owner-form-footer-actions vp-footer-actions">
@@ -751,7 +751,7 @@ export function CabinetProfilePanel({
         </>
       ) : (
         <>
-          <div className="vp-footer-state" aria-live="polite">
+          <div className="vp-footer-state">
             <strong>
               {dirty ? changesCount : t.noChanges}
               {dirty ? <span className="vp-dot" title={t.unsaved} /> : null}

@@ -46,6 +46,20 @@ html[data-theme="light"] .vp-review-card {
 }
 html[data-theme="light"] .owner-nav .vp-nav-dot { background: #9a6412; box-shadow: 0 0 0 3px rgba(154, 100, 18, .2); }
 
+.owner-venue-switcher [role="group"] button.vp-unsaved > i { position: relative; }
+.owner-venue-switcher [role="group"] button.vp-unsaved > i::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--site-bg, #0f1a15);
+  border-radius: 50%;
+  background: #e0a040;
+}
+html[data-theme="light"] .owner-venue-switcher [role="group"] button.vp-unsaved > i::after { background: #9a6412; border-color: #fff; }
+
 /* ---------- Status banners ---------- */
 
 .vp-banner {
