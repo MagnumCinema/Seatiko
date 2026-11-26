@@ -226,7 +226,7 @@ export function ComingPopup({
               </p>
               <button
                 type="button"
-                className="venue-cta venue-cta-primary"
+                className="btn btn--primary btn--lg"
                 onClick={handleClose}
               >
                 {t("res.close")}
@@ -250,7 +250,7 @@ export function ComingPopup({
                 </div>
                 <button
                   type="button"
-                  className="booking-popup-x"
+                  className="btn btn--ghost btn--sm btn--icon booking-popup-x"
                   onClick={handleClose}
                   aria-label={t("res.close")}
                 >
@@ -284,7 +284,7 @@ export function ComingPopup({
                       <button
                         key={chipId}
                         type="button"
-                        className={chip === chipId ? "on" : ""}
+                        className={`chip${chip === chipId ? " is-active" : ""}`}
                         aria-pressed={chip === chipId}
                         disabled={chipUnavailable(chipId)}
                         onClick={() => applyChip(chipId)}
@@ -330,7 +330,7 @@ export function ComingPopup({
 
                 <button
                   type="button"
-                  className="venue-cta venue-cta-primary"
+                  className="btn btn--primary btn--lg"
                   disabled={busy || !arrival}
                   onClick={() => void submit()}
                 >

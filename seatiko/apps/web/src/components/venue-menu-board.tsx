@@ -162,7 +162,7 @@ export function VenueMenuBoard({
           {filters.query ? (
             <button
               type="button"
-              className="menu-search-clear"
+              className="btn btn--ghost btn--sm btn--icon menu-search-clear"
               aria-label={t("menu_page.search_clear")}
               onClick={() => setFilters((prev) => ({ ...prev, query: "" }))}
             >
@@ -176,7 +176,7 @@ export function VenueMenuBoard({
               <button
                 key={key}
                 type="button"
-                className={`menu-toggle${filters[key] ? " on" : ""}`}
+                className={`chip menu-toggle${filters[key] ? " is-active" : ""}`}
                 aria-pressed={filters[key]}
                 onClick={() => setFilters((prev) => ({ ...prev, [key]: !prev[key] }))}
               >
@@ -196,7 +196,7 @@ export function VenueMenuBoard({
                 key={category.key}
                 href={`#${category.key}`}
                 data-chip={category.key}
-                className={`menu-chip${category.key === currentKey ? " on" : ""}`}
+                className={`chip menu-chip${category.key === currentKey ? " is-active" : ""}`}
                 aria-current={category.key === currentKey ? "true" : undefined}
                 onClick={(event) => {
                   event.preventDefault();
@@ -221,7 +221,7 @@ export function VenueMenuBoard({
         <div className="menu-empty">
           <h2>{t("menu_page.nothing_title")}</h2>
           <p>{t("menu_page.nothing_body")}</p>
-          <button type="button" className="venue-cta venue-cta-outline" onClick={() => setFilters(EMPTY_MENU_FILTERS)}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={() => setFilters(EMPTY_MENU_FILTERS)}>
             {t("menu_page.reset")}
           </button>
         </div>
@@ -280,12 +280,12 @@ export function QtyStepper({
   const total = qty * price;
   return (
     <div className="menu-stepper">
-      <button type="button" aria-label={t("menu_page.less_label", { dish: name })} onClick={() => onChangeQty(item, -1)}>
+      <button type="button" className="stepper-btn" aria-label={t("menu_page.less_label", { dish: name })} onClick={() => onChangeQty(item, -1)}>
         −
       </button>
       <output aria-live="polite">{qty}</output>
       <span className="menu-stepper-total">{total} MDL</span>
-      <button type="button" aria-label={t("menu_page.more_label", { dish: name })} onClick={() => onChangeQty(item, 1)}>
+      <button type="button" className="stepper-btn" aria-label={t("menu_page.more_label", { dish: name })} onClick={() => onChangeQty(item, 1)}>
         +
       </button>
     </div>
@@ -372,7 +372,7 @@ export function MenuDish({
         ) : (
           <button
             type="button"
-            className="menu-add"
+            className="btn btn--secondary btn--sm menu-add"
             aria-label={t("menu_page.add_label", { dish: name })}
             onClick={() => onChangeQty(item, 1)}
           >

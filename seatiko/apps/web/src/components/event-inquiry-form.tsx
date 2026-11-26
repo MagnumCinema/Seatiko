@@ -138,13 +138,13 @@ export function EventInquiryForm({
                 href="https://t.me/seatiko_admin"
                 target="_blank"
                 rel="noreferrer"
-                className="venue-cta venue-cta-outline"
+                className="btn btn--secondary btn--md"
               >
                 {t("event.telegram_btn")}
               </a>
               <a
                 href={`tel:${eventSuccess.admin_phone || "+37323124411"}`}
-                className="venue-cta venue-cta-outline"
+                className="btn btn--secondary btn--md"
               >
                 {t("event.call_admin", {
                   phone: eventSuccess.admin_phone || "+373 (231) 2-44-11",
@@ -156,7 +156,7 @@ export function EventInquiryForm({
           <div className="event-success-actions">
             <button
               type="button"
-              className="venue-cta venue-cta-outline"
+              className="btn btn--ghost btn--md"
               onClick={() => {
                 setEventSuccess(null);
                 onBackToTables();
@@ -164,7 +164,7 @@ export function EventInquiryForm({
             >
               {t("event.back_to_tables")}
             </button>
-            <Link href="/account" className="venue-cta venue-cta-outline">
+            <Link href="/account" className="btn btn--secondary btn--md">
               {t("event.my_bookings_btn")}
             </Link>
           </div>
@@ -192,7 +192,7 @@ export function EventInquiryForm({
                   <button
                     key={item.id}
                     type="button"
-                    className={eventType === item.id ? "on" : ""}
+                    className={`chip${eventType === item.id ? " is-active" : ""}`}
                     aria-pressed={eventType === item.id}
                     onClick={() => setEventType(item.id)}
                   >
@@ -319,7 +319,7 @@ export function EventInquiryForm({
             <div>
               <button
                 type="submit"
-                className="venue-cta venue-cta-hero"
+                className="btn btn--primary btn--lg"
                 disabled={eventBusy}
               >
                 {eventBusy ? t("event.submitting") : t("event.submit")}

@@ -449,7 +449,7 @@ export default function VenuePage() {
                       {venue.open_now ? t("venue.open") : t("venue.closed")}
                     </span>
                     <FavoriteControl
-                      className={`venue-fav-float${favorited ? " on" : ""}`}
+                      className={`btn btn--secondary btn--sm btn--icon venue-fav-float${favorited ? " is-on" : ""}`}
                       favorited={favorited}
                       label={favoriteLabel}
                       onClick={() => addToFavorites()}
@@ -497,7 +497,7 @@ export default function VenuePage() {
               <div className="venue-page-actions-primary">
                 <button
                   type="button"
-                  className="venue-cta venue-cta-hero"
+                  className="btn btn--primary btn--lg"
                   onClick={() => {
                     setQuickOpen(true);
                     setBookingOpen(false);
@@ -510,7 +510,7 @@ export default function VenuePage() {
                 </button>
                 <button
                   type="button"
-                  className="venue-cta venue-cta-outline"
+                  className="btn btn--secondary btn--lg"
                   onClick={scrollToFloor}
                 >
                   <TableIcon className="venue-cta-icon" />
@@ -565,7 +565,7 @@ export default function VenuePage() {
                   </span>
                 </button>
                 <FavoriteControl
-                  className={`venue-cta ghost venue-cta-fav${favorited ? " on" : ""}`}
+                  className={`btn btn--secondary btn--md venue-cta-fav${favorited ? " is-on" : ""}`}
                   favorited={favorited}
                   label={favoriteLabel}
                   onClick={() => addToFavorites()}

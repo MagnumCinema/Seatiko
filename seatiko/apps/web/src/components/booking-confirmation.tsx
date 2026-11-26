@@ -188,7 +188,7 @@ export function BookingConfirmation({
 
         <div className="booking-done-buttons">
           {cancelled ? (
-            <button type="button" className="venue-cta venue-cta-hero" onClick={onBookAgain}>
+            <button type="button" className="btn btn--primary btn--lg" onClick={onBookAgain}>
               {t("res.done_rebook")}
             </button>
           ) : confirmCancel ? (
@@ -197,19 +197,19 @@ export function BookingConfirmation({
               <div>
                 <button
                   type="button"
-                  className="venue-cta booking-done-danger"
-                  disabled={cancelling}
-                  onClick={() => void cancel()}
-                >
-                  {cancelling ? t("res.done_cancelling") : t("res.done_cancel_yes")}
-                </button>
-                <button
-                  type="button"
-                  className="venue-cta venue-cta-outline"
+                  className="btn btn--ghost btn--md"
                   disabled={cancelling}
                   onClick={() => setConfirmCancel(false)}
                 >
                   {t("res.done_cancel_no")}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--danger btn--md booking-done-danger"
+                  disabled={cancelling}
+                  onClick={() => void cancel()}
+                >
+                  {cancelling ? t("res.done_cancelling") : t("res.done_cancel_yes")}
                 </button>
               </div>
             </div>
@@ -217,13 +217,13 @@ export function BookingConfirmation({
             <>
               <Link
                 href={`/account?reservation=${encodeURIComponent(booked.id)}`}
-                className="venue-cta venue-cta-hero"
+                className="btn btn--primary btn--lg"
               >
                 {t("res.done_open")}
               </Link>
               <button
                 type="button"
-                className="venue-cta booking-done-cancel"
+                className="btn btn--danger-outline btn--md booking-done-cancel"
                 onClick={() => setConfirmCancel(true)}
               >
                 {t("res.done_cancel")}
@@ -232,39 +232,39 @@ export function BookingConfirmation({
           )}
           {extraActions}
           {variant === "popup" && onClose ? (
-            <button type="button" className="venue-cta venue-cta-outline" onClick={onClose}>
+            <button type="button" className="btn btn--ghost btn--md" onClick={onClose}>
               {t("res.close")}
             </button>
           ) : !cancelled ? (
-            <button type="button" className="venue-cta venue-cta-outline" onClick={onBookAgain}>
+            <button type="button" className="btn btn--secondary btn--md" onClick={onBookAgain}>
               {t("book.done_more")}
             </button>
           ) : null}
         </div>
         {!cancelled ? (
           <div className="booking-done-extras" aria-label={t("res.extras_label")}>
-            <button type="button" onClick={downloadIcs}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={downloadIcs}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="16" rx="2.5" />
                 <path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5" />
               </svg>
               {t("res.extra_calendar")}
             </button>
-            <a href={googleCalendarUrl(shareInput)} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn--ghost btn--sm" href={googleCalendarUrl(shareInput)} target="_blank" rel="noopener noreferrer">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3" y="5" width="18" height="16" rx="2.5" />
                 <path d="M3 10h18M8 3v4M16 3v4M8 14h3M8 17h6" />
               </svg>
               {t("res.extra_google")}
             </a>
-            <a href={mapsRouteUrl(shareInput)} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn--ghost btn--sm" href={mapsRouteUrl(shareInput)} target="_blank" rel="noopener noreferrer">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z" />
                 <circle cx="12" cy="9.5" r="2.5" />
               </svg>
               {t("res.extra_route")}
             </a>
-            <button type="button" onClick={() => void share()}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => void share()}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="18" cy="5" r="2.5" />
                 <circle cx="6" cy="12" r="2.5" />
@@ -275,7 +275,7 @@ export function BookingConfirmation({
             </button>
             {allowPreorder ? (
               <Link
-                className="wide"
+                className="btn btn--ghost btn--sm wide"
                 href={`/venues/${venue.id}/menu?preorder=${encodeURIComponent(booked.id)}&table=${encodeURIComponent(tableNumbers)}`}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">

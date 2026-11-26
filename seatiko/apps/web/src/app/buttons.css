@@ -486,6 +486,22 @@ html[data-theme="light"] {
   flex: none;
 }
 
+/* Icon-only content: text glyphs (×, ‹, ›, ♥) read at icon size, SVGs get a fixed box */
+.btn.btn--icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.btn.btn--icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn.btn--icon.btn--sm svg {
+  width: 16px;
+  height: 16px;
+}
+
 .btn.btn--icon.btn--sm {
   inline-size: 36px;
   block-size: 36px;

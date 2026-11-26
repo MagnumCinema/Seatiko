@@ -179,7 +179,7 @@ export function WaitlistPanel({
         {error && <p className="waitlist-error">{error}</p>}
         <button
           type="button"
-          className="waitlist-btn ghost"
+          className="btn btn--secondary btn--md"
           disabled={busy}
           onClick={() => void leave()}
         >
@@ -267,7 +267,7 @@ export function WaitlistPanel({
       {error && <p className="waitlist-error">{error}</p>}
       <button
         type="button"
-        className="waitlist-btn primary"
+        className="btn btn--primary btn--md"
         disabled={busy}
         onClick={() => void join()}
       >
