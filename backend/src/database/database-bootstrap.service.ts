@@ -4,6 +4,7 @@ import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectDrizzle } from '@nestjs/drizzle';
 import { sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import type { Env } from '../config/env.schema.js';
 import type { Database } from './database.module.js';
@@ -25,6 +26,33 @@ function materializeBundledMigrations(files: Record<string, string>): string {
     writeFileSync(dest, content, 'utf8');
   }
   return dir;
+}
+
+/**
+ * Session advisory lock held while migrating. Serverless cold starts (several instances
+ * booting at once) would otherwise run the same migration concurrently and fail on
+ * duplicate objects; with the lock the others wait, then find nothing pending.
+ */
+export const MIGRATION_LOCK_KEY = 7_311_942_051;
+
+/** Runs the migrations on one pooled connection that holds MIGRATION_LOCK_KEY meanwhile. */
+export async function migrateWithLock(db: Database, migrationsFolder: string, run: typeof migrate = migrate): Promise<void> {
+  const client = await db.$client.connect();
+  let failure: Error | undefined;
+  try {
+    await client.query('select pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
+    try {
+      await run(drizzle({ client, casing: 'snake_case' }), { migrationsFolder });
+    } finally {
+      await client.query('select pg_advisory_unlock($1)', [MIGRATION_LOCK_KEY]);
+    }
+  } catch (error) {
+    failure = error instanceof Error ? error : new Error(String(error));
+    throw error;
+  } finally {
+    // After a failure the connection is dropped, not reused, so the lock can't outlive it.
+    client.release(failure);
+  }
 }
 
 /**
@@ -54,7 +82,7 @@ export class DatabaseBootstrap implements OnModuleInit {
         migrationsFolder = materializeBundledMigrations(migrationsSnapshot as Record<string, string>);
       }
       if (migrationsFolder) {
-        await migrate(this.db, { migrationsFolder });
+        await migrateWithLock(this.db, migrationsFolder);
       } else {
         this.logger.warn('migrations folder not found; skipping auto-migrate');
       }
