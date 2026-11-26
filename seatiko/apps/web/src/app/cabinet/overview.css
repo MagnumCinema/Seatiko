@@ -124,6 +124,7 @@ html[data-theme="light"] .ov-link { color: #1f5a40; }
   cursor: pointer;
 }
 .ov-failed { margin-top: 0; }
+.ov-failed .panel-btn { margin-top: 12px; }
 
 /* ---------- Tiles ---------- */
 
@@ -474,16 +475,7 @@ html[data-theme="light"] .ov-venues button.active { border-color: #1f5a40; backg
 /* ---------- Launch ---------- */
 
 .ov-reject { padding: 14px 18px; }
-
-.ov-ready {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  color: var(--ov-ok);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--ov-ok) 10%, transparent);
-  font-size: .78rem;
-  font-weight: 650;
-}
+.ov-reject p { color: var(--site-fg); font-size: .84rem; line-height: 1.5; }
 
 .ov-steps { display: grid; margin: 0; padding: 0; list-style: none; }
 .ov-steps li {
@@ -526,8 +518,8 @@ html[data-theme="light"] .ov-venues button.active { border-color: #1f5a40; backg
 
 .ov-after .ov-muted { margin: -6px 0 12px; }
 .ov-after ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -544,6 +536,7 @@ html[data-theme="light"] .ov-venues button.active { border-color: #1f5a40; backg
   font-size: .78rem;
 }
 .ov-after li svg { flex: none; }
+.ov-after li span { white-space: nowrap; }
 
 /* ---------- Narrow screens ---------- */
 

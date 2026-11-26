@@ -655,7 +655,7 @@ export function CabinetBookingsPanel({
   venueId: string;
   /** This venue's rows from the cabinet load, shown while the tab refreshes. */
   initialRows: RestaurantReservation[];
-  /** Quick filter to open on (the overview's «Tomorrow» / «All bookings»); today by default. */
+  /** Quick filter to open on (the overview's «Tomorrow» / «All upcoming»); today by default. */
   initialPeriod?: BookingPeriod;
   /** A booking to open right away (from the overview). */
   focusBookingId?: string | null;

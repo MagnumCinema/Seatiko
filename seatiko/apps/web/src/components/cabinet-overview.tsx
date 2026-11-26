@@ -68,6 +68,7 @@ export type OverviewTarget = AttentionTarget | "activity";
 const POLL_MS = 60_000;
 const FOCUS_REFRESH_GAP_MS = 15_000;
 const TEAM_ROWS = 6;
+const ATTENTION_ROWS = 5;
 const GUEST_ROWS = 5;
 const NAMES_SHOWN = 2;
 /** Requests the overview makes (the owner list plus nine venue parts). */
@@ -362,7 +363,7 @@ function LiveOverview({
   const bookingsReady = loaded && !failed.includes("owner");
   const summary = useMemo(() => todaySummary(merged, now, rules.holdMin), [merged, now, rules.holdMin]);
   const hall = parts.tables ? hallNow(parts.tables) : null;
-  const team = parts.shifts && parts.staff ? teamDay(parts.shifts, parts.roles ?? [], parts.staff, now) : null;
+  const team = parts.shifts ? teamDay(parts.shifts, parts.roles ?? [], parts.staff ?? [], now) : null;
   const problems = parts.shifts ? shiftProblems(parts.shifts, now) : null;
   const menuSetup = parts.menu ? venueSetup(parts.menu, []) : null;
   const staffSetup = parts.staff ? venueSetup([], parts.staff) : null;
@@ -421,7 +422,7 @@ function LiveOverview({
         </div>
         <div className="ov-daybar-refresh">
           {updatedAt && (
-            <small aria-live="polite">{fill(bcopy.updatedAt, { time: formatClock(updatedAt) })}</small>
+            <small>{fill(bcopy.updatedAt, { time: formatClock(updatedAt) })}</small>
           )}
           <button
             type="button"
@@ -466,15 +467,9 @@ function LiveOverview({
               <span>{copy.tileToday}</span>
               <strong>{bookingsReady || rows.length ? summary.today.bookings : "—"}</strong>
               <small>
-                {summary.today.bookings
-                  ? [
-                      text.count(summary.today.covers, ui.guestsForms),
-                      summary.preorders ? text.count(summary.preorders, copy.preordersForms) : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")
-                  : copy.tileTodayNone}
+                {summary.today.bookings ? text.count(summary.today.covers, ui.guestsForms) : copy.tileTodayNone}
               </small>
+              {summary.preorders > 0 && <small>{text.count(summary.preorders, copy.preordersForms)}</small>}
               {summary.today.cancelled > 0 && <small>{text.count(summary.today.cancelled, bcopy.cancelledForms)}</small>}
             </button>
 
@@ -495,15 +490,12 @@ function LiveOverview({
             {next ? (
               <button type="button" className="ov-tile" onClick={() => onOpenBooking(next.id)}>
                 <span>{bcopy.statNext}</span>
-                <strong>
-                  {nextDay === today
-                    ? formatClock(expectedAt(next))
-                    : fill(copy.tileNextOn, {
-                        day: relativeDay(text, nextDay, today),
-                        time: formatClock(expectedAt(next)),
-                      })}
-                </strong>
-                <small>{next.guestName || bcopy.guestFallback}</small>
+                <strong>{formatClock(expectedAt(next))}</strong>
+                <small>
+                  {[nextDay === today ? "" : relativeDay(text, nextDay, today), next.guestName || bcopy.guestFallback]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </small>
                 <small>
                   {[
                     next.tableNumbers.length > 1
@@ -561,7 +553,7 @@ function LiveOverview({
                 <h3>{copy.guestsTitle}</h3>
               </div>
               <button type="button" className="ov-link" onClick={() => onOpenBookings("upcoming")}>
-                {cabinet.viewAllBookings}
+                {copy.guestsAll}
               </button>
             </div>
             {!loaded && !rows.length ? (
@@ -709,6 +701,9 @@ function AttentionCard({
   onGo: (item: AttentionItem) => void;
 }) {
   const { copy } = text;
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? items : items.slice(0, ATTENTION_ROWS);
+  const hidden = items.length - shown.length;
   return (
     <section className="owner-card ov-card ov-attention">
       <div className="owner-card-head ov-card-head">
@@ -732,7 +727,7 @@ function AttentionCard({
         </div>
       ) : (
         <ul className="ov-alerts">
-          {items.map((item) => (
+          {shown.map((item) => (
             <li key={item.kind} className={`tone-${item.tone}`}>
               <span className="ov-alert-icon" aria-hidden="true">
                 {item.tone === "info" ? <InfoIcon /> : <AlertIcon />}
@@ -755,6 +750,11 @@ function AttentionCard({
             </li>
           ))}
         </ul>
+      )}
+      {loaded && items.length > ATTENTION_ROWS && (
+        <button type="button" className="ov-link ov-more" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+          {expanded ? copy.showLess : fill(copy.showAll, { n: hidden })}
+        </button>
       )}
     </section>
   );
@@ -801,7 +801,7 @@ function TeamCard({
       {!loaded ? (
         <Skeleton lines={3} />
       ) : failed || !team ? (
-        <p className="ov-muted">{copy.unavailable}</p>
+        <p className="ov-muted">{copy.teamFailed}</p>
       ) : staffCount === 0 && team.shifts.length === 0 ? (
         <div className="ov-team-empty">
           <strong>{copy.teamNoStaff}</strong>
@@ -1070,17 +1070,19 @@ function LaunchOverview({
   const done = checks.filter((check) => check.done).length;
   const completion = checks.length ? Math.round((done / checks.length) * 100) : 0;
   const stage = launchStage(application.status);
-  const editable = application.status === "DRAFT" || application.status === "REJECTED";
   const rejected = application.status === "REJECTED";
-  const canSubmit = editable && completion === 100;
+  // A returned application goes back through the profile: the moderator's remarks come first.
+  const canSubmit = application.status === "DRAFT" && completion === 100;
   const submittedAt = application.submitted_at ? Date.parse(application.submitted_at) : NaN;
 
   const steps = [
     {
       key: "profile",
       label: copy.stepProfile,
-      hint: cabinet.completedOf.replace("{done}", String(done)).replace("{total}", String(checks.length)),
-      done: stage > 0,
+      hint: rejected
+        ? copy.stepFixHint
+        : cabinet.completedOf.replace("{done}", String(done)).replace("{total}", String(checks.length)),
+      done: stage > 0 || canSubmit,
     },
     {
       key: "submit",
@@ -1106,7 +1108,7 @@ function LaunchOverview({
       <section className="owner-overview-hero">
         <div>
           <span className="owner-kicker">{ui.preLaunch}</span>
-          <h3>{statusHint}</h3>
+          <h3>{canSubmit ? copy.readyToSubmit : statusHint}</h3>
           <div className="owner-hero-actions">
             {canSubmit && (
               <button type="button" className="panel-btn" disabled={busy} onClick={onSubmit}>
@@ -1174,7 +1176,6 @@ function LaunchOverview({
               </li>
             ))}
           </ul>
-          {canSubmit && <p className="ov-ready">{copy.readyToSubmit}</p>}
         </section>
 
         <section className="owner-card ov-card ov-launch">
