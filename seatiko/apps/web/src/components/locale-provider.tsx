@@ -27,6 +27,16 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
+function translate(locale: Locale, key: MessageKey, params?: Record<string, string | number>): string {
+  let value: string = dictionaries[locale][key] ?? dictionaries.en[key] ?? String(key);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      value = value.split(`{${k}}`).join(String(v));
+    }
+  }
+  return value;
+}
+
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("ru");
 
@@ -55,18 +65,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: MessageKey, params?: Record<string, string | number>) => {
-      let value =
-        dictionaries[locale][key] ??
-        dictionaries.en[key] ??
-        String(key);
-      if (params) {
-        for (const [k, v] of Object.entries(params)) {
-          value = value.split(`{${k}}`).join(String(v));
-        }
-      }
-      return value;
-    },
+    (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params),
     [locale],
   );
 
@@ -84,4 +83,15 @@ export function useLocale() {
   const ctx = useContext(LocaleContext);
   if (!ctx) throw new Error("useLocale must be used within LocaleProvider");
   return ctx;
+}
+
+/** Renders its children as the site would look in `locale` (owner previews of guest pages). */
+export function LocaleScope({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+  const { setLocale } = useLocale();
+  const t = useCallback(
+    (key: MessageKey, params?: Record<string, string | number>) => translate(locale, key, params),
+    [locale],
+  );
+  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
