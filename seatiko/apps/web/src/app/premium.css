@@ -3472,16 +3472,6 @@ html[data-theme="light"] .venue-map-popup {
   font-size: 0.84rem;
   color: var(--site-muted);
 }
-.owner-more-link {
-  color: var(--site-accent);
-  font-weight: 700;
-  text-decoration: none;
-  transition: opacity 160ms ease;
-}
-.owner-more-link:hover {
-  opacity: 0.88;
-  text-decoration: underline;
-}
 
 .auth-card.owner-register-card {
   max-width: none;
@@ -3548,23 +3538,9 @@ html[data-theme="light"] .venue-map-popup {
 }
 .btn-password-toggle {
   position: absolute;
-  right: 10px;
+  right: 4px;
   top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--auth-card-muted);
-  cursor: pointer;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  transition: color 150ms ease, background 150ms ease;
-}
-.btn-password-toggle:hover {
-  color: var(--site-fg);
-  background: rgba(255, 255, 255, 0.08);
+  translate: 0 -50%;
 }
 .password-strength-hint {
   display: flex;
@@ -3714,21 +3690,6 @@ html[data-theme="light"] .venue-map-popup {
 .owner-guest-notice-text svg {
   color: var(--site-accent);
   flex-shrink: 0;
-}
-.btn-switch-mini {
-  background: transparent;
-  border: none;
-  color: var(--site-accent);
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: underline;
-  white-space: nowrap;
-  padding: 4px;
-  transition: opacity 160ms ease;
-}
-.btn-switch-mini:hover {
-  opacity: 0.82;
 }
 
 /* Light Theme Overrides for Owner Register */
@@ -12113,6 +12074,13 @@ html[data-theme="light"] .btn-view-toggle.active {
   grid-template-columns: 1fr;
 }
 
+/* Three providers side by side: tighter padding so "Telegram" fits on one line at 360px */
+.auth-social-row .auth-social-btn.btn:not(.auth-social-btn-wide) {
+  min-width: 0;
+  padding-inline: 8px;
+  gap: 6px;
+}
+
 /* Site-styled Google button (opens Google's account chooser) */
 .google-auth-wrap {
   display: grid;
@@ -12122,38 +12090,9 @@ html[data-theme="light"] .btn-view-toggle.active {
   opacity: 0.7;
 }
 
-.auth-social-btn.auth-social-btn-wide {
-  width: 100%;
-  font-size: 0.88rem;
-}
 
-.auth-social-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  height: 42px;
-  border-radius: 11px;
-  border: 1px solid var(--site-border);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--auth-card-fg);
-  font-size: 0.81rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 160ms ease;
-  user-select: none;
-}
 
-.auth-social-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(233, 185, 110, 0.35);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
 
-.auth-social-btn:active {
-  transform: translateY(0);
-}
 
 .auth-social-btn.google svg,
 .auth-social-btn.apple svg {
@@ -12191,20 +12130,9 @@ html[data-theme="light"] .btn-view-toggle.active {
 }
 
 .auth-social-notice button {
-  background: transparent;
-  border: none;
-  color: inherit;
-  font-size: 1.15rem;
-  cursor: pointer;
-  padding: 0 0 0 6px;
-  line-height: 1;
   margin-left: auto;
-  opacity: 0.7;
 }
 
-.auth-social-notice button:hover {
-  opacity: 1;
-}
 
 @keyframes fadeInNotice {
   from {
@@ -12258,21 +12186,9 @@ html[data-theme="light"] .btn-view-toggle.active {
 }
 
 .btn-forgot-link {
-  background: transparent;
-  border: none;
-  color: var(--auth-card-muted);
-  font-size: 0.74rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
   text-underline-offset: 2px;
-  transition: color 150ms ease;
 }
 
-.btn-forgot-link:hover {
-  color: var(--site-accent);
-}
 
 /* Forgot Password Info Box */
 .login-forgot-hint {
@@ -12295,19 +12211,9 @@ html[data-theme="light"] .btn-view-toggle.active {
 }
 
 .login-forgot-hint-x {
-  background: transparent;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 1.15rem;
-  line-height: 1;
   margin-left: auto;
-  opacity: 0.75;
 }
 
-.login-forgot-hint-x:hover {
-  opacity: 1;
-}
 
 /* Session Detected Card (Already Logged In) */
 .login-session-card {
@@ -12374,24 +12280,7 @@ html[data-theme="light"] .btn-view-toggle.active {
   gap: 10px;
 }
 
-.btn-switch-account {
-  background: transparent;
-  border: 1px solid var(--site-border);
-  color: var(--auth-card-muted);
-  border-radius: 11px;
-  min-height: 44px;
-  padding: 10px 18px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
 
-.btn-switch-account:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--auth-card-fg);
-  border-color: var(--site-accent);
-}
 
 /* Form Fields */
 .login-card .field label {
@@ -12420,39 +12309,8 @@ html[data-theme="light"] .btn-view-toggle.active {
 }
 
 /* Submit Action Button - Calm Matte Gold */
-.login-card .btn-gold {
-  min-height: 48px;
-  padding: 12px 22px;
-  color: #142e23;
-  border-radius: 12px;
-  background: #e9b96e;
-  border: 1px solid rgba(233, 185, 110, 0.45);
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-  box-shadow: 0 6px 18px rgba(233, 185, 110, 0.2);
-  margin-top: 4px;
-}
 
-.login-card .btn-gold:hover:not(:disabled) {
-  background: #f0c47a;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(233, 185, 110, 0.28);
-  border-color: rgba(233, 185, 110, 0.65);
-}
 
-.login-card .btn-gold:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
 
 /* Restaurant Register Secondary Button */
 .btn-venue-register {
@@ -12498,31 +12356,10 @@ html[data-theme="light"] .btn-view-toggle.active {
   opacity: 1;
 }
 
-.login-card .btn-gold svg {
-  transition: transform 160ms ease;
-}
 
-.login-card .btn-gold:hover:not(:disabled) svg {
-  transform: translateX(3px);
-}
 
 /* Demo Fast-Fill Chip */
 .btn-demo-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px dashed color-mix(in srgb, var(--site-accent) 45%, var(--site-border));
-  background: color-mix(in srgb, var(--site-accent) 6%, transparent);
-  color: var(--site-accent);
-  font-size: 0.81rem;
-  font-weight: 650;
-  cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
   margin-top: 2px;
 }
 
@@ -12542,10 +12379,6 @@ html[data-theme="light"] .btn-view-toggle.active {
 
 .login-demo-row .btn-demo-chip {
   margin-top: 0;
-  min-width: 0;
-  padding: 8px 10px;
-  font-size: 0.78rem;
-  white-space: nowrap;
 }
 
 .btn-demo-chip.loading {
@@ -12607,46 +12440,12 @@ html[data-theme="light"] .btn-view-toggle.active {
 }
 
 .btn-sub-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 38px;
-  width: 100%;
   box-sizing: border-box;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--site-border);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--auth-card-muted);
-  font-size: 0.79rem;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 160ms ease;
-  user-select: none;
 }
 
-.btn-sub-action svg {
-  flex-shrink: 0;
-  opacity: 0.7;
-  transition: opacity 160ms ease;
-}
 
-.btn-sub-action:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--auth-card-fg);
-  border-color: rgba(233, 185, 110, 0.35);
-  transform: translateY(-1px);
-}
 
-.btn-sub-action:hover svg {
-  opacity: 1;
-}
 
-.btn-sub-action:active {
-  transform: translateY(0);
-}
 
 html[data-theme="light"] .login-sub-actions {
   border-top-color: rgba(26, 36, 32, 0.1);
@@ -12656,17 +12455,7 @@ html[data-theme="light"] .login-sub-prompt {
   color: #556b60;
 }
 
-html[data-theme="light"] .btn-sub-action {
-  background: #f7faf7;
-  border-color: rgba(26, 36, 32, 0.12);
-  color: #4b5d55;
-}
 
-html[data-theme="light"] .btn-sub-action:hover {
-  background: #edf3ee;
-  color: #173f31;
-  border-color: #173f31;
-}
 
 @media (max-width: 480px) {
   .login-sub-actions {
@@ -12675,20 +12464,8 @@ html[data-theme="light"] .btn-sub-action:hover {
   }
 }
 
-.btn-demo-chip:hover {
-  background: color-mix(in srgb, var(--site-accent) 14%, transparent);
-  border-color: var(--site-accent);
-  transform: translateY(-1px);
-}
 
-.btn-demo-chip:active {
-  transform: translateY(0);
-}
 
-.btn-demo-chip svg {
-  color: var(--site-accent);
-  flex-shrink: 0;
-}
 
 /* Error Alert */
 .login-card .auth-error {
@@ -12805,16 +12582,7 @@ html[data-theme="light"] .login-card .btn-gold:hover:not(:disabled) {
   border-color: #1e5240;
 }
 
-html[data-theme="light"] .btn-demo-chip {
-  color: #173f31;
-  border-color: rgba(23, 63, 49, 0.32);
-  background: rgba(23, 63, 49, 0.05);
-}
 
-html[data-theme="light"] .btn-demo-chip:hover {
-  background: rgba(23, 63, 49, 0.1);
-  border-color: #173f31;
-}
 
 html[data-theme="light"] .login-demo-details {
   background: #f7faf7;
@@ -12837,16 +12605,7 @@ html[data-theme="light"] .guest-mode-tab.active {
   box-shadow: 0 2px 6px rgba(23, 63, 49, 0.12);
 }
 
-html[data-theme="light"] .auth-social-btn {
-  background: #f7faf7;
-  border-color: rgba(26, 36, 32, 0.12);
-  color: #1a2420;
-}
 
-html[data-theme="light"] .auth-social-btn:hover {
-  background: #edf2ee;
-  border-color: #173f31;
-}
 
 html[data-theme="light"] .auth-social-notice {
   background: rgba(36, 96, 70, 0.08);
@@ -12866,16 +12625,7 @@ html[data-theme="light"] .login-session-badge {
   border-color: rgba(36, 96, 70, 0.25);
 }
 
-html[data-theme="light"] .btn-switch-account {
-  border-color: rgba(26, 36, 32, 0.15);
-  color: #4b5d55;
-}
 
-html[data-theme="light"] .btn-switch-account:hover {
-  background: #eef2ed;
-  color: #173f31;
-  border-color: #173f31;
-}
 
 html[data-theme="light"] .login-forgot-hint {
   background: rgba(233, 185, 110, 0.08);
@@ -18627,12 +18377,7 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
     width: 100%;
   }
 
-  .auth-social-btn {
-    font-size: 0.74rem;
-    padding: 0 6px;
-    gap: 5px;
   }
-}
 
 /* Unified Site Container & Flush Navbar-to-Section Alignment */
 :root {

@@ -84,7 +84,7 @@ export function AuthForm({
         onUnavailable={() => setGoogleOff(true)}
         onError={(code) => setErrorKey(googleErrorKey(code))}
       >
-        <button type="button" className="auth-social-btn google auth-social-btn-wide">
+        <button type="button" className="btn btn--secondary btn--md btn--block auth-social-btn google auth-social-btn-wide">
           <GoogleLogo />
           <span>{t("google.continue")}</span>
         </button>
@@ -132,12 +132,12 @@ export function AuthForm({
           {t(errorKey)}
         </p>
       )}
-      <button type="submit" className="venue-cta venue-cta-primary" disabled={busy}>
+      <button type="submit" className="btn btn--primary btn--md btn--block" disabled={busy}>
         {busy ? t("common.loading") : title}
       </button>
       <button
         type="button"
-        className="venue-cta ghost"
+        className="btn btn--link"
         onClick={() => {
           setErrorKey(null);
           setMode((m) => (m === "login" ? "register" : "login"));
@@ -146,7 +146,7 @@ export function AuthForm({
         {mode === "login" ? t("auth.switch_register") : t("auth.switch_login")}
       </button>
       {onCancel && (
-        <button type="button" className="venue-cta ghost" onClick={onCancel}>
+        <button type="button" className="btn btn--ghost btn--md btn--block" onClick={onCancel}>
           {t("common.cancel")}
         </button>
       )}

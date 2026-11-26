@@ -41,7 +41,7 @@ export function AuthDialog({ open, reason, onClose, onSuccess }: AuthDialogProps
         <div className="booking-popup-card">
           <button
             type="button"
-            className="booking-popup-x auth-dialog-x"
+            className="btn btn--ghost btn--sm btn--icon booking-popup-x auth-dialog-x"
             onClick={onClose}
             aria-label={t("res.close")}
           >

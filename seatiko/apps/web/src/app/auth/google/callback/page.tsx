@@ -53,7 +53,7 @@ export default function GoogleCallbackPage() {
         {errorKey ? (
           <>
             <p role="alert">{t(errorKey)}</p>
-            <Link className="btn btn-gold" href="/login">
+            <Link className="btn btn--primary btn--md" href="/login">
               {t("auth.login")}
             </Link>
           </>

@@ -299,7 +299,7 @@ export default function RegisterPage() {
 
           <div className="owner-register-more">
             <span>{copy.learnMorePrompt}</span>
-            <Link href="/business" className="owner-more-link">
+            <Link href="/business" className="btn btn--link owner-more-link">
               <span>{copy.learnMoreLink}</span>
             </Link>
           </div>
@@ -329,7 +329,7 @@ export default function RegisterPage() {
               <div className="owner-session-actions">
                 <button
                   type="button"
-                  className="btn btn-gold btn-block"
+                  className="btn btn--primary btn--md btn--block"
                   onClick={() => router.replace("/cabinet")}
                 >
                   <span>{copy.continueToCabinet}</span>
@@ -337,7 +337,7 @@ export default function RegisterPage() {
                 </button>
                 <button
                   type="button"
-                  className="btn-switch-account"
+                  className="btn btn--secondary btn--sm btn-switch-account"
                   onClick={() => {
                     logout();
                     setCurrentUser(null);
@@ -371,7 +371,7 @@ export default function RegisterPage() {
                   </div>
                   <button
                     type="button"
-                    className="btn-switch-mini"
+                    className="btn btn--ghost btn--sm btn-switch-mini"
                     onClick={() => {
                       logout();
                       setCurrentUser(null);
@@ -390,7 +390,7 @@ export default function RegisterPage() {
                     onUnavailable={() => setGoogleOff(true)}
                     onError={(code) => setError(t(googleErrorKey(code)))}
                   >
-                    <button type="button" className="auth-social-btn google auth-social-btn-wide">
+                    <button type="button" className="btn btn--secondary btn--md btn--block auth-social-btn google auth-social-btn-wide">
                       <GoogleLogo />
                       <span>{t("google.continue")}</span>
                     </button>
@@ -475,7 +475,7 @@ export default function RegisterPage() {
                     />
                     <button
                       type="button"
-                      className="btn-password-toggle"
+                      className="btn btn--ghost btn--sm btn--icon btn-password-toggle"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={
                         showPassword ? "Hide password" : "Show password"
@@ -511,7 +511,7 @@ export default function RegisterPage() {
                 )}
                 <button
                   type="submit"
-                  className="btn btn-gold btn-block"
+                  className="btn btn--primary btn--md btn--block"
                   disabled={busy}
                 >
                   <span>{busy ? copy.creating : copy.continue}</span>
