@@ -1700,6 +1700,7 @@ export default function CabinetPage() {
               {section === "shifts" && (
                 <CabinetShiftsPlanner
                   venueId={effectiveVenueId}
+                  hoursText={selected.hours_text}
                   onAlertCountChange={setShiftAlertCount}
                 />
               )}
