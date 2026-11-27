@@ -11261,6 +11261,11 @@ html[data-theme="light"] .login-forgot-hint {
   .catalog-search-row .catalog-discover-btn {
     inline-size: 100%;
   }
+  /* Full-width on phones: a little less side padding keeps the RU label on one line at 360px */
+  .catalog-search-row .catalog-discover-btn.btn {
+    padding-inline: 14px;
+    font-size: 0.875rem;
+  }
   }
 
 .catalog-title {
