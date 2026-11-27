@@ -603,7 +603,4 @@ html[data-theme="light"] .vp-profile .vp-hours .vp-time { color-scheme: light; }
   .vp-photos .owner-photo-thumb,
   .vp-photos .owner-photo-upload,
   .vp-upload-tile { min-height: 0; }
-    .vp-footer-actions { display: grid !important; grid-template-columns: 1fr 1fr; }
-  .vp-footer-actions .btn:last-child:nth-child(odd) { grid-column: 1 / -1;
-}
 }
