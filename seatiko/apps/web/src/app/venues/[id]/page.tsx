@@ -505,7 +505,7 @@ export default function VenuePage() {
                     setEventOpen(false);
                   }}
                 >
-                  <BoltIcon className="venue-cta-icon" />
+                  <BoltIcon />
                   <span>{t("venue.quick_book")}</span>
                 </button>
                 <button
@@ -513,7 +513,7 @@ export default function VenuePage() {
                   className="btn btn--secondary btn--lg"
                   onClick={scrollToFloor}
                 >
-                  <TableIcon className="venue-cta-icon" />
+                  <TableIcon />
                   <span>{t("venue.book_scroll")}</span>
                 </button>
               </div>
@@ -565,7 +565,7 @@ export default function VenuePage() {
                   </span>
                 </button>
                 <FavoriteControl
-                  className={`btn btn--secondary btn--md venue-cta-fav${favorited ? " is-on" : ""}`}
+                  className={`btn btn--secondary btn--md venue-fav-action${favorited ? " is-on" : ""}`}
                   favorited={favorited}
                   label={favoriteLabel}
                   onClick={() => addToFavorites()}

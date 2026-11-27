@@ -567,14 +567,14 @@ function VenuesCatalogContent() {
                       <div className="catalog-card-actions">
                         <Link
                           href={venueBookingHref(venue.id)}
-                          className="btn btn--primary btn--md catalog-book-action"
+                          className="btn btn--primary btn--md"
                         >
                           <span>{copy.bookAction}</span>
                           <span aria-hidden="true">→</span>
                         </Link>
                         <Link
                           href={`/venues/${venue.id}`}
-                          className="btn btn--secondary btn--md catalog-info-action"
+                          className="btn btn--secondary btn--md"
                         >
                           {copy.infoAction}
                         </Link>

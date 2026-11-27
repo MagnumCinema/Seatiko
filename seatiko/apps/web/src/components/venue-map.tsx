@@ -892,7 +892,7 @@ function VenueMapArea({
             <span className="venue-map-soon-badge">{copy.soon}</span>
             <strong>{copy.soonTitle}</strong>
             <p>{copy.soonBody}</p>
-            <button type="button" className="btn btn--primary btn--md map-primary-action" onClick={onShowDefaultCity}>
+            <button type="button" className="btn btn--primary btn--md" onClick={onShowDefaultCity}>
               {copy.soonAction} <span aria-hidden="true">→</span>
             </button>
           </div>
@@ -1014,7 +1014,7 @@ function VenueMapArea({
               {!selected.in_database && (
                 <div className="venue-map-actions">
                   <a
-                    className="btn btn--primary btn--md btn--block map-primary-action"
+                    className="btn btn--primary btn--md btn--block"
                     href={googleMapDirections(selected)}
                     target="_blank"
                     rel="noreferrer"
@@ -1022,7 +1022,7 @@ function VenueMapArea({
                     {copy.route} <span aria-hidden="true">↗</span>
                   </a>
                   <a
-                    className="btn btn--secondary btn--md btn--block map-secondary-action"
+                    className="btn btn--secondary btn--md btn--block"
                     href={placeSearchUrl(selected, locale)}
                     target="_blank"
                     rel="noreferrer"
@@ -1060,13 +1060,13 @@ function VenueMapArea({
               {selectedVenueId && (
                 <div className="venue-map-actions">
                   {selectedBookable && (
-                    <Link href={venueBookingHref(selectedVenueId)} className="btn btn--primary btn--md btn--block map-primary-action">
+                    <Link href={venueBookingHref(selectedVenueId)} className="btn btn--primary btn--md btn--block">
                       {copy.action} <span>→</span>
                     </Link>
                   )}
                   <Link
                     href={`/venues/${encodeURIComponent(selectedVenueId)}`}
-                    className="btn btn--secondary btn--md btn--block map-secondary-action"
+                    className="btn btn--secondary btn--md btn--block"
                   >
                     {copy.openPage}
                   </Link>

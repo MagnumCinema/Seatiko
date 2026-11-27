@@ -268,12 +268,6 @@ html[data-theme="light"] {
 }
 
 /* Fallback for legacy cta class */
-.site-nav-cta {
-  padding: 8px 14px;
-  border-radius: 9px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
 
 .site-prefs,
 .site-lang {
@@ -420,24 +414,8 @@ html[data-theme="light"] {
 
 
 /* Fallback for legacy cta class */
-.site-header.transparent .site-nav-cta {
-  color: #e9b96e;
-  border-color: rgba(233, 185, 110, 0.44);
-  background: rgba(233, 185, 110, 0.06);
-}
 
-.site-header.transparent .site-nav-cta:hover {
-  color: #ffffff;
-  border-color: rgba(233, 185, 110, 0.85);
-  background: linear-gradient(135deg, rgba(233, 185, 110, 0.22), rgba(200, 145, 60, 0.32));
-  box-shadow: 0 4px 20px rgba(233, 185, 110, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  transform: translateY(-1px);
-}
 
-.site-header.transparent .site-nav-cta:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(233, 185, 110, 0.16);
-}
 
 .site-header.transparent .site-prefs,
 .site-header.transparent .site-lang {
@@ -605,28 +583,10 @@ html[data-theme="light"] {
 }
 
 
-.btn-gold {
-  background: #e9b96e;
-  color: #17362c;
-  box-shadow: 0 14px 36px rgba(233, 185, 110, 0.18);
-}
-
-.btn-gold:hover {
-  background: #f2c980;
-  box-shadow: 0 18px 42px rgba(233, 185, 110, 0.25);
-}
 
 
-.btn-outline {
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #f8f2e7;
-  background: rgba(255, 255, 255, 0.03);
-}
 
-.btn-outline:hover {
-  border-color: rgba(255, 255, 255, 0.42);
-  background: rgba(255, 255, 255, 0.07);
-}
+
 
 
 .hero-trust {
@@ -3351,11 +3311,6 @@ html[data-theme="light"] .venue-map-popup {
   color: var(--site-fg);
   background: color-mix(in srgb, var(--site-fg) 10%, transparent);
 }
-.owner-register-page .site-nav-cta,
-.panel-page:has(.owner-dashboard) > .site-header .site-nav-cta {
-  color: var(--site-accent) !important;
-  border-color: color-mix(in srgb, var(--site-accent) 38%, transparent);
-}
 .owner-register-page .site-prefs,
 .owner-register-page .site-lang,
 .panel-page:has(.owner-dashboard) > .site-header .site-prefs,
@@ -3565,42 +3520,6 @@ html[data-theme="light"] .venue-map-popup {
 }
 
 .owner-form-legal { margin: 0; color: var(--auth-card-muted); font-size: .7rem; line-height: 1.55; }
-.owner-register-card .btn-gold {
-  min-height: 48px;
-  padding: 12px 22px;
-  color: #142e23;
-  border-radius: 12px;
-  background: #e9b96e;
-  border: 1px solid rgba(233, 185, 110, 0.45);
-  box-shadow: 0 6px 18px rgba(233, 185, 110, 0.2);
-  font-weight: 700;
-  font-size: 0.92rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-  margin-top: 6px;
-}
-.owner-register-card .btn-gold:hover:not(:disabled) {
-  background: #f0c47a;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(233, 185, 110, 0.28);
-  border-color: rgba(233, 185, 110, 0.65);
-}
-.owner-register-card .btn-gold:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-.owner-register-card .btn-gold svg {
-  transition: transform 160ms ease;
-}
-.owner-register-card .btn-gold:hover:not(:disabled) svg {
-  transform: translateX(3px);
-}
 
 .owner-register-card .auth-error {
   display: flex;
@@ -3707,17 +3626,6 @@ html[data-theme="light"] .auth-card.owner-register-card {
   background: #ffffff;
   border-color: rgba(26, 36, 32, 0.12);
   box-shadow: 0 20px 50px rgba(36, 96, 70, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04);
-}
-html[data-theme="light"] .owner-register-card .btn-gold {
-  color: #ffffff;
-  background: #173f31;
-  box-shadow: 0 6px 18px rgba(23, 63, 49, 0.2);
-  border: 1px solid rgba(23, 63, 49, 0.4);
-}
-html[data-theme="light"] .owner-register-card .btn-gold:hover:not(:disabled) {
-  background: #1e5240;
-  box-shadow: 0 10px 24px rgba(23, 63, 49, 0.28);
-  border-color: #1e5240;
 }
 
 .panel-page:has(.owner-dashboard) {
@@ -6627,48 +6535,6 @@ html[data-theme="light"] .cabinet-quick-conflict-warning {
 }
 
 
-.cabinet-category-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0 20px;
-}
-.cabinet-category-pills button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 6px 14px;
-  color: var(--site-muted);
-  border: 1px solid var(--site-border);
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--site-surface) 70%, transparent);
-  font-size: .74rem;
-  font-weight: 650;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all .15s ease;
-}
-.cabinet-category-pills button .cabinet-role-pill-dot {
-  margin-right: 0;
-}
-.cabinet-category-pills button:hover {
-  color: var(--site-fg);
-  border-color: var(--site-accent, #e9b96e);
-}
-.cabinet-category-pills button.active {
-  color: #0d241c !important;
-  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%) !important;
-  border-color: rgba(255, 230, 160, 0.45) !important;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(212, 154, 70, 0.25);
-}
-html[data-theme="light"] .cabinet-category-pills button.active {
-  color: #fff !important;
-  background: linear-gradient(135deg, #246046 0%, #1a4835 100%) !important;
-  border-color: rgba(26, 36, 32, 0.2) !important;
-  box-shadow: 0 2px 8px rgba(36, 96, 70, 0.2);
-}
 .cabinet-search-input {
   min-height: 40px;
   padding: 8px 14px;
@@ -6690,38 +6556,6 @@ html[data-theme="light"] .cabinet-search-input:focus {
   box-shadow: 0 0 0 3px rgba(36, 96, 70, 0.2);
 }
 
-.cabinet-add-dish-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  background: linear-gradient(135deg, #e9b96e 0%, #d49a46 100%) !important;
-  color: #0d241c !important;
-  border: 1px solid rgba(255, 230, 160, 0.45) !important;
-  box-shadow: 0 3px 12px rgba(212, 154, 70, 0.28) !important;
-  transition: all 0.15s ease;
-}
-.cabinet-add-dish-btn:hover {
-  background: linear-gradient(135deg, #f2c784 0%, #dba14e 100%) !important;
-  box-shadow: 0 6px 18px rgba(212, 154, 70, 0.42) !important;
-  transform: translateY(-1px);
-}
-html[data-theme="light"] .cabinet-add-dish-btn {
-  background: linear-gradient(135deg, #246046 0%, #1a4835 100%) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(26, 36, 32, 0.2) !important;
-  box-shadow: 0 3px 12px rgba(36, 96, 70, 0.22) !important;
-}
-html[data-theme="light"] .cabinet-add-dish-btn:hover {
-  background: linear-gradient(135deg, #2c7555 0%, #215941 100%) !important;
-  box-shadow: 0 6px 18px rgba(36, 96, 70, 0.35) !important;
-}
 
 /* Delete Confirmation Modal */
 .cabinet-delete-modal-root {
@@ -6749,26 +6583,10 @@ html[data-theme="light"] .cabinet-delete-card {
   box-shadow: 0 28px 72px rgba(0, 0, 0, 0.22) !important;
 }
 .cabinet-delete-card .booking-popup-x {
-  position: absolute !important;
-  top: 14px !important;
-  right: 14px !important;
-  left: auto !important;
-  transform: none !important;
-  margin: 0 !important;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--site-border);
-  background: color-mix(in srgb, var(--site-surface) 80%, transparent);
-  color: var(--site-fg);
-  font-size: 1.3rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  position: absolute;
+  top: 14px;
+  right: 14px;
   z-index: 10;
-  padding: 0;
 }
 .cabinet-delete-icon {
   width: 48px;
@@ -10407,53 +10225,10 @@ html[data-theme="light"] .guest-avatar-task-tag {
 
 /* Guided Discovery Banner (Compact Assistant Strip) */
 
-.btn-discover-redirect {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  background: rgba(233, 185, 110, 0.16);
-  border: 1px solid rgba(233, 185, 110, 0.35);
-  color: #fbe6bd;
-  font-size: 0.84rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-decoration: none;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.25);
-  transition: all 180ms ease;
-  flex-shrink: 0;
-}
 
-.btn-discover-redirect:hover {
-  background: #e9b96e;
-  color: #0e271f;
-  border-color: #f2c784;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(233, 185, 110, 0.32);
-}
 
-.btn-discover-redirect svg {
-  transition: transform 180ms ease;
-}
 
-.btn-discover-redirect:hover svg {
-  transform: translateX(3px);
-}
 
-@media (max-width: 860px) {
-  
-  
-  .btn-discover-redirect {
-    justify-content: center;
-    width: 100%;
-    min-height: 36px;
-  }
-}
 
 /* Toolbar & Live Search */
 
@@ -10466,30 +10241,8 @@ html[data-theme="light"] .guest-avatar-task-tag {
 
 /* Meta Bar & View Switcher */
 
-.btn-view-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  color: rgba(243, 238, 226, 0.65);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 160ms ease;
-}
 
-.btn-view-toggle:hover {
-  color: #ffffff;
-}
 
-.btn-view-toggle.active {
-  background: rgba(233, 185, 110, 0.22);
-  color: #fce8c0;
-  font-weight: 700;
-}
 
 /* Venue Cards Grid - 3 Columns on Desktop */
 
@@ -10519,51 +10272,14 @@ html[data-theme="light"] .guest-avatar-task-tag {
 
 /* Card Action Footer */
 
-.btn-book-card-action {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 16px;
-  border-radius: 11px;
-  font-size: 0.92rem;
-  font-weight: 700;
-  text-decoration: none;
-  background: linear-gradient(135deg, #e9b96e 0%, #dca34f 100%);
-  color: #10261f;
-  box-shadow:
-    0 8px 20px -4px rgba(233, 185, 110, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transition: all 180ms ease;
-  box-sizing: border-box;
-}
 
-.btn-book-card-action:hover {
-  background: linear-gradient(135deg, #f2c784 0%, #e3ae5e 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px -4px rgba(233, 185, 110, 0.45);
-  color: #0c1d18;
-}
 
-.btn-book-card-action svg {
-  transition: transform 180ms ease;
-}
 
-.btn-book-card-action:hover svg {
-  transform: translateX(3px);
-}
 
 /* Horizontal List View Mode */
 
 /* Empty State */
 
-.btn-reset-filters {
-  min-height: 46px;
-  padding: 12px 24px;
-  border-radius: 11px;
-}
 
 /* Skeleton Loading State */
 
@@ -10715,18 +10431,7 @@ html[data-theme="light"] .guest-avatar-task-tag {
    LIGHT MODE OVERRIDES FOR /book
    ========================================================================== */
 
-html[data-theme="light"] .btn-discover-redirect {
-  background: #246046;
-  color: #ffffff;
-  border-color: #1e523b;
-  box-shadow: 0 6px 18px rgba(36, 96, 70, 0.25);
-}
 
-html[data-theme="light"] .btn-discover-redirect:hover {
-  background: #1a4934;
-  color: #ffffff;
-  box-shadow: 0 8px 22px rgba(36, 96, 70, 0.35);
-}
 
 html[data-theme="light"] .rating-star {
   color: #b87b28;
@@ -10736,31 +10441,10 @@ html[data-theme="light"] .rating-count {
   color: #6d867b;
 }
 
-html[data-theme="light"] .btn-book-card-action {
-  background: linear-gradient(135deg, #246046 0%, #1a4935 100%);
-  color: #ffffff;
-  box-shadow: 0 8px 20px -3px rgba(36, 96, 70, 0.28);
-}
 
-html[data-theme="light"] .btn-book-card-action:hover {
-  background: linear-gradient(135deg, #2a7052 0%, #1e553e 100%);
-  color: #ffffff;
-  box-shadow: 0 12px 26px -3px rgba(36, 96, 70, 0.38);
-}
 
-html[data-theme="light"] .btn-view-toggle {
-  color: #557265;
-}
 
-html[data-theme="light"] .btn-view-toggle:hover {
-  color: #142a22;
-}
 
-html[data-theme="light"] .btn-view-toggle.active {
-  background: rgba(36, 96, 70, 0.15);
-  color: #17422f;
-  font-weight: 700;
-}
 
 /* =====================================================================
    LOGIN PAGE LUXURY REDESIGN & ROLE SWITCH
@@ -11196,48 +10880,10 @@ html[data-theme="light"] .btn-view-toggle.active {
 
 
 /* Restaurant Register Secondary Button */
-.btn-venue-register {
-  min-height: 48px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--site-border);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--auth-card-fg);
-  font-size: 0.88rem;
-  font-weight: 650;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  text-decoration: none;
-  transition: all 160ms ease;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 8px;
-}
 
-.btn-venue-register:hover {
-  background: rgba(233, 185, 110, 0.08);
-  border-color: var(--site-accent);
-  color: var(--site-accent);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
 
-.btn-venue-register svg:first-child {
-  opacity: 0.85;
-}
 
-.btn-venue-register svg:last-child {
-  margin-left: auto;
-  opacity: 0.6;
-  transition: transform 160ms ease, opacity 160ms ease;
-}
 
-.btn-venue-register:hover svg:last-child {
-  transform: translateX(3px);
-  opacity: 1;
-}
 
 
 
@@ -11452,18 +11098,7 @@ html[data-theme="light"] .login-header-badge {
   border-color: rgba(36, 96, 70, 0.2);
 }
 
-html[data-theme="light"] .login-card .btn-gold {
-  color: #ffffff;
-  background: #173f31;
-  box-shadow: 0 6px 18px rgba(23, 63, 49, 0.2);
-  border: 1px solid rgba(23, 63, 49, 0.4);
-}
 
-html[data-theme="light"] .login-card .btn-gold:hover:not(:disabled) {
-  background: #1e5240;
-  box-shadow: 0 10px 24px rgba(23, 63, 49, 0.28);
-  border-color: #1e5240;
-}
 
 
 
@@ -12163,8 +11798,7 @@ html[data-theme="light"] .catalog-card-img-fallback span {
   gap: 10px;
 }
 
-.catalog-book-action,
-.catalog-info-action {
+.catalog-card-actions .btn {
   flex: 1 1 auto;
 }
 
@@ -13247,7 +12881,7 @@ html[data-theme="light"] .venue-stars {
   display: flex;
   flex-wrap: wrap;
 }
-.venue-page-actions-secondary .venue-cta-fav {
+.venue-page-actions-secondary .venue-fav-action {
   order: 3;
   flex-basis: 100%;
 }
@@ -13547,15 +13181,15 @@ html[data-theme="light"] .venue-tile-icon {
 }
 
 /* Favorites: quiet full-width row */
-.venue-page-actions-secondary .venue-cta-fav {
+.venue-page-actions-secondary .venue-fav-action {
   flex: 1 1 100%;
   order: 3;
 }
-.venue-cta-fav .venue-fav-icon {
+.venue-fav-action .venue-fav-icon {
   display: inline-grid;
   place-items: center;
 }
-.venue-cta-fav .venue-fav-icon svg,
+.venue-fav-action .venue-fav-icon svg,
 .venue-fav-float .venue-fav-icon svg {
   width: 17px;
   height: 17px;
@@ -13659,7 +13293,7 @@ html[data-theme="light"] .venue-tile-icon {
 }
 /* A favourited venue is a done state, not an unavailable one */
 .btn.venue-fav-float.is-on:disabled,
-.btn.venue-cta-fav.is-on:disabled {
+.btn.venue-fav-action.is-on:disabled {
   opacity: 1;
 }
 .photo-carousel-arrow.prev { left: 14px; }
@@ -16916,7 +16550,11 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
     --nav-control-h: 44px;
   }
 
-  
+  /* Text links that act as touch targets (buttons get 44px from buttons.css) */
+  :where(.site-mobile-link, .footer-col li a, .footer-legal-btn, a.footer-contact-item) {
+    min-block-size: 44px;
+  }
+
   .footer-col ul,
   .footer-col:last-child ul {
     row-gap: 2px;
@@ -16926,19 +16564,6 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
     gap: 2px;
   }
 
-  .site-menu-toggle,
-  .site-theme-toggle,
-  .site-mobile-drawer-close,
-  .booking-popup-x,
-  .legal-modal-close {
-    min-inline-size: 44px;
-    min-block-size: 44px;
-  }
-
-  .site-header .site-nav .site-nav-primary,
-  .site-header .site-nav .site-notify-trigger {
-    min-inline-size: 44px;
-}
 }
 
 
@@ -17225,12 +16850,8 @@ html[data-theme="light"] .site-header:not(.transparent) .site-mobile-drawer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-mobile-drawer,
-.map-primary-action,
-.map-secondary-action,
-.catalog-book-action,
-.catalog-info-action {
-    transition: none !important;
+  .site-mobile-drawer {
+    transition: none;
   }
 }
 

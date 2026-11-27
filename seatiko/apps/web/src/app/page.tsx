@@ -107,7 +107,7 @@ export default function HomePage() {
             </Link>
             <a
               href="#map"
-              className="btn btn--secondary btn--lg btn-hero-map"
+              className="btn btn--secondary btn--lg"
               onClick={(event) => {
                 event.preventDefault();
                 scrollToSection("map");

@@ -342,11 +342,11 @@ export default function VenueMenuPage() {
             </div>
             <div className="menu-hero-actions">
               <Link className="btn btn--primary btn--lg" href={venueBookingHref(venue.id)}>
-                <BoltIcon className="venue-cta-icon" />
+                <BoltIcon />
                 <span>{t("venue.quick_book")}</span>
               </Link>
               <Link className="btn btn--secondary btn--lg" href={`${venueHref}#venue-floor`}>
-                <TableIcon className="venue-cta-icon" />
+                <TableIcon />
                 <span>{t("venue.book_scroll")}</span>
               </Link>
             </div>
@@ -374,7 +374,7 @@ export default function VenueMenuPage() {
           </div>
           <div className="menu-cta-actions">
             <Link className="btn btn--primary btn--lg" href={venueBookingHref(venue.id)}>
-              <BoltIcon className="venue-cta-icon" />
+              <BoltIcon />
               <span>{t("venue.quick_book")}</span>
             </Link>
             <Link className="btn btn--secondary btn--lg" href={venueHref}>

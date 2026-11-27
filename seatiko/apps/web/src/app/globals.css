@@ -184,35 +184,11 @@ a {
 
 
 
-.btn-gold {
-  background: var(--fa-gold);
-  color: #1a1510;
-}
 
-.btn-gold:hover {
-  background: var(--fa-gold-soft);
-}
 
-.btn-outline {
-  background: transparent;
-  border: 1.5px solid rgba(196, 165, 116, 0.55);
-  color: var(--fa-gold);
-}
 
-.btn-outline:hover {
-  border-color: var(--fa-gold);
-  background: rgba(196, 165, 116, 0.08);
-}
 
-.btn-ghost {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--fa-border);
-  color: var(--fa-text);
-}
 
-.btn-block {
-  width: 100%;
-}
 
 .landing-visual {
   position: relative;
@@ -2614,12 +2590,12 @@ a {
   gap: 8px;
   width: 100%;
 }
-.venue-cta-fav .venue-fav-icon {
+.venue-fav-action .venue-fav-icon {
   color: var(--fa-gold);
   font-size: 0.95rem;
   line-height: 1;
 }
-.venue-cta-fav .venue-fav-label {
+.venue-fav-action .venue-fav-label {
   overflow: hidden;
   text-overflow: ellipsis;
 }
