@@ -329,7 +329,7 @@ export function MapSheet({
   heights: Record<SheetSnap, number>;
   count: number;
   onSnap: (snap: SheetSnap) => void;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const { hm } = mapCopy(locale);
   const [drag, setDrag] = useState<number | null>(null);
