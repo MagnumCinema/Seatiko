@@ -113,6 +113,10 @@ export type MapPlace = {
   opening_hours?: string;
   category?: string;
   sources?: string[];
+  /** Partner cover photo for the map popup and list (BACKEND_TASKS №70); until then the map joins `/venues` photos. */
+  cover_url?: string;
+  /** Amenity flags such as "terrace" for the map chips (BACKEND_TASKS №71); the chip is hidden while absent. */
+  features?: string[];
 };
 
 export type MapPlacesResponse = {
