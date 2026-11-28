@@ -776,5 +776,6 @@
   "venue.event_tile_short": "Банкет",
   "bench.cal_free": "Свободно",
   "bench.cal_hint": "Нажмите на свободное время",
-  "bench.slot_pick": "Выбрать {time}"
+  "bench.slot_pick": "Выбрать {time}",
+  "venue.location_recenter": "Вернуть к ресторану"
 }

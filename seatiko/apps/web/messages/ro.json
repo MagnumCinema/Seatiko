@@ -776,5 +776,6 @@
   "venue.event_tile_short": "Banchet",
   "bench.cal_free": "Liber",
   "bench.cal_hint": "Apasă pe o oră liberă",
-  "bench.slot_pick": "Alege {time}"
+  "bench.slot_pick": "Alege {time}",
+  "venue.location_recenter": "Înapoi la restaurant"
 }

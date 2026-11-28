@@ -1,45 +1,70 @@
 "use client";
 
+import "@/app/venue-map.css";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { pickLocale, type Venue } from "@/lib/api";
-import { mapsRouteUrl } from "@/lib/booking-share";
+import { googleMapDirections, googleMapSearch } from "@/lib/google-map";
+import { MAP_TILE_STYLES, venueAsMapPlace } from "@/lib/home-map";
 import { venueHoursLabel } from "@/lib/venue-hours";
 import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
 import { useLocale } from "@/components/locale-provider";
-import { MapPinIcon } from "@/components/venue-icons";
-
-const OPEN_FREE_MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
+import { useTheme } from "@/components/theme-provider";
+import { MapStateCard, SelectedCard, createPartnerPin, mapCopy } from "@/components/venue-map-parts";
 
 export const VENUE_LOCATION_ANCHOR = "venue-location";
 
-function hasCoords(venue: Venue) {
+const NO_SAVED: ReadonlySet<string> = new Set();
+/** The venue at street level, with the neighbourhood around it. */
+const VENUE_ZOOM = 16;
+
+function hasCoords(venue: Pick<Venue, "lat" | "lng">) {
   return Number.isFinite(venue.lat) && Number.isFinite(venue.lng) && !(venue.lat === 0 && venue.lng === 0);
 }
 
-/** "How to get there": small map with the venue pin, address, hours and directions. */
-export function VenueLocationMap({ venue }: { venue: Venue }) {
+/**
+ * "How to get there", in the home map's look: theme tiles (dark in the dark theme), the
+ * partner pill pin, glass zoom buttons, and the home map's selected-place card with the
+ * address, open status, weekly hours and Directions / Google Maps buttons.
+ */
+export function VenueLocationMap({
+  venue,
+  bookable,
+  freeTables,
+  cover,
+}: {
+  venue: Venue;
+  bookable: boolean;
+  /** Live free tables from the floor plan (falls back to the venue's count). */
+  freeTables?: number;
+  /** First photo of the venue for the card thumbnail. */
+  cover?: string;
+}) {
   const { locale, t } = useLocale();
+  const { theme } = useTheme();
+  const { vm, hm } = mapCopy(locale);
   const sectionRef = useRef<HTMLElement>(null);
   const mapNodeRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const markerRef = useRef<maplibregl.Marker | null>(null);
   const localeRef = useRef(locale);
   const [visible, setVisible] = useState(false);
   const [mapState, setMapState] = useState<"idle" | "ready" | "error">("idle");
-
-  useEffect(() => {
-    localeRef.current = locale;
-    if (mapRef.current && mapState === "ready") {
-      applyMapLibreLocalization(mapRef.current, locale);
-    }
-  }, [locale, mapState]);
+  const [now] = useState(() => new Date());
   const coords = hasCoords(venue);
   const name = pickLocale(venue.name, locale);
   const address = pickLocale(venue.address, locale);
   // The venue's own hours in the guest's language, else the demo hours.
   const hours = venueHoursLabel(venue, locale);
+  const place = useMemo(() => venueAsMapPlace(venue, { bookable, freeTables }), [venue, bookable, freeTables]);
 
+  useEffect(() => {
+    localeRef.current = locale;
+    if (mapRef.current && mapState === "ready") applyMapLibreLocalization(mapRef.current, locale);
+  }, [locale, mapState]);
+
+  // The map loads only when the section comes near the screen.
   useEffect(() => {
     const node = sectionRef.current;
     if (!node || !coords) return;
@@ -56,6 +81,7 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
     return () => observer.disconnect();
   }, [coords]);
 
+  // A theme switch rebuilds the map on the matching (light or dark) tiles, as on the home map.
   useEffect(() => {
     if (!visible || !mapNodeRef.current) return;
     const center: [number, number] = [venue.lng, venue.lat];
@@ -63,9 +89,9 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
     try {
       map = new maplibregl.Map({
         container: mapNodeRef.current,
-        style: OPEN_FREE_MAP_STYLE,
+        style: MAP_TILE_STYLES[theme],
         center,
-        zoom: 16,
+        zoom: VENUE_ZOOM,
         minZoom: 11,
         maxZoom: 19,
         cooperativeGestures: true,
@@ -73,21 +99,15 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
         locale: getMapLibreLocale(localeRef.current),
       });
     } catch {
-      // No WebGL (old device, hardware acceleration off): keep the address and route links.
+      // No WebGL (old device, hardware acceleration off): the card keeps the address and buttons.
       queueMicrotask(() => setMapState("error"));
       return;
     }
     mapRef.current = map;
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    // ODbL credit folded into an (i) button, like the home map.
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
-
-    const pin = document.createElement("div");
-    pin.className = "venue-location-pin";
-    pin.setAttribute("aria-hidden", "true");
-    new maplibregl.Marker({ element: pin, anchor: "bottom" }).setLngLat(center).addTo(map);
-
     map.once("load", () => {
-      map.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
+      map.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((el) => el.classList.remove("maplibregl-compact-show"));
       applyMapLibreLocalization(map, localeRef.current);
       setMapState("ready");
     });
@@ -95,14 +115,35 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
       if (!map.loaded()) setMapState("error");
     });
     return () => {
+      markerRef.current = null;
       mapRef.current = null;
       map.remove();
     };
-  }, [visible, venue.lat, venue.lng]);
+  }, [visible, venue.lat, venue.lng, theme]);
 
-  const googleUrl = coords
-    ? `https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`;
+  // The partner pill pin (free tables + name), rebuilt when the count or language changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mapState !== "ready") return;
+    markerRef.current?.remove();
+    const pin = createPartnerPin(place, locale, NO_SAVED, "div");
+    markerRef.current = new maplibregl.Marker({ element: pin, anchor: "bottom", offset: [0, -6] })
+      .setLngLat([place.lng, place.lat])
+      .addTo(map);
+    return () => {
+      markerRef.current?.remove();
+      markerRef.current = null;
+    };
+  }, [mapState, place, locale]);
+
+  const actions = {
+    primary: {
+      href: coords ? googleMapDirections(venue) : googleMapSearch(`${name}, ${address}`, venue.google_place_id),
+      label: vm.route,
+      external: true,
+    },
+    secondary: { href: googleMapSearch(`${name}, ${address}`, venue.google_place_id), label: hm.googleMaps, external: true },
+  };
 
   return (
     <section ref={sectionRef} id={VENUE_LOCATION_ANCHOR} className="venue-section venue-location">
@@ -112,46 +153,85 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
           <p>{t("venue.location_hint")}</p>
         </div>
       </div>
-      <div className="venue-location-body">
-        <div className="venue-location-map">
-          {coords ? (
-            <>
-              <div ref={mapNodeRef} className="venue-location-canvas" aria-label={t("venue.location_map_label", { venue: name })} role="img" />
-              {mapState !== "ready" ? (
-                <p className="venue-location-status">
-                  {mapState === "error" ? t("venue.location_map_error") : t("venue.loading")}
-                </p>
-              ) : null}
-            </>
-          ) : (
-            <p className="venue-location-status">{t("venue.location_no_coords")}</p>
-          )}
-        </div>
-        <div className="venue-location-info">
-          <div className="venue-location-address">
-            <span className="venue-tile-icon">
-              <MapPinIcon />
-            </span>
-            <div>
-              <strong>{address}</strong>
-              <span>{name}</span>
-            </div>
+      <div className="vmap vloc">
+        <div className="vloc-shell">
+          <div className="vmap-canvas vloc-canvas" data-pin-zoom="">
+            {coords ? (
+              <div
+                ref={mapNodeRef}
+                className="vmap-surface"
+                role="img"
+                aria-label={t("venue.location_map_label", { venue: name })}
+              />
+            ) : null}
+            {coords && mapState === "idle" ? (
+              <div className="vmap-loading" role="status">
+                <span />
+                <p>{vm.loadingMap}</p>
+              </div>
+            ) : null}
+            {!coords || mapState === "error" ? (
+              <MapStateCard
+                badge={t("venue.location_title")}
+                title={coords ? vm.unavailable : address}
+                body={coords ? t("venue.location_map_error") : t("venue.location_no_coords")}
+              />
+            ) : null}
+            {mapState === "ready" ? (
+              <div className="vmap-controls">
+                <div className="vmap-control-stack">
+                  <button
+                    type="button"
+                    className="vmap-control"
+                    onClick={() => mapRef.current?.easeTo({ center: [venue.lng, venue.lat], zoom: VENUE_ZOOM, duration: 400 })}
+                    aria-label={t("venue.location_recenter")}
+                    title={t("venue.location_recenter")}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="7" />
+                      <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+                      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="vmap-control-stack">
+                  <button
+                    type="button"
+                    className="vmap-control"
+                    onClick={() => mapRef.current?.zoomIn({ duration: 240 })}
+                    aria-label={hm.zoomIn}
+                    title={hm.zoomIn}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="vmap-control"
+                    onClick={() => mapRef.current?.zoomOut({ duration: 240 })}
+                    aria-label={hm.zoomOut}
+                    title={hm.zoomOut}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                      <path d="M5 12h14" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
-          {hours ? (
-            <p className="venue-location-hours">
-              <span className="booking-field-label">{t("venue.location_hours")}</span>
-              {hours}
-            </p>
-          ) : null}
-          <div className="venue-location-actions">
-            <a className="btn btn--primary btn--md" href={mapsRouteUrl({ lat: venue.lat, lng: venue.lng, address, venueName: name })} target="_blank" rel="noopener noreferrer">
-              {t("venue.location_route")}
-            </a>
-            <a className="btn btn--secondary btn--md" href={googleUrl} target="_blank" rel="noopener noreferrer">
-              {t("venue.location_google")}
-            </a>
-            <Link className="btn btn--link venue-location-all" href="/#map">
-              {t("venue.location_all")} →
+          <div className="vloc-side">
+            <SelectedCard place={place} cover={cover} locale={locale} now={now} actions={actions}>
+              {hours ? (
+                <div className="vloc-hours">
+                  <span>{t("venue.location_hours")}</span>
+                  <strong>{hours}</strong>
+                </div>
+              ) : null}
+            </SelectedCard>
+            <Link className="btn btn--link vloc-all" href="/#map">
+              {t("venue.location_all")} <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>

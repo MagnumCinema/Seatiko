@@ -10,7 +10,7 @@ vi.mock("next/link", () => ({
     createElement("a", { href: props.href, className: props.className }, props.children as never),
 }));
 
-import { MapSheet, PopupCard, openStatus, placeActions, placeMeta } from "./venue-map-parts";
+import { MapSheet, PopupCard, SelectedCard, createPartnerPin, openStatus, placeActions, placeMeta } from "./venue-map-parts";
 
 beforeAll(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -133,5 +133,54 @@ describe("PopupCard and MapSheet", () => {
     expect(segs[0].getAttribute("aria-pressed")).toBe("true");
     act(() => segs[2].click());
     expect(onSnap).toHaveBeenLastCalledWith("full");
+  });
+});
+
+describe("shared pieces reused by the venue page", () => {
+  it("builds the partner pill pin: free tables + short name, quiet without booking", () => {
+    const pin = createPartnerPin(partner, "en", new Set<string>(), "div");
+    expect(pin.tagName).toBe("DIV");
+    expect(pin.className).toBe("vmap-pin");
+    expect(pin.querySelector(".vmap-pin-free")?.textContent).toBe("10");
+    expect(pin.querySelector(".vmap-pin-name")?.textContent).toBe("Oliva");
+    expect(pin.getAttribute("aria-label")).toContain("10");
+    const quiet = createPartnerPin(notBookable, "en", new Set<string>());
+    expect(quiet.tagName).toBe("BUTTON");
+    expect(quiet.classList.contains("is-quiet")).toBe(true);
+    expect(quiet.querySelector(".vmap-pin-free")).toBeNull();
+    const saved = createPartnerPin(partner, "ru", new Set(["venue-6"]), "div");
+    expect(saved.classList.contains("is-saved")).toBe(true);
+  });
+
+  it("selected card takes custom actions and an extra row", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    act(() => {
+      root.render(
+        createElement(
+          SelectedCard,
+          {
+            place: partner,
+            locale: "ru",
+            now: new Date(2026, 10, 28, 15, 0),
+            actions: {
+              primary: { href: "https://maps/dir", label: "Маршрут", external: true },
+              secondary: { href: "https://maps/search", label: "Google Maps", external: true },
+            },
+          },
+          createElement("div", { className: "extra-row" }, "Ежедневно 10:00–23:00"),
+        ),
+      );
+    });
+    const buttons = Array.from(host.querySelectorAll(".vmap-actions a")).map((a) => [a.textContent, a.getAttribute("href")]);
+    expect(buttons).toEqual([
+      ["Маршрут", "https://maps/dir"],
+      ["Google Maps", "https://maps/search"],
+    ]);
+    expect(host.querySelector(".extra-row")?.textContent).toContain("10:00");
+    expect(host.querySelector(".vmap-selected-status")?.textContent).toContain("23:00");
+    act(() => root.unmount());
+    host.remove();
   });
 });

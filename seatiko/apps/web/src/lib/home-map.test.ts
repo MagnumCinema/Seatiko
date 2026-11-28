@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { MapPlace } from "@/lib/api";
+import type { Venue } from "@/lib/api";
 import {
+  MAP_TILE_STYLES,
   applyQuickFilters,
   areaChanged,
   clipBounds,
@@ -14,6 +16,7 @@ import {
   terraceFilterAvailable,
   toggleQuickFilter,
   validBounds,
+  venueAsMapPlace,
   type QuickFilter,
 } from "@/lib/home-map";
 
@@ -175,5 +178,38 @@ describe("pluralForm", () => {
     expect(pluralForm(forms, "ru", 1)).toBe("место");
     expect(pluralForm(forms, "ru", 3)).toBe("места");
     expect(pluralForm(forms, "ru", 12)).toBe("мест");
+  });
+});
+
+describe("venue page location map", () => {
+  const venue = {
+    id: "venue-12",
+    name: { ru: "Порто Маре", en: "Porto Mare", ro: "Porto Mare" },
+    address: { ru: "ул. 31 Августа", en: "31 August St", ro: "Str. 31 August" },
+    lat: 47.76,
+    lng: 27.93,
+    rating: 4.9,
+    open_now: true,
+    free_tables: 9,
+    hours_text: "Пн–Вс 12:00–23:30",
+    cuisine: ["seafood"],
+    price_level: 3,
+    average_check: 420,
+  } as Venue;
+
+  it("turns the venue into a partner map place with the live free-table count", () => {
+    const place = venueAsMapPlace(venue, { bookable: true, freeTables: 2 });
+    expect(place).toMatchObject({ id: "venue-12", venue_id: "venue-12", in_database: true, bookable: true, free_tables: 2 });
+    expect(place.hours_text).toBe("Пн–Вс 12:00–23:30");
+    expect(venueAsMapPlace(venue, { bookable: true }).free_tables).toBe(9);
+  });
+
+  it("has no free-table count when the venue has no online booking", () => {
+    expect(venueAsMapPlace(venue, { bookable: false, freeTables: 3 })).toMatchObject({ bookable: false, free_tables: undefined });
+  });
+
+  it("uses dark tiles in the dark theme", () => {
+    expect(MAP_TILE_STYLES.dark).toContain("/styles/dark");
+    expect(MAP_TILE_STYLES.light).toContain("/styles/liberty");
   });
 });

@@ -914,7 +914,12 @@ export default function VenuePage() {
           </>
         ) : null}
 
-        <VenueLocationMap venue={venue} />
+        <VenueLocationMap
+          venue={venue}
+          bookable={bookable}
+          freeTables={bookable ? freeCount : undefined}
+          cover={photos[0] ? mediaUrl(photos[0]) : undefined}
+        />
 
         <EventPopup venue={venue} open={eventOpen} onClose={() => setEventOpen(false)} />
 
