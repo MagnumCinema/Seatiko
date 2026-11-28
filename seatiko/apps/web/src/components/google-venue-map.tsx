@@ -108,7 +108,7 @@ export function GoogleVenueMap({
     <>
       <div ref={nodeRef} className="live-map-surface" />
       {map && (
-        <button type="button" className="map-search-area" onClick={() => {
+        <button type="button" className="btn btn--secondary btn--sm map-search-area" onClick={() => {
           const viewport = map.getBounds()?.toJSON();
           if (viewport) onSearch(viewport);
         }}>

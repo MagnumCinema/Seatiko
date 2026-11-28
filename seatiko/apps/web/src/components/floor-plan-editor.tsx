@@ -702,14 +702,14 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
     <div className={`floor-editor ${busy ? "busy" : ""}`} onKeyDown={onEditorKeyDown}>
       <div className="floor-editor-toolbar">
         <div className="floor-toolbar-row">
-          <div className="floor-zone-tabs" role="tablist" aria-label={copy.zones}>
+          <div className="seg floor-zone-tabs" role="tablist" aria-label={copy.zones}>
             {zones.map((zone) => (
               <button
                 key={zone}
                 type="button"
                 role="tab"
                 aria-selected={activeZone === zone}
-                className={activeZone === zone ? "on" : ""}
+                className={`seg-item${activeZone === zone ? " is-active" : ""}`}
                 onClick={() => {
                   setActiveZone(zone);
                   setSelectedId(null);
@@ -721,23 +721,23 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
             ))}
           </div>
           <div className="floor-view-tools" role="toolbar" aria-label={copy.tools}>
-            <button type="button" className="floor-icon-btn" disabled={busy || !canUndo} onClick={onUndo} title={`${copy.undo} (Ctrl+Z)`} aria-label={copy.undo}>
+            <button type="button" className="btn btn--ghost btn--sm btn--icon floor-icon-btn" disabled={busy || !canUndo} onClick={onUndo} title={`${copy.undo} (Ctrl+Z)`} aria-label={copy.undo}>
               <UndoIcon />
             </button>
-            <button type="button" className="floor-icon-btn" disabled={busy || !canRedo} onClick={onRedo} title={`${copy.redo} (Ctrl+Shift+Z)`} aria-label={copy.redo}>
+            <button type="button" className="btn btn--ghost btn--sm btn--icon floor-icon-btn" disabled={busy || !canRedo} onClick={onRedo} title={`${copy.redo} (Ctrl+Shift+Z)`} aria-label={copy.redo}>
               <UndoIcon flip />
             </button>
             <span className="floor-tools-sep" aria-hidden="true" />
-            <button type="button" className="floor-icon-btn" disabled={zoomLevel <= 1} onClick={() => zoomTo(zoomLevel / ZOOM_STEP)} title={copy.zoomOut} aria-label={copy.zoomOut}>
+            <button type="button" className="btn btn--ghost btn--sm btn--icon floor-icon-btn" disabled={zoomLevel <= 1} onClick={() => zoomTo(zoomLevel / ZOOM_STEP)} title={copy.zoomOut} aria-label={copy.zoomOut}>
               <span aria-hidden="true">−</span>
             </button>
             <output className="floor-zoom-level" aria-label={copy.zoomLevel}>
               {Math.round(scale * 100)}%
             </output>
-            <button type="button" className="floor-icon-btn" disabled={zoomLevel >= maxZoom - 0.001} onClick={() => zoomTo(zoomLevel * ZOOM_STEP)} title={copy.zoomIn} aria-label={copy.zoomIn}>
+            <button type="button" className="btn btn--ghost btn--sm btn--icon floor-icon-btn" disabled={zoomLevel >= maxZoom - 0.001} onClick={() => zoomTo(zoomLevel * ZOOM_STEP)} title={copy.zoomIn} aria-label={copy.zoomIn}>
               <span aria-hidden="true">+</span>
             </button>
-            <button type="button" className="floor-icon-btn" disabled={zoomLevel <= 1} onClick={() => zoomTo(1)} title={copy.zoomFit} aria-label={copy.zoomFit}>
+            <button type="button" className="btn btn--ghost btn--sm btn--icon floor-icon-btn" disabled={zoomLevel <= 1} onClick={() => zoomTo(1)} title={copy.zoomFit} aria-label={copy.zoomFit}>
               <FitIcon />
             </button>
           </div>
@@ -756,7 +756,7 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
                   <button
                     key={seats}
                     type="button"
-                    className="floor-add-pill"
+                    className="chip floor-add-pill"
                     disabled={busy}
                     onClick={() => addTable(seats)}
                     title={title}
@@ -782,7 +782,7 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
                   <button
                     key={kind}
                     type="button"
-                    className={`floor-toggle-pill ${on ? "on" : ""}`}
+                    className={`chip floor-toggle-pill${on ? " is-active" : ""}`}
                     aria-pressed={on}
                     disabled={busy}
                     title={fill(on ? copy.hideFixture : copy.showFixture, { name })}
@@ -805,7 +805,7 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
                 <button
                   key={id}
                   type="button"
-                  className="floor-template-pill"
+                  className="chip floor-template-pill"
                   disabled={busy}
                   onClick={() => (value.tables.some((t) => !t.locked) ? setAskTemplate(id) : applyTemplate(id))}
                 >
@@ -980,7 +980,7 @@ export function FloorPlanEditor({ value, onChange, busy = false, canUndo, canRed
               {selectedFixture !== "entrance" && (
                 <button
                   type="button"
-                  className="panel-btn ghost sm danger floor-editor-danger"
+                  className="btn btn--danger-outline btn--sm floor-editor-danger"
                   disabled={busy}
                   onClick={() => toggleBox(selectedFixture)}
                 >
@@ -1105,6 +1105,7 @@ function TableInspector({
         <div className="floor-stepper">
           <button
             type="button"
+            className="stepper-btn"
             aria-label={copy.seatsLess}
             title={copy.seatsLess}
             disabled={busy || table.seats <= SEATS_MIN}
@@ -1117,6 +1118,7 @@ function TableInspector({
           </output>
           <button
             type="button"
+            className="stepper-btn"
             aria-label={copy.seatsMore}
             title={copy.seatsMore}
             disabled={busy || table.seats >= SEATS_MAX}
@@ -1138,12 +1140,12 @@ function TableInspector({
         />
       </div>
       <div className="floor-inspector-actions">
-        <button type="button" className="panel-btn ghost sm" disabled={busy} onClick={onRotate}>
+        <button type="button" className="btn btn--secondary btn--sm" disabled={busy} onClick={onRotate}>
           <RotateIcon />
           {copy.rotate}
         </button>
         {!table.locked && (
-          <button type="button" className="panel-btn ghost sm danger" disabled={busy} onClick={onDelete}>
+          <button type="button" className="btn btn--danger-outline btn--sm" disabled={busy} onClick={onDelete}>
             {copy.deleteTable}
           </button>
         )}

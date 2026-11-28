@@ -478,7 +478,7 @@ export default function CabinetPage() {
           <p>{ui.loadFailedHint}</p>
           <button
             type="button"
-            className="panel-btn"
+            className="btn btn--primary btn--md"
             onClick={() => {
               setLoadFailed(false);
               void load();
@@ -552,7 +552,7 @@ export default function CabinetPage() {
             </div>
             <button
               type="button"
-              className="owner-add-venue"
+              className="btn btn--secondary btn--sm btn--block owner-add-venue"
               disabled={busy}
               onClick={() => void onCreate()}
             >
@@ -617,6 +617,7 @@ export default function CabinetPage() {
               <p>{error || msg}</p>
               <button
                 type="button"
+                className="btn btn--ghost btn--sm btn--icon"
                 aria-label={ui.close}
                 onClick={() => {
                   setError(null);
@@ -636,7 +637,7 @@ export default function CabinetPage() {
               <p>{cabinetCopy.emptyVenuesBody}</p>
               <button
                 type="button"
-                className="panel-btn"
+                className="btn btn--primary btn--md"
                 disabled={busy}
                 onClick={() => void onCreate()}
               >

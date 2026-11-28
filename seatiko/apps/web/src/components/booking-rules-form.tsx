@@ -340,7 +340,7 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
                 key={choice}
                 ref={index === 0 ? (el) => void (inputRefs.current[key] = el) : undefined}
                 type="button"
-                className={choice === value ? "on" : ""}
+                className={`chip${choice === value ? " is-active" : ""}`}
                 aria-pressed={choice === value}
                 disabled={disabled}
                 onClick={() => {
@@ -380,6 +380,7 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
           <div className="rt-stepper">
             <button
               type="button"
+              className="stepper-btn"
               aria-label={`${copy.less}: ${label}`}
               disabled={disabled || (Number.isFinite(value) && value <= min)}
               onClick={() => step(key, -1)}
@@ -413,6 +414,7 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
             </span>
             <button
               type="button"
+              className="stepper-btn"
               aria-label={`${copy.more}: ${label}`}
               disabled={disabled || (Number.isFinite(value) && value >= max)}
               onClick={() => step(key, 1)}
@@ -492,7 +494,7 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
           )}
           {published ? (
             <div className="rt-intro-actions">
-              <a className="rt-action" href={`/venues/${encodeURIComponent(venueId)}`} target="_blank" rel="noreferrer">
+              <a className="btn btn--secondary btn--sm rt-action" href={`/venues/${encodeURIComponent(venueId)}`} target="_blank" rel="noreferrer">
                 <span>{copy.openPage}</span>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M14 4h6v6" />
@@ -502,7 +504,7 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
               </a>
               <button
                 type="button"
-                className="rt-action"
+                className="btn btn--secondary btn--sm rt-action"
                 disabled={phase !== "ready" || saving || atDefaults}
                 onClick={fillDefaults}
               >
@@ -537,7 +539,7 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
           <p>{copy.loadFailedText}</p>
           <button
             type="button"
-            className="panel-btn ghost"
+            className="btn btn--secondary btn--md"
             onClick={() => {
               setPhase("loading");
               setReloadKey((k) => k + 1);
@@ -675,10 +677,10 @@ export function BookingRulesForm({ venueId, published = true, hoursText = "" }: 
               </p>
               {dirty || saving ? (
                 <div className="rt-bar-actions">
-                  <button type="button" className="panel-btn ghost" disabled={saving} onClick={discard}>
+                  <button type="button" className="btn btn--ghost btn--md" disabled={saving} onClick={discard}>
                     {copy.bar.discard}
                   </button>
-                  <button type="button" className="panel-btn" disabled={saving} onClick={() => void save()}>
+                  <button type="button" className="btn btn--primary btn--md" disabled={saving} onClick={() => void save()}>
                     {saving ? copy.bar.saving : copy.bar.save}
                   </button>
                 </div>

@@ -47,7 +47,7 @@ export function EventPopup({ venue, open, onClose, onAuthRequired }: EventPopupP
         <div className="booking-popup-card">
           <button
             type="button"
-            className="booking-popup-x event-popup-x"
+            className="btn btn--ghost btn--sm btn--icon booking-popup-x event-popup-x"
             onClick={handleClose}
             aria-label={t("res.close")}
           >

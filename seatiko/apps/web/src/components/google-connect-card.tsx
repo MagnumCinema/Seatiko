@@ -108,7 +108,7 @@ export function GoogleConnectCard({ user, onToast }: Props) {
         )}
       </div>
       {google ? (
-        <button type="button" className="btn btn-outline guest-security-action-btn" disabled={busy} onClick={() => void disconnect()}>
+        <button type="button" className="btn btn--secondary btn--md guest-security-action-btn" disabled={busy} onClick={() => void disconnect()}>
           <span>{t("google.disconnect")}</span>
         </button>
       ) : (
@@ -119,7 +119,7 @@ export function GoogleConnectCard({ user, onToast }: Props) {
             onUnavailable={() => setGoogleOff(true)}
             onError={(code) => setErrorKey(googleErrorKey(code))}
           >
-            <button type="button" className="btn btn-outline guest-security-action-btn">
+            <button type="button" className="btn btn--secondary btn--md guest-security-action-btn">
               <GoogleLogo size={16} />
               <span>{t("google.connect")}</span>
             </button>

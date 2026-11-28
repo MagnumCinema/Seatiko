@@ -235,7 +235,7 @@ export function QuickBookSearch() {
           </h2>
           <p>{summary}</p>
         </div>
-        <Link href="/venues" className="qb-catalog-link">
+        <Link href="/venues" className="btn btn--link qb-catalog-link">
           {t("qb.catalog_link")} →
         </Link>
       </div>

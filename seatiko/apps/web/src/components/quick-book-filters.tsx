@@ -44,6 +44,7 @@ export function QuickBookFilters({
         <div className="booking-stepper" role="group" aria-labelledby="qb-guests-label">
           <button
             type="button"
+            className="stepper-btn"
             aria-label={t("res.guests_less")}
             disabled={guests <= 1}
             onClick={() => onChange({ guests: guests - 1 })}
@@ -53,6 +54,7 @@ export function QuickBookFilters({
           <output aria-live="polite">{guests}</output>
           <button
             type="button"
+            className="stepper-btn"
             aria-label={t("res.guests_more")}
             disabled={guests >= MAX_GUESTS}
             onClick={() => onChange({ guests: guests + 1 })}
@@ -69,7 +71,7 @@ export function QuickBookFilters({
             <button
               key={offset}
               type="button"
-              className={offset === day ? "on" : ""}
+              className={`chip${offset === day ? " is-active" : ""}`}
               aria-pressed={offset === day}
               onClick={() => onChange({ day: offset })}
             >
@@ -105,7 +107,7 @@ export function QuickBookFilters({
             <button
               key={min}
               type="button"
-              className={min === duration ? "on" : ""}
+              className={`chip${min === duration ? " is-active" : ""}`}
               aria-pressed={min === duration}
               onClick={() => onChange({ duration: min })}
             >

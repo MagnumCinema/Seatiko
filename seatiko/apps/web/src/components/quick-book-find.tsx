@@ -29,7 +29,7 @@ export function QuickBookFind({ value, onChange }: Props) {
         {value ? (
           <button
             type="button"
-            className="catalog-search-clear"
+            className="btn btn--ghost btn--sm btn--icon catalog-search-clear"
             onClick={() => onChange("")}
             aria-label={t("qb.find_clear")}
           >
@@ -37,7 +37,7 @@ export function QuickBookFind({ value, onChange }: Props) {
           </button>
         ) : null}
       </div>
-      <Link href="/discover" className="catalog-discover-btn">
+      <Link href="/discover" className="btn btn--secondary btn--lg catalog-discover-btn">
         <SparklesIcon />
         <span>{t("qb.discover")}</span>
       </Link>

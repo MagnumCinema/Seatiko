@@ -176,7 +176,7 @@ export function MenuDishPopup({
         aria-labelledby="menu-dish-popup-title"
       >
         <div className="booking-popup-card menu-dish-popup-card">
-          <button type="button" className="booking-popup-x menu-dish-popup-x" onClick={onClose} aria-label={t("res.close")} data-autofocus>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x menu-dish-popup-x" onClick={onClose} aria-label={t("res.close")} data-autofocus>
             ×
           </button>
 
@@ -217,15 +217,15 @@ export function MenuDishAddBar({
   return (
     <div className="menu-dish-popup-actions">
       <div className="menu-stepper menu-dish-popup-stepper">
-        <button type="button" aria-label={t("menu_page.less_label", { dish: name })} disabled={qty <= 1} onClick={onLess}>
+        <button className="stepper-btn" type="button" aria-label={t("menu_page.less_label", { dish: name })} disabled={qty <= 1} onClick={onLess}>
           −
         </button>
         <output aria-live="polite">{qty}</output>
-        <button type="button" aria-label={t("menu_page.more_label", { dish: name })} onClick={onMore}>
+        <button className="stepper-btn" type="button" aria-label={t("menu_page.more_label", { dish: name })} onClick={onMore}>
           +
         </button>
       </div>
-      <button type="button" className="venue-cta venue-cta-hero menu-dish-popup-add" onClick={onAdd}>
+      <button type="button" className="btn btn--primary btn--md menu-dish-popup-add" onClick={onAdd}>
         <span>{t("menu_page.add_to_selection")}</span>
         <b>
           {total} <small>MDL</small>

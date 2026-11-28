@@ -144,13 +144,13 @@ export function VenueLocationMap({ venue }: { venue: Venue }) {
             </p>
           ) : null}
           <div className="venue-location-actions">
-            <a className="venue-cta venue-cta-hero" href={mapsRouteUrl({ lat: venue.lat, lng: venue.lng, address, venueName: name })} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn--primary btn--md" href={mapsRouteUrl({ lat: venue.lat, lng: venue.lng, address, venueName: name })} target="_blank" rel="noopener noreferrer">
               {t("venue.location_route")}
             </a>
-            <a className="venue-cta venue-cta-outline" href={googleUrl} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn--secondary btn--md" href={googleUrl} target="_blank" rel="noopener noreferrer">
               {t("venue.location_google")}
             </a>
-            <Link className="venue-location-all" href="/#map">
+            <Link className="btn btn--link venue-location-all" href="/#map">
               {t("venue.location_all")} →
             </Link>
           </div>

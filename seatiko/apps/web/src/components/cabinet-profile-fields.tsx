@@ -104,7 +104,7 @@ function LanguagePills({
   t: ProfileCopy;
 }) {
   return (
-    <div className="vp-langs" role="group" aria-label={t.textLanguage}>
+    <div className="seg vp-langs" role="group" aria-label={t.textLanguage}>
       {TEXT_LOCALES.map((code) => {
         const filled = value[code].trim() !== "";
         const label = code.toUpperCase();
@@ -113,7 +113,7 @@ function LanguagePills({
           <button
             key={code}
             type="button"
-            className={code === active ? "active" : ""}
+            className={`seg-item${code === active ? " is-active" : ""}`}
             aria-pressed={code === active}
             aria-label={state}
             title={state}
@@ -243,7 +243,7 @@ export function CuisinePicker({
         <div id="venue-cuisine" className="vp-chips readonly" aria-labelledby="venue-cuisine-label">
           {value.length ? (
             value.map((code, index) => (
-              <span key={code} className="vp-chip active">
+              <span key={code} className="chip vp-chip is-active">
                 {index === 0 && <b>{t.cuisineMain}</b>}
                 {label(code)}
               </span>
@@ -263,7 +263,7 @@ export function CuisinePicker({
       <button
         key={code}
         type="button"
-        className={`vp-chip${selected ? " active" : ""}`}
+        className={`chip vp-chip${selected ? " is-active" : ""}`}
         aria-pressed={selected}
         onClick={() => toggle(code)}
       >
@@ -290,7 +290,7 @@ export function CuisinePicker({
         {CUISINE_PRIMARY.map(chip)}
         {expanded && CUISINE_MORE.map(chip)}
         {customSelected.map((code) => (
-          <span key={code} className="vp-chip active custom">
+          <span key={code} className="chip vp-chip is-active custom">
             <b aria-hidden="true">{value.indexOf(code) + 1}</b>
             {code}
             <button type="button" aria-label={fill(t.cuisineRemove, { name: code })} onClick={() => toggle(code)}>
@@ -298,7 +298,7 @@ export function CuisinePicker({
             </button>
           </span>
         ))}
-        <button type="button" className="vp-chip more" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)}>
+        <button type="button" className="chip vp-chip more" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)}>
           {expanded ? t.cuisineLess : t.cuisineMore}
         </button>
       </div>
@@ -317,7 +317,7 @@ export function CuisinePicker({
             }
           }}
         />
-        <button type="button" className="panel-btn ghost vp-nowrap" disabled={!custom.trim()} onClick={addCustom}>
+        <button type="button" className="btn btn--secondary btn--md vp-nowrap" disabled={!custom.trim()} onClick={addCustom}>
           {t.cuisineAdd}
         </button>
       </div>
@@ -417,7 +417,7 @@ export function HoursEditor({
     return (
       <div id="venue-hours" className={`vp-hours-empty${error ? " invalid" : ""}`} tabIndex={-1}>
         <p>{value ? fill(t.hoursUnparsed, { text: value }) : t.hoursEmpty}</p>
-        <button type="button" className="panel-btn ghost vp-nowrap" onClick={start}>
+        <button type="button" className="btn btn--secondary btn--md vp-nowrap" onClick={start}>
           {value ? t.hoursRebuild : t.hoursSet}
         </button>
         {error && <FieldError id="venue-hours-error">{error}</FieldError>}
@@ -462,7 +462,7 @@ export function HoursEditor({
             )}
             <button
               type="button"
-              className="vp-icon-btn"
+              className="btn btn--secondary btn--sm btn--icon vp-icon-btn"
               disabled={!open}
               title={fill(t.copyToAll, { day: dayName })}
               aria-label={fill(t.copyToAll, { day: dayName })}
@@ -565,7 +565,7 @@ export function ReviewDialog({
       <button type="button" className="booking-popup-backdrop" aria-label={t.reviewBack} onClick={onClose} />
       <section ref={ref} className="booking-popup cabinet-delete-dialog vp-review-dialog" role="dialog" aria-modal="true" aria-labelledby="vp-review-title">
         <div className="booking-popup-card cabinet-delete-card warning vp-review-card">
-          <button type="button" className="booking-popup-x" onClick={onClose} aria-label={t.reviewBack}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x" onClick={onClose} aria-label={t.reviewBack}>
             ×
           </button>
           <h3 id="vp-review-title">{t.reviewDialogTitle}</h3>
@@ -574,10 +574,10 @@ export function ReviewDialog({
           </p>
           <div className="vp-review-body">{children}</div>
           <div className="cabinet-delete-actions">
-            <button type="button" className="panel-btn" disabled={busy} onClick={onSend}>
+            <button type="button" className="btn btn--primary btn--md" disabled={busy} onClick={onSend}>
               {t.reviewSend}
             </button>
-            <button type="button" className="panel-btn ghost" data-autofocus disabled={busy} onClick={onClose}>
+            <button type="button" className="btn btn--ghost btn--md" data-autofocus disabled={busy} onClick={onClose}>
               {t.reviewBack}
             </button>
           </div>

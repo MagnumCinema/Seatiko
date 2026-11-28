@@ -148,7 +148,7 @@ function TeamPanel({ venueId, view, onView }: { venueId: string; view: View; onV
 
   return (
     <div className="cs-panel">
-      <div className="cb-view cs-views" role="tablist" aria-label={t.viewsLabel} onKeyDown={onTabKey}>
+      <div className="seg cs-views" role="tablist" aria-label={t.viewsLabel} onKeyDown={onTabKey}>
         {VIEWS.map((v) => (
           <button
             key={v}
@@ -158,7 +158,7 @@ function TeamPanel({ venueId, view, onView }: { venueId: string; view: View; onV
             aria-selected={view === v}
             aria-controls={`${baseId}-panel`}
             tabIndex={view === v ? 0 : -1}
-            className={view === v ? "active" : ""}
+            className={`seg-item${view === v ? " is-active" : ""}`}
             onClick={() => onView(v)}
           >
             {t.views[v]}
@@ -175,7 +175,7 @@ function TeamPanel({ venueId, view, onView }: { venueId: string; view: View; onV
         >
           <span aria-hidden="true">{notice.kind === "error" ? "!" : notice.kind === "info" ? "i" : "✓"}</span>
           <p>{notice.text}</p>
-          <button type="button" aria-label={t.close} onClick={() => setNotice(null)}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon" aria-label={t.close} onClick={() => setNotice(null)}>
             ×
           </button>
         </div>
@@ -191,7 +191,7 @@ function TeamPanel({ venueId, view, onView }: { venueId: string; view: View; onV
         {state === "error" && (
           <div className="owner-section-empty" role="alert">
             <h3>{t.loadFailed}</h3>
-            <button type="button" className="panel-btn" onClick={firstLoad}>
+            <button type="button" className="btn btn--primary btn--md" onClick={firstLoad}>
               {t.retry}
             </button>
           </div>
@@ -359,7 +359,7 @@ function TeamView({ venueId, staff, roles, shifts, now, counts, presetNames, shi
           </p>
         </div>
         {!formOpen && staff.length > 0 && (
-          <button type="button" className="panel-btn cs-btn" onClick={() => setFormOpen(true)}>
+          <button type="button" className="btn btn--primary btn--md cs-btn" onClick={() => setFormOpen(true)}>
             <PlusIcon />
             {t.add}
           </button>
@@ -393,7 +393,7 @@ function TeamView({ venueId, staff, roles, shifts, now, counts, presetNames, shi
             </span>
             <h3>{t.emptyTitle}</h3>
             <p>{t.emptyBody}</p>
-            <button type="button" className="panel-btn cs-btn" onClick={() => setFormOpen(true)}>
+            <button type="button" className="btn btn--primary btn--md cs-btn" onClick={() => setFormOpen(true)}>
               <PlusIcon />
               {t.add}
             </button>
@@ -414,7 +414,7 @@ function TeamView({ venueId, staff, roles, shifts, now, counts, presetNames, shi
               <h3>{t.noMatchTitle}</h3>
               <p>{t.noMatchBody}</p>
               {filtered && (
-                <button type="button" className="panel-btn ghost" onClick={() => setFilters(EMPTY_FILTERS)}>
+                <button type="button" className="btn btn--secondary btn--md" onClick={() => setFilters(EMPTY_FILTERS)}>
                   {t.resetFilters}
                 </button>
               )}
@@ -471,7 +471,7 @@ function TeamView({ venueId, staff, roles, shifts, now, counts, presetNames, shi
                       {status === "invited" ? (
                         <button
                           type="button"
-                          className="panel-btn ghost sm cs-btn"
+                          className="btn btn--secondary btn--sm cs-btn"
                           disabled={busy}
                           title={t.recheckHint}
                           aria-label={`${t.recheck}: ${name}`}
@@ -496,7 +496,7 @@ function TeamView({ venueId, staff, roles, shifts, now, counts, presetNames, shi
                     </div>
                     <button
                       type="button"
-                      className="cb-icon-btn cs-remove"
+                      className="btn btn--danger-outline btn--sm btn--icon cs-remove"
                       disabled={busy}
                       aria-label={fill(t.removeLabel, { name })}
                       title={fill(t.removeLabel, { name })}
@@ -566,7 +566,7 @@ function TeamToolbar({
           onChange={(e) => onFilters({ ...filters, query: e.target.value })}
         />
         {filters.query && (
-          <button type="button" aria-label={t.clearSearch} onClick={() => onFilters({ ...filters, query: "" })}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon" aria-label={t.clearSearch} onClick={() => onFilters({ ...filters, query: "" })}>
             ×
           </button>
         )}
@@ -577,7 +577,7 @@ function TeamToolbar({
             key={chip.id}
             type="button"
             aria-pressed={filters.status === chip.id}
-            className={filters.status === chip.id ? "active" : ""}
+            className={`chip${filters.status === chip.id ? " is-active" : ""}`}
             onClick={() => onFilters({ ...filters, status: chip.id })}
           >
             {chip.label}
@@ -725,10 +725,10 @@ function InviteForm({
         </p>
       )}
       <div className="cs-invite-actions">
-        <button type="submit" className="panel-btn cs-btn" disabled={busy}>
+        <button type="submit" className="btn btn--primary btn--md cs-btn" disabled={busy}>
           {t.submit}
         </button>
-        <button type="button" className="panel-btn ghost cs-btn" disabled={busy} onClick={onCancel}>
+        <button type="button" className="btn btn--ghost btn--md cs-btn" disabled={busy} onClick={onCancel}>
           {t.cancel}
         </button>
       </div>
@@ -795,7 +795,7 @@ function RemoveDialog({
         aria-describedby="cs-remove-text"
       >
         <div className="booking-popup-card cabinet-delete-card danger cs-remove-card">
-          <button type="button" className="booking-popup-x" onClick={close} aria-label={t.cancel}>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon booking-popup-x" onClick={close} aria-label={t.cancel}>
             ×
           </button>
           <div className="cabinet-delete-icon" aria-hidden="true">
@@ -815,10 +815,10 @@ function RemoveDialog({
             </div>
           )}
           <div className="cabinet-delete-actions">
-            <button type="button" className="panel-btn danger" disabled={busy} onClick={() => void confirm()}>
+            <button type="button" className="btn btn--danger btn--md" disabled={busy} onClick={() => void confirm()}>
               {t.removeConfirm}
             </button>
-            <button type="button" className="panel-btn ghost" data-autofocus disabled={busy} onClick={close}>
+            <button type="button" className="btn btn--ghost btn--md" data-autofocus disabled={busy} onClick={close}>
               {t.cancel}
             </button>
           </div>

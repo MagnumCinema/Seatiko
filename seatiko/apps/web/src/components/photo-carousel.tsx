@@ -81,7 +81,7 @@ export function PhotoCarousel({ photos, alt, overlay }: PhotoCarouselProps) {
           <>
             <button
               type="button"
-              className="photo-carousel-arrow prev"
+              className="btn btn--secondary btn--md btn--icon photo-carousel-arrow prev"
               onClick={() => goTo(index - 1)}
               disabled={index === 0}
               aria-label={t("venue.photo_prev")}
@@ -90,7 +90,7 @@ export function PhotoCarousel({ photos, alt, overlay }: PhotoCarouselProps) {
             </button>
             <button
               type="button"
-              className="photo-carousel-arrow next"
+              className="btn btn--secondary btn--md btn--icon photo-carousel-arrow next"
               onClick={() => goTo(index + 1)}
               disabled={index === count - 1}
               aria-label={t("venue.photo_next")}

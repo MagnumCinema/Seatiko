@@ -120,7 +120,7 @@ export function StaffWaitlistTab({
         </div>
         <div className="sf-q-actions">
           {entry.table_id ? (
-            <button type="button" className="panel-btn sm" disabled={busy !== null} onClick={() => void run(entry.id, () => onSeat(entry))}>
+            <button type="button" className="btn btn--primary btn--sm" disabled={busy !== null} onClick={() => void run(entry.id, () => onSeat(entry))}>
               {w.seat}
             </button>
           ) : (
@@ -138,7 +138,7 @@ export function StaffWaitlistTab({
           {!entry.table_id && (
             <button
               type="button"
-              className="panel-btn sm"
+              className="btn btn--primary btn--sm"
               disabled={busy !== null || !picked[entry.id]}
               onClick={() => void run(entry.id, () => onSeat(entry, picked[entry.id]))}
             >
@@ -147,7 +147,7 @@ export function StaffWaitlistTab({
           )}
           <button
             type="button"
-            className="panel-btn sm ghost sf-btn-quiet"
+            className="btn btn--ghost btn--sm sf-btn-quiet"
             disabled={busy !== null}
             onClick={() => void run(entry.id, () => onClose(entry, "EXPIRED"))}
           >
@@ -192,7 +192,7 @@ export function StaffWaitlistTab({
           />
           <button
             type="button"
-            className="panel-btn sm"
+            className="btn btn--primary btn--sm"
             disabled={busy !== null || !table}
             title={w.callTo}
             onClick={() => void run(entry.id, () => onNotify(entry, table))}
@@ -201,7 +201,7 @@ export function StaffWaitlistTab({
           </button>
           <button
             type="button"
-            className="panel-btn sm ghost"
+            className="btn btn--secondary btn--sm"
             disabled={busy !== null || !table}
             title={w.seatAt}
             onClick={() => void run(entry.id, () => onSeat(entry, table))}
@@ -210,7 +210,7 @@ export function StaffWaitlistTab({
           </button>
           <button
             type="button"
-            className="panel-btn sm ghost sf-btn-quiet"
+            className="btn btn--ghost btn--sm sf-btn-quiet"
             disabled={busy !== null}
             onClick={() => void run(entry.id, () => onClose(entry, "LEFT"))}
           >
@@ -262,7 +262,7 @@ export function StaffWaitlistTab({
 
       {board.closed.length > 0 && (
         <section className="owner-card sf-card sf-card-quiet">
-          <button type="button" className="sf-toggle" aria-expanded={showClosed} onClick={() => setShowClosed((v) => !v)}>
+          <button type="button" className="btn btn--ghost btn--sm sf-toggle" aria-expanded={showClosed} onClick={() => setShowClosed((v) => !v)}>
             <span>{fill(w.closedTitle, { n: board.closed.length })}</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="6 9 12 15 18 9" />
@@ -391,12 +391,13 @@ function AddWalkIn({ copy, onAdd }: { copy: StaffCopy; onAdd: (input: NewWalkIn)
         <div className="sf-field sf-field-guests">
           <span id={`${id}-guests`}>{w.guests}</span>
           <div className="sf-stepper" role="group" aria-labelledby={`${id}-guests`}>
-            <button type="button" aria-label={w.fewer} disabled={guests <= 1} onClick={() => setGuests((g) => Math.max(1, g - 1))}>
+            <button type="button" className="stepper-btn" aria-label={w.fewer} disabled={guests <= 1} onClick={() => setGuests((g) => Math.max(1, g - 1))}>
               −
             </button>
             <output aria-live="polite">{guests}</output>
             <button
               type="button"
+              className="stepper-btn"
               aria-label={w.more}
               disabled={guests >= WAITLIST_MAX_GUESTS}
               onClick={() => setGuests((g) => Math.min(WAITLIST_MAX_GUESTS, g + 1))}
@@ -441,7 +442,7 @@ function AddWalkIn({ copy, onAdd }: { copy: StaffCopy; onAdd: (input: NewWalkIn)
             onChange={(e) => setNote(e.target.value)}
           />
         </label>
-        <button type="submit" className="panel-btn sf-add-submit" disabled={!ready || busy}>
+        <button type="submit" className="btn btn--primary btn--md sf-add-submit" disabled={!ready || busy}>
           {w.add}
         </button>
       </div>

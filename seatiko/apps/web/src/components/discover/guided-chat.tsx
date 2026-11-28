@@ -209,7 +209,7 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
             </div>
             <button
               type="button"
-              className="discover-chat-close"
+              className="btn btn--ghost btn--sm btn--icon discover-chat-close"
               onClick={closeChat}
               aria-label={copy.chatClose}
             >
@@ -240,7 +240,7 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
                     </>
                   ) : null}
                   {msg.mapHref ? (
-                    <Link className="discover-chat-map-link" href={msg.mapHref}>
+                    <Link className="btn btn--link discover-chat-map-link" href={msg.mapHref}>
                       {t("discover_ai.show_map")} →
                     </Link>
                   ) : null}
@@ -253,7 +253,7 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
             <div className="discover-chat-hints">
               <button
                 type="button"
-                className="discover-chat-hints-toggle"
+                className="btn btn--link discover-chat-hints-toggle"
                 aria-expanded={examplesVisible}
                 onClick={() => setExamplesVisible((v) => !v)}
               >
@@ -269,7 +269,7 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
                     <button
                       key={example}
                       type="button"
-                      className="discover-chip"
+                      className="chip discover-chip"
                       onClick={() => setDraft(example)}
                     >
                       {example}
@@ -293,13 +293,13 @@ export function GuidedChat({ collapsedDefault = true }: Props) {
                 placeholder={copy.chatPlaceholder}
                 aria-label={copy.chatPlaceholder}
               />
-              <button type="submit" className="btn btn-gold discover-chat-send" disabled={busy}>
+              <button type="submit" className="btn btn--primary btn--md discover-chat-send" disabled={busy}>
                 {copy.chatSend}
               </button>
             </form>
             <button
               type="button"
-              className="discover-chat-to-filters"
+              className="btn btn--link discover-chat-to-filters"
               onClick={scrollToFilters}
             >
               {copy.chatToFilters}

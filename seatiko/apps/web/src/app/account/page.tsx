@@ -86,7 +86,7 @@ export default function AccountPage() {
             <span>{toast}</span>
             <button
               type="button"
-              className="account-toast-close"
+              className="btn btn--ghost btn--sm btn--icon account-toast-close"
               onClick={() => setToast(null)}
               aria-label="Закрыть"
             >

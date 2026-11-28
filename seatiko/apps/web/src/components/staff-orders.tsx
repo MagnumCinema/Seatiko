@@ -146,7 +146,7 @@ export function StaffOrdersTab({
             <div className="sf-age-actions">
               <button
                 type="button"
-                className="panel-btn sm"
+                className="btn btn--primary btn--sm"
                 disabled={busy !== null}
                 onClick={() => void run(order.id, () => onAgeCheck(order, true))}
               >
@@ -154,7 +154,7 @@ export function StaffOrdersTab({
               </button>
               <button
                 type="button"
-                className="panel-btn sm ghost"
+                className="btn btn--secondary btn--sm"
                 disabled={busy !== null}
                 onClick={() => setConfirm({ order, kind: "refuse" })}
               >
@@ -175,7 +175,7 @@ export function StaffOrdersTab({
             {canCancel && (
               <button
                 type="button"
-                className="panel-btn sm ghost sf-btn-quiet"
+                className="btn btn--ghost btn--sm sf-btn-quiet"
                 disabled={busy !== null}
                 onClick={() => setConfirm({ order, kind: "cancel" })}
               >
@@ -185,7 +185,7 @@ export function StaffOrdersTab({
             {next && (
               <button
                 type="button"
-                className="panel-btn sm"
+                className="btn btn--primary btn--sm"
                 disabled={busy !== null || blocked}
                 title={blocked ? copy.errors.ageCheckPending : o.nextHint[next]}
                 onClick={() => void run(order.id, () => onAdvance(order, next))}
@@ -222,7 +222,7 @@ export function StaffOrdersTab({
           hint={o.emptyHint}
           action={
             counts.scheduled > 0 ? (
-              <button type="button" className="panel-btn ghost" onClick={() => setFilter("scheduled")}>
+              <button type="button" className="btn btn--secondary btn--md" onClick={() => setFilter("scheduled")}>
                 {o.filter.scheduled} · {counts.scheduled}
               </button>
             ) : undefined
@@ -240,7 +240,7 @@ export function StaffOrdersTab({
         icon={<ReceiptIcon />}
         title={o.emptyFiltered}
         action={
-          <button type="button" className="panel-btn ghost" onClick={() => setFilter("active")}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={() => setFilter("active")}>
             {o.showAll}
           </button>
         }
@@ -257,7 +257,7 @@ export function StaffOrdersTab({
           <button
             key={key}
             type="button"
-            className={filter === key ? "active" : ""}
+            className={`chip${filter === key ? " is-active" : ""}`}
             aria-pressed={filter === key}
             onClick={() => setFilter(key)}
           >

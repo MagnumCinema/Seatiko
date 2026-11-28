@@ -352,7 +352,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
         <div className="owner-notice error" role="alert">
           <span aria-hidden="true">!</span>
           <p>{p.loadError}</p>
-          <button type="button" className="panel-btn ghost sm" onClick={load}>
+          <button type="button" className="btn btn--secondary btn--sm" onClick={load}>
             {p.retry}
           </button>
         </div>
@@ -379,12 +379,12 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
                   </span>
                 </div>
                 <div className="cabinet-planner-swap-row-actions">
-                  <button type="button" className="panel-btn primary sm cabinet-planner-swap-action-btn" onClick={() => setDialog({ kind: "swap", shift })}>
+                  <button type="button" className="btn btn--primary btn--sm cabinet-planner-swap-action-btn" onClick={() => setDialog({ kind: "swap", shift })}>
                     ⇄ {copy.plannerSwapBtn}
                   </button>
                   <button
                     type="button"
-                    className="panel-btn ghost sm danger"
+                    className="btn btn--danger-outline btn--sm"
                     aria-label={p.deleteShift}
                     title={p.deleteShift}
                     onClick={() => setDialog({ kind: "delete", shift })}
@@ -405,7 +405,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
           <ul className="shift-banner-list">
             {conflicts.slice(0, 8).map((s) => (
               <li key={s.id}>
-                <button type="button" className="shift-link" onClick={() => setDialog({ kind: "inspect", shift: s })}>
+                <button type="button" className="btn btn--link shift-link" onClick={() => setDialog({ kind: "inspect", shift: s })}>
                   {s.staff_name} · {shiftWhen(s, today, locale, copy)}
                 </button>
               </li>
@@ -418,7 +418,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
         <section className="shift-banner warn">
           <div className="shift-banner-head">
             <strong>{fill(p.hiddenTitle, { count: hidden.length })}</strong>
-            <button type="button" className="panel-btn ghost sm" aria-expanded={showHidden} onClick={() => setShowHidden((v) => !v)}>
+            <button type="button" className="btn btn--secondary btn--sm" aria-expanded={showHidden} onClick={() => setShowHidden((v) => !v)}>
               {showHidden ? p.hiddenHide : p.hiddenShow}
             </button>
           </div>
@@ -431,7 +431,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
                     {s.staff_name} · <RoleBadge label={shiftRoleLabel(s, presetNames)} color={s.role_color || roleColorOf(s.role)} /> ·{" "}
                     {shiftWhen(s, today, locale, copy)} · <em>{memberById.has(s.staff_id) ? p.hiddenOffSchedule : p.hiddenRemoved}</em>
                   </span>
-                  <button type="button" className="panel-btn ghost sm danger" onClick={() => setDialog({ kind: "delete", shift: s })}>
+                  <button type="button" className="btn btn--danger-outline btn--sm" onClick={() => setDialog({ kind: "delete", shift: s })}>
                     {p.deleteShift}
                   </button>
                 </li>
@@ -449,20 +449,20 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
             <p className="cabinet-ops-sub">{copy.shiftsSubtitle}</p>
           </div>
           <div className="cabinet-planner-head-actions">
-            <button type="button" className="panel-btn primary cabinet-planner-add-btn" onClick={() => setDialog({ kind: "batch", date: defaultDay })}>
+            <button type="button" className="btn btn--primary btn--md cabinet-planner-add-btn" onClick={() => setDialog({ kind: "batch", date: defaultDay })}>
               {copy.plannerAssignForDay}
             </button>
-            <button type="button" className="panel-btn ghost" onClick={() => setDialog({ kind: "generator", from: defaultDay })}>
+            <button type="button" className="btn btn--secondary btn--md" onClick={() => setDialog({ kind: "generator", from: defaultDay })}>
               {p.generatorBtn}
             </button>
-            <button type="button" className="panel-btn ghost" onClick={() => setDialog({ kind: "copy" })}>
+            <button type="button" className="btn btn--secondary btn--md" onClick={() => setDialog({ kind: "copy" })}>
               {p.copyWeekBtn}
             </button>
           </div>
         </div>
 
         <div className="cabinet-planner-toolbar">
-          <div className="cabinet-planner-view-tabs" role="tablist">
+          <div className="seg cabinet-planner-view-tabs" role="tablist">
             {(
               [
                 ["matrix", p.viewWeek],
@@ -474,7 +474,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
                 type="button"
                 role="tab"
                 aria-selected={viewMode === value}
-                className={`cabinet-planner-view-tab ${viewMode === value ? "active" : ""}`}
+                className={`seg-item cabinet-planner-view-tab${viewMode === value ? " is-active" : ""}`}
                 onClick={() => setViewMode(value)}
               >
                 {label}
@@ -483,17 +483,17 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
           </div>
 
           <div className="cabinet-planner-nav-bar">
-            <button type="button" className="cabinet-planner-nav-arrow" aria-label={p.prevWeek} title={p.prevWeek} onClick={() => moveWeek(-1)}>
+            <button type="button" className="btn btn--secondary btn--sm btn--icon cabinet-planner-nav-arrow" aria-label={p.prevWeek} title={p.prevWeek} onClick={() => moveWeek(-1)}>
               ‹
             </button>
             <span className="cabinet-planner-nav-range">{rangeLabel}</span>
-            <button type="button" className="cabinet-planner-nav-arrow" aria-label={p.nextWeek} title={p.nextWeek} onClick={() => moveWeek(1)}>
+            <button type="button" className="btn btn--secondary btn--sm btn--icon cabinet-planner-nav-arrow" aria-label={p.nextWeek} title={p.nextWeek} onClick={() => moveWeek(1)}>
               ›
             </button>
             {!currentWeek && (
               <button
                 type="button"
-                className="cabinet-planner-nav-today"
+                className="btn btn--secondary btn--sm cabinet-planner-nav-today"
                 onClick={() => {
                   setWeekFrom(weekStart(today));
                   setSelectedDate(today);
@@ -506,7 +506,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
 
           {viewMode === "matrix" && (
             <div className="cabinet-planner-role-filter" role="group">
-              <button type="button" aria-pressed={roleFilter === "all"} className={roleFilter === "all" ? "active" : ""} onClick={() => setRoleFilter("all")}>
+              <button type="button" aria-pressed={roleFilter === "all"} className={`chip${roleFilter === "all" ? " is-active" : ""}`} onClick={() => setRoleFilter("all")}>
                 {fill(p.allPeople, { count: scheduledCount })}
               </button>
               {roleGroups.map((g) => (
@@ -514,7 +514,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
                   key={g.role.key}
                   type="button"
                   aria-pressed={roleFilter === g.role.key}
-                  className={roleFilter === g.role.key ? "active" : ""}
+                  className={`chip${roleFilter === g.role.key ? " is-active" : ""}`}
                   onClick={() => setRoleFilter(g.role.key)}
                 >
                   <span className="cabinet-role-pill-dot" style={{ "--role-color": g.role.color } as CSSProperties} aria-hidden="true" />
@@ -783,7 +783,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
           <div className="cabinet-delete-actions">
             <button
               type="button"
-              className="panel-btn danger"
+              className="btn btn--danger btn--md"
               disabled={busy}
               onClick={() =>
                 void act(async () => {
@@ -794,7 +794,7 @@ export function CabinetShiftsPlanner({ venueId, hoursText, onAlertCountChange }:
             >
               {p.deleteShift}
             </button>
-            <button type="button" className="panel-btn ghost" data-autofocus disabled={busy} onClick={() => setDialog(null)}>
+            <button type="button" className="btn btn--ghost btn--md" data-autofocus disabled={busy} onClick={() => setDialog(null)}>
               {copy.opsMenuCancel}
             </button>
           </div>
@@ -1076,7 +1076,7 @@ function DayView({
           </span>
         </div>
         {selectedDate >= today && (
-          <button type="button" className="panel-btn primary sm" onClick={() => onAssign(selectedDate)}>
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => onAssign(selectedDate)}>
             {copy.opsScheduleAddBtn}
           </button>
         )}
@@ -1131,7 +1131,7 @@ function DayView({
                 <div className="cabinet-planner-col-empty">
                   <p>{copy.roles.plannerNoneOnShift}</p>
                   {selectedDate >= today && (
-                    <button type="button" className="panel-btn ghost sm" onClick={() => onAssign(selectedDate)}>
+                    <button type="button" className="btn btn--secondary btn--sm" onClick={() => onAssign(selectedDate)}>
                       {copy.plannerAssignForDay}
                     </button>
                   )}
@@ -1177,10 +1177,10 @@ function DayView({
                         )}
                         {!past && (
                           <div className="cabinet-planner-card-actions">
-                            <button type="button" className="panel-btn ghost sm" onClick={() => onSwap(shift)}>
+                            <button type="button" className="btn btn--secondary btn--sm" onClick={() => onSwap(shift)}>
                               ⇄ {copy.plannerSwapBtn}
                             </button>
-                            <button type="button" className="panel-btn ghost sm danger" aria-label={p.deleteShift} title={p.deleteShift} onClick={() => onDelete(shift)}>
+                            <button type="button" className="btn btn--danger-outline btn--sm" aria-label={p.deleteShift} title={p.deleteShift} onClick={() => onDelete(shift)}>
                               ✕
                             </button>
                           </div>
@@ -1268,19 +1268,19 @@ function InspectDialog({
       ) : (
         <div className="cabinet-shift-actions shift-inspect-actions">
           {inTeam && (
-            <button type="button" className="panel-btn primary" onClick={onEdit}>
+            <button type="button" className="btn btn--primary btn--md" onClick={onEdit}>
               {p.editTime}
             </button>
           )}
-          <button type="button" className="panel-btn ghost" onClick={onSwap}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={onSwap}>
             ⇄ {copy.plannerSwapBtn}
           </button>
           {inTeam && (
-            <button type="button" className="panel-btn ghost" onClick={onAddSameDay}>
+            <button type="button" className="btn btn--secondary btn--md" onClick={onAddSameDay}>
               + {p.addSplit}
             </button>
           )}
-          <button type="button" className="panel-btn ghost danger" onClick={onDelete}>
+          <button type="button" className="btn btn--danger-outline btn--md" onClick={onDelete}>
             {p.deleteShift}
           </button>
         </div>
@@ -1409,10 +1409,10 @@ function SwapDialog({
             )}
           </div>
           <div className="cabinet-shift-actions">
-            <button type="submit" className="panel-btn primary" disabled={busy || !choice}>
+            <button type="submit" className="btn btn--primary btn--md" disabled={busy || !choice}>
               ⇄ {copy.plannerConfirmSwap}
             </button>
-            <button type="button" className="panel-btn ghost" disabled={busy} onClick={onClose}>
+            <button type="button" className="btn btn--ghost btn--md" disabled={busy} onClick={onClose}>
               {copy.opsMenuCancel}
             </button>
           </div>
@@ -1483,13 +1483,13 @@ function CopyWeekDialog({
       <div className="cabinet-delete-actions">
         <button
           type="button"
-          className="panel-btn primary"
+          className="btn btn--primary btn--md"
           disabled={busy || plan.accepted.length === 0}
           onClick={() => void onSubmit(plan.accepted.map((a) => a.draft))}
         >
           {fill(p.copyCount, { count: plan.accepted.length })}
         </button>
-        <button type="button" className="panel-btn ghost" data-autofocus disabled={busy} onClick={onClose}>
+        <button type="button" className="btn btn--ghost btn--md" data-autofocus disabled={busy} onClick={onClose}>
           {copy.opsMenuCancel}
         </button>
       </div>
@@ -1562,11 +1562,11 @@ function PersonalDialog({
         <strong>{p.shiftsList}</strong>
         <div className="shift-personal-tools">
           {past.length > 0 && (
-            <button type="button" className="panel-btn ghost sm" aria-pressed={showPast} onClick={() => setShowPast((v) => !v)}>
+            <button type="button" className="btn btn--secondary btn--sm" aria-pressed={showPast} onClick={() => setShowPast((v) => !v)}>
               {fill(p.showPast, { count: past.length })}
             </button>
           )}
-          <button type="button" className="panel-btn primary sm" onClick={() => onAdd(member)}>
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => onAdd(member)}>
             {copy.opsScheduleAddBtn}
           </button>
         </div>

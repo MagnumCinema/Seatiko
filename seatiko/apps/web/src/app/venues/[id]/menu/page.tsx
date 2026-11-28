@@ -299,7 +299,7 @@ export default function VenueMenuPage() {
                       {" "}
                       <button
                         type="button"
-                        className="menu-preorder-cancel"
+                        className="btn btn--danger-outline btn--sm menu-preorder-cancel"
                         disabled={preorderState === "saving"}
                         onClick={() => void dropPreorder()}
                       >
@@ -319,7 +319,7 @@ export default function VenueMenuPage() {
                 </p>
               ) : null}
             </div>
-            <Link className="venue-cta venue-cta-outline" href={venueHref}>
+            <Link className="btn btn--secondary btn--md" href={venueHref}>
               {t("menu_page.preorder_back")}
             </Link>
           </div>
@@ -341,12 +341,12 @@ export default function VenueMenuPage() {
               ) : null}
             </div>
             <div className="menu-hero-actions">
-              <Link className="venue-cta venue-cta-hero" href={venueBookingHref(venue.id)}>
-                <BoltIcon className="venue-cta-icon" />
+              <Link className="btn btn--primary btn--lg" href={venueBookingHref(venue.id)}>
+                <BoltIcon />
                 <span>{t("venue.quick_book")}</span>
               </Link>
-              <Link className="venue-cta venue-cta-outline" href={`${venueHref}#venue-floor`}>
-                <TableIcon className="venue-cta-icon" />
+              <Link className="btn btn--secondary btn--lg" href={`${venueHref}#venue-floor`}>
+                <TableIcon />
                 <span>{t("venue.book_scroll")}</span>
               </Link>
             </div>
@@ -373,11 +373,11 @@ export default function VenueMenuPage() {
             <p>{t("menu_page.cta_body")}</p>
           </div>
           <div className="menu-cta-actions">
-            <Link className="venue-cta venue-cta-hero" href={venueBookingHref(venue.id)}>
-              <BoltIcon className="venue-cta-icon" />
+            <Link className="btn btn--primary btn--lg" href={venueBookingHref(venue.id)}>
+              <BoltIcon />
               <span>{t("venue.quick_book")}</span>
             </Link>
-            <Link className="venue-cta ghost" href={venueHref}>
+            <Link className="btn btn--secondary btn--lg" href={venueHref}>
               {t("menu_page.to_venue")}
             </Link>
           </div>
@@ -418,7 +418,7 @@ export default function VenueMenuPage() {
               {reservationId && signedIn && !preorderLocked ? (
                 <button
                   type="button"
-                  className="venue-cta venue-cta-hero menu-selection-send"
+                  className="btn btn--primary btn--md btn--block menu-selection-send"
                   disabled={preorderState === "saving" || lines.every(({ item }) => blocked[item.id])}
                   onClick={() => void sendPreorder()}
                 >
@@ -429,7 +429,7 @@ export default function VenueMenuPage() {
                       : t("menu_page.preorder_send")}
                 </button>
               ) : null}
-              <button type="button" className="menu-selection-clear" onClick={clearSelection}>
+              <button type="button" className="btn btn--ghost btn--sm menu-selection-clear" onClick={clearSelection}>
                 {t("menu_page.selection_clear")}
               </button>
             </div>
@@ -441,7 +441,7 @@ export default function VenueMenuPage() {
             </div>
             <button
               type="button"
-              className="venue-cta venue-cta-hero"
+              className={`btn btn--md ${selectionOpen ? "btn--secondary" : "btn--primary"}`}
               aria-expanded={selectionOpen}
               aria-controls="menu-selection-list"
               onClick={() => setSelectionOpen((open) => !open)}

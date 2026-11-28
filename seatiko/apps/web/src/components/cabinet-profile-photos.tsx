@@ -148,7 +148,7 @@ export function PhotosSection({
                 </a>
                 {index === 0 && <span>{copy.cabinet.cover}</span>}
                 {editable && (
-                  <button type="button" aria-label={`${ui.deletePhoto} ${index + 1}`} title={ui.deletePhoto} disabled={busy} onClick={() => setRemoving(url)}>
+                  <button type="button" className="btn btn--danger-outline btn--sm btn--icon" aria-label={`${ui.deletePhoto} ${index + 1}`} title={ui.deletePhoto} disabled={busy} onClick={() => setRemoving(url)}>
                     ×
                   </button>
                 )}

@@ -157,7 +157,7 @@ export function GeneratorDialog({
       >
         <div className="cabinet-shift-field-group">
           <span className="shift-field-label">{copy.plannerRecurringPattern}</span>
-          <div className="cabinet-shift-role-toggle shift-segmented" role="group">
+          <div className="seg cabinet-shift-role-toggle shift-segmented" role="group">
             {(
               [
                 ["2/2", p.pattern22],
@@ -169,7 +169,7 @@ export function GeneratorDialog({
                 key={value}
                 type="button"
                 aria-pressed={kind === value}
-                className={`cabinet-shift-role-btn ${kind === value ? "active" : ""}`}
+                className={`seg-item cabinet-shift-role-btn${kind === value ? " is-active" : ""}`}
                 onClick={() => setKind(value)}
               >
                 {label}
@@ -190,7 +190,7 @@ export function GeneratorDialog({
                     key={day}
                     type="button"
                     aria-pressed={on}
-                    className={`cabinet-planner-weekday-pill ${on ? "active" : ""}`}
+                    className={`chip cabinet-planner-weekday-pill${on ? " is-active" : ""}`}
                     onClick={() => setWeekdays((prev) => (on ? prev.filter((d) => d !== day) : [...prev, day].sort()))}
                   >
                     {label}
@@ -311,10 +311,10 @@ export function GeneratorDialog({
                     <RoleBadge label={groupTitle(group)} color={group.role.color} /> ({here})
                   </span>
                   <div className="cabinet-shift-staff-bulk-actions">
-                    <button type="button" className="cabinet-shift-bulk-btn" onClick={() => setSelected((prev) => [...new Set([...prev, ...ids])])}>
+                    <button type="button" className="btn btn--link cabinet-shift-bulk-btn" onClick={() => setSelected((prev) => [...new Set([...prev, ...ids])])}>
                       {copy.opsScheduleSelectAll}
                     </button>
-                    <button type="button" className="cabinet-shift-bulk-btn" onClick={() => setSelected((prev) => prev.filter((id) => !ids.includes(id)))}>
+                    <button type="button" className="btn btn--link cabinet-shift-bulk-btn" onClick={() => setSelected((prev) => prev.filter((id) => !ids.includes(id)))}>
                       {copy.opsScheduleDeselectAll}
                     </button>
                   </div>
@@ -406,10 +406,10 @@ export function GeneratorDialog({
         )}
 
         <div className="cabinet-shift-actions">
-          <button type="submit" className="panel-btn primary" disabled={busy || !result || (!result.accepted.length && !toDelete.length)}>
+          <button type="submit" className="btn btn--primary btn--md" disabled={busy || !result || (!result.accepted.length && !toDelete.length)}>
             {fill(p.createCount, { count: result?.accepted.length ?? 0 })}
           </button>
-          <button type="button" className="panel-btn ghost" disabled={busy} onClick={onClose}>
+          <button type="button" className="btn btn--ghost btn--md" disabled={busy} onClick={onClose}>
             {copy.opsMenuCancel}
           </button>
         </div>

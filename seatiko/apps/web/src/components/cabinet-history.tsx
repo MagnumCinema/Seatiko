@@ -528,7 +528,7 @@ export function CabinetHistoryPanel({
     if (entry.target === "venue") {
       if (!app.venue_id) return null;
       return (
-        <a className="ch-link" href={`/venues/${app.venue_id}`} target="_blank" rel="noopener noreferrer">
+        <a className="btn btn--link ch-link" href={`/venues/${app.venue_id}`} target="_blank" rel="noopener noreferrer">
           {copy.openVenue}
           <ExternalIcon />
         </a>
@@ -537,7 +537,7 @@ export function CabinetHistoryPanel({
     if (entry.target !== "profile" && entry.target !== "overview") return null;
     const target = entry.target;
     return (
-      <button type="button" className="ch-link" onClick={() => onOpen(entry.appId, target)}>
+      <button type="button" className="btn btn--link ch-link" onClick={() => onOpen(entry.appId, target)}>
         {target === "profile" ? copy.openProfile : copy.openOverview}
         <ArrowIcon />
       </button>
@@ -576,7 +576,7 @@ export function CabinetHistoryPanel({
               <button
                 key={chip.id}
                 type="button"
-                className={filters.category === chip.id ? "active" : ""}
+                className={`chip${filters.category === chip.id ? " is-active" : ""}`}
                 aria-pressed={filters.category === chip.id}
                 onClick={() => update({ category: chip.id })}
               >
@@ -596,7 +596,7 @@ export function CabinetHistoryPanel({
                 aria-label={copy.searchLabel}
               />
               {filters.query && (
-                <button type="button" onClick={() => update({ query: "" })} aria-label={copy.clearSearch}>
+                <button type="button" className="btn btn--ghost btn--sm btn--icon" onClick={() => update({ query: "" })} aria-label={copy.clearSearch}>
                   <CloseIcon />
                 </button>
               )}
@@ -644,7 +644,7 @@ export function CabinetHistoryPanel({
             </span>
             <button
               type="button"
-              className="ch-icon-btn"
+              className="btn btn--secondary btn--sm btn--icon ch-icon-btn"
               onClick={retry}
               disabled={refreshing}
               aria-label={copy.refresh}
@@ -656,7 +656,7 @@ export function CabinetHistoryPanel({
             </button>
             <button
               type="button"
-              className="ch-icon-btn ch-export"
+              className="btn btn--secondary btn--sm ch-icon-btn ch-export"
               onClick={exportCsv}
               disabled={filtered.length === 0}
               title={copy.exportCsvHint}
@@ -678,7 +678,7 @@ export function CabinetHistoryPanel({
                 : updatedAt
                   ? fill(copy.refreshFailed, { time: formatClock(updatedAt) })
                   : copy.errorTitle}{" "}
-              <button type="button" className="ch-inline-btn" onClick={retry} disabled={refreshing}>
+              <button type="button" className="btn btn--link ch-inline-btn" onClick={retry} disabled={refreshing}>
                 {copy.retry}
               </button>
             </p>
@@ -700,7 +700,7 @@ export function CabinetHistoryPanel({
           </span>
           <h3>{copy.errorTitle}</h3>
           <p>{copy.errorHint}</p>
-          <button type="button" className="panel-btn ghost ch-btn" onClick={retry} disabled={refreshing}>
+          <button type="button" className="btn btn--primary btn--md ch-btn" onClick={retry} disabled={refreshing}>
             {copy.retry}
           </button>
         </div>
@@ -712,7 +712,7 @@ export function CabinetHistoryPanel({
           <h3>{active ? copy.emptyFilteredTitle : copy.emptyTitle}</h3>
           <p>{active ? copy.emptyFilteredHint : copy.emptyHint}</p>
           {active && (
-            <button type="button" className="panel-btn ghost ch-btn" onClick={() => update(DEFAULT_HISTORY_FILTERS)}>
+            <button type="button" className="btn btn--secondary btn--md ch-btn" onClick={() => update(DEFAULT_HISTORY_FILTERS)}>
               {copy.resetFilters}
             </button>
           )}
@@ -799,7 +799,7 @@ export function CabinetHistoryPanel({
             );
           })}
           {filtered.length > shown.length && (
-            <button type="button" className="panel-btn ghost ch-btn ch-more" onClick={() => setVisible((n) => n + PAGE_SIZE)}>
+            <button type="button" className="btn btn--ghost btn--sm ch-btn ch-more" onClick={() => setVisible((n) => n + PAGE_SIZE)}>
               {fill(copy.showMore, { n: Math.min(PAGE_SIZE, filtered.length - shown.length) })}
             </button>
           )}

@@ -59,14 +59,7 @@ html[data-theme="light"] .shift-next-day {
   opacity: 0.65;
   cursor: default;
 }
-.shift-segmented .cabinet-shift-role-btn {
-  white-space: nowrap;
-}
 /* Buttons keep their text on one line in every language; rows wrap instead. */
-.shift-dialog .panel-btn,
-.staffing-editor .panel-btn {
-  white-space: nowrap;
-}
 .shift-dialog .cabinet-shift-actions,
 .shift-dialog .cabinet-delete-actions {
   flex-wrap: wrap;
@@ -308,15 +301,8 @@ html[data-theme="light"] .shift-banner.warn strong {
   color: var(--site-muted);
 }
 .shift-link {
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--site-fg);
-  font: inherit;
   text-align: left;
-  text-decoration: underline;
   text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 /* Below-minimum summary of the week */
@@ -683,9 +669,9 @@ html[data-theme="light"] .cabinet-personal-stats strong.over {
   .cabinet-planner-head-actions {
     width: 100%;
   }
-  .cabinet-planner-head-actions .panel-btn {
+  .cabinet-planner-head-actions .btn {
     flex: 1 1 auto;
-  }
+}
   .cabinet-planner-toolbar {
     padding: 10px;
   }
@@ -698,7 +684,7 @@ html[data-theme="light"] .cabinet-personal-stats strong.over {
   }
   .cabinet-planner-view-tab {
     flex: 1;
-  }
+}
   .cabinet-planner-role-filter {
     width: 100%;
   }
@@ -755,7 +741,6 @@ html[data-theme="light"] .cabinet-personal-stats strong.over {
   gap: 4px;
 }
 .staffing-days button,
-.staffing-mode button,
 .staffing-stepper button {
   min-height: 32px;
   border: 1px solid var(--site-border);
@@ -767,22 +752,6 @@ html[data-theme="light"] .cabinet-personal-stats strong.over {
   cursor: pointer;
   white-space: nowrap;
 }
-.staffing-days button {
-  padding: 0 2px;
-  text-transform: capitalize;
-}
-.staffing-days button.active,
-.staffing-mode button.active {
-  border-color: var(--site-accent, #e9b96e);
-  background: rgba(233, 185, 110, 0.16);
-  color: var(--site-fg);
-}
-html[data-theme="light"] .staffing-days button.active,
-html[data-theme="light"] .staffing-mode button.active {
-  border-color: #246046;
-  background: #e4efe8;
-  color: #175f43;
-}
 .staffing-row {
   display: flex;
   flex-wrap: wrap;
@@ -792,9 +761,6 @@ html[data-theme="light"] .staffing-mode button.active {
 .staffing-mode {
   display: inline-flex;
   gap: 4px;
-}
-.staffing-mode button {
-  padding: 0 10px;
 }
 .staffing-times {
   display: inline-flex;
@@ -831,19 +797,6 @@ html[data-theme="light"] .staffing-mode button.active {
   text-align: center;
   font-weight: 800;
   color: var(--site-fg);
-}
-.staffing-remove {
-  width: 32px;
-  min-height: 32px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--site-muted);
-  cursor: pointer;
-}
-.staffing-remove:hover {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.4);
 }
 .staffing-add {
   justify-self: start;
@@ -900,9 +853,6 @@ html[data-theme="light"] .cabinet-role-min {
 .staff-shifts-alert-head h4 {
   margin: 0;
 }
-.staff-shifts-alert-head .panel-btn {
-  white-space: nowrap;
-}
 @media (max-width: 640px) {
   .staff-shifts-section {
     padding: 14px;
@@ -912,8 +862,6 @@ html[data-theme="light"] .cabinet-role-min {
 .staff-pending-shift-actions {
   flex-wrap: wrap;
 }
-.staff-shifts-section .cabinet-schedule-item-right .panel-btn,
-.staff-shifts-section .cabinet-shift-status-badge,
-.staff-pending-shift-actions .panel-btn {
+.staff-shifts-section .cabinet-shift-status-badge {
   white-space: nowrap;
 }

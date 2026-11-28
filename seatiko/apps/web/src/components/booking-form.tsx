@@ -322,7 +322,7 @@ export function BookingForm({
         {variant === "popup" && onClose ? (
           <button
             type="button"
-            className="booking-popup-x"
+            className="btn btn--ghost btn--sm btn--icon booking-popup-x"
             onClick={onClose}
             aria-label={t("res.close")}
           >
@@ -339,7 +339,7 @@ export function BookingForm({
               {tablesLabel(chosenTables)}
             </p>
             {!quick && onClearTable ? (
-              <button type="button" className="booking-table-clear" onClick={onClearTable}>
+              <button type="button" className="btn btn--link booking-table-clear" onClick={onClearTable}>
                 {t("res.change_table")}
               </button>
             ) : null}
@@ -352,6 +352,7 @@ export function BookingForm({
           <div className="booking-stepper">
             <button
               type="button"
+              className="stepper-btn"
               aria-label={t("res.guests_less")}
               disabled={guests <= 1}
               onClick={() => setGuests(Math.max(1, guests - 1))}
@@ -371,6 +372,7 @@ export function BookingForm({
             />
             <button
               type="button"
+              className="stepper-btn"
               aria-label={t("res.guests_more")}
               disabled={guests >= maxGuests}
               onClick={() => setGuests(Math.min(maxGuests, guests + 1))}
@@ -391,7 +393,7 @@ export function BookingForm({
               <button
                 key={min}
                 type="button"
-                className={min === durationMin ? "on" : ""}
+                className={`chip${min === durationMin ? " is-active" : ""}`}
                 aria-pressed={min === durationMin}
                 onClick={() => {
                   setChosenDuration(min);
@@ -411,7 +413,7 @@ export function BookingForm({
               <button
                 key={offset}
                 type="button"
-                className={offset === activeOffset ? "on" : ""}
+                className={`chip${offset === activeOffset ? " is-active" : ""}`}
                 aria-pressed={offset === activeOffset}
                 disabled={!hasFree}
                 title={closed ? t("res.closed_day") : undefined}
@@ -440,7 +442,7 @@ export function BookingForm({
                         <button
                           key={iso}
                           type="button"
-                          className={iso === selectedIso ? "on" : ""}
+                          className={`chip${iso === selectedIso ? " is-active" : ""}`}
                           aria-pressed={iso === selectedIso}
                           disabled={!slot.available}
                           onClick={() => setSlotIso(iso)}
@@ -487,7 +489,7 @@ export function BookingForm({
             <p>{t(errorKey)}</p>
             {errorKey === "error.active_reservation" ? (
               <Link
-                className="venue-cta venue-cta-outline booking-form-error-link"
+                className="btn btn--secondary btn--md booking-form-error-link"
                 href={
                   activeResId
                     ? `/account?reservation=${encodeURIComponent(activeResId)}`
@@ -501,7 +503,7 @@ export function BookingForm({
         )}
         <button
           type="button"
-          className="venue-cta venue-cta-primary"
+          className="btn btn--primary btn--lg"
           // Only disabled while sending: with no bookable time a press says why (book()).
           disabled={busy}
           onClick={() => void book()}

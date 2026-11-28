@@ -30,15 +30,15 @@ export function PanelShell({ title, subtitle, children, email }: Props) {
           </div>
           <div className="panel-top-actions">
             {email && <span className="panel-email">{email}</span>}
-            <Link href="/account" className="panel-link">
+            <Link href="/account" className="btn btn--link panel-link">
               {copy.profile}
             </Link>
-            <Link href="/" className="panel-link">
+            <Link href="/" className="btn btn--link panel-link">
               {copy.site}
             </Link>
             <button
               type="button"
-              className="panel-btn ghost"
+              className="btn btn--secondary btn--md"
               onClick={() => {
                 logout();
                 router.push("/login");

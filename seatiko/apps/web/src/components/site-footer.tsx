@@ -197,6 +197,7 @@ export function SiteFooter() {
         >
           <div
             className="legal-modal-card"
+            data-surface="dark"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -208,7 +209,7 @@ export function SiteFooter() {
               </div>
               <button
                 type="button"
-                className="legal-modal-close"
+                className="btn btn--ghost btn--sm btn--icon legal-modal-close"
                 onClick={handleClose}
                 aria-label={copy.modalClose}
               >
@@ -217,19 +218,21 @@ export function SiteFooter() {
             </div>
 
             {/* Tab navigation between all documents */}
-            <div className="legal-modal-tabs" role="tablist">
+            <div className="legal-modal-tabs">
+              <div className="seg" role="tablist">
               {copy.legalLinks.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   role="tab"
                   aria-selected={activeDocId === item.id}
-                  className={`legal-modal-tab ${activeDocId === item.id ? "active" : ""}`}
+                  className={`seg-item legal-modal-tab${activeDocId === item.id ? " is-active" : ""}`}
                   onClick={() => setActiveDocId(item.id as LegalDocId)}
                 >
                   {item.label}
                 </button>
               ))}
+              </div>
             </div>
 
             {/* Modal Document Body */}
@@ -252,7 +255,7 @@ export function SiteFooter() {
               </div>
               <button
                 type="button"
-                className="btn btn-gold btn-legal-close"
+                className="btn btn--primary btn--md btn-legal-close"
                 onClick={handleClose}
               >
                 {copy.modalClose}

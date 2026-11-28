@@ -297,7 +297,7 @@ function DemoPresetsRow({
     <div className="login-demo-row">
       <button
         type="button"
-        className={`btn-demo-chip ${busyPreset === "guest" ? "loading" : ""}`}
+        className={`chip btn-demo-chip${busyPreset === "guest" ? " loading" : ""}`}
         disabled={busy || busyPreset !== null}
         onClick={() => onSelect("guest")}
         title="Войти как гость: guest@seatiko.local"
@@ -307,7 +307,7 @@ function DemoPresetsRow({
       </button>
       <button
         type="button"
-        className={`btn-demo-chip ${busyPreset === "restaurant" ? "loading" : ""}`}
+        className={`chip btn-demo-chip${busyPreset === "restaurant" ? " loading" : ""}`}
         disabled={busy || busyPreset !== null}
         onClick={() => onSelect("restaurant")}
         title="Войти как владелец: owner@seatiko.local"
@@ -317,7 +317,7 @@ function DemoPresetsRow({
       </button>
       <button
         type="button"
-        className={`btn-demo-chip ${busyPreset === "staff" ? "loading" : ""}`}
+        className={`chip btn-demo-chip${busyPreset === "staff" ? " loading" : ""}`}
         disabled={busy || busyPreset !== null}
         onClick={() => onSelect("staff")}
         title="Войти как персонал: staff@seatiko.local"
@@ -327,7 +327,7 @@ function DemoPresetsRow({
       </button>
       <button
         type="button"
-        className={`btn-demo-chip ${busyPreset === "admin" ? "loading" : ""}`}
+        className={`chip btn-demo-chip${busyPreset === "admin" ? " loading" : ""}`}
         disabled={busy || busyPreset !== null}
         onClick={() => onSelect("admin")}
         title="Войти как админ: admin@seatiko.local"
@@ -540,7 +540,7 @@ function LoginForm() {
           <div className="login-session-actions">
             <button
               type="button"
-              className="btn btn-gold btn-block"
+              className="btn btn--primary btn--md btn--block"
               onClick={() => router.replace(continueTarget)}
             >
               <span>{continueLabel}</span>
@@ -548,7 +548,7 @@ function LoginForm() {
             </button>
             <button
               type="button"
-              className="btn-switch-account"
+              className="btn btn--secondary btn--sm btn-switch-account"
               onClick={() => {
                 logout();
                 setCurrentUser(null);
@@ -599,7 +599,7 @@ function LoginForm() {
                 onUnavailable={() => setGoogleOff(true)}
                 onError={(code) => setError(t(googleErrorKey(code)))}
               >
-                <button type="button" className="auth-social-btn google auth-social-btn-wide">
+                <button type="button" className="btn btn--secondary btn--md btn--block auth-social-btn google auth-social-btn-wide">
                   <GoogleIcon />
                   <span>Google</span>
                 </button>
@@ -610,7 +610,7 @@ function LoginForm() {
             {googleOff ? (
               <button
                 type="button"
-                className="auth-social-btn google"
+                className="btn btn--secondary btn--md auth-social-btn google"
                 onClick={() => handleSocialClick("Google")}
                 aria-label={copy.authGoogle}
                 title={copy.authGoogle}
@@ -625,7 +625,7 @@ function LoginForm() {
                 onUnavailable={() => setGoogleOff(true)}
                 onError={(code) => setError(t(googleErrorKey(code)))}
               >
-                <button type="button" className="auth-social-btn google" aria-label={copy.authGoogle} title={copy.authGoogle}>
+                <button type="button" className="btn btn--secondary btn--md auth-social-btn google" aria-label={copy.authGoogle} title={copy.authGoogle}>
                   <GoogleIcon />
                   <span>Google</span>
                 </button>
@@ -633,7 +633,7 @@ function LoginForm() {
             )}
             <button
               type="button"
-              className="auth-social-btn apple"
+              className="btn btn--secondary btn--md auth-social-btn apple"
               onClick={() => handleSocialClick("Apple")}
               aria-label={copy.authApple}
               title={copy.authApple}
@@ -643,7 +643,7 @@ function LoginForm() {
             </button>
             <button
               type="button"
-              className="auth-social-btn telegram"
+              className="btn btn--secondary btn--md auth-social-btn telegram"
               onClick={() => handleSocialClick("Telegram")}
               aria-label={copy.authTelegram}
               title={copy.authTelegram}
@@ -661,6 +661,7 @@ function LoginForm() {
               <span>{socialNotice}</span>
               <button
                 type="button"
+                className="btn btn--ghost btn--sm btn--icon"
                 onClick={() => setSocialNotice(null)}
                 aria-label={copy.loading}
               >
@@ -726,7 +727,7 @@ function LoginForm() {
             {!isRegisteringGuest && (
               <button
                 type="button"
-                className="btn-forgot-link"
+                className="btn btn--link btn-forgot-link"
                 onClick={() => setShowForgot(!showForgot)}
               >
                 {copy.forgotPassword}
@@ -749,7 +750,7 @@ function LoginForm() {
             />
             <button
               type="button"
-              className="btn-password-toggle"
+              className="btn btn--ghost btn--sm btn--icon btn-password-toggle"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? copy.hidePassword : copy.showPassword}
               title={showPassword ? copy.hidePassword : copy.showPassword}
@@ -783,7 +784,8 @@ function LoginForm() {
             <span>{copy.forgotPasswordModal}</span>
             <button
               type="button"
-              className="login-forgot-hint-x"
+              className="btn btn--ghost btn--sm btn--icon login-forgot-hint-x"
+              aria-label={t("common.close")}
               onClick={() => setShowForgot(false)}
             >
               ×
@@ -802,7 +804,7 @@ function LoginForm() {
         {/* Submit Action Button */}
         <button
           type="submit"
-          className="btn btn-gold btn-block"
+          className="btn btn--primary btn--md btn--block"
           disabled={busy}
         >
           <span>
@@ -853,7 +855,7 @@ function LoginForm() {
             <span className="login-sub-prompt">{copy.haveAccountPrompt}</span>
             <button
               type="button"
-              className="btn-sub-action"
+              className="btn btn--secondary btn--sm btn-sub-action"
               onClick={() => {
                 setIsRegisteringGuest(false);
                 setError(null);
@@ -868,7 +870,7 @@ function LoginForm() {
               <span className="login-sub-prompt">{copy.newGuestPrompt}</span>
               <button
                 type="button"
-                className="btn-sub-action"
+                className="btn btn--secondary btn--sm btn-sub-action"
                 onClick={() => {
                   setIsRegisteringGuest(true);
                   setError(null);
@@ -883,7 +885,7 @@ function LoginForm() {
               <span className="login-sub-prompt">{copy.venuePrompt}</span>
               <Link
                 href="/register"
-                className="btn-sub-action"
+                className="btn btn--secondary btn--sm btn-sub-action"
               >
                 <BuildingIcon />
                 <span>{copy.venueRegisterLink}</span>

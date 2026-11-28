@@ -413,7 +413,7 @@ export function VenueDayCalendar({
         <div className="venue-day-cal-nav">
           <button
             type="button"
-            className="venue-day-cal-nav-btn"
+            className="btn btn--ghost btn--sm btn--icon venue-day-cal-nav-btn"
             onClick={() => setDay((d) => startOfDay(addDays(d, -1)))}
             aria-label={t("venue.day_cal_prev")}
             disabled={!focusTable}
@@ -422,7 +422,7 @@ export function VenueDayCalendar({
           </button>
           <button
             type="button"
-            className="venue-day-cal-nav-btn today"
+            className="btn btn--secondary btn--sm venue-day-cal-nav-btn today"
             onClick={() => setDay(startOfDay(new Date()))}
             disabled={!focusTable || isToday}
           >
@@ -430,7 +430,7 @@ export function VenueDayCalendar({
           </button>
           <button
             type="button"
-            className="venue-day-cal-nav-btn"
+            className="btn btn--ghost btn--sm btn--icon venue-day-cal-nav-btn"
             onClick={() => setDay((d) => startOfDay(addDays(d, 1)))}
             aria-label={t("venue.day_cal_next")}
             disabled={!focusTable}

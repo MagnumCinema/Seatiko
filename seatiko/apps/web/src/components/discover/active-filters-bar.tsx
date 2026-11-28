@@ -225,18 +225,18 @@ export function ActiveFiltersBar({
         </div>
         <div className="discover-filters-actions">
           {!underStepper && onEdit ? (
-            <button type="button" className="btn btn-outline" onClick={onEdit}>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={onEdit}>
               {copy.filtersEdit}
             </button>
           ) : null}
           {!underStepper && !onEdit ? (
-            <Link href={editHref} className="btn btn-outline">
+            <Link href={editHref} className="btn btn--secondary btn--sm">
               {copy.filtersEdit}
             </Link>
           ) : null}
           <button
             type="button"
-            className="btn btn-outline"
+            className="btn btn--ghost btn--sm"
             onClick={() => {
               if (onClear) onClear();
               else router.push("/#map");
@@ -256,7 +256,7 @@ export function ActiveFiltersBar({
                 <li key={chip.key}>
                   {chip.soft || !chip.remove ? (
                     <span
-                      className="discover-filter-chip soft"
+                      className="chip discover-filter-chip soft"
                       aria-label={chip.label}
                     >
                       <span>{chip.label}</span>
@@ -264,7 +264,7 @@ export function ActiveFiltersBar({
                   ) : (
                     <button
                       type="button"
-                      className="discover-filter-chip"
+                      className="chip discover-filter-chip"
                       onClick={() => applyPrefs(chip.remove!(prefs))}
                       aria-label={`${copy.filtersClear}: ${chip.label}`}
                     >

@@ -93,7 +93,7 @@ export function QuickBookResultCard({
               <button
                 key={slot.start.toISOString()}
                 type="button"
-                className={isExact ? "on" : ""}
+                className={`chip${isExact ? " is-active" : ""}`}
                 onClick={() => onPickSlot(slot.start.toISOString(), shown?.durationMin ?? durationMin)}
               >
                 {clock(slot.start)}
@@ -102,13 +102,13 @@ export function QuickBookResultCard({
           })}
         </div>
         {!availability.fits ? (
-          <Link className="qb-card-action" href={venueBookingHref(venue.id, { intent: "event" })}>
+          <Link className="btn btn--link qb-card-action" href={venueBookingHref(venue.id, { intent: "event" })}>
             {t("qb.other_event")} →
           </Link>
         ) : !slots.length ? (
           <button
             type="button"
-            className="qb-card-action"
+            className="btn btn--link qb-card-action"
             onClick={() => onPickOtherDay(availability.durationMin)}
           >
             {t("qb.pick_other_day")} →

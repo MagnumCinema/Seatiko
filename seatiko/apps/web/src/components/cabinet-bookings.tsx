@@ -452,7 +452,7 @@ function BookingDetails({
             <h3 id="cb-drawer-title">{text.guest(booking)}</h3>
             <StatusPill booking={booking} state={state} text={text} />
           </div>
-          <button type="button" className="cb-icon-btn" onClick={onClose} aria-label={copy.close} data-autofocus>
+          <button type="button" className="btn btn--ghost btn--sm btn--icon cb-icon-btn" onClick={onClose} aria-label={copy.close} data-autofocus>
             <CloseIcon />
           </button>
         </header>
@@ -518,13 +518,13 @@ function BookingDetails({
 
         <footer className="cb-drawer-foot">
           {booking.guestEmail && (
-            <a className="panel-btn ghost cb-btn" href={`mailto:${booking.guestEmail}`}>
+            <a className="btn btn--secondary btn--md cb-btn" href={`mailto:${booking.guestEmail}`}>
               <MailIcon />
               <span>{copy.writeEmail}</span>
             </a>
           )}
           {!closed && (
-            <button type="button" className="panel-btn ghost cb-btn" onClick={onShowTimeline}>
+            <button type="button" className="btn btn--secondary btn--md cb-btn" onClick={onShowTimeline}>
               <TimelineIcon />
               <span>{copy.showOnTimeline}</span>
             </button>
@@ -911,7 +911,7 @@ export function CabinetBookingsPanel({
           <p>{copy.loadFailedHint}</p>
           <button
             type="button"
-            className="panel-btn cb-btn"
+            className="btn btn--primary btn--md cb-btn"
             onClick={() => {
               setLoadState("loading");
               void load();
@@ -980,7 +980,7 @@ export function CabinetBookingsPanel({
             <button
               key={chip.id}
               type="button"
-              className={filters.period === chip.id ? "active" : ""}
+              className={`chip${filters.period === chip.id ? " is-active" : ""}`}
               aria-pressed={filters.period === chip.id}
               onClick={() => setPeriod(chip.id)}
             >
@@ -1001,7 +1001,7 @@ export function CabinetBookingsPanel({
               aria-label={copy.searchLabel}
             />
             {filters.query && (
-              <button type="button" onClick={() => update({ query: "" })} aria-label={copy.clearSearch}>
+              <button type="button" className="btn btn--ghost btn--sm btn--icon" onClick={() => update({ query: "" })} aria-label={copy.clearSearch}>
                 <CloseIcon />
               </button>
             )}
@@ -1020,12 +1020,12 @@ export function CabinetBookingsPanel({
             ariaLabel={copy.statusFilter}
             className="cb-select"
           />
-          <div className="cb-view" role="group" aria-label={copy.viewLabel}>
-            <button type="button" className={!showTimeline ? "active" : ""} aria-pressed={!showTimeline} onClick={() => changeView("list")}>
+          <div className="seg cb-view" role="group" aria-label={copy.viewLabel}>
+            <button type="button" className={`seg-item${!showTimeline ? " is-active" : ""}`} aria-pressed={!showTimeline} onClick={() => changeView("list")}>
               <ListIcon />
               <span>{copy.viewList}</span>
             </button>
-            <button type="button" className={showTimeline ? "active" : ""} aria-pressed={showTimeline} onClick={() => changeView("timeline")}>
+            <button type="button" className={`seg-item${showTimeline ? " is-active" : ""}`} aria-pressed={showTimeline} onClick={() => changeView("timeline")}>
               <TimelineIcon />
               <span>{copy.viewTimeline}</span>
             </button>
@@ -1036,14 +1036,14 @@ export function CabinetBookingsPanel({
       <div className="cb-status-row">
         {dayHead && dayKeyOfPeriod ? (
           <div className="cb-day-nav">
-            <button type="button" className="cb-icon-btn" onClick={() => goToDay(addDays(dayKeyOfPeriod, -1))} aria-label={copy.prevDay}>
+            <button type="button" className="btn btn--secondary btn--sm btn--icon cb-icon-btn" onClick={() => goToDay(addDays(dayKeyOfPeriod, -1))} aria-label={copy.prevDay}>
               <ChevronIcon dir="left" />
             </button>
             <p>
               {dayHead.relative && <strong>{dayHead.relative}</strong>}
               <span>{dayHead.date}</span>
             </p>
-            <button type="button" className="cb-icon-btn" onClick={() => goToDay(addDays(dayKeyOfPeriod, 1))} aria-label={copy.nextDay}>
+            <button type="button" className="btn btn--secondary btn--sm btn--icon cb-icon-btn" onClick={() => goToDay(addDays(dayKeyOfPeriod, 1))} aria-label={copy.nextDay}>
               <ChevronIcon dir="right" />
             </button>
             <small className="cb-day-totals">{text.totals(dayTotals(filtered))}</small>
@@ -1055,7 +1055,7 @@ export function CabinetBookingsPanel({
           <span aria-live="polite">
             {refreshing ? copy.refreshing : updatedAt ? fill(copy.updatedAt, { time: formatClock(updatedAt) }) : ""}
           </span>
-          <button type="button" className="cb-icon-btn" onClick={() => void load()} disabled={refreshing} aria-label={copy.refresh} title={copy.refresh}>
+          <button type="button" className="btn btn--secondary btn--sm btn--icon cb-icon-btn" onClick={() => void load()} disabled={refreshing} aria-label={copy.refresh} title={copy.refresh}>
             <span className={refreshing ? "cb-spin" : ""}>
               <RefreshIcon />
             </span>
@@ -1083,13 +1083,13 @@ export function CabinetBookingsPanel({
           <h3>{emptyTitle}</h3>
           <p>{filtersActive ? copy.emptyFilteredHint : copy.emptyHint}</p>
           {filtersActive ? (
-            <button type="button" className="panel-btn ghost cb-btn" onClick={() => update({ status: "all", table: "all", query: "" })}>
+            <button type="button" className="btn btn--secondary btn--md cb-btn" onClick={() => update({ status: "all", table: "all", query: "" })}>
               {copy.resetFilters}
             </button>
           ) : (
             isDayPeriod(filters.period) &&
             counts.upcoming > 0 && (
-              <button type="button" className="panel-btn ghost cb-btn" onClick={() => setPeriod("upcoming")}>
+              <button type="button" className="btn btn--secondary btn--md cb-btn" onClick={() => setPeriod("upcoming")}>
                 {copy.showUpcoming} · {counts.upcoming}
               </button>
             )
@@ -1141,7 +1141,7 @@ export function CabinetBookingsPanel({
             );
           })}
           {!isDayPeriod(filters.period) && filtered.length > shown.length && (
-            <button type="button" className="panel-btn ghost cb-btn cb-more" onClick={() => setVisible((n) => n + PAGE_SIZE)}>
+            <button type="button" className="btn btn--ghost btn--sm cb-btn cb-more" onClick={() => setVisible((n) => n + PAGE_SIZE)}>
               {fill(copy.showMore, { n: Math.min(PAGE_SIZE, filtered.length - shown.length) })}
             </button>
           )}

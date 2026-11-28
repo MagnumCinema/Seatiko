@@ -449,7 +449,7 @@ export default function VenuePage() {
                       {venue.open_now ? t("venue.open") : t("venue.closed")}
                     </span>
                     <FavoriteControl
-                      className={`venue-fav-float${favorited ? " on" : ""}`}
+                      className={`btn btn--secondary btn--sm btn--icon venue-fav-float${favorited ? " is-on" : ""}`}
                       favorited={favorited}
                       label={favoriteLabel}
                       onClick={() => addToFavorites()}
@@ -497,7 +497,7 @@ export default function VenuePage() {
               <div className="venue-page-actions-primary">
                 <button
                   type="button"
-                  className="venue-cta venue-cta-hero"
+                  className="btn btn--primary btn--lg"
                   onClick={() => {
                     setQuickOpen(true);
                     setBookingOpen(false);
@@ -505,15 +505,15 @@ export default function VenuePage() {
                     setEventOpen(false);
                   }}
                 >
-                  <BoltIcon className="venue-cta-icon" />
+                  <BoltIcon />
                   <span>{t("venue.quick_book")}</span>
                 </button>
                 <button
                   type="button"
-                  className="venue-cta venue-cta-outline"
+                  className="btn btn--secondary btn--lg"
                   onClick={scrollToFloor}
                 >
-                  <TableIcon className="venue-cta-icon" />
+                  <TableIcon />
                   <span>{t("venue.book_scroll")}</span>
                 </button>
               </div>
@@ -565,7 +565,7 @@ export default function VenuePage() {
                   </span>
                 </button>
                 <FavoriteControl
-                  className={`venue-cta ghost venue-cta-fav${favorited ? " on" : ""}`}
+                  className={`btn btn--secondary btn--md venue-fav-action${favorited ? " is-on" : ""}`}
                   favorited={favorited}
                   label={favoriteLabel}
                   onClick={() => addToFavorites()}

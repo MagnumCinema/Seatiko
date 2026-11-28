@@ -24,7 +24,7 @@ export function QuickBookEmpty({ kind, failed, guests, timeIsAsap, canNextDay, o
       <div className="qb-empty qb-empty-error" role="alert">
         <p>{t("common.error")}</p>
         <div>
-          <button type="button" className="venue-cta venue-cta-outline" onClick={onRetry}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={onRetry}>
             {t("qb.retry")}
           </button>
         </div>
@@ -39,10 +39,10 @@ export function QuickBookEmpty({ kind, failed, guests, timeIsAsap, canNextDay, o
       <div className="qb-empty">
         <p>{t("qb.nothing_body")}</p>
         <div>
-          <button type="button" className="venue-cta venue-cta-outline" onClick={onClearSearch}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={onClearSearch}>
             {t("qb.find_clear")}
           </button>
-          <Link href="/discover" className="venue-cta venue-cta-outline">
+          <Link href="/discover" className="btn btn--secondary btn--md">
             {t("qb.discover")}
           </Link>
         </div>
@@ -63,12 +63,12 @@ export function QuickBookEmpty({ kind, failed, guests, timeIsAsap, canNextDay, o
       <p>{t("qb.none_body")}</p>
       <div>
         {!timeIsAsap ? (
-          <button type="button" className="venue-cta venue-cta-outline" onClick={onTryAsap}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={onTryAsap}>
             {t("qb.try_asap")}
           </button>
         ) : null}
         {canNextDay ? (
-          <button type="button" className="venue-cta venue-cta-outline" onClick={onTryNextDay}>
+          <button type="button" className="btn btn--secondary btn--md" onClick={onTryNextDay}>
             {t("qb.try_next_day")}
           </button>
         ) : null}

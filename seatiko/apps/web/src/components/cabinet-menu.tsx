@@ -390,7 +390,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
           </span>
           <h3>{m.loadFailedTitle}</h3>
           <p>{m.loadFailedHint}</p>
-          <button type="button" className="panel-btn primary cm-btn cm-empty-cta" onClick={() => void retry()}>
+          <button type="button" className="btn btn--primary btn--md cm-btn cm-empty-cta" onClick={() => void retry()}>
             {m.retry}
           </button>
         </div>
@@ -418,14 +418,14 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
           </span>
           <h3>{m.emptyTitle}</h3>
           <p>{m.emptyHint}</p>
-          <button type="button" className="panel-btn primary cm-btn cm-empty-cta" onClick={() => openNew()}>
+          <button type="button" className="btn btn--primary btn--md cm-btn cm-empty-cta" onClick={() => openNew()}>
             <PlusIcon />
             {m.addDish}
           </button>
           <div className="cm-suggest is-center">
             <span>{m.emptyStart}</span>
             {starterCategories().map((names) => (
-              <button key={names.ru} type="button" className="cm-chip" onClick={() => openNew(undefined, names)}>
+              <button key={names.ru} type="button" className="chip cm-chip" onClick={() => openNew(undefined, names)}>
                 {names[locale]}
               </button>
             ))}
@@ -463,14 +463,14 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
                 onChange={(event) => setFilters((f) => ({ ...f, query: event.target.value }))}
               />
               {filters.query ? (
-                <button type="button" aria-label={m.clearSearch} onClick={() => setFilters((f) => ({ ...f, query: "" }))}>
+                <button type="button" className="btn btn--ghost btn--sm btn--icon" aria-label={m.clearSearch} onClick={() => setFilters((f) => ({ ...f, query: "" }))}>
                   <CloseIcon />
                 </button>
               ) : null}
             </label>
             <div className="cm-toolbar-actions">
               <a
-                className="panel-btn ghost cm-btn"
+                className="btn btn--secondary btn--md cm-btn"
                 href={`/venues/${encodeURIComponent(venueId)}/menu`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -481,14 +481,14 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
               </a>
               <button
                 type="button"
-                className={`panel-btn ghost cm-btn${selecting ? " is-on" : ""}`}
+                className={`btn btn--secondary btn--md cm-btn${selecting ? " is-on" : ""}`}
                 aria-pressed={selecting}
                 onClick={() => setSelected(selecting ? null : new Set())}
               >
                 <CheckSquareIcon />
                 {m.select}
               </button>
-              <button type="button" className="panel-btn primary cm-btn" onClick={() => openNew()}>
+              <button type="button" className="btn btn--primary btn--md cm-btn" onClick={() => openNew()}>
                 <PlusIcon />
                 {m.addDish}
               </button>
@@ -498,7 +498,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
           <div className="cm-cats" role="group" aria-label={m.categoriesLabel}>
             <button
               type="button"
-              className={categoryFilter === "all" ? "active" : ""}
+              className={`chip${categoryFilter === "all" ? " is-active" : ""}`}
               aria-pressed={categoryFilter === "all"}
               onClick={() => setFilters((f) => ({ ...f, category: "all" }))}
             >
@@ -509,7 +509,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
               <button
                 key={category.key}
                 type="button"
-                className={categoryFilter === category.key ? "active" : ""}
+                className={`chip${categoryFilter === category.key ? " is-active" : ""}`}
                 aria-pressed={categoryFilter === category.key}
                 onClick={() => setFilters((f) => ({ ...f, category: f.category === category.key ? "all" : category.key }))}
               >
@@ -522,7 +522,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
           {filtering ? (
             <div className="cm-found" aria-live="polite">
               <span>{fill(m.found, { dishes: dishes(visible.length) })}</span>
-              <button type="button" className="cm-link-btn" onClick={() => setFilters(NO_FILTERS)}>
+              <button type="button" className="btn btn--link cm-link-btn" onClick={() => setFilters(NO_FILTERS)}>
                 {m.resetFilters}
               </button>
             </div>
@@ -535,7 +535,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
               </span>
               <h3>{m.noResultsTitle}</h3>
               <p>{m.noResultsHint}</p>
-              <button type="button" className="panel-btn ghost cm-btn cm-empty-cta" onClick={() => setFilters(NO_FILTERS)}>
+              <button type="button" className="btn btn--secondary btn--md cm-btn cm-empty-cta" onClick={() => setFilters(NO_FILTERS)}>
                 {m.resetFilters}
               </button>
             </div>
@@ -556,7 +556,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
                       <div className="cm-group-actions">
                         <button
                           type="button"
-                          className="cm-icon-btn"
+                          className="btn btn--secondary btn--sm btn--icon cm-icon-btn"
                           aria-label={m.addToCategory.replace("{name}", label)}
                           title={m.addToCategory.replace("{name}", label)}
                           onClick={() => openNew(category.key)}
@@ -565,7 +565,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
                         </button>
                         <button
                           type="button"
-                          className="cm-icon-btn"
+                          className="btn btn--secondary btn--sm btn--icon cm-icon-btn"
                           aria-label={m.renameCategoryLabel.replace("{name}", label)}
                           title={m.renameCategoryLabel.replace("{name}", label)}
                           disabled={busy}
@@ -575,7 +575,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
                         </button>
                         <button
                           type="button"
-                          className="cm-icon-btn is-danger"
+                          className="btn btn--danger-outline btn--sm btn--icon cm-icon-btn"
                           aria-label={m.deleteCategoryLabel.replace("{name}", label)}
                           title={m.deleteCategoryLabel.replace("{name}", label)}
                           disabled={busy}
@@ -612,13 +612,13 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
               <div className="cm-bulk-count">
                 <strong>{fill(m.selectedCount, { n: selectedItems.length })}</strong>
                 {allShownSelected ? (
-                  <button type="button" className="cm-link-btn" onClick={() => setSelected(new Set())}>
+                  <button type="button" className="btn btn--link cm-link-btn" onClick={() => setSelected(new Set())}>
                     {m.clearSelection}
                   </button>
                 ) : (
                   <button
                     type="button"
-                    className="cm-link-btn"
+                    className="btn btn--link cm-link-btn"
                     disabled={visible.length === 0}
                     onClick={() => setSelected(new Set([...selected, ...visible.map((item) => item.id)]))}
                   >
@@ -629,7 +629,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
               <div className="cm-bulk-actions">
                 <button
                   type="button"
-                  className="panel-btn ghost cm-btn"
+                  className="btn btn--secondary btn--sm cm-btn"
                   disabled={busy || !selectedItems.some((item) => !item.stopped)}
                   onClick={() => void bulkStop(true)}
                 >
@@ -637,7 +637,7 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
                 </button>
                 <button
                   type="button"
-                  className="panel-btn ghost cm-btn"
+                  className="btn btn--secondary btn--sm cm-btn"
                   disabled={busy || !selectedItems.some((item) => item.stopped)}
                   onClick={() => void bulkStop(false)}
                 >
@@ -658,13 +658,13 @@ function MenuWorkspace({ venueId }: { venueId: string }) {
                 />
                 <button
                   type="button"
-                  className="panel-btn ghost danger cm-btn"
+                  className="btn btn--danger-outline btn--sm cm-btn"
                   disabled={busy || selectedItems.length === 0}
                   onClick={() => setConfirm({ kind: "dishes", ids: selectedItems.map((item) => item.id) })}
                 >
                   {m.bulkDelete}
                 </button>
-                <button type="button" className="panel-btn primary cm-btn" onClick={() => setSelected(null)}>
+                <button type="button" className="btn btn--primary btn--sm cm-btn" onClick={() => setSelected(null)}>
                   {m.bulkDone}
                 </button>
               </div>
@@ -851,7 +851,7 @@ const DishRow = memo(function DishRow({
         </span>
         <button
           type="button"
-          className="cm-icon-btn"
+          className="btn btn--secondary btn--sm btn--icon cm-icon-btn"
           aria-label={m.editLabel.replace("{name}", name)}
           title={m.edit}
           disabled={selecting}
@@ -861,7 +861,7 @@ const DishRow = memo(function DishRow({
         </button>
         <button
           type="button"
-          className="cm-icon-btn"
+          className="btn btn--secondary btn--sm btn--icon cm-icon-btn"
           aria-label={m.duplicateLabel.replace("{name}", name)}
           title={m.duplicate}
           disabled={selecting}
@@ -871,7 +871,7 @@ const DishRow = memo(function DishRow({
         </button>
         <button
           type="button"
-          className="cm-icon-btn is-danger"
+          className="btn btn--danger-outline btn--sm btn--icon cm-icon-btn"
           aria-label={m.deleteLabel.replace("{name}", name)}
           title={m.deleteConfirm}
           disabled={selecting || pending}
@@ -965,10 +965,10 @@ function CategoryRenameDialog({
             </p>
           ) : null}
           <div className="cm-rename-actions">
-            <button type="button" className="panel-btn ghost cm-btn" disabled={busy} onClick={onCancel}>
+            <button type="button" className="btn btn--ghost btn--md cm-btn" disabled={busy} onClick={onCancel}>
               {m.cancel}
             </button>
-            <button type="submit" className="panel-btn primary cm-btn" disabled={busy}>
+            <button type="submit" className="btn btn--primary btn--md cm-btn" disabled={busy}>
               {busy ? m.saving : m.save}
             </button>
           </div>
@@ -985,7 +985,7 @@ function MenuNotice({ notice, onClose, closeLabel }: { notice: Notice | null; on
     <div className={`owner-notice ${notice.kind}`} role={notice.kind === "error" ? "alert" : "status"} aria-live="polite">
       <span>{notice.kind === "error" ? "!" : "✓"}</span>
       <p>{notice.text}</p>
-      <button type="button" aria-label={closeLabel} onClick={onClose}>
+      <button type="button" className="btn btn--ghost btn--sm btn--icon" aria-label={closeLabel} onClick={onClose}>
         ×
       </button>
     </div>

@@ -23,7 +23,7 @@ export function PreferenceSummary({ canReset = false, onReset }: Props) {
       <div className="discover-summary-actions">
         <button
           type="button"
-          className="btn btn-outline"
+          className="btn btn--ghost btn--sm"
           onClick={onReset}
           disabled={!canReset}
         >

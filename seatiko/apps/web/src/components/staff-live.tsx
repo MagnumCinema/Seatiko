@@ -247,7 +247,7 @@ export function StaffDayBar({
         {updatedAt && <small>{fill(copy.updatedAt, { time: formatClock(updatedAt) })}</small>}
         <button
           type="button"
-          className="sf-icon-btn"
+          className="btn btn--secondary btn--sm btn--icon sf-icon-btn"
           onClick={onRefresh}
           disabled={refreshing}
           aria-label={refreshing ? copy.refreshing : copy.refresh}

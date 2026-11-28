@@ -243,7 +243,7 @@ export function VenueMap(props: VenueMapProps) {
             {searchText ? (
               <button
                 type="button"
-                className="venue-map-search-clear"
+                className="btn btn--ghost btn--sm btn--icon venue-map-search-clear"
                 aria-label={labels.clearSearch}
                 title={labels.clearSearch}
                 onClick={() => {
@@ -258,20 +258,20 @@ export function VenueMap(props: VenueMapProps) {
               </button>
             ) : null}
           </span>
-          <button type="submit" className="venue-map-search-submit">{labels.find}</button>
+          <button type="submit" className="btn btn--primary btn--sm venue-map-search-submit">{labels.find}</button>
         </div>
         <button
           type="button"
           role="switch"
           aria-checked={bookableOnly}
-          className={`venue-map-bookable${bookableOnly ? " is-on" : ""}`}
+          className={`chip venue-map-bookable${bookableOnly ? " is-on" : ""}`}
           onClick={() => setBookableOnly((value) => !value)}
         >
           <span className="venue-map-switch" aria-hidden="true"><i /></span>
           <span>{labels.bookableOnly}</span>
         </button>
         <a
-          className="venue-map-external"
+          className="btn btn--link venue-map-external"
           href={externalUrl}
           target="_blank"
           rel="noreferrer"
@@ -842,7 +842,7 @@ function VenueMapArea({
           <div className="live-map-fallback" role="status">
             <div className="live-map-fallback-card">
               <div><strong>{copy.unavailable}</strong><p>{copy.unavailableBody}</p>
-                <a href={externalUrl} target="_blank" rel="noreferrer">{copy.openExternal} ↗</a>
+                <a className="btn btn--secondary btn--sm" href={externalUrl} target="_blank" rel="noreferrer">{copy.openExternal} ↗</a>
               </div>
             </div>
           </div>
@@ -883,7 +883,7 @@ function VenueMapArea({
       <div className="venue-map-panel" aria-busy={loading}>
         {loadError && (
           <p role="status" className="venue-map-address">
-            {labels.loadError}{" "}<button type="button" className="live-map-relax" onClick={() => setRetry((attempt) => attempt + 1)}>{labels.retry}</button>
+            {labels.loadError}{" "}<button type="button" className="btn btn--link live-map-relax" onClick={() => setRetry((attempt) => attempt + 1)}>{labels.retry}</button>
           </p>
         )}
         {useGoogle && (googleStatus === "unavailable" || googleStatus === "disabled") && <p role="status" className="venue-map-address">{labels.providerError}</p>}
@@ -892,7 +892,7 @@ function VenueMapArea({
             <span className="venue-map-soon-badge">{copy.soon}</span>
             <strong>{copy.soonTitle}</strong>
             <p>{copy.soonBody}</p>
-            <button type="button" className="map-primary-action" onClick={onShowDefaultCity}>
+            <button type="button" className="btn btn--primary btn--md" onClick={onShowDefaultCity}>
               {copy.soonAction} <span aria-hidden="true">→</span>
             </button>
           </div>
@@ -1014,7 +1014,7 @@ function VenueMapArea({
               {!selected.in_database && (
                 <div className="venue-map-actions">
                   <a
-                    className="map-primary-action"
+                    className="btn btn--primary btn--md btn--block"
                     href={googleMapDirections(selected)}
                     target="_blank"
                     rel="noreferrer"
@@ -1022,7 +1022,7 @@ function VenueMapArea({
                     {copy.route} <span aria-hidden="true">↗</span>
                   </a>
                   <a
-                    className="map-secondary-action"
+                    className="btn btn--secondary btn--md btn--block"
                     href={placeSearchUrl(selected, locale)}
                     target="_blank"
                     rel="noreferrer"
@@ -1060,13 +1060,13 @@ function VenueMapArea({
               {selectedVenueId && (
                 <div className="venue-map-actions">
                   {selectedBookable && (
-                    <Link href={venueBookingHref(selectedVenueId)} className="map-primary-action">
+                    <Link href={venueBookingHref(selectedVenueId)} className="btn btn--primary btn--md btn--block">
                       {copy.action} <span>→</span>
                     </Link>
                   )}
                   <Link
                     href={`/venues/${encodeURIComponent(selectedVenueId)}`}
-                    className="map-secondary-action"
+                    className="btn btn--secondary btn--md btn--block"
                   >
                     {copy.openPage}
                   </Link>
@@ -1082,7 +1082,7 @@ function VenueMapArea({
                 {" "}
                 <button
                   type="button"
-                  className="live-map-relax"
+                  className="btn btn--link live-map-relax"
                   onClick={() => {
                     const next = encodePreferences(relaxPreference(preferences, data.filters!.relax!.filter));
                     router.replace(next ? `/?${next}#map` : "/#map", { scroll: false });

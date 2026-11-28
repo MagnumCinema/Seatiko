@@ -54,7 +54,7 @@ async function render() {
 }
 
 function confirmButton(): HTMLButtonElement {
-  const button = container.querySelector<HTMLButtonElement>("button.venue-cta-primary");
+  const button = container.querySelector<HTMLButtonElement>("button.btn--primary");
   if (!button) throw new Error("no confirm button");
   return button;
 }

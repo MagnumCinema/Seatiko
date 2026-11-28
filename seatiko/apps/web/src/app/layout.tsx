@@ -3,6 +3,7 @@ import { Inter, Manrope, Fraunces } from "next/font/google";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import "./premium.css";
+import "./buttons.css";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { ThemeProvider } from "@/components/theme-provider";
