@@ -582,6 +582,14 @@ html[data-theme="light"] {
   max-width: 100%;
 }
 
+/* Hero: one primary action, then three quieter equal-weight routes. */
+.landing-ctas-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.landing-ctas-secondary .btn { flex: 1 1 auto; white-space: nowrap; }
+
 
 
 

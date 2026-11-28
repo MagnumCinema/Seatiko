@@ -105,21 +105,35 @@ export default function HomePage() {
             <Link href="/venues" className="btn btn--primary btn--lg">
               {copy.find} <span aria-hidden>→</span>
             </Link>
-            <a
-              href="#map"
-              className="btn btn--secondary btn--lg"
-              onClick={(event) => {
-                event.preventDefault();
-                scrollToSection("map");
-              }}
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-                <line x1="8" y1="2" x2="8" y2="18" />
-                <line x1="16" y1="6" x2="16" y2="22" />
-              </svg>
-              <span>{copy.browseMap}</span>
-            </a>
+            <div className="landing-ctas-secondary">
+              <Link href="/discover" className="btn btn--secondary btn--md">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-5 3.6 1.9-5.8L4 8.8h6.1z" />
+                </svg>
+                <span>{copy.discoverCta}</span>
+              </Link>
+              <Link href="/book" className="btn btn--secondary btn--md">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                <span>{copy.quickBook}</span>
+              </Link>
+              <a
+                href="#map"
+                className="btn btn--secondary btn--md"
+                onClick={(event) => {
+                  event.preventDefault();
+                  scrollToSection("map");
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                  <line x1="8" y1="2" x2="8" y2="18" />
+                  <line x1="16" y1="6" x2="16" y2="22" />
+                </svg>
+                <span>{copy.browseMap}</span>
+              </a>
+            </div>
           </div>
           {/* Platform figures stay fixed until the public stats API exists (BACKEND_TASKS №57). */}
           <div className="hero-trust">
