@@ -1,7 +1,6 @@
 "use client";
 
-import { createPortal } from "react-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ApiError,
   confirmArrival,
@@ -9,10 +8,11 @@ import {
   type Table,
 } from "@/lib/api";
 import { apiErrorKey } from "@/lib/api-error-message";
-import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { seatingRules } from "@/lib/seating-rules";
 import { DEFAULT_BOOKING_RULES } from "@/lib/venue-rules";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
+import { Button } from "@/components/ui/button";
+import { ModalBody, ModalFooter, ModalHeader, ModalShell } from "@/components/ui/modal-shell";
 
 export const COMING_ANCHOR_ID = "venue-coming";
 
@@ -69,7 +69,6 @@ export function ComingPopup({
   releaseBeforeMin = DEFAULT_RELEASE_BEFORE_MIN,
 }: ComingPopupProps) {
   const { locale, t } = useLocale();
-  const dialogRef = useRef<HTMLElement>(null);
   const reservedFor = useMemo(
     () => (table.reserved_for ? new Date(table.reserved_for) : null),
     [table.reserved_for],
@@ -120,8 +119,6 @@ export function ComingPopup({
     }
     onClose();
   }
-
-  useDialogFocus(open && !!reservedFor, dialogRef, handleClose);
 
   if (!open || !reservedFor || !rules) return null;
 
@@ -198,152 +195,112 @@ export function ComingPopup({
       })
     : "—";
 
-  return createPortal(
-    <div className="booking-popup-root" role="presentation">
-      <button
-        type="button"
-        tabIndex={-1}
-        className="booking-popup-backdrop"
-        aria-label={t("res.close")}
-        onClick={handleClose}
-      />
-      <section
-        ref={dialogRef}
-        id={COMING_ANCHOR_ID}
-        className="booking-popup coming-popup"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="coming-popup-title"
-      >
-        <div className="booking-popup-card">
-          {done ? (
-            <div className="booking-popup-done">
-              <p className="venue-page-kicker">{t("table.im_coming")}</p>
-              <h2 id="coming-popup-title">{t("table.im_coming_confirm_title")}</h2>
-              <p>{t("table.im_coming_set", { time: arrivalLabel })}</p>
-              <p className="web-book-muted">
-                {t("table.rule_ready_for_you", { time: formatClock(readyAt) })}
-              </p>
-              <button
-                type="button"
-                className="btn btn--primary btn--lg"
-                onClick={handleClose}
-              >
-                {t("res.close")}
-              </button>
-            </div>
-          ) : (
-            <>
-              <header className="booking-popup-head">
-                <div>
-                  <p className="venue-page-kicker">
-                    {t("table.title", { n: table.number })}
-                  </p>
-                  <h2 id="coming-popup-title">
-                    {t("table.im_coming_confirm_title")}
-                  </h2>
-                  <p className="web-book-muted">
-                    {t("table.reserved_for", {
-                      time: formatClock(bookingAt),
-                    })}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm btn--icon booking-popup-x"
-                  onClick={handleClose}
-                  aria-label={t("res.close")}
-                >
-                  ×
-                </button>
-              </header>
-
-              <div className="booking-popup-body">
-                <div className="booking-field">
-                  <span className="booking-field-label">{t("table.im_coming_when")}</span>
-                  <p className="booking-table-value" aria-live="polite">
-                    {arrivalLabel}
-                    {lateMinutes > 0 ? (
-                      <span className="coming-late-note">
-                        {t("table.im_coming_late_note", { min: lateMinutes })}
-                      </span>
-                    ) : null}
-                  </p>
-                </div>
-
-                <div className="booking-field">
-                  <span className="booking-field-label" id="coming-quick-label">
-                    {t("table.im_coming_quick")}
-                  </span>
-                  <div
-                    className="coming-popup-chips"
-                    role="group"
-                    aria-labelledby="coming-quick-label"
-                  >
-                    {COMING_CHIPS.map(({ id: chipId, label }) => (
-                      <button
-                        key={chipId}
-                        type="button"
-                        className={`chip${chip === chipId ? " is-active" : ""}`}
-                        aria-pressed={chip === chipId}
-                        disabled={chipUnavailable(chipId)}
-                        onClick={() => applyChip(chipId)}
-                      >
-                        {t(label)}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="coming-late-hint">
-                    {t("table.im_coming_late_hint", { min: maxLateArrivalMin })}
-                  </p>
-                </div>
-
-                <div className="coming-popup-rules">
-                  <p className="coming-popup-rules-title">
-                    {t("table.im_coming_confirm_rules")}
-                  </p>
-                  <ul>
-                    {rules.ownerFromNeedsFreeTable ? (
-                      <>
-                        <li>
-                          {t("table.rule_you_from_if_free", {
-                            time: formatClock(rules.ownerFrom),
-                          })}
-                        </li>
-                        <li className="coming-popup-rule-emphasis">
-                          {t("table.rule_ready_for_you", { time: formatClock(readyAt) })}
-                        </li>
-                      </>
-                    ) : (
-                      <li className="coming-popup-rule-emphasis">
-                        {t("table.rule_you_from", { time: formatClock(rules.ownerFrom) })}
-                      </li>
-                    )}
-                  </ul>
-                </div>
-
-                {error ? (
-                  <p className="web-book-error" role="alert">
-                    {error}
-                  </p>
+  return (
+    <ModalShell
+      open
+      onClose={handleClose}
+      size="sm"
+      id={COMING_ANCHOR_ID}
+      labelledBy="coming-popup-title"
+      className="coming-modal"
+    >
+      {done ? (
+        <>
+          <ModalHeader
+            kicker={t("table.im_coming")}
+            title={t("table.im_coming_confirm_title")}
+            titleId="coming-popup-title"
+            subtitle={t("table.title", { n: table.number })}
+            onClose={handleClose}
+          />
+          <ModalBody>
+            <p className="bk-slot-pill" role="status">
+              <i aria-hidden="true" />
+              <span>{t("table.im_coming_set", { time: arrivalLabel })}</span>
+            </p>
+            <p className="web-book-muted">{t("table.rule_ready_for_you", { time: formatClock(readyAt) })}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button size="md" onClick={handleClose}>
+              {t("res.close")}
+            </Button>
+          </ModalFooter>
+        </>
+      ) : (
+        <>
+          <ModalHeader
+            kicker={t("table.title", { n: table.number })}
+            title={t("table.im_coming_confirm_title")}
+            titleId="coming-popup-title"
+            subtitle={t("table.reserved_for", { time: formatClock(bookingAt) })}
+            onClose={handleClose}
+          />
+          <ModalBody>
+            <div className="booking-field">
+              <span className="booking-field-label">{t("table.im_coming_when")}</span>
+              <p className="booking-table-value" aria-live="polite">
+                {arrivalLabel}
+                {lateMinutes > 0 ? (
+                  <span className="coming-late-note">{t("table.im_coming_late_note", { min: lateMinutes })}</span>
                 ) : null}
+              </p>
+            </div>
 
-                <button
-                  type="button"
-                  className="btn btn--primary btn--lg"
-                  disabled={busy || !arrival}
-                  onClick={() => void submit()}
-                >
-                  {busy
-                    ? t("res.booking")
-                    : t("table.im_coming_confirm_ok")}
-                </button>
+            <div className="booking-field">
+              <span className="booking-field-label" id="coming-quick-label">
+                {t("table.im_coming_quick")}
+              </span>
+              <div className="coming-popup-chips" role="group" aria-labelledby="coming-quick-label">
+                {COMING_CHIPS.map(({ id: chipId, label }) => (
+                  <button
+                    key={chipId}
+                    type="button"
+                    className={`chip${chip === chipId ? " is-active" : ""}`}
+                    aria-pressed={chip === chipId}
+                    disabled={chipUnavailable(chipId)}
+                    onClick={() => applyChip(chipId)}
+                  >
+                    {t(label)}
+                  </button>
+                ))}
               </div>
-            </>
-          )}
-        </div>
-      </section>
-    </div>,
-    document.body,
+              <p className="coming-late-hint">{t("table.im_coming_late_hint", { min: maxLateArrivalMin })}</p>
+            </div>
+
+            <div className="coming-popup-rules">
+              <p className="coming-popup-rules-title">{t("table.im_coming_confirm_rules")}</p>
+              <ul>
+                {rules.ownerFromNeedsFreeTable ? (
+                  <>
+                    <li>{t("table.rule_you_from_if_free", { time: formatClock(rules.ownerFrom) })}</li>
+                    <li className="coming-popup-rule-emphasis">
+                      {t("table.rule_ready_for_you", { time: formatClock(readyAt) })}
+                    </li>
+                  </>
+                ) : (
+                  <li className="coming-popup-rule-emphasis">
+                    {t("table.rule_you_from", { time: formatClock(rules.ownerFrom) })}
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            {error ? (
+              <p className="web-book-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" size="md" className="is-desktop-only" onClick={handleClose}>
+              {t("res.close")}
+            </Button>
+            <Button size="md" loading={busy} disabled={!arrival} onClick={() => void submit()}>
+              {t("table.im_coming_confirm_ok")}
+            </Button>
+          </ModalFooter>
+        </>
+      )}
+    </ModalShell>
   );
 }

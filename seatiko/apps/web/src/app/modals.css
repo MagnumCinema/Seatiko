@@ -809,3 +809,53 @@ html[data-theme="light"] .toast {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Sign-in, "I'm coming" and legal documents on ModalShell
+   ========================================================================== */
+.auth-modal-body {
+  padding-top: 24px;
+}
+.auth-modal .booking-popup-auth {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.auth-modal .booking-popup-auth h3 {
+  margin: 0;
+  padding-right: 52px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.coming-modal .coming-popup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mshell .legal-modal-tabs {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+}
+.mshell .legal-modal-seg {
+  width: max-content;
+  max-width: 100%;
+  padding: 3px;
+}
+.mshell .legal-modal-tab {
+  flex: none;
+  white-space: nowrap;
+}
+.mshell.legal-modal .mshell-body {
+  gap: 20px;
+}
+.mshell.legal-modal .mshell-foot-summary {
+  white-space: normal;
+}
+.mshell.legal-modal .legal-modal-support {
+  display: inline;
+  font-size: 0.78rem;
+}
