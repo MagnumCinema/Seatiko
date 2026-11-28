@@ -5,6 +5,7 @@ import { googleSignIn, login, register } from "@/lib/api";
 import { GoogleLogo, GoogleSignInButton } from "@/components/google-sign-in-button";
 import { apiErrorKey, googleErrorKey } from "@/lib/api-error-message";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
+import { Button } from "@/components/ui/button";
 
 type AuthFormProps = {
   /** Called after the token is stored (header updates via the auth-change event). */
@@ -132,9 +133,9 @@ export function AuthForm({
           {t(errorKey)}
         </p>
       )}
-      <button type="submit" className="btn btn--primary btn--md btn--block" disabled={busy}>
-        {busy ? t("common.loading") : title}
-      </button>
+      <Button type="submit" size="md" block loading={busy}>
+        {title}
+      </Button>
       <button
         type="button"
         className="btn btn--link"

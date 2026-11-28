@@ -23,6 +23,7 @@ import {
   startOfLocalDay,
   type DayPartId,
 } from "@/lib/booking-slots";
+import { sameDay as sameLocalDay } from "@/lib/date-picker";
 import { venueHoursOn } from "@/lib/venue-hours";
 import { durationOptions, resolveBookingRules } from "@/lib/venue-rules";
 import { BookingRulesNote } from "@/components/booking-rules-note";
@@ -30,6 +31,10 @@ import { VenueBookingRules } from "@/components/venue-booking-rules";
 import { AuthForm } from "@/components/auth-form";
 import { BookingConfirmation, type BookedReservation } from "@/components/booking-confirmation";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
+import { Button } from "@/components/ui/button";
+import { DayPicker } from "@/components/ui/day-picker";
+import { ModalBody, ModalClose, ModalFooter, ModalHeader } from "@/components/ui/modal-shell";
+import { ScrollerFade } from "@/components/ui/scroller-fade";
 
 const DAY_PART_LABEL: Record<DayPartId, MessageKey> = {
   morning: "res.period_morning",
@@ -115,20 +120,21 @@ export function BookingForm({
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
   const [activeResId, setActiveResId] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
+  /** Step 2 of 2 for a guest who is not signed in: sign-in inside the popup, the slot is kept. */
+  const [step, setStep] = useState<"pick" | "auth">("pick");
+  const [signedIn, setSignedIn] = useState(() => Boolean(getToken()));
   const [booked, setBooked] = useState<BookedReservation | null>(null);
   const [chosenDuration, setChosenDuration] = useState<number | null>(initialDurationMin ?? null);
 
-  // What a press of "Book" led to: the sign-in form or an error. Both render below or
-  // above the button inside a scrolling popup, so they are brought into view.
+  // The sign-in step takes focus; a refusal is brought into view inside the scrolling body.
   const authRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!authOpen) return;
+    if (step !== "auth") return;
     const box = authRef.current;
     box?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
     box?.querySelector<HTMLInputElement>("input:not([type=hidden])")?.focus({ preventScroll: true });
-  }, [authOpen]);
+  }, [step]);
   useEffect(() => {
     if (errorKey) errorRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
   }, [errorKey]);
@@ -216,17 +222,28 @@ export function BookingForm({
       : t("res.duration_minutes", { min });
   const formatClock = (d: Date) =>
     d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  const dayLabel = (offset: number, day: Date) => {
-    if (offset === 0) return t("res.today");
-    if (offset === 1) return t("res.tomorrow");
-    return day.toLocaleDateString(locale, { weekday: "short", day: "numeric" });
-  };
+  const shortDay = (d: Date) =>
+    sameLocalDay(d, now)
+      ? t("res.today")
+      : sameLocalDay(d, addLocalDays(now, 1))
+        ? t("res.tomorrow")
+        : d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
   const tablesLabel = (list: Table[]) =>
     list.length === 2
       ? t("res.tables_combined", { a: list[0].number, b: list[1].number, seats: list[0].seats + list[1].seats })
       : list[0]
         ? t(quick ? "res.table_picked" : "res.table_value", { n: list[0].number, seats: list[0].seats })
         : t("res.table_auto");
+  /** "Стол №1 · гостей: 2 · Сегодня, 12:00": the choice in one line (footer, sign-in step). */
+  const summary = [
+    chosenTables.length
+      ? t("booking.summary_table", { n: chosenTables.map((tb) => tb.number).join("+") })
+      : null,
+    t("booking.summary_guests", { n: guests }),
+    selectedDate ? `${shortDay(selectedDate)}, ${formatClock(selectedDate)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   async function book() {
     setErrorKey(null);
@@ -235,7 +252,8 @@ export function BookingForm({
       return;
     }
     if (!getToken()) {
-      setAuthOpen(true);
+      setSignedIn(false);
+      setStep("auth");
       return;
     }
     setBusy(true);
@@ -261,7 +279,8 @@ export function BookingForm({
       onBooked?.();
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        setAuthOpen(true);
+        setSignedIn(false);
+        setStep("auth");
       } else {
         const key = apiErrorKey(e);
         setErrorKey(key);
@@ -291,94 +310,128 @@ export function BookingForm({
 
   if (done && booked) {
     return (
-      <div className={`booking-form booking-form-${variant}`}>
-        <BookingConfirmation
-          booked={booked}
-          venue={venue}
-          venueName={venueName}
-          rules={rules}
-          variant={variant}
+      <div className={`booking-form booking-form-${variant} mshell-content`}>
+        {variant === "popup" && onClose ? <ModalClose onClose={onClose} className="mshell-float-x" /> : null}
+        <ModalBody className="booking-done-body">
+          <BookingConfirmation
+            booked={booked}
+            venue={venue}
+            venueName={venueName}
+            rules={rules}
+            variant={variant}
+            titleId={titleId}
+            formatDuration={formatDuration}
+            onClose={onClose}
+            onBookAgain={bookAnother}
+            onCancelled={onBooked}
+            extraActions={doneActions}
+          />
+        </ModalBody>
+      </div>
+    );
+  }
+
+  const kicker = t("booking.kicker_table");
+  const closeHandler = variant === "popup" ? onClose : undefined;
+
+  if (step === "auth") {
+    return (
+      <div className={`booking-form booking-form-${variant} mshell-content`}>
+        <ModalHeader
+          kicker={kicker}
+          step={t("booking.step", { n: 2, total: 2 })}
+          title={t("booking.auth_title")}
           titleId={titleId}
-          formatDuration={formatDuration}
-          onClose={onClose}
-          onBookAgain={bookAnother}
-          onCancelled={onBooked}
-          extraActions={doneActions}
+          subtitle={venueName}
+          onClose={closeHandler}
         />
+        <ModalBody className="bk-body">
+          <p className="bk-slot-pill" role="status">
+            <i aria-hidden="true" />
+            <span>
+              <strong>{venueName}</strong> · {summary}
+            </span>
+          </p>
+          <div ref={authRef} className="bk-auth">
+            <AuthForm
+              initialMode="register"
+              hint={t("booking.auth_hint")}
+              onSuccess={() => {
+                setSignedIn(true);
+                setStep("pick");
+                void book();
+              }}
+            />
+          </div>
+        </ModalBody>
+        <ModalFooter summary={summary}>
+          <Button variant="secondary" size="md" onClick={() => setStep("pick")}>
+            ← {t("common.back")}
+          </Button>
+        </ModalFooter>
       </div>
     );
   }
 
   return (
-    <div className={`booking-form booking-form-${variant}`}>
-      <header className="booking-popup-head">
-        <div>
-          <p className="venue-page-kicker">{quick ? t("book.kicker") : t("venue.book")}</p>
-          <h2 id={titleId}>{quick ? t("res.quick_title") : t("res.confirm_title")}</h2>
-          <p className="web-book-muted">
-            {quick ? t("res.quick_subtitle", { venue: venueName }) : venueName}
-          </p>
-        </div>
-        {variant === "popup" && onClose ? (
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm btn--icon booking-popup-x"
-            onClick={onClose}
-            aria-label={t("res.close")}
-          >
-            ×
-          </button>
-        ) : null}
-      </header>
+    <div className={`booking-form booking-form-${variant} mshell-content`}>
+      <ModalHeader
+        kicker={kicker}
+        step={signedIn ? undefined : t("booking.step", { n: 1, total: 2 })}
+        title={quick ? t("res.quick_title") : t("res.confirm_title")}
+        titleId={titleId}
+        subtitle={quick ? t("res.quick_subtitle", { venue: venueName }) : venueName}
+        onClose={closeHandler}
+      />
 
-      <div className="booking-popup-body">
-        <div className="booking-field">
-          <span className="booking-field-label">{t("res.table")}</span>
-          <div className="booking-table-row">
-            <p className={`booking-table-value${chosenTables.length ? "" : " auto"}`}>
-              {tablesLabel(chosenTables)}
-            </p>
-            {!quick && onClearTable ? (
-              <button type="button" className="btn btn--link booking-table-clear" onClick={onClearTable}>
-                {t("res.change_table")}
-              </button>
-            ) : null}
+      <ModalBody className="bk-body">
+        <div className="bk-grid-2">
+          <div className="booking-field">
+            <span className="booking-field-label">{t("res.table")}</span>
+            <div className="booking-table-row">
+              <p className={`booking-table-value${chosenTables.length ? "" : " auto"}`}>
+                {tablesLabel(chosenTables)}
+              </p>
+              {!quick && onClearTable ? (
+                <button type="button" className="btn btn--link booking-table-clear" onClick={onClearTable}>
+                  {t("res.change_table")}
+                </button>
+              ) : null}
+            </div>
           </div>
-        </div>
-        <div className="booking-field">
-          <label className="booking-field-label" htmlFor={`${titleId}-guests`}>
-            {t("res.guests")}
-          </label>
-          <div className="booking-stepper">
-            <button
-              type="button"
-              className="stepper-btn"
-              aria-label={t("res.guests_less")}
-              disabled={guests <= 1}
-              onClick={() => setGuests(Math.max(1, guests - 1))}
-            >
-              −
-            </button>
-            <input
-              id={`${titleId}-guests`}
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={maxGuests}
-              value={guests}
-              onChange={(e) =>
-                setGuests(Math.max(1, Math.min(maxGuests, Number(e.target.value) || 1)))
-              }
-            />
-            <button
-              type="button"
-              className="stepper-btn"
-              aria-label={t("res.guests_more")}
-              disabled={guests >= maxGuests}
-              onClick={() => setGuests(Math.min(maxGuests, guests + 1))}
-            >
-              +
-            </button>
+          <div className="booking-field">
+            <label className="booking-field-label" htmlFor={`${titleId}-guests`}>
+              {t("res.guests")}
+            </label>
+            <div className="booking-stepper bk-stepper">
+              <button
+                type="button"
+                className="stepper-btn"
+                aria-label={t("res.guests_less")}
+                disabled={guests <= 1}
+                onClick={() => setGuests(Math.max(1, guests - 1))}
+              >
+                −
+              </button>
+              <input
+                id={`${titleId}-guests`}
+                type="text"
+                inputMode="numeric"
+                value={guests}
+                onChange={(e) =>
+                  setGuests(Math.max(1, Math.min(maxGuests, Number(e.target.value.replace(/\D/g, "")) || 1)))
+                }
+              />
+              <button
+                type="button"
+                className="stepper-btn"
+                aria-label={t("res.guests_more")}
+                disabled={guests >= maxGuests}
+                onClick={() => setGuests(Math.min(maxGuests, guests + 1))}
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
 
@@ -386,9 +439,9 @@ export function BookingForm({
           <p className="booking-busy-hint">{t("res.busy_now_hint")}</p>
         )}
 
-        <fieldset className="booking-slots">
-          <legend>{t("res.duration")}</legend>
-          <div className="booking-slot-days">
+        <div className="booking-field">
+          <span className="booking-field-label" id={`${titleId}-duration`}>{t("res.duration")}</span>
+          <ScrollerFade trackClassName="bk-chips" ariaLabelledBy={`${titleId}-duration`} activeKey={durationMin}>
             {durations.map((min) => (
               <button
                 key={min}
@@ -403,39 +456,37 @@ export function BookingForm({
                 {formatDuration(min)}
               </button>
             ))}
-          </div>
-        </fieldset>
+          </ScrollerFade>
+        </div>
 
-        <fieldset className="booking-slots">
-          <legend>{t("res.day")}</legend>
-          <div className="booking-slot-days">
-            {days.map(({ offset, day, hasFree, closed }) => (
-              <button
-                key={offset}
-                type="button"
-                className={`chip${offset === activeOffset ? " is-active" : ""}`}
-                aria-pressed={offset === activeOffset}
-                disabled={!hasFree}
-                title={closed ? t("res.closed_day") : undefined}
-                onClick={() => {
-                  setDayOffset(offset);
-                  setSlotIso(null);
-                }}
-              >
-                {dayLabel(offset, day)}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+        <DayPicker
+          label={t("res.day")}
+          min={days[0].day}
+          max={days[days.length - 1].day}
+          value={activeDay.day}
+          onChange={(day) => {
+            const offset = days.findIndex((d) => sameLocalDay(d.day, day));
+            if (offset < 0) return;
+            setDayOffset(offset);
+            setSlotIso(null);
+          }}
+          isClosed={(day) => days.find((d) => sameLocalDay(d.day, day))?.closed ?? true}
+          hasFree={(day) => days.find((d) => sameLocalDay(d.day, day))?.hasFree ?? false}
+        />
 
-        <fieldset className="booking-slots">
-          <legend>{t("res.time")}</legend>
+        <div className="booking-field">
+          <span className="booking-field-label">{t("res.time")}</span>
           {activeDay.hasFree ? (
             <div className="booking-slot-time-groups">
               {groupSlotsByDayPart(activeDay.slots).map((group) => (
                 <div key={group.id} className="booking-slot-period">
                   <p className="booking-slot-period-label">{t(DAY_PART_LABEL[group.id])}</p>
-                  <div className="booking-slot-times" role="group" aria-label={t(DAY_PART_LABEL[group.id])}>
+                  <ScrollerFade
+                    trackClassName="booking-slot-times bk-chips"
+                    role="group"
+                    ariaLabel={t(DAY_PART_LABEL[group.id])}
+                    activeKey={selectedIso}
+                  >
                     {group.slots.map((slot) => {
                       const iso = slot.start.toISOString();
                       return (
@@ -451,7 +502,7 @@ export function BookingForm({
                         </button>
                       );
                     })}
-                  </div>
+                  </ScrollerFade>
                 </div>
               ))}
             </div>
@@ -464,7 +515,7 @@ export function BookingForm({
                   : t("res.no_slots")}
             </p>
           )}
-        </fieldset>
+        </div>
 
         {showNotes ? (
           <label className="booking-field booking-notes">
@@ -501,35 +552,28 @@ export function BookingForm({
             ) : null}
           </div>
         )}
-        <button
-          type="button"
-          className="btn btn--primary btn--lg"
-          // Only disabled while sending: with no bookable time a press says why (book()).
-          disabled={busy}
+        {footer}
+        {signedIn ? null : <p className="web-book-muted tiny">{t("res.account_hint")}</p>}
+      </ModalBody>
+
+      <ModalFooter summary={summary}>
+        {closeHandler ? (
+          <Button variant="ghost" size="md" className="is-desktop-only" onClick={closeHandler}>
+            {t("res.close")}
+          </Button>
+        ) : null}
+        <Button
+          size="lg"
+          className="bk-cta"
+          // Only blocked while sending: with no bookable time a press says why (book()).
+          loading={busy}
           onClick={() => void book()}
         >
-          {busy
-            ? t("res.booking")
-            : selectedDate
-              ? t("res.confirm_book_at", { time: formatClock(selectedDate) })
-              : t("res.confirm_book")}
-        </button>
-        {footer}
-        <p className="web-book-muted tiny">{t("res.account_hint")}</p>
-      </div>
-
-      {authOpen && (
-        <div ref={authRef}>
-          <AuthForm
-            initialMode="register"
-            onCancel={() => setAuthOpen(false)}
-            onSuccess={() => {
-              setAuthOpen(false);
-              void book();
-            }}
-          />
-        </div>
-      )}
+          {selectedDate
+            ? t("res.confirm_book_at", { time: formatClock(selectedDate) })
+            : t("res.confirm_book")}
+        </Button>
+      </ModalFooter>
     </div>
   );
 }
