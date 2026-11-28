@@ -42,6 +42,9 @@ const ok = await runSteps([
       const time = (await chip.textContent()).trim();
       await chip.click();
       assert((await modal.locator(".bk-cta").textContent()).includes(time), "CTA names the picked time");
+      // Optional comment, kept through the sign-in step and sent as the booking's notes.
+      await modal.locator(".bk-comment").fill("У окна, день рождения");
+      assert((await modal.locator(".bk-counter").textContent()).replace(/\s/g, "") === "21/300", "comment counter");
       await modal.locator(".bk-cta").click();
       await modal.locator(".bk-slot-pill").waitFor();
       assert((await modal.locator(".mshell-title").textContent()).includes(ru["booking.auth_title"]), "sign-in step title");
@@ -53,6 +56,8 @@ const ok = await runSteps([
       const booked = reservations.find((r) => r.status !== "CANCELLED");
       assert(booked, "reservation created");
       assert(hm(booked.reserved_for) === time.slice(0, 5), `booked at ${time} (got ${hm(booked.reserved_for)})`);
+      assert(booked.notes === "У окна, день рождения", `comment saved as notes (got ${booked.notes})`);
+      assert((await modal.locator(".booking-ticket-comment").textContent()).includes("У окна"), "comment on the ticket");
       await page.keyboard.press("Escape");
       await modal.waitFor({ state: "detached" });
       assert((await page.evaluate(() => document.body.style.overflow)) !== "hidden", "scroll unlocked after close");
@@ -84,6 +89,12 @@ const ok = await runSteps([
       await modal.locator(".day-picker-mode .seg-item").nth(1).click();
       await modal.locator(".day-picker-grid").waitFor();
       assert((await page.evaluate(() => localStorage.getItem("seatiko_date_picker_mode"))) === "calendar", "mode remembered");
+      const weekLabel = modal.locator(".day-picker-cal-head strong");
+      const firstWeek = await weekLabel.textContent();
+      assert(await modal.locator(`.day-picker-cal-head button[aria-label="${ru["picker.prev_week"]}"]`).isDisabled(), "no weeks before today");
+      await modal.locator(`.day-picker-cal-head button[aria-label="${ru["picker.next_week"]}"]`).click();
+      assert((await weekLabel.textContent()) !== firstWeek, "week label follows the arrows");
+      assert(await modal.locator(`.day-picker-cal-head button[aria-label="${ru["picker.next_week"]}"]`).isDisabled(), "no weeks past the booking window");
       await modal.locator(".day-picker-cell:not([disabled])").nth(1).click();
       await modal.locator(".booking-slot-times .chip:not([disabled])").first().click();
       await modal.locator(".bk-cta").click();

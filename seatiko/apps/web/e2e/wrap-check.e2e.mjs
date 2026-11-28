@@ -45,6 +45,10 @@ const ONE_LINE = [
   ".venue-tile-name",
   ".waitlist-collapsed-badge",
   ".legal-modal-tab",
+  // Booking popup sections.
+  ".bk-section-title",
+  ".bk-section-value",
+  ".bk-counter",
   // Location block (home map look): badge, open status, hours label.
   ".vmap-badge",
   ".vmap-selected-status span",

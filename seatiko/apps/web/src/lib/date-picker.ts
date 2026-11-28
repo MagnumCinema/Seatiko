@@ -6,8 +6,6 @@
 
 export type PickerMode = "cards" | "calendar";
 export const PICKER_MODE_KEY = "seatiko_date_picker_mode";
-/** A short range (e.g. the 7-day booking window) is shown as one grid of whole weeks. */
-export const SINGLE_GRID_MAX_WEEKS = 6;
 
 export function readPickerMode(storage: Pick<Storage, "getItem"> | null = safeStorage()): PickerMode {
   try {
@@ -94,11 +92,9 @@ export function monthWeeks(month: Date, weekStartsOn: 0 | 1 = 1): Date[][] {
 
 export type CalendarView = {
   weeks: Date[][];
-  /** First and last month the grid shows (for the title "Ноябрь – Декабрь 2026"). */
-  fromMonth: Date;
-  toMonth: Date;
-  /** Long ranges page by ROLLING_WEEKS weeks. */
-  paged: boolean;
+  /** First and last day the grid shows (the "23–29 нояб." label). */
+  from: Date;
+  to: Date;
   canPrev: boolean;
   canNext: boolean;
 };
@@ -114,39 +110,38 @@ function clampDay(day: Date, min: Date, max: Date): Date {
 }
 
 /**
- * What the calendar grid shows: a short range (≤ 6 weeks, like the 7-day booking window)
- * as one grid across months; a long range as a rolling window of whole weeks that starts
- * with the week of `anchor`, so there are no rows of past days at a month's end.
+ * The calendar grid: `weeksPerPage` whole weeks starting with the week of `anchor`, kept
+ * inside [min, max]. ‹ is off on the week of `min` (today), › once the last shown day
+ * reaches `max` (the end of the booking window). The booking popup pages one week at a
+ * time; the banquet form shows ROLLING_WEEKS weeks.
  */
-export function calendarView(min: Date, max: Date, anchor: Date, weekStartsOn: 0 | 1 = 1): CalendarView {
-  const span = weeksBetween(min, max, weekStartsOn);
-  if (span.length <= SINGLE_GRID_MAX_WEEKS) {
-    return {
-      weeks: span,
-      fromMonth: monthStart(min),
-      toMonth: monthStart(max),
-      paged: false,
-      canPrev: false,
-      canNext: false,
-    };
-  }
+export function calendarView(
+  min: Date,
+  max: Date,
+  anchor: Date,
+  weeksPerPage: number = ROLLING_WEEKS,
+  weekStartsOn: 0 | 1 = 1,
+): CalendarView {
+  const perPage = Math.max(1, Math.floor(weeksPerPage));
   const firstWeek = startOfWeek(min, weekStartsOn);
-  const latestStart = addDays(startOfWeek(max, weekStartsOn), -(ROLLING_WEEKS - 1) * 7);
+  const latestStart = addDays(startOfWeek(max, weekStartsOn), -(perPage - 1) * 7);
   let start = startOfWeek(clampDay(anchor, min, max), weekStartsOn);
   if (start.getTime() > latestStart.getTime()) start = latestStart;
   if (start.getTime() < firstWeek.getTime()) start = firstWeek;
-  const weeks = Array.from({ length: ROLLING_WEEKS }, (_, w) =>
-    Array.from({ length: 7 }, (_, d) => addDays(start, w * 7 + d)),
-  );
-  const lastShown = weeks[ROLLING_WEEKS - 1][6];
+  const weeks = Array.from({ length: perPage }, (_, w) => Array.from({ length: 7 }, (_, d) => addDays(start, w * 7 + d)));
+  const last = weeks[perPage - 1][6];
   return {
     weeks,
-    fromMonth: monthStart(clampDay(start, min, max)),
-    toMonth: monthStart(clampDay(lastShown, min, max)),
-    paged: true,
+    from: start,
+    to: last,
     canPrev: start.getTime() > firstWeek.getTime(),
-    canNext: lastShown.getTime() < startOfDay(max).getTime(),
+    canNext: last.getTime() < startOfDay(max).getTime(),
   };
+}
+
+/** Anchor of the page before / after the current one. */
+export function shiftWeeks(view: CalendarView, direction: 1 | -1): Date {
+  return addDays(view.from, direction * view.weeks.length * 7);
 }
 
 export type DayCellState = {
@@ -203,14 +198,10 @@ export function dayCellState({
   };
 }
 
-/** "Ноябрь 2026", "Ноябрь – Декабрь 2026", "Декабрь 2026 – Январь 2027". */
-export function monthRangeTitle(from: Date, to: Date, locale: string): string {
-  const name = (d: Date) => capitalize(new Intl.DateTimeFormat(locale, { month: "long" }).format(d));
-  if (from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth()) {
-    return `${name(from)} ${from.getFullYear()}`;
-  }
-  if (from.getFullYear() === to.getFullYear()) return `${name(from)} – ${name(to)} ${to.getFullYear()}`;
-  return `${name(from)} ${from.getFullYear()} – ${name(to)} ${to.getFullYear()}`;
+/** "23–29 нояб.", "30 нояб. – 6 дек.", "Nov 23 – 29": the days the calendar shows. */
+export function weekRangeTitle(from: Date, to: Date, locale: string): string {
+  const format = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  return format.formatRange(from, to);
 }
 
 /** Two-letter weekday heads, Monday first: ПН ВТ … / MO TU … / LU MA … */
@@ -221,8 +212,4 @@ export function weekdayHeads(locale: string, weekStartsOn: 0 | 1 = 1): string[] 
     const date = new Date(2024, 0, 1 + ((i + weekStartsOn - 1 + 7) % 7));
     return format.format(date).replace(/\.$/, "").slice(0, 2);
   });
-}
-
-function capitalize(text: string): string {
-  return text ? text.charAt(0).toLocaleUpperCase() + text.slice(1) : text;
 }

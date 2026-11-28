@@ -777,5 +777,11 @@
   "bench.cal_free": "Free",
   "bench.cal_hint": "Tap a free time",
   "bench.slot_pick": "Pick {time}",
-  "venue.location_recenter": "Back to the restaurant"
+  "venue.location_recenter": "Back to the restaurant",
+  "picker.prev_week": "Previous week",
+  "picker.next_week": "Next week",
+  "booking.comment": "Comment",
+  "booking.comment_optional": "optional",
+  "booking.comment_placeholder": "E.g. window seat, birthday",
+  "booking.comment_left": "Characters left: {n}"
 }

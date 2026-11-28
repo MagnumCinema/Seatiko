@@ -859,3 +859,122 @@ html[data-theme="light"] .toast {
   display: inline;
   font-size: 0.78rem;
 }
+
+/* —— Booking popup: duration, day and time as distinct numbered blocks, then the comment —— */
+.bk-body {
+  gap: 14px;
+}
+.bk-section {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--mshell-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--mshell-fg) 3%, transparent);
+}
+html[data-theme="light"] .bk-section {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(26, 36, 32, 0.05);
+}
+.bk-section.is-optional {
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+}
+.bk-section-head,
+.bk-section .day-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 36px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mshell-border) 80%, transparent);
+}
+.bk-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  color: var(--mshell-fg);
+  font-size: 0.95rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.bk-section-title small {
+  color: var(--mshell-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+.bk-step {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--chip-active-bg);
+  color: var(--chip-active-fg);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.bk-section-value {
+  color: var(--btn-link-fg);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bk-counter {
+  color: var(--mshell-muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bk-comment {
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--mshell-border);
+  border-radius: 12px;
+  background: var(--mshell-field-bg);
+  color: var(--mshell-fg);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+.bk-comment::placeholder {
+  color: var(--mshell-muted);
+}
+.bk-comment:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: 1px;
+}
+/* The calendar sits inside its section card: no second card around it. */
+.bk-section .day-picker {
+  gap: 12px;
+}
+.bk-section .day-picker-cal {
+  padding: 2px 0 0;
+  border: 0;
+  background: none;
+}
+.bk-section .booking-slot-time-groups {
+  gap: 12px;
+}
+.booking-ticket-comment {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .bk-section {
+    padding: 12px 12px 14px;
+    border-radius: 14px;
+  }
+  .bk-section-title {
+    font-size: 0.92rem;
+  }
+}

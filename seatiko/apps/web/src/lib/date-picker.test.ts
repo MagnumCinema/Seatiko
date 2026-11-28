@@ -2,16 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   PICKER_MODE_KEY,
   ROLLING_WEEKS,
-  addDays,
   calendarView,
+  shiftWeeks,
   dayCellState,
   dayKey,
-  monthRangeTitle,
   monthWeeks,
   parseDayKey,
   readPickerMode,
   startOfWeek,
   weekdayHeads,
+  weekRangeTitle,
   weeksBetween,
   writePickerMode,
 } from "./date-picker";
@@ -83,30 +83,41 @@ describe("week grids", () => {
 });
 
 describe("calendarView", () => {
-  it("shows a short range as one grid without paging", () => {
-    const view = calendarView(d(2026, 11, 28), d(2026, 12, 4), d(2026, 11, 28));
-    expect(view.paged).toBe(false);
-    expect(view.canPrev || view.canNext).toBe(false);
-    expect(view.fromMonth.getMonth()).toBe(10);
-    expect(view.toMonth.getMonth()).toBe(11);
+  // Booking window: today (Sat 28 Nov) + 6 days → Fri 4 Dec, paged one week at a time.
+  const min = d(2026, 11, 28);
+  const max = d(2026, 12, 4);
+
+  it("pages the booking window one week at a time: ‹ off on this week, › off at the window end", () => {
+    const first = calendarView(min, max, min, 1);
+    expect(first.weeks).toHaveLength(1);
+    expect([dayKey(first.from), dayKey(first.to)]).toEqual(["2026-11-23", "2026-11-29"]);
+    expect(first.canPrev).toBe(false);
+    expect(first.canNext).toBe(true);
+    const second = calendarView(min, max, shiftWeeks(first, 1), 1);
+    expect([dayKey(second.from), dayKey(second.to)]).toEqual(["2026-11-30", "2026-12-06"]);
+    expect(second.canPrev).toBe(true);
+    expect(second.canNext).toBe(false);
+    expect(dayKey(shiftWeeks(second, -1))).toBe("2026-11-23");
+  });
+
+  it("opens on the week of the picked day and clamps anchors outside the window", () => {
+    expect(dayKey(calendarView(min, max, d(2026, 12, 2), 1).from)).toBe("2026-11-30");
+    expect(dayKey(calendarView(min, max, d(2026, 1, 1), 1).from)).toBe("2026-11-23");
+    expect(dayKey(calendarView(min, max, d(2030, 1, 1), 1).from)).toBe("2026-11-30");
   });
 
   it("shows a long range as rolling weeks from the anchor's week and clamps it", () => {
-    const min = d(2026, 11, 28);
-    const max = d(2027, 11, 28);
-    const first = calendarView(min, max, d(2026, 1, 1));
-    expect(first.paged).toBe(true);
+    const end = d(2027, 11, 28);
+    const first = calendarView(min, end, d(2026, 1, 1));
     expect(first.weeks).toHaveLength(ROLLING_WEEKS);
     // Starts with the week of today (Mon 23 Nov), not with a month of past days.
     expect(dayKey(first.weeks[0][0])).toBe("2026-11-23");
-    expect(first.fromMonth.getMonth()).toBe(10);
-    expect(first.toMonth.getMonth()).toBe(11);
     expect(first.canPrev).toBe(false);
     expect(first.canNext).toBe(true);
-    const next = calendarView(min, max, addDays(first.weeks[0][0], ROLLING_WEEKS * 7));
+    const next = calendarView(min, end, shiftWeeks(first, 1));
     expect(dayKey(next.weeks[0][0])).toBe("2026-12-28");
     expect(next.canPrev).toBe(true);
-    const last = calendarView(min, max, d(2030, 1, 1));
+    const last = calendarView(min, end, d(2030, 1, 1));
     expect(dayKey(last.weeks[ROLLING_WEEKS - 1][6])).toBe("2027-11-28");
     expect(last.canNext).toBe(false);
   });
@@ -149,10 +160,11 @@ describe("dayCellState", () => {
 });
 
 describe("labels", () => {
-  it("titles one month or a range", () => {
-    expect(monthRangeTitle(d(2026, 11, 1), d(2026, 11, 1), "en")).toBe("November 2026");
-    expect(monthRangeTitle(d(2026, 11, 1), d(2026, 12, 1), "ru")).toBe("Ноябрь – Декабрь 2026");
-    expect(monthRangeTitle(d(2026, 12, 1), d(2027, 1, 1), "ro")).toBe("Decembrie 2026 – Ianuarie 2027");
+  it("labels the shown week range in the guest's language", () => {
+    expect(weekRangeTitle(d(2026, 11, 23), d(2026, 11, 29), "ru")).toMatch(/^23\s*–\s*29 нояб\.?$/);
+    expect(weekRangeTitle(d(2026, 11, 30), d(2026, 12, 6), "ru")).toMatch(/30 нояб\.?\s*–\s*6 дек\.?/);
+    expect(weekRangeTitle(d(2026, 11, 23), d(2026, 11, 29), "en")).toMatch(/Nov 23\s*–\s*29/);
+    expect(weekRangeTitle(d(2026, 11, 30), d(2026, 12, 6), "ro")).toMatch(/30 nov\.?\s*–\s*6 dec\.?/);
   });
 
   it("gives two-letter weekday heads from Monday", () => {

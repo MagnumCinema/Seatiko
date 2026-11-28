@@ -346,8 +346,8 @@ export function BookingConfirmation({
             </div>
             {booked.notes ? (
               <div className="wide">
-                <dt>{t("res.notes")}</dt>
-                <dd>{booked.notes}</dd>
+                <dt>{t("booking.comment")}</dt>
+                <dd className="booking-ticket-comment">{booked.notes}</dd>
               </div>
             ) : null}
           </dl>

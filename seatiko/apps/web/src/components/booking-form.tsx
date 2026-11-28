@@ -43,6 +43,20 @@ const DAY_PART_LABEL: Record<DayPartId, MessageKey> = {
   late: "res.period_late",
 };
 const ACTIVE_STATUSES = new Set(["PENDING", "CONFIRMED", "CHECKED_IN"]);
+/** Guest comment on a booking ("window seat, birthday"); the API stores it as `notes`. */
+export const BOOKING_COMMENT_MAX = 300;
+
+/** Numbered step title of a booking section ("1 · Длительность"). */
+function SectionTitle({ n, id, title }: { n: number; id: string; title: string }) {
+  return (
+    <h3 className="bk-section-title" id={id}>
+      <span className="bk-step" aria-hidden="true">
+        {n}
+      </span>
+      {title}
+    </h3>
+  );
+}
 
 /** Day index (0 = today) of `target`, or null when outside the booking window. */
 function dayOffsetFrom(now: Date, target: Date): number | null {
@@ -68,8 +82,6 @@ export type BookingFormProps = {
   onBooked?: () => void;
   /** Inline: drop the chosen table and go back to "any table". */
   onClearTable?: () => void;
-  /** Inline: optional wishes field. */
-  showNotes?: boolean;
   /** Inline: extra actions under the success message. */
   doneActions?: ReactNode;
   /** Shown under the confirm button (e.g. pre-order link). */
@@ -91,7 +103,6 @@ export function BookingForm({
   onClose,
   onBooked,
   onClearTable,
-  showNotes = false,
   doneActions,
   footer,
   initialGuests,
@@ -439,8 +450,11 @@ export function BookingForm({
           <p className="booking-busy-hint">{t("res.busy_now_hint")}</p>
         )}
 
-        <div className="booking-field">
-          <span className="booking-field-label" id={`${titleId}-duration`}>{t("res.duration")}</span>
+        {/* Three numbered steps, each in its own block, then the optional comment. */}
+        <section className="bk-section" aria-labelledby={`${titleId}-duration`}>
+          <header className="bk-section-head">
+            <SectionTitle n={1} id={`${titleId}-duration`} title={t("res.duration")} />
+          </header>
           <ScrollerFade trackClassName="bk-chips" ariaLabelledBy={`${titleId}-duration`} activeKey={durationMin}>
             {durations.map((min) => (
               <button
@@ -457,25 +471,32 @@ export function BookingForm({
               </button>
             ))}
           </ScrollerFade>
-        </div>
+        </section>
 
-        <DayPicker
-          label={t("res.day")}
-          min={days[0].day}
-          max={days[days.length - 1].day}
-          value={activeDay.day}
-          onChange={(day) => {
-            const offset = days.findIndex((d) => sameLocalDay(d.day, day));
-            if (offset < 0) return;
-            setDayOffset(offset);
-            setSlotIso(null);
-          }}
-          isClosed={(day) => days.find((d) => sameLocalDay(d.day, day))?.closed ?? true}
-          hasFree={(day) => days.find((d) => sameLocalDay(d.day, day))?.hasFree ?? false}
-        />
+        <section className="bk-section bk-section-day" aria-labelledby={`${titleId}-day`}>
+          <DayPicker
+            label={t("res.day")}
+            heading={<SectionTitle n={2} id={`${titleId}-day`} title={t("res.day")} />}
+            weeksPerPage={1}
+            min={days[0].day}
+            max={days[days.length - 1].day}
+            value={activeDay.day}
+            onChange={(day) => {
+              const offset = days.findIndex((d) => sameLocalDay(d.day, day));
+              if (offset < 0) return;
+              setDayOffset(offset);
+              setSlotIso(null);
+            }}
+            isClosed={(day) => days.find((d) => sameLocalDay(d.day, day))?.closed ?? true}
+            hasFree={(day) => days.find((d) => sameLocalDay(d.day, day))?.hasFree ?? false}
+          />
+        </section>
 
-        <div className="booking-field">
-          <span className="booking-field-label">{t("res.time")}</span>
+        <section className="bk-section" aria-labelledby={`${titleId}-time`}>
+          <header className="bk-section-head">
+            <SectionTitle n={3} id={`${titleId}-time`} title={t("res.time")} />
+            {selectedDate ? <span className="bk-section-value">{formatClock(selectedDate)}</span> : null}
+          </header>
           {activeDay.hasFree ? (
             <div className="booking-slot-time-groups">
               {groupSlotsByDayPart(activeDay.slots).map((group) => (
@@ -515,20 +536,32 @@ export function BookingForm({
                   : t("res.no_slots")}
             </p>
           )}
-        </div>
+        </section>
 
-        {showNotes ? (
-          <label className="booking-field booking-notes">
-            <span className="booking-field-label">{t("res.notes")}</span>
-            <textarea
-              rows={2}
-              maxLength={300}
-              placeholder={t("res.notes_placeholder")}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </label>
-        ) : null}
+        <section className="bk-section is-optional">
+          <header className="bk-section-head">
+            <label className="bk-section-title" htmlFor={`${titleId}-comment`}>
+              {t("booking.comment")}
+              <small>{t("booking.comment_optional")}</small>
+            </label>
+            <span className="bk-counter" aria-hidden="true">
+              {notes.length} / {BOOKING_COMMENT_MAX}
+            </span>
+          </header>
+          <textarea
+            id={`${titleId}-comment`}
+            className="bk-comment"
+            rows={2}
+            maxLength={BOOKING_COMMENT_MAX}
+            placeholder={t("booking.comment_placeholder")}
+            value={notes}
+            aria-describedby={`${titleId}-comment-left`}
+            onChange={(e) => setNotes(e.target.value.slice(0, BOOKING_COMMENT_MAX))}
+          />
+          <span id={`${titleId}-comment-left`} className="sr-only" aria-live="polite">
+            {t("booking.comment_left", { n: BOOKING_COMMENT_MAX - notes.length })}
+          </span>
+        </section>
 
         <BookingRulesNote rules={rules} />
         <details className="booking-rules-details">

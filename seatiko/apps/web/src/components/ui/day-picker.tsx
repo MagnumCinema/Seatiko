@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLocale } from "@/components/locale-provider";
 import { ScrollerFade } from "@/components/ui/scroller-fade";
 import {
@@ -9,9 +9,10 @@ import {
   calendarView,
   dayCellState,
   dayKey,
-  monthRangeTitle,
   readPickerMode,
+  shiftWeeks,
   startOfDay,
+  weekRangeTitle,
   weekdayHeads,
   writePickerMode,
   type PickerMode,
@@ -33,6 +34,10 @@ type DayPickerProps = {
   hasFree?: (day: Date) => boolean;
   /** Legend for the green dot (default "free tables"). */
   dotLabel?: string;
+  /** Calendar weeks per page: 1 for the 7-day booking window, ROLLING_WEEKS for long ranges. */
+  weeksPerPage?: number;
+  /** Replaces the plain label in the header (e.g. a numbered section title). */
+  heading?: ReactNode;
   className?: string;
 };
 
@@ -41,7 +46,19 @@ type DayPickerProps = {
  * month grid with open / closed markers. The mode is remembered in this browser
  * (seatiko_date_picker_mode) for the booking popup and the banquet form alike.
  */
-export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree, dotLabel, className = "" }: DayPickerProps) {
+export function DayPicker({
+  label,
+  min,
+  max,
+  value,
+  onChange,
+  isClosed,
+  hasFree,
+  dotLabel,
+  weeksPerPage = ROLLING_WEEKS,
+  heading,
+  className = "",
+}: DayPickerProps) {
   const { locale, t } = useLocale();
   const [mode, setMode] = useState<PickerMode>(() => readPickerMode());
   const [anchor, setAnchor] = useState<Date>(() => value ?? min);
@@ -50,6 +67,8 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
   function switchMode(next: PickerMode) {
     setMode(next);
     writePickerMode(next);
+    // The calendar opens on the week of the day picked in the cards.
+    if (next === "calendar") setAnchor(value ?? min);
   }
 
   const cardDays = useMemo(() => {
@@ -60,7 +79,7 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
     return days;
   }, [min, max]);
 
-  const view = calendarView(min, max, anchor);
+  const view = calendarView(min, max, anchor, weeksPerPage);
   const heads = useMemo(() => weekdayHeads(locale), [locale]);
   const fullDate = (d: Date) => d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
 
@@ -79,7 +98,7 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
   return (
     <div className={`day-picker ${className}`.trim()}>
       <div className="day-picker-head">
-        <span className="booking-field-label">{label}</span>
+        {heading ?? <span className="booking-field-label">{label}</span>}
         <div className="seg day-picker-mode" role="group" aria-label={label}>
           <button
             type="button"
@@ -122,23 +141,23 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
         </ScrollerFade>
       ) : (
         <div className="day-picker-cal">
-          <div className={`day-picker-cal-head${view.paged ? "" : " is-static"}`}>
+          <div className="day-picker-cal-head">
             <button
               type="button"
-              className="btn btn--ghost btn--sm btn--icon"
-              aria-label={t("picker.prev_month")}
+              className="btn btn--secondary btn--sm btn--icon"
+              aria-label={t(weeksPerPage === 1 ? "picker.prev_week" : "picker.prev_month")}
               disabled={!view.canPrev}
-              onClick={() => setAnchor(addDays(view.weeks[0][0], -ROLLING_WEEKS * 7))}
+              onClick={() => setAnchor(shiftWeeks(view, -1))}
             >
               ‹
             </button>
-            <strong aria-live="polite">{monthRangeTitle(view.fromMonth, view.toMonth, locale)}</strong>
+            <strong aria-live="polite">{weekRangeTitle(view.from, view.to, locale)}</strong>
             <button
               type="button"
-              className="btn btn--ghost btn--sm btn--icon"
-              aria-label={t("picker.next_month")}
+              className="btn btn--secondary btn--sm btn--icon"
+              aria-label={t(weeksPerPage === 1 ? "picker.next_week" : "picker.next_month")}
               disabled={!view.canNext}
-              onClick={() => setAnchor(addDays(view.weeks[0][0], ROLLING_WEEKS * 7))}
+              onClick={() => setAnchor(shiftWeeks(view, 1))}
             >
               ›
             </button>

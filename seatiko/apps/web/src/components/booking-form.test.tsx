@@ -95,6 +95,23 @@ describe("BookingForm confirm button", () => {
     expect(api.createReservation.mock.calls[0][0]).toMatchObject({ venue_id: "venue-12", table_id: table.id, guests: 2 });
   });
 
+  it("sends the optional comment as the booking's notes, capped at the limit", async () => {
+    api.fetchVenueSchedule.mockResolvedValue([]);
+    api.createReservation.mockResolvedValue({ id: "new-booking" });
+    await render();
+    const comment = container.querySelector<HTMLTextAreaElement>("textarea.bk-comment");
+    if (!comment) throw new Error("no comment field");
+    expect(comment.maxLength).toBe(300);
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+    await act(async () => {
+      setValue.call(comment, "  Window seat, birthday  ");
+      comment.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(container.querySelector(".bk-counter")?.textContent?.replace(/\s/g, "")).toBe("25/300");
+    await act(async () => confirmButton().click());
+    expect(api.createReservation.mock.calls[0][0]).toMatchObject({ notes: "Window seat, birthday" });
+  });
+
   it("shows a network error instead of hanging when the request times out", async () => {
     api.fetchVenueSchedule.mockResolvedValue([]);
     api.createReservation.mockRejectedValue(new DOMException("signal timed out", "TimeoutError"));

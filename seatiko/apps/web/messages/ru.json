@@ -777,5 +777,11 @@
   "bench.cal_free": "Свободно",
   "bench.cal_hint": "Нажмите на свободное время",
   "bench.slot_pick": "Выбрать {time}",
-  "venue.location_recenter": "Вернуть к ресторану"
+  "venue.location_recenter": "Вернуть к ресторану",
+  "picker.prev_week": "Предыдущая неделя",
+  "picker.next_week": "Следующая неделя",
+  "booking.comment": "Комментарий",
+  "booking.comment_optional": "необязательно",
+  "booking.comment_placeholder": "Например: место у окна, день рождения",
+  "booking.comment_left": "Осталось символов: {n}"
 }

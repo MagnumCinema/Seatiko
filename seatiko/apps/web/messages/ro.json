@@ -777,5 +777,11 @@
   "bench.cal_free": "Liber",
   "bench.cal_hint": "Apasă pe o oră liberă",
   "bench.slot_pick": "Alege {time}",
-  "venue.location_recenter": "Înapoi la restaurant"
+  "venue.location_recenter": "Înapoi la restaurant",
+  "picker.prev_week": "Săptămâna anterioară",
+  "picker.next_week": "Săptămâna următoare",
+  "booking.comment": "Comentariu",
+  "booking.comment_optional": "opțional",
+  "booking.comment_placeholder": "De exemplu: la geam, zi de naștere",
+  "booking.comment_left": "Caractere rămase: {n}"
 }
