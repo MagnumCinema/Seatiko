@@ -861,12 +861,7 @@ export default function VenuePage() {
 
         <VenueLocationMap venue={venue} />
 
-        <EventPopup
-          venue={venue}
-          open={eventOpen}
-          onClose={() => setEventOpen(false)}
-          onAuthRequired={() => requireAuth(t("auth.reason_event"))}
-        />
+        <EventPopup venue={venue} open={eventOpen} onClose={() => setEventOpen(false)} />
 
         <AuthDialog
           open={pendingAuth !== null}
