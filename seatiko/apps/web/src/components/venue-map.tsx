@@ -36,11 +36,11 @@ import {
 import {
   applyQuickFilters,
   areaChanged,
+  MAP_TILE_STYLES,
   clipBounds,
   isSavedPlace,
   placesInView,
   sheetHeights,
-  shortPinName,
   terraceFilterAvailable,
   toggleQuickFilter,
   validBounds,
@@ -61,8 +61,8 @@ import {
   PopupCard,
   RowSkeletons,
   SelectedCard,
+  createPartnerPin,
   fill,
-  freeTablesLabel,
   mapCopy,
 } from "@/components/venue-map-parts";
 
@@ -71,10 +71,6 @@ type MapState = "loading" | "ready" | "error";
 const DEFAULT_CITY = "city-balti";
 const BALTI_BOUNDS: MapBounds = { south: 47.70, west: 27.84, north: 47.82, east: 28.02 };
 const MOLDOVA_BOUNDS: MapBounds = { south: 45.45, west: 26.60, north: 48.55, east: 30.20 };
-const OPEN_FREE_MAP_STYLE = {
-  light: "https://tiles.openfreemap.org/styles/liberty",
-  dark: "https://tiles.openfreemap.org/styles/dark",
-} as const;
 const SOURCE_ID = "seatiko-venues";
 const CLUSTER_HALO_LAYER = "seatiko-cluster-halo";
 const CLUSTER_LAYER = "seatiko-clusters";
@@ -389,7 +385,7 @@ function VenueMapArea({
   const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
   const placesRef = useRef<MapPlace[]>([]);
   const localeRef = useRef(locale);
-  const markersRef = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLButtonElement }>());
+  const markersRef = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLElement }>());
   const baselineRef = useRef<MapBounds | null>(null);
   const scrollOnSelectRef = useRef(false);
   const stateRef = useRef<{ selected: string | null; hovered: string | null }>({ selected: null, hovered: null });
@@ -600,7 +596,7 @@ function VenueMapArea({
     try {
       map = new maplibregl.Map({
         container: mapNodeRef.current,
-        style: OPEN_FREE_MAP_STYLE[theme],
+        style: MAP_TILE_STYLES[theme],
         bounds: [[bounds.west, bounds.south], [bounds.east, bounds.north]],
         fitBoundsOptions: { padding: 24, duration: 0 },
         minZoom: 5,
@@ -776,37 +772,7 @@ function VenueMapArea({
     if (!map) return;
     for (const place of places) {
       if (!place.in_database) continue;
-      const name = pickLocale(place.name, locale);
-      const el = document.createElement("button");
-      el.type = "button";
-      el.className = "vmap-pin";
-      el.dataset.placeId = place.id;
-      const bookable = place.bookable && typeof place.free_tables === "number";
-      const parts: string[] = [name];
-      if (bookable) parts.push(`${place.free_tables} ${freeTablesLabel(locale, place.free_tables ?? 0)}`);
-      if (isSavedPlace(place, saved)) {
-        el.classList.add("is-saved");
-        parts.push(mapCopy(locale).hm.saved);
-        const heart = document.createElement("span");
-        heart.className = "vmap-pin-heart";
-        heart.setAttribute("aria-hidden", "true");
-        heart.textContent = "♥";
-        el.appendChild(heart);
-      }
-      if (bookable) {
-        const free = document.createElement("span");
-        free.className = "vmap-pin-free";
-        free.textContent = String(place.free_tables);
-        if (!place.free_tables) el.classList.add("is-full");
-        el.appendChild(free);
-      } else {
-        el.classList.add("is-quiet");
-      }
-      const label = document.createElement("span");
-      label.className = "vmap-pin-name";
-      label.textContent = shortPinName(name);
-      el.appendChild(label);
-      el.setAttribute("aria-label", parts.join(", "));
+      const el = createPartnerPin(place, locale, saved);
       el.addEventListener("click", (event) => {
         event.stopPropagation();
         selectFromMapRef.current(place);

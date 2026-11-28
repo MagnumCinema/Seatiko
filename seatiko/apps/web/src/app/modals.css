@@ -1,0 +1,980 @@
+/* ==========================================================================
+   Shared dialogs, toasts, fade scrollers and the Cards | Calendar day picker.
+   One file for the popup redesign (ModalShell, ConfirmDialog, ToastProvider,
+   ScrollerFade, DayPicker) so it merges cleanly with premium.css.
+   ========================================================================== */
+
+:root,
+html[data-theme="dark"] {
+  --mshell-bg: #151d17;
+  --mshell-head-bg: #172019;
+  --mshell-border: rgba(255, 255, 255, 0.1);
+  --mshell-fg: #f3efe6;
+  --mshell-muted: #a3ad9f;
+  --mshell-kicker: #e9b96e;
+  --mshell-backdrop: rgba(4, 9, 6, 0.62);
+  --mshell-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(233, 185, 110, 0.06);
+  --mshell-field-bg: rgba(255, 255, 255, 0.04);
+  --toast-bg: #13221a;
+  --toast-border: rgba(61, 160, 105, 0.42);
+  --toast-fg: #f3efe6;
+  --toast-bar: #e9b96e;
+  --dp-cell-hover: rgba(255, 255, 255, 0.07);
+  --dp-free: #4cc483;
+  --dp-today: #e9b96e;
+}
+
+html[data-theme="light"] {
+  --mshell-bg: #fffdf8;
+  --mshell-head-bg: #fffaf1;
+  --mshell-border: rgba(26, 36, 32, 0.13);
+  --mshell-fg: #1a2420;
+  --mshell-muted: #4d5a53;
+  --mshell-kicker: #a2660f;
+  --mshell-backdrop: rgba(20, 30, 25, 0.42);
+  --mshell-shadow: 0 30px 70px rgba(26, 36, 32, 0.24), 0 0 0 1px rgba(26, 36, 32, 0.05);
+  --mshell-field-bg: #ffffff;
+  --toast-bg: #fffdf8;
+  --toast-border: rgba(47, 138, 91, 0.45);
+  --toast-fg: #1a2420;
+  --toast-bar: #c98f3c;
+  --dp-cell-hover: rgba(26, 36, 32, 0.06);
+  --dp-free: #2f8a5b;
+  --dp-today: #215b43;
+}
+
+/* Always-dark dialog (documents): dark tokens in either theme. */
+.mshell[data-surface="dark"] {
+  --mshell-bg: #122019;
+  --mshell-head-bg: #14241c;
+  --mshell-border: rgba(255, 255, 255, 0.11);
+  --mshell-fg: #f3efe6;
+  --mshell-muted: #a7b3a6;
+  --mshell-kicker: #e9b96e;
+  --mshell-field-bg: rgba(255, 255, 255, 0.05);
+  --fa-surface: #14241c;
+  --fa-surface-2: #1b2d23;
+  --fa-border: rgba(255, 255, 255, 0.11);
+  --fa-text: #f3efe6;
+  --fa-muted: #a7b3a6;
+  color-scheme: dark;
+}
+
+/* —— ModalShell —— */
+.mshell-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.mshell-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--mshell-backdrop);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: mshell-fade 180ms ease both;
+}
+.mshell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 680px);
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+  border: 1px solid var(--mshell-border);
+  border-radius: 22px;
+  background: var(--mshell-bg);
+  color: var(--mshell-fg);
+  box-shadow: var(--mshell-shadow);
+  animation: mshell-pop 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  outline: none;
+}
+.mshell--sm {
+  width: min(100%, 470px);
+}
+.mshell--lg {
+  width: min(100%, 880px);
+}
+.mshell-grab {
+  display: none;
+}
+.mshell-head {
+  flex: none;
+  display: grid;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--mshell-border);
+  background: var(--mshell-head-bg);
+}
+.mshell-head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.mshell-head-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.mshell-kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mshell-kicker {
+  color: var(--mshell-kicker);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mshell-step {
+  flex: none;
+  padding: 2px 9px;
+  border: 1px solid var(--mshell-border);
+  border-radius: 999px;
+  color: var(--mshell-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mshell-title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.3rem, 2.4vw, 1.6rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--mshell-fg);
+}
+.mshell-sub {
+  margin: 0;
+  color: var(--mshell-muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mshell-x {
+  flex: none;
+  border-radius: 999px;
+}
+.mshell-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 20px 24px 22px;
+}
+.mshell-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 24px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--mshell-border);
+  background: var(--mshell-head-bg);
+}
+.mshell-foot.has-summary {
+  justify-content: space-between;
+}
+.mshell-foot-summary {
+  margin: 0;
+  min-width: 0;
+  color: var(--mshell-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mshell-foot-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: none;
+}
+/* Floating × for dialogs whose content draws its own header (success screens). */
+.mshell > .mshell-x.is-floating,
+.mshell-float-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+}
+
+@keyframes mshell-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mshell-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.975);
+  }
+}
+@keyframes mshell-sheet {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Phones: a bottom sheet flush with the screen edge, above any sticky page bar. */
+@media (max-width: 720px) {
+  .mshell-root {
+    place-items: end stretch;
+    padding: 0;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+  }
+  .mshell,
+  .mshell--sm,
+  .mshell--lg {
+    width: 100%;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 0px)));
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+    animation: mshell-sheet 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .mshell-grab {
+    display: block;
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 42px;
+    height: 4px;
+    margin-left: -21px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mshell-fg) 24%, transparent);
+    z-index: 4;
+  }
+  .mshell-head {
+    padding: 22px 16px 14px;
+  }
+  .mshell-body {
+    padding: 16px 16px 20px;
+  }
+  .mshell-foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .mshell-foot.has-summary {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .mshell-foot.has-summary .mshell-foot-summary {
+    flex: 1 0 100%;
+  }
+  .mshell-foot-actions {
+    flex: 1 1 100%;
+  }
+  .mshell-foot-actions > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .mshell-foot-actions > .btn.is-desktop-only {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mshell,
+  .mshell-backdrop {
+    animation: none;
+  }
+}
+
+/* —— ConfirmDialog —— */
+.confirm-dialog-body {
+  color: var(--mshell-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.confirm-dialog-body p {
+  margin: 0;
+}
+
+/* —— Toasts —— */
+.toast-region {
+  position: fixed;
+  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  width: min(440px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 10px 12px 18px;
+  overflow: hidden;
+  border: 1px solid var(--toast-border);
+  border-radius: 16px;
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  pointer-events: auto;
+  animation: toast-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+html[data-theme="light"] .toast {
+  box-shadow: 0 16px 36px rgba(26, 36, 32, 0.16);
+}
+.toast--error {
+  --toast-border: rgba(224, 96, 90, 0.55);
+}
+.toast-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.toast-action,
+.toast-close {
+  flex: none;
+}
+.toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--toast-bar);
+  transform-origin: left center;
+  animation: toast-bar var(--toast-ms, 4500ms) linear both;
+}
+.toast.is-paused .toast-progress {
+  animation-play-state: paused;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@keyframes toast-bar {
+  to {
+    transform: scaleX(0);
+  }
+}
+@media (max-width: 720px) {
+  .toast-region {
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    align-items: stretch;
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+  }
+}
+
+/* —— ScrollerFade: horizontal chip rows that show there is more —— */
+.sfade {
+  position: relative;
+  min-width: 0;
+}
+.sfade-track {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 0;
+}
+.sfade-track::-webkit-scrollbar {
+  display: none;
+}
+.sfade-track > * {
+  flex: 0 0 auto;
+}
+.sfade.can-forward .sfade-track {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent);
+}
+.sfade.can-back .sfade-track {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 44px);
+  mask-image: linear-gradient(to right, transparent, #000 44px);
+}
+.sfade.can-back.can-forward .sfade-track {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+}
+.btn.sfade-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: none;
+  inline-size: 30px;
+  block-size: 30px;
+  min-height: 30px;
+  min-block-size: 30px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  transform: translateY(-50%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.btn.sfade-arrow.is-back {
+  left: -2px;
+}
+.btn.sfade-arrow.is-forward {
+  right: -2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sfade.can-back > .sfade-arrow.is-back,
+  .sfade.can-forward > .sfade-arrow.is-forward {
+    display: inline-flex;
+  }
+}
+
+/* —— DayPicker (Cards | Calendar) —— */
+.day-picker {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.day-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.day-picker-head .booking-field-label {
+  margin: 0;
+}
+.day-picker-mode {
+  flex: none;
+}
+.day-picker-cards .chip {
+  min-width: 74px;
+  white-space: nowrap;
+}
+.day-picker-cards .chip.is-closed {
+  text-decoration: line-through;
+}
+.day-picker-cal {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--mshell-border, var(--fa-border));
+  border-radius: 16px;
+  background: var(--mshell-field-bg, transparent);
+}
+.day-picker-cal-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.day-picker-cal-head.is-static {
+  grid-template-columns: 1fr;
+}
+.day-picker-cal-head.is-static > .btn {
+  display: none;
+}
+.day-picker-cal-head strong {
+  text-align: center;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day-picker-grid {
+  display: grid;
+  gap: 4px;
+}
+.day-picker-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.day-picker-wd {
+  padding: 2px 0 4px;
+  text-align: center;
+  color: var(--mshell-muted, var(--fa-muted));
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.day-picker-cell-wrap {
+  display: block;
+  min-width: 0;
+}
+.day-picker-cell {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.day-picker-cell:hover:not(:disabled):not(.is-active) {
+  background: var(--dp-cell-hover);
+}
+.day-picker-cell:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: 1px;
+}
+.day-picker-cell.is-today {
+  border-color: var(--dp-today);
+}
+.day-picker-cell.has-free::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: var(--dp-free);
+}
+.day-picker-cell.is-active {
+  background: var(--chip-active-bg);
+  border-color: var(--chip-active-border);
+  color: var(--chip-active-fg);
+}
+.day-picker-cell.is-active::after {
+  background: currentColor;
+}
+.day-picker-cell:disabled {
+  cursor: not-allowed;
+  color: var(--mshell-muted, var(--fa-muted));
+  opacity: 0.5;
+}
+.day-picker-cell.is-outside,
+.day-picker-cell.is-closed {
+  text-decoration: line-through;
+}
+.day-picker-cell.is-outside {
+  opacity: 0.32;
+}
+.day-picker-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  color: var(--mshell-muted, var(--fa-muted));
+  font-size: 0.74rem;
+}
+.day-picker-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.day-picker-legend .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.day-picker-legend .dot.free {
+  background: var(--dp-free);
+}
+@media (max-width: 420px) {
+  .day-picker-cell {
+    height: 38px;
+    font-size: 0.86rem;
+  }
+  .day-picker-cal {
+    padding: 10px 8px;
+  }
+}
+
+/* ==========================================================================
+   Booking popup on ModalShell (BookingForm)
+   ========================================================================== */
+.mshell-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0;
+}
+.booking-modal .booking-form {
+  display: flex;
+  gap: 0;
+}
+.bk-body {
+  gap: 18px;
+}
+.bk-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.bk-stepper input {
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--fa-border);
+  border-right: 1px solid var(--fa-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+}
+.bk-stepper input:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: -2px;
+}
+.bk-chips .chip {
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+.booking-modal .booking-slot-times {
+  overflow-x: auto;
+}
+.bk-slot-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--state-free, #2f8a5b) 45%, transparent);
+  border-radius: 14px;
+  background: var(--state-free-soft, rgba(61, 160, 105, 0.16));
+  color: var(--mshell-fg);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.bk-slot-pill i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--state-free, #2f8a5b);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--state-free, #2f8a5b) 22%, transparent);
+}
+.bk-auth .booking-popup-auth {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.bk-cta {
+  min-width: 0;
+}
+.booking-done-body {
+  padding-top: 26px;
+}
+.booking-modal .booking-done {
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .bk-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .booking-done-body {
+    padding-top: 30px;
+  }
+}
+
+/* ==========================================================================
+   Banquet / event request on ModalShell (EventInquiryForm)
+   ========================================================================== */
+.event-form-body {
+  gap: 18px;
+}
+.event-presets {
+  gap: 8px;
+  padding: 2px 2px 4px;
+}
+.event-preset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 168px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid var(--chip-border);
+  border-radius: 14px;
+  background: var(--chip-bg);
+  color: var(--mshell-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+.event-preset:hover:not(.is-active) {
+  border-color: var(--chip-border-hover);
+  background: var(--chip-bg-hover);
+}
+.event-preset:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: 2px;
+}
+.event-preset.is-active {
+  border-color: var(--btn-focus-ring);
+  box-shadow: inset 0 0 0 1px var(--btn-focus-ring);
+  background: color-mix(in srgb, var(--btn-focus-ring) 12%, var(--chip-bg));
+}
+.event-preset-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--mshell-fg) 7%, transparent);
+  font-size: 1.05rem;
+}
+.event-preset-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.event-preset-text strong {
+  font-size: 0.86rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.event-preset-text small {
+  color: var(--mshell-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+.event-form .event-methods {
+  margin-top: 0;
+}
+.event-form .event-method strong {
+  white-space: nowrap;
+}
+.event-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.event-label-row small {
+  color: var(--state-free-ink, #2f8a5b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.event-form .event-input {
+  min-height: 44px;
+}
+.event-form .bk-stepper input::placeholder {
+  color: var(--mshell-muted);
+}
+.event-success-lead {
+  margin: 0;
+  color: var(--mshell-fg);
+  line-height: 1.5;
+}
+@media (max-width: 720px) {
+  .event-form .bk-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Sign-in, "I'm coming" and legal documents on ModalShell
+   ========================================================================== */
+.auth-modal-body {
+  padding-top: 24px;
+}
+.auth-modal .booking-popup-auth {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.auth-modal .booking-popup-auth h3 {
+  margin: 0;
+  padding-right: 52px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.coming-modal .coming-popup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mshell .legal-modal-tabs {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+}
+.mshell .legal-modal-seg {
+  width: max-content;
+  max-width: 100%;
+  padding: 3px;
+}
+.mshell .legal-modal-tab {
+  flex: none;
+  white-space: nowrap;
+}
+.mshell.legal-modal .mshell-body {
+  gap: 20px;
+}
+.mshell.legal-modal .mshell-foot-summary {
+  white-space: normal;
+}
+.mshell.legal-modal .legal-modal-support {
+  display: inline;
+  font-size: 0.78rem;
+}
+
+/* —— Booking popup: duration, day and time as distinct numbered blocks, then the comment —— */
+.bk-body {
+  gap: 14px;
+}
+.bk-section {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--mshell-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--mshell-fg) 3%, transparent);
+}
+html[data-theme="light"] .bk-section {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(26, 36, 32, 0.05);
+}
+.bk-section.is-optional {
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+}
+.bk-section-head,
+.bk-section .day-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 36px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mshell-border) 80%, transparent);
+}
+.bk-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  color: var(--mshell-fg);
+  font-size: 0.95rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.bk-section-title small {
+  color: var(--mshell-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+.bk-step {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--chip-active-bg);
+  color: var(--chip-active-fg);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.bk-section-value {
+  color: var(--btn-link-fg);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bk-counter {
+  color: var(--mshell-muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bk-comment {
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--mshell-border);
+  border-radius: 12px;
+  background: var(--mshell-field-bg);
+  color: var(--mshell-fg);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+.bk-comment::placeholder {
+  color: var(--mshell-muted);
+}
+.bk-comment:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: 1px;
+}
+/* The calendar sits inside its section card: no second card around it. */
+.bk-section .day-picker {
+  gap: 12px;
+}
+.bk-section .day-picker-cal {
+  padding: 2px 0 0;
+  border: 0;
+  background: none;
+}
+.bk-section .booking-slot-time-groups {
+  gap: 12px;
+}
+.booking-ticket-comment {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .bk-section {
+    padding: 12px 12px 14px;
+    border-radius: 14px;
+  }
+  .bk-section-title {
+    font-size: 0.92rem;
+  }
+}

@@ -13,6 +13,11 @@ import {
 } from "@/lib/booking-share";
 import type { BookingRules } from "@/lib/venue-rules";
 import { useLocale } from "@/components/locale-provider";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast-provider";
+
+/** How long "Booking cancelled · Undo" stays before the cancellation is sent. */
+export const CANCEL_UNDO_MS = 6000;
 
 export type BookedReservation = {
   id: string;
@@ -55,8 +60,8 @@ export function BookingConfirmation({
   extraActions,
 }: BookingConfirmationProps) {
   const { locale, t } = useLocale();
+  const toast = useToast();
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [cancelError, setCancelError] = useState(false);
   const [shared, setShared] = useState(false);
@@ -123,19 +128,32 @@ export function BookingConfirmation({
     }
   }
 
-  async function cancel() {
-    setCancelling(true);
+  /**
+   * Cancel with Undo: the booking shows as cancelled at once, the request goes out only
+   * when the toast runs out (or is closed), so "Вернуть" simply keeps the reservation.
+   */
+  function cancel() {
+    setConfirmCancel(false);
     setCancelError(false);
-    try {
-      await cancelReservation(booked.id);
-      setCancelled(true);
-      setConfirmCancel(false);
-      onCancelled?.();
-    } catch {
-      setCancelError(true);
-    } finally {
-      setCancelling(false);
-    }
+    setCancelled(true);
+    toast.show({
+      message: t("booking.cancelled_toast"),
+      actionLabel: t("booking.undo"),
+      duration: CANCEL_UNDO_MS,
+      onAction: () => {
+        setCancelled(false);
+        toast.show({ message: t("booking.restored_toast"), tone: "success", duration: 2500 });
+      },
+      onExpire: () => {
+        cancelReservation(booked.id)
+          .then(() => onCancelled?.())
+          .catch(() => {
+            setCancelled(false);
+            setCancelError(true);
+            toast.show({ message: t("booking.cancel_failed_toast"), tone: "error" });
+          });
+      },
+    });
   }
 
   const chairRow = (
@@ -191,28 +209,6 @@ export function BookingConfirmation({
             <button type="button" className="btn btn--primary btn--lg" onClick={onBookAgain}>
               {t("res.done_rebook")}
             </button>
-          ) : confirmCancel ? (
-            <div className="booking-done-confirm" role="group" aria-label={t("res.done_cancel")}>
-              <p>{t("res.done_cancel_confirm", { time: start })}</p>
-              <div>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--md"
-                  disabled={cancelling}
-                  onClick={() => setConfirmCancel(false)}
-                >
-                  {t("res.done_cancel_no")}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--danger btn--md booking-done-danger"
-                  disabled={cancelling}
-                  onClick={() => void cancel()}
-                >
-                  {cancelling ? t("res.done_cancelling") : t("res.done_cancel_yes")}
-                </button>
-              </div>
-            </div>
           ) : (
             <>
               <Link
@@ -289,6 +285,24 @@ export function BookingConfirmation({
         <p className="web-book-muted tiny">{t("res.success_hint")}</p>
       </div>
 
+      <ConfirmDialog
+        open={confirmCancel}
+        kicker={t("booking.cancel_kicker")}
+        title={t("booking.cancel_title")}
+        body={
+          <p>
+            {t("booking.cancel_body", {
+              table: `${t(booked.tables.length > 1 ? "res.ticket_tables" : "res.ticket_table")} №${tableNumbers}`,
+              when: `${dateLabel}, ${start}`,
+            })}
+          </p>
+        }
+        cancelLabel={t("booking.cancel_keep")}
+        confirmLabel={t("booking.cancel_yes")}
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={cancel}
+      />
+
       <article className="booking-ticket" aria-label={t("res.ticket_label")}>
         {chairRow}
         <div className="booking-ticket-body">
@@ -332,8 +346,8 @@ export function BookingConfirmation({
             </div>
             {booked.notes ? (
               <div className="wide">
-                <dt>{t("res.notes")}</dt>
-                <dd>{booked.notes}</dd>
+                <dt>{t("booking.comment")}</dt>
+                <dd className="booking-ticket-comment">{booked.notes}</dd>
               </div>
             ) : null}
           </dl>

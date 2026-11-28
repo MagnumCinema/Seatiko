@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { isTopModal, popModal, pushModal } from "@/lib/modal-stack";
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -6,6 +7,7 @@ const FOCUSABLE =
 /**
  * Modal focus handling: moves focus into the dialog, keeps Tab inside it,
  * closes on Escape and returns focus to the trigger when the dialog closes.
+ * With dialogs stacked (a confirm over a popup) only the top one reacts.
  */
 export function useDialogFocus(
   open: boolean,
@@ -21,6 +23,7 @@ export function useDialogFocus(
     if (!open) return;
     const container = containerRef.current;
     if (!container) return;
+    const modalId = pushModal();
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const focusables = () =>
@@ -28,9 +31,10 @@ export function useDialogFocus(
         (el) => el.offsetParent !== null || el === document.activeElement,
       );
     const autofocus = container.querySelector<HTMLElement>("[data-autofocus]");
-    (autofocus ?? focusables()[0] ?? container).focus();
+    (autofocus ?? focusables()[0] ?? container).focus({ preventScroll: true });
 
     const onKey = (event: KeyboardEvent) => {
+      if (!isTopModal(modalId)) return;
       if (event.key === "Escape") {
         event.stopPropagation();
         onCloseRef.current();
@@ -56,7 +60,8 @@ export function useDialogFocus(
     document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("keydown", onKey, true);
-      if (trigger?.isConnected) trigger.focus();
+      popModal(modalId);
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, [open, containerRef]);
 }

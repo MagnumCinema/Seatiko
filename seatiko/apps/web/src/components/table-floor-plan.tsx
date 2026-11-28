@@ -1,18 +1,25 @@
 "use client";
 
-import { useId, useMemo, useState, type CSSProperties } from "react";
-import Link from "next/link";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import type { Table } from "@/lib/api";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 import { HallFixtures, HallFrame, rotClass, useElementWidth } from "@/components/hall-plan";
-import { HALL_H, HALL_W, clamp, fixturesOf, tableSize } from "@/lib/floor-layout";
+import { HALL_H, HALL_W, clamp, fixturesOf } from "@/lib/floor-layout";
 import { useFloorLayout } from "@/lib/floor-layout-store";
 import {
   listZonesFromTables,
   normalizeZone,
   zoneLabel as fallbackZoneLabel,
 } from "@/lib/floor-zones";
-import { seatingRules } from "@/lib/seating-rules";
+import { firstInZone } from "@/lib/floor-picks";
+import { ScrollerFade } from "@/components/ui/scroller-fade";
 
 export function tableStatusClass(status: Table["status"] | string | undefined) {
   switch (status) {
@@ -77,48 +84,15 @@ export function SeatingMarks({ seats }: { seats: number }) {
 }
 
 /**
- * Guests see the owner's plan as drawn: the same 16:10 hall, scaled to the page width so the
- * whole hall (bar, kitchen, entrance) is in view on a phone. Below GUEST_MIN_SCALE (screens
- * under ~340px) the hall scrolls sideways instead of shrinking further.
+ * Guests see the owner's plan as drawn: the same 16:10 hall, scaled to the stage width
+ * ("100%"); zooming in scales it up and the stage pans (scroll / drag).
+ * Below GUEST_MIN_SCALE the hall scrolls sideways instead of shrinking further.
  */
 const GUEST_MIN_SCALE = 0.4;
 const GUEST_MAX_SCALE = 1.1;
 const COMPACT_MAX_SCALE = 0.8;
-
-/** Table centre on the plan, in % of the hall (the API already keeps it off the walls). */
-function tablePosition(table: Pick<Table, "x" | "y">) {
-  return { left: table.x * 100, top: table.y * 100 };
-}
-
-/** The popover sits above its table, or below when the table is near the top wall. */
-function tipPlacement(table: Pick<Table, "x" | "y">) {
-  const { left, top } = tablePosition(table);
-  const vertical = top < 38 ? "below" : "above";
-  const horizontal = left < 24 ? "align-start" : left > 76 ? "align-end" : "align-center";
-  return `${vertical} ${horizontal}`;
-}
-
-/** Same estimate as the public schedule: a visit lasts ~90 min, at least 15 min from now. */
-const VISIT_MINUTES = 90;
-function estimatedFreeAt(table: Pick<Table, "occupied_since">): string {
-  const soonest = Date.now() + 15 * 60_000;
-  const since = table.occupied_since ? new Date(table.occupied_since).getTime() : NaN;
-  const end = Number.isNaN(since) ? soonest : Math.max(soonest, since + VISIT_MINUTES * 60_000);
-  return new Date(end).toISOString();
-}
-
-/** Popover anchor; `--tip-gap` clears the table (and the booking time under a reserved one) at the current scale. */
-function tipPosition(
-  table: Pick<Table, "x" | "y" | "seats" | "status" | "reserved_for">,
-  rotated: boolean,
-  scale: number,
-): CSSProperties {
-  const { left, top } = tablePosition(table);
-  const half = tableSize(table.seats, rotated ? 90 : 0).h / 2;
-  const below = tipPlacement(table).startsWith("below");
-  const timeBadge = below && table.status === "RESERVED" && table.reserved_for ? 24 : 0;
-  return { left: `${left}%`, top: `${top}%`, ["--tip-gap" as string]: `${Math.round(half * scale + 12 + timeBadge)}px` };
-}
+const ZOOM_STEPS = [0.75, 1, 1.25, 1.5, 2] as const;
+const SEAT_FILTERS = [0, 2, 4, 6] as const;
 
 const ZONE_KEYS: Record<string, MessageKey> = {
   hall: "floor.zone.hall",
@@ -135,56 +109,71 @@ const STATUS_KEYS: Record<Table["status"], MessageKey> = {
   CLEANING: "floor.leg_clean",
 };
 
+function SeatIcon() {
+  return (
+    <svg viewBox="0 0 12 12" aria-hidden="true">
+      <circle cx="6" cy="3.6" r="2.2" />
+      <path d="M1.8 11c.3-2.5 2-3.9 4.2-3.9s3.9 1.4 4.2 3.9" />
+    </svg>
+  );
+}
+
+/**
+ * The hall for guests: zone tabs, a seats filter and the legend above; − / 100% / + zoom
+ * and a one-line hint on the plan; tables show their number and seats. With `inspector`
+ * the selected table's panel sits beside the hall (under it on phones), never over it.
+ */
 export function TableFloorPlan({
   tables,
   selectedId,
   selectedIds,
   compact = false,
   onTableClick,
-  bookHref,
-  onReserve,
-  onNotifyFree,
-  onImComing,
-  notifySetIds,
-  comingArrivalById,
-  comingSetIds,
-  sheetMessage,
-  hideSheet = false,
   mineReservationIds,
+  inspector,
+  legend,
 }: {
   tables: Table[];
   selectedId?: string;
   selectedIds?: string[];
   compact?: boolean;
   onTableClick?: (table: Table) => void;
-  bookHref?: string;
-  onReserve?: (table: Table) => void;
-  onNotifyFree?: (table: Table) => void;
-  onImComing?: (table: Table) => void;
-  notifySetIds?: Set<string>;
-  comingArrivalById?: Record<string, string>;
-  comingSetIds?: Set<string>;
-  sheetMessage?: string | null;
-  /** When true, reservation actions are rendered outside (see TableReserveSheet). */
-  hideSheet?: boolean;
   /** Reservations of the signed-in guest: their tables show "Reserved by you". */
   mineReservationIds?: ReadonlySet<string>;
+  /** Panel of the selected table (side by side on desktop, below on phones). */
+  inspector?: ReactNode;
+  /** Status legend, shown at the end of the toolbar. */
+  legend?: ReactNode;
 }) {
   const { t, locale } = useLocale();
-  const tipId = useId();
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [localSelected, setLocalSelected] = useState<string | null>(selectedId ?? null);
   const zones = useMemo(() => listZonesFromTables(tables), [tables]);
   const [activeZone, setActiveZone] = useState(zones[0] || "hall");
+  const [minSeats, setMinSeats] = useState<number>(0);
+  const [zoomIndex, setZoomIndex] = useState(1);
   const layout = useFloorLayout(tables[0]?.venue_id);
   const rotated = useMemo(() => new Set(layout.rotated), [layout.rotated]);
   const fixtures = fixturesOf(layout.zones, activeZone);
-  const [stageRef, stageWidth] = useElementWidth<HTMLDivElement>();
-  const scale = clamp(
+  const [measureStage, stageWidth] = useElementWidth<HTMLDivElement>();
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const setStage = useCallback(
+    (node: HTMLDivElement | null) => {
+      stageRef.current = node;
+      return measureStage(node);
+    },
+    [measureStage],
+  );
+  const drag = useRef<{ x: number; y: number; left: number; top: number; id: number } | null>(null);
+  const zoom = ZOOM_STEPS[zoomIndex];
+  const fitScale = clamp(
     stageWidth > 0 ? stageWidth / HALL_W : 1,
     GUEST_MIN_SCALE,
     compact ? COMPACT_MAX_SCALE : GUEST_MAX_SCALE,
   );
+  const scale = fitScale * zoom;
+  const maxSeats = Math.max(0, ...tables.map((table) => table.seats));
+  const seatFilters = SEAT_FILTERS.filter((n) => n === 0 || n <= maxSeats);
 
   if (!zones.includes(activeZone)) {
     setActiveZone(zones[0] || "hall");
@@ -219,390 +208,233 @@ export function TableFloorPlan({
   const activeId = selectedId ?? localSelected;
   const active = tables.find((table) => table.id === activeId) ?? null;
   const hovered = tables.find((table) => table.id === hoverId) ?? null;
-  const tipTable =
-    hovered ?? (active && normalizeZone(active.zone) === activeZone ? active : null);
 
   function handleSelect(table: Table) {
     setLocalSelected(table.id);
     onTableClick?.(table);
   }
 
-  const notifyDone = active ? notifySetIds?.has(active.id) : false;
-  const comingArrivalIso = active
-    ? comingArrivalById?.[active.id]
-    : undefined;
-  const comingDone = Boolean(
-    comingArrivalIso || (active && comingSetIds?.has(active.id)),
-  );
-  const comingTimeLabel = comingArrivalIso
-    ? new Date(comingArrivalIso).toLocaleTimeString(locale, {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : active
-      ? formatClock(active.reserved_for)
-      : "—";
+  /** After a zone switch or a seats filter the selection follows to a table that is shown. */
+  function reselect(zone: string, seats: number) {
+    if (active && normalizeZone(active.zone) === zone && active.seats >= seats) return;
+    const next = firstInZone(tables, zone, seats);
+    if (next) handleSelect(next);
+  }
 
-  return (
-    <div className={`fa-floor schematic ${compact ? "compact" : ""}`}>
-      {zones.length > 1 && (
-        <div className="seg floor-zone-tabs guest" role="tablist" aria-label={t("floor.zones")}>
-          {zones.map((zone) => {
-            const free = tables.filter(
-              (table) => normalizeZone(table.zone) === zone && table.status === "FREE",
-            ).length;
+  function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    const el = stageRef.current;
+    if (!el || event.pointerType !== "mouse" || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest("button")) return;
+    if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
+    drag.current = { x: event.clientX, y: event.clientY, left: el.scrollLeft, top: el.scrollTop, id: event.pointerId };
+    el.setPointerCapture(event.pointerId);
+    el.classList.add("is-panning");
+  }
+  function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const el = stageRef.current;
+    const start = drag.current;
+    if (!el || !start || start.id !== event.pointerId) return;
+    el.scrollLeft = start.left - (event.clientX - start.x);
+    el.scrollTop = start.top - (event.clientY - start.y);
+  }
+  function onPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    const el = stageRef.current;
+    if (!el || drag.current?.id !== event.pointerId) return;
+    drag.current = null;
+    el.releasePointerCapture(event.pointerId);
+    el.classList.remove("is-panning");
+  }
+
+  const matching = visible.filter((table) => table.seats >= minSeats).length;
+  const hint = hovered
+    ? t("table.a11y_label", { n: hovered.number, status: statusLabel(hovered), seats: hovered.seats })
+    : matching === 0 && minSeats > 0
+      ? t("bench.no_match", { n: minSeats })
+      : null;
+
+  const hall = (
+    <div className="bench-hall">
+      <div className="bench-zoom" role="group" aria-label={t("bench.zoom_reset")}>
+        <button
+          type="button"
+          className="bench-zoom-btn"
+          aria-label={t("bench.zoom_out")}
+          disabled={zoomIndex === 0}
+          onClick={() => setZoomIndex((i) => Math.max(0, i - 1))}
+        >
+          −
+        </button>
+        <button
+          type="button"
+          className="bench-zoom-btn is-value"
+          title={t("bench.zoom_reset")}
+          aria-label={`${t("bench.zoom_reset")} · ${Math.round(zoom * 100)}%`}
+          onClick={() => setZoomIndex(1)}
+        >
+          {Math.round(zoom * 100)}%
+        </button>
+        <button
+          type="button"
+          className="bench-zoom-btn"
+          aria-label={t("bench.zoom_in")}
+          disabled={zoomIndex === ZOOM_STEPS.length - 1}
+          onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}
+        >
+          +
+        </button>
+      </div>
+      <div
+        ref={setStage}
+        className={`hall-stage guest bench-stage${zoom > 1 ? " is-zoomed" : ""} ${compact ? "compact" : ""}`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <HallFrame
+          scale={scale}
+          className="guest"
+          role="group"
+          aria-label={t("floor.plan", { zone: zLabel(activeZone) })}
+          overlay={
+            visible.length === 0 ? (
+              <div className="fa-floor-empty">{t("floor.empty", { zone: zLabel(activeZone) })}</div>
+            ) : null
+          }
+        >
+          <HallFixtures
+            fixtures={fixtures}
+            labels={{ bar: t("floor.bar"), kitchen: t("floor.kitchen"), entrance: t("floor.entrance") }}
+          />
+
+          {visible.map((table, index) => {
+            const isSelected = activeId === table.id || !!selectedIds?.includes(table.id);
+            const dimmed = table.seats < minSeats;
+            const className = [
+              "fa-table",
+              "schematic",
+              statusClass(table),
+              seatingClass(table.seats),
+              rotClass(rotated.has(table.number) ? 90 : 0),
+              isSelected ? "selected" : "",
+              table.status === "FREE" ? "available" : "",
+              dimmed ? "is-dimmed" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+
             return (
               <button
-                key={zone}
+                key={table.id}
                 type="button"
-                role="tab"
-                aria-selected={activeZone === zone}
-                className={`seg-item${activeZone === zone ? " is-active" : ""}`}
-                onClick={() => setActiveZone(zone)}
+                className={className}
+                style={{
+                  left: table.x * HALL_W,
+                  top: table.y * HALL_H,
+                  animationDelay: `${index * 40}ms`,
+                }}
+                aria-pressed={isSelected}
+                aria-label={t("table.a11y_label", {
+                  n: table.number,
+                  status: statusLabel(table),
+                  seats: table.seats,
+                })}
+                onMouseEnter={() => setHoverId(table.id)}
+                onMouseLeave={() => setHoverId((id) => (id === table.id ? null : id))}
+                onFocus={() => setHoverId(table.id)}
+                onBlur={() => setHoverId((id) => (id === table.id ? null : id))}
+                onClick={() => handleSelect(table)}
               >
-                {zLabel(zone)}
-                <small>{t("floor.free_short", { count: free })}</small>
+                <SeatingMarks seats={table.seats} />
+                <span>{table.number}</span>
+                <small className="fa-table-seats" aria-hidden>
+                  <SeatIcon />
+                  {table.seats}
+                </small>
+                {table.status === "RESERVED" && table.reserved_for ? (
+                  <small className="fa-table-time" aria-hidden>
+                    {formatClock(table.reserved_for)}
+                  </small>
+                ) : null}
               </button>
             );
           })}
-        </div>
-      )}
+        </HallFrame>
+      </div>
+      <p className="bench-hint" aria-live="polite">
+        {hint ?? (
+          <>
+            <span className="is-wide">{t("bench.hint")}</span>
+            <span className="is-narrow">{t("bench.hint_phone")}</span>
+          </>
+        )}
+      </p>
+    </div>
+  );
 
-      <div className="fa-floor-room-scroll">
-        <div ref={stageRef} className={`hall-stage guest ${compact ? "compact" : ""}`}>
-          <HallFrame
-            scale={scale}
-            className="guest"
-            role="group"
-            aria-label={t("floor.plan", { zone: zLabel(activeZone) })}
-            overlay={
-              <>
-                {visible.length === 0 && (
-                  <div className="fa-floor-empty">{t("floor.empty", { zone: zLabel(activeZone) })}</div>
-                )}
-                {tipTable && (
-                  <div
-                    id={tipId}
-                    className={`fa-floor-tip schematic anchored ${tipPlacement(tipTable)}`}
-                    style={tipPosition(tipTable, rotated.has(tipTable.number), scale)}
-                    role="status"
-                  >
-                    <div className="fa-floor-tip-top">
-                      <strong>{t("table.title", { n: tipTable.number })}</strong>
-                      <span className={`fa-floor-tip-status ${statusClass(tipTable)}`}>
-                        {statusLabel(tipTable)}
-                      </span>
-                    </div>
-                    <p>
-                      {zLabel(tipTable.zone)} · {t("table.seats", { n: tipTable.seats })}
-                      {tipTable.status === "FREE" ? t("floor.bookable") : ""}
-                      {tipTable.status === "OCCUPIED"
-                        ? ` · ${t("table.arrived_at", { time: formatClock(tipTable.occupied_since) })}`
-                        : ""}
-                      {tipTable.status === "RESERVED"
-                        ? ` · ${t("table.reserved_for", { time: formatClock(tipTable.reserved_for) })}`
-                        : ""}
-                    </p>
-                  </div>
-                )}
-              </>
-            }
+  return (
+    <div className={`fa-floor schematic bench ${compact ? "compact" : ""}${inspector ? " has-inspector" : ""}`}>
+      <div className="bench-toolbar">
+        {zones.length > 1 ? (
+          <ScrollerFade
+            className="bench-zones"
+            trackClassName="seg floor-zone-tabs guest"
+            role="tablist"
+            ariaLabel={t("floor.zones")}
+            activeKey={activeZone}
           >
-            <HallFixtures
-              fixtures={fixtures}
-              labels={{ bar: t("floor.bar"), kitchen: t("floor.kitchen"), entrance: t("floor.entrance") }}
-            />
-
-            {visible.map((table, index) => {
-              const isSelected = activeId === table.id || !!selectedIds?.includes(table.id);
-              const className = [
-                "fa-table",
-                "schematic",
-                statusClass(table),
-                seatingClass(table.seats),
-                rotClass(rotated.has(table.number) ? 90 : 0),
-                isSelected ? "selected" : "",
-                table.status === "FREE" ? "available" : "",
-              ]
-                .filter(Boolean)
-                .join(" ");
-
+            {zones.map((zone) => {
+              const free = tables.filter(
+                (table) => normalizeZone(table.zone) === zone && table.status === "FREE",
+              ).length;
               return (
                 <button
-                  key={table.id}
+                  key={zone}
                   type="button"
-                  className={className}
-                  style={{
-                    left: table.x * HALL_W,
-                    top: table.y * HALL_H,
-                    animationDelay: `${index * 40}ms`,
+                  role="tab"
+                  aria-selected={activeZone === zone}
+                  className={`seg-item${activeZone === zone ? " is-active" : ""}`}
+                  onClick={() => {
+                    setActiveZone(zone);
+                    reselect(zone, minSeats);
                   }}
-                  aria-pressed={isSelected}
-                  aria-describedby={tipTable?.id === table.id ? tipId : undefined}
-                  aria-label={t("table.a11y_label", {
-                    n: table.number,
-                    status: statusLabel(table),
-                    seats: table.seats,
-                  })}
-                  onMouseEnter={() => setHoverId(table.id)}
-                  onMouseLeave={() => setHoverId((id) => (id === table.id ? null : id))}
-                  onFocus={() => setHoverId(table.id)}
-                  onBlur={() => setHoverId((id) => (id === table.id ? null : id))}
-                  onClick={() => handleSelect(table)}
                 >
-                  <SeatingMarks seats={table.seats} />
-                  <span>{table.number}</span>
-                  {table.status === "RESERVED" && table.reserved_for ? (
-                    <small className="fa-table-time" aria-hidden>
-                      {formatClock(table.reserved_for)}
-                    </small>
-                  ) : null}
+                  {zLabel(zone)}
+                  <small>{t("floor.free_short", { count: free })}</small>
                 </button>
               );
             })}
-          </HallFrame>
-        </div>
+          </ScrollerFade>
+        ) : null}
+        {seatFilters.length > 2 ? (
+          <ScrollerFade className="bench-seats" role="group" ariaLabel={t("bench.filter_label")}>
+            {seatFilters.map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={`chip${minSeats === n ? " is-active" : ""}`}
+                aria-pressed={minSeats === n}
+                onClick={() => {
+                  setMinSeats(n);
+                  reselect(activeZone, n);
+                }}
+              >
+                {n === 0 ? t("bench.filter_all") : `${n}+`}
+              </button>
+            ))}
+          </ScrollerFade>
+        ) : null}
+        {legend}
       </div>
 
-      {active && !hideSheet && (
-        <TableReserveSheet
-          table={active}
-          bookHref={bookHref}
-          onReserve={onReserve}
-          onNotifyFree={onNotifyFree}
-          onImComing={onImComing}
-          notifyDone={notifyDone}
-          comingDone={comingDone}
-          comingTimeLabel={comingTimeLabel}
-          sheetMessage={sheetMessage}
-          mine={isMine(active)}
-        />
+      {inspector ? (
+        <div className="bench-split">
+          {hall}
+          {inspector}
+        </div>
+      ) : (
+        hall
       )}
-    </div>
-  );
-}
-
-export function TableReserveSheet({
-  table,
-  bookHref,
-  onReserve,
-  onNotifyFree,
-  onImComing,
-  notifyDone = false,
-  comingDone = false,
-  comingTimeLabel,
-  sheetMessage,
-  className = "",
-  comingAccess = "allowed",
-  onComingSignIn,
-  sessionStartBeforeMin = 60,
-  releaseBeforeMin = 15,
-  mine = false,
-}: {
-  table: Table;
-  bookHref?: string;
-  onReserve?: (table: Table) => void;
-  onNotifyFree?: (table: Table) => void;
-  onImComing?: (table: Table) => void;
-  notifyDone?: boolean;
-  comingDone?: boolean;
-  comingTimeLabel?: string;
-  sheetMessage?: string | null;
-  className?: string;
-  /** "I'm coming" is only for the guest who owns the reservation (APP_LOGIC §5.3). */
-  comingAccess?: "allowed" | "sign_in" | "hidden";
-  onComingSignIn?: () => void;
-  sessionStartBeforeMin?: number;
-  releaseBeforeMin?: number;
-  /** The reservation on this table is the signed-in guest's own. */
-  mine?: boolean;
-}) {
-  const { t, locale } = useLocale();
-
-  function zLabel(zone?: string | null) {
-    const id = normalizeZone(zone);
-    const key = ZONE_KEYS[id];
-    return key ? t(key) : fallbackZoneLabel(zone, locale);
-  }
-
-  const isMine = mine && table.status === "RESERVED";
-  const statusClass = isMine ? "reserved mine" : tableStatusClass(table.status);
-
-  function formatClock(value?: string | null) {
-    if (!value) return "—";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function handleReserve() {
-    if (onReserve) {
-      onReserve(table);
-      return;
-    }
-    if (bookHref) {
-      window.location.assign(bookHref);
-    }
-  }
-
-  const arrivalLabel =
-    comingTimeLabel ?? formatClock(table.reserved_for);
-  const rules = table.reserved_for
-    ? seatingRules(new Date(table.reserved_for), sessionStartBeforeMin, releaseBeforeMin)
-    : null;
-
-  return (
-    <div
-      className={`fa-floor-sheet schematic is-${tableStatusClass(table.status)}${isMine ? " is-mine" : ""} ${className}`.trim()}
-    >
-      <div className="fa-floor-sheet-main">
-        <p className="fa-floor-sheet-kicker">
-          {t("floor.selected", { zone: zLabel(table.zone) })}
-        </p>
-
-        <div className="fa-floor-sheet-title">
-          <strong>{t("table.title", { n: table.number })}</strong>
-          <span className={`fa-floor-tip-status ${statusClass}`}>
-            {isMine ? t("table.status_reserved_mine") : t(STATUS_KEYS[table.status])}
-          </span>
-        </div>
-
-        <ul className="fa-floor-sheet-meta">
-          <li>
-            <span>{t("floor.sheet_zone")}</span>
-            <b>{zLabel(table.zone)}</b>
-          </li>
-          <li>
-            <span>{t("floor.sheet_seats")}</span>
-            <b>{table.seats}</b>
-          </li>
-        </ul>
-
-        {table.status === "FREE" && (
-          <div className="fa-floor-sheet-facts">
-            <p className="fa-floor-sheet-lead">{t("floor.sheet_free_lead")}</p>
-            <p>{t("floor.sheet_free_body")}</p>
-          </div>
-        )}
-
-        {table.status === "OCCUPIED" && (
-          <div className="fa-floor-sheet-facts">
-            <p className="fa-floor-sheet-lead">
-              {t("table.arrived_at", { time: formatClock(table.occupied_since) })}
-            </p>
-            <p>{t("table.arrived_hint")}</p>
-            <p>{t("floor.sheet_occupied_body")}</p>
-            <p className="fa-floor-sheet-eta">
-              {t("venue.day_cal_free_after", { time: formatClock(estimatedFreeAt(table)) })}
-            </p>
-          </div>
-        )}
-
-        {table.status === "RESERVED" && (
-          <div className="fa-floor-sheet-facts">
-            <p className="fa-floor-sheet-lead">
-              {t(isMine ? "table.reserved_mine_for" : "table.reserved_for", {
-                time: formatClock(table.reserved_for),
-              })}
-            </p>
-            {rules ? (
-              <ul>
-                {isMine ? null : (
-                  <li>
-                    {t("table.rule_walkin_until", {
-                      time: formatClock(rules.walkInUntil.toISOString()),
-                    })}
-                  </li>
-                )}
-                <li>
-                  {t(
-                    isMine
-                      ? rules.ownerFromNeedsFreeTable
-                        ? "table.rule_mine_from_if_free"
-                        : "table.rule_mine_from"
-                      : rules.ownerFromNeedsFreeTable
-                        ? "table.rule_owner_from_if_free"
-                        : "table.rule_owner_from",
-                    { time: formatClock(rules.ownerFrom.toISOString()) },
-                  )}
-                </li>
-              </ul>
-            ) : null}
-          </div>
-        )}
-
-        {table.status === "CLEANING" && (
-          <div className="fa-floor-sheet-facts">
-            <p className="fa-floor-sheet-lead">{t("floor.sheet_cleaning_lead")}</p>
-            <p>{t("floor.sheet_cleaning_body")}</p>
-          </div>
-        )}
-
-        {sheetMessage ? (
-          <p className="fa-floor-sheet-msg">{sheetMessage}</p>
-        ) : null}
-      </div>
-
-      <div className="fa-floor-sheet-actions">
-        {table.status === "FREE" && (onReserve || bookHref) ? (
-          onReserve ? (
-            <button
-              type="button"
-              className="btn btn--primary btn--md btn--block fa-floor-sheet-cta"
-              onClick={handleReserve}
-            >
-              {t("table.book_this")}
-            </button>
-          ) : (
-            <a className="btn btn--primary btn--md btn--block fa-floor-sheet-cta" href={bookHref}>
-              {t("table.book_this")}
-            </a>
-          )
-        ) : null}
-        {table.status === "OCCUPIED" && onNotifyFree ? (
-          <button
-            type="button"
-            className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta"
-            disabled={notifyDone}
-            onClick={() => onNotifyFree(table)}
-          >
-            {notifyDone ? t("table.notify_set") : `🔔 ${t("table.notify_free")}`}
-          </button>
-        ) : null}
-        {table.status === "RESERVED" && onImComing && comingAccess === "allowed" ? (
-          <button
-            type="button"
-            className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta"
-            disabled={comingDone}
-            onClick={() => onImComing(table)}
-          >
-            {comingDone
-              ? t("table.im_coming_set", { time: arrivalLabel })
-              : `✓ ${t("table.im_coming")}`}
-          </button>
-        ) : null}
-        {table.status === "RESERVED" && comingAccess === "sign_in" && onComingSignIn ? (
-          <button type="button" className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta" onClick={onComingSignIn}>
-            {t("table.im_coming_sign_in")}
-          </button>
-        ) : null}
-        {isMine && table.reservation_id ? (
-          <Link
-            className="btn btn--secondary btn--md btn--block fa-floor-sheet-cta mine"
-            href={`/account?reservation=${encodeURIComponent(table.reservation_id)}`}
-          >
-            {t("table.open_my_booking")}
-          </Link>
-        ) : null}
-        {table.status === "CLEANING" ? (
-          <p className="fa-floor-sheet-actions-note">{t("floor.sheet_cleaning_wait")}</p>
-        ) : null}
-        {table.status !== "FREE" && onReserve && !isMine ? (
-          <button type="button" className="btn btn--ghost btn--md btn--block fa-floor-sheet-cta" onClick={handleReserve}>
-            {t("table.book_later")}
-          </button>
-        ) : null}
-      </div>
     </div>
   );
 }

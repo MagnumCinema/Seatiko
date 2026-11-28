@@ -1803,7 +1803,7 @@ export function GuestProfile({
                           </div>
                           {res.notes && (
                             <div className="guest-booking-detail-item guest-booking-notes">
-                              <span>Пожелание: {res.notes}</span>
+                              <span>{t("booking.comment")}: {res.notes}</span>
                             </div>
                           )}
                           {res.preorder && (
@@ -2007,7 +2007,7 @@ export function GuestProfile({
                             </div>
                             {res.notes && (
                               <div className="guest-booking-detail-item guest-booking-notes">
-                                <span>Пожелание: {res.notes}</span>
+                                <span>{t("booking.comment")}: {res.notes}</span>
                               </div>
                             )}
                           </div>

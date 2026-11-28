@@ -4,9 +4,12 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import "./premium.css";
 import "./buttons.css";
+import "./modals.css";
+import "./venue-floor.css";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ToastProvider } from "@/components/ui/toast-provider";
 
 const sans = Manrope({
   variable: "--font-sans",
@@ -47,7 +50,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased site-body">
         <LocaleProvider>
           <CurrencyProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <ThemeProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </ThemeProvider>
           </CurrencyProvider>
         </LocaleProvider>
       </body>

@@ -10,7 +10,7 @@ import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointer
 import { pickLocale, priceLevelLabel, type LocaleCode, type MapPlace } from "@/lib/api";
 import { venueBookingHref } from "@/lib/booking-link";
 import { googleMapDirections, googleMapSearch } from "@/lib/google-map";
-import { closingTime, isSavedPlace, nearestSnap, pluralForm, type SheetSnap } from "@/lib/home-map";
+import { closingTime, isSavedPlace, nearestSnap, pluralForm, shortPinName, type SheetSnap } from "@/lib/home-map";
 import { getSiteCopy } from "@/lib/site-copy";
 
 export function mapCopy(locale: LocaleCode) {
@@ -54,7 +54,7 @@ export function openStatus(place: MapPlace, locale: LocaleCode, now: Date): { op
   return { open: true, label: until ? fill(hm.openUntil, { time: until }) : hm.openNow };
 }
 
-type PlaceAction = { href: string; label: string; external?: boolean };
+export type PlaceAction = { href: string; label: string; external?: boolean };
 
 /** The two buttons of a place: book + details for partners, directions + call/maps for open data. */
 export function placeActions(place: MapPlace, locale: LocaleCode): { primary: PlaceAction; secondary: PlaceAction | null } {
@@ -191,18 +191,25 @@ export function RowSkeletons({ count = 5 }: { count?: number }) {
   );
 }
 
-/** The selected place pinned at the bottom of the rail (desktop) and in the sheet (phone). */
+/**
+ * The selected place pinned at the bottom of the rail (desktop) and in the sheet (phone).
+ * The venue page reuses it for its location block with its own actions and an extra row.
+ */
 export function SelectedCard({
-  place, cover, locale, now, compact = false,
+  place, cover, locale, now, compact = false, actions: actionsOverride, children,
 }: {
   place: MapPlace;
   cover?: string;
   locale: LocaleCode;
   now: Date;
   compact?: boolean;
+  /** Replace the default book / details buttons (e.g. directions + open in maps). */
+  actions?: { primary: PlaceAction; secondary: PlaceAction | null };
+  /** Extra rows between the open status and the buttons (e.g. weekly hours). */
+  children?: ReactNode;
 }) {
   const { vm } = mapCopy(locale);
-  const actions = placeActions(place, locale);
+  const actions = actionsOverride ?? placeActions(place, locale);
   const status = openStatus(place, locale, now);
   const sub = [pickLocale(place.address, locale), typeof place.rating === "number" ? `★ ${place.rating.toFixed(1)}` : ""].filter(Boolean).join(" · ");
   return (
@@ -222,6 +229,7 @@ export function SelectedCard({
               <i aria-hidden="true" /> <span>{status.label}</span>
             </div>
           ) : null}
+          {children}
           <div className="vmap-actions">
             <ActionLink action={actions.primary} variant="primary" />
             {actions.secondary ? <ActionLink action={actions.secondary} variant="secondary" /> : null}
@@ -230,6 +238,51 @@ export function SelectedCard({
       ) : null}
     </div>
   );
+}
+
+/**
+ * The partner pill pin (M1) as a DOM element for a MapLibre marker: free tables + short
+ * name, ♥ when saved, quiet when the place has no online booking. Used by the home map
+ * (a button) and the venue page's location map (a plain element).
+ */
+export function createPartnerPin(
+  place: MapPlace,
+  locale: LocaleCode,
+  saved: ReadonlySet<string>,
+  tag: "button" | "div" = "button",
+): HTMLElement {
+  const name = pickLocale(place.name, locale);
+  const el = document.createElement(tag);
+  if (el instanceof HTMLButtonElement) el.type = "button";
+  el.className = "vmap-pin";
+  el.dataset.placeId = place.id;
+  const bookable = place.bookable && typeof place.free_tables === "number";
+  const parts: string[] = [name];
+  if (bookable) parts.push(`${place.free_tables} ${freeTablesLabel(locale, place.free_tables ?? 0)}`);
+  if (isSavedPlace(place, saved)) {
+    el.classList.add("is-saved");
+    parts.push(mapCopy(locale).hm.saved);
+    const heart = document.createElement("span");
+    heart.className = "vmap-pin-heart";
+    heart.setAttribute("aria-hidden", "true");
+    heart.textContent = "♥";
+    el.appendChild(heart);
+  }
+  if (bookable) {
+    const free = document.createElement("span");
+    free.className = "vmap-pin-free";
+    free.textContent = String(place.free_tables);
+    if (!place.free_tables) el.classList.add("is-full");
+    el.appendChild(free);
+  } else {
+    el.classList.add("is-quiet");
+  }
+  const label = document.createElement("span");
+  label.className = "vmap-pin-name";
+  label.textContent = shortPinName(name);
+  el.appendChild(label);
+  el.setAttribute("aria-label", parts.join(", "));
+  return el;
 }
 
 function CloseIcon() {

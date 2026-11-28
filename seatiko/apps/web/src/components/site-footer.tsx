@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useLocale } from "@/components/locale-provider";
+import { Button } from "@/components/ui/button";
+import { ModalBody, ModalFooter, ModalHeader, ModalShell } from "@/components/ui/modal-shell";
+import { ScrollerFade } from "@/components/ui/scroller-fade";
 import { getSiteCopy } from "@/lib/site-copy";
 import { LEGAL_DOCS, type LegalDocId } from "@/lib/legal-content";
 
@@ -34,15 +37,6 @@ function ClockIcon() {
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
 export function SiteFooter() {
   const { locale } = useLocale();
   const copy = getSiteCopy(locale).footer;
@@ -52,26 +46,6 @@ export function SiteFooter() {
   const handleClose = useCallback(() => {
     setActiveDocId(null);
   }, []);
-
-  // Keyboard navigation & body scroll lock
-  useEffect(() => {
-    if (!activeDocId) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose();
-      }
-    };
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [activeDocId, handleClose]);
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (pathname === "/" && href.startsWith("/#")) {
@@ -186,57 +160,46 @@ export function SiteFooter() {
         </div>
       </footer>
 
-      {/* Interactive Official Documents Modal */}
-      {currentDoc && (
-        <div
-          className="legal-modal-backdrop"
-          onClick={handleClose}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="legal-modal-title"
-        >
-          <div
-            className="legal-modal-card"
-            data-surface="dark"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="legal-modal-header">
-              <div className="legal-modal-title-group">
-                <span className="legal-modal-badge">{currentDoc.badge}</span>
-                <h3 id="legal-modal-title">{currentDoc.title}</h3>
-                <small className="legal-modal-updated">{currentDoc.updatedAt}</small>
-              </div>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm btn--icon legal-modal-close"
-                onClick={handleClose}
-                aria-label={copy.modalClose}
+      {/* Official documents: one dialog, a tab per document (ModalShell, always-dark surface). */}
+      <ModalShell
+        open={currentDoc !== null}
+        onClose={handleClose}
+        size="lg"
+        labelledBy="legal-modal-title"
+        className="legal-modal"
+        surface="dark"
+      >
+        {currentDoc ? (
+          <>
+            <ModalHeader
+              kicker={currentDoc.badge}
+              title={currentDoc.title}
+              titleId="legal-modal-title"
+              subtitle={currentDoc.updatedAt}
+              onClose={handleClose}
+            >
+              <ScrollerFade
+                className="legal-modal-tabs"
+                trackClassName="seg legal-modal-seg"
+                role="tablist"
+                ariaLabel={copy.legalTitle}
+                activeKey={activeDocId}
               >
-                <CloseIcon />
-              </button>
-            </div>
-
-            {/* Tab navigation between all documents */}
-            <div className="legal-modal-tabs">
-              <div className="seg" role="tablist">
-              {copy.legalLinks.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeDocId === item.id}
-                  className={`seg-item legal-modal-tab${activeDocId === item.id ? " is-active" : ""}`}
-                  onClick={() => setActiveDocId(item.id as LegalDocId)}
-                >
-                  {item.label}
-                </button>
-              ))}
-              </div>
-            </div>
-
-            {/* Modal Document Body */}
-            <div className="legal-modal-body">
+                {copy.legalLinks.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeDocId === item.id}
+                    className={`seg-item legal-modal-tab${activeDocId === item.id ? " is-active" : ""}`}
+                    onClick={() => setActiveDocId(item.id as LegalDocId)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </ScrollerFade>
+            </ModalHeader>
+            <ModalBody className="legal-modal-body">
               {currentDoc.sections.map((section, idx) => (
                 <article key={idx} className="legal-modal-section">
                   <h4>{section.title}</h4>
@@ -245,25 +208,21 @@ export function SiteFooter() {
                   ))}
                 </article>
               ))}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="legal-modal-footer">
-              <div className="legal-modal-support">
-                <span>{copy.modalSupportNotice}</span>
-                <a href={`mailto:${copy.contactEmail}`}>{copy.contactEmail}</a>
-              </div>
-              <button
-                type="button"
-                className="btn btn--primary btn--md btn-legal-close"
-                onClick={handleClose}
-              >
+            </ModalBody>
+            <ModalFooter
+              summary={
+                <span className="legal-modal-support">
+                  {copy.modalSupportNotice} <a href={`mailto:${copy.contactEmail}`}>{copy.contactEmail}</a>
+                </span>
+              }
+            >
+              <Button variant="secondary" size="md" onClick={handleClose}>
                 {copy.modalClose}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </ModalFooter>
+          </>
+        ) : null}
+      </ModalShell>
     </>
   );
 }

@@ -3,8 +3,46 @@
  * "open until" from the venue hours, the visible-area list, cluster styling
  * and the phone bottom sheet snap points. No DOM, no MapLibre: unit-tested.
  */
-import type { MapBounds, MapPlace } from "@/lib/api";
+import type { MapBounds, MapPlace, Venue } from "@/lib/api";
 import { formatClock, venueHoursOn } from "@/lib/venue-hours";
+
+/** OpenFreeMap tiles matching the site theme (home map and the venue page's location map). */
+export const MAP_TILE_STYLES = {
+  light: "https://tiles.openfreemap.org/styles/liberty",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+} as const;
+
+/**
+ * A venue as a map place, so the venue page reuses the home map's pin and selected card.
+ * `freeTables` is the live count from the floor plan when the page has it.
+ */
+export function venueAsMapPlace(
+  venue: Pick<
+    Venue,
+    "id" | "name" | "address" | "lat" | "lng" | "rating" | "google_place_id" | "open_now" | "free_tables" | "hours_text" | "cuisine" | "price_level" | "average_check" | "website"
+  >,
+  { bookable, freeTables }: { bookable: boolean; freeTables?: number },
+): MapPlace {
+  return {
+    id: venue.id,
+    venue_id: venue.id,
+    in_database: true,
+    name: venue.name,
+    address: venue.address,
+    lat: venue.lat,
+    lng: venue.lng,
+    rating: venue.rating || undefined,
+    google_place_id: venue.google_place_id,
+    open_now: venue.open_now,
+    bookable,
+    free_tables: bookable ? freeTables ?? venue.free_tables : undefined,
+    hours_text: venue.hours_text,
+    cuisine: venue.cuisine,
+    price_level: venue.price_level,
+    average_check: venue.average_check,
+    website: venue.website,
+  };
+}
 
 /* —— Quick filter chips (M3) —— */
 

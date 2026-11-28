@@ -1,0 +1,864 @@
+/* ==========================================================================
+   /venues/[id] redesign: hero action row, floor workbench (hall + inspector),
+   day timeline and collapsed waitlist. Own file so it merges cleanly.
+   ========================================================================== */
+
+/* —— Hero: one aligned action row + three equal tiles, under the photo and copy —— */
+.venue-page-wrap > .venue-page-actions {
+  container-type: inline-size;
+  max-width: none;
+  margin: 22px 0 0;
+  gap: 12px;
+}
+.venue-action-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  grid-template-areas: "quick hall fav share";
+  gap: 10px;
+  align-items: stretch;
+}
+.venue-action-bar > .venue-action-main:nth-child(1) {
+  grid-area: quick;
+}
+.venue-action-bar > .venue-action-main:nth-child(2) {
+  grid-area: hall;
+}
+.venue-action-bar > .venue-fav-btn {
+  grid-area: fav;
+}
+.venue-action-bar > .venue-action-icon:last-child {
+  grid-area: share;
+}
+.venue-action-bar .venue-action-main {
+  min-width: 0;
+}
+.venue-action-bar.is-icons {
+  grid-template-columns: auto auto;
+  grid-template-areas: "fav share";
+  justify-content: start;
+}
+.venue-fav-btn.is-on {
+  color: #e0605a;
+  border-color: color-mix(in srgb, #e0605a 55%, transparent);
+}
+.venue-fav-btn.is-on svg {
+  fill: currentColor;
+}
+.venue-tiles.venue-page-actions-secondary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.venue-tiles .venue-tile {
+  min-width: 0;
+  flex: none;
+}
+@container (max-width: 560px) {
+  .venue-action-bar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "quick fav share"
+      "hall hall hall";
+  }
+  .venue-action-bar.is-icons {
+    grid-template-columns: auto auto;
+    grid-template-areas: "fav share";
+  }
+  .venue-tiles .venue-tile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+  .venue-tiles .venue-tile-icon {
+    width: 34px;
+    height: 34px;
+  }
+}
+@container (max-width: 420px) {
+  .venue-tiles .venue-tile-desc {
+    display: none;
+  }
+  .venue-tiles .venue-tile {
+    padding: 10px;
+  }
+  .venue-tiles .venue-tile-name {
+    font-size: 0.84rem;
+  }
+}
+
+/* —— Floor workbench —— */
+.venue-floor-stage.bench-stage-card {
+  overflow: visible;
+}
+.bench {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.venue-page .venue-floor-stage .fa-floor.bench {
+  padding: 0;
+}
+.bench-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--fa-border);
+}
+.bench-toolbar > .sfade {
+  min-width: 0;
+  max-width: 100%;
+}
+.venue-page .venue-floor-stage .bench .floor-zone-tabs {
+  margin: 0;
+  width: max-content;
+  max-width: 100%;
+}
+.bench-zones .seg-item small {
+  opacity: 0.75;
+  font-weight: 650;
+}
+.bench-seats .sfade-track {
+  gap: 6px;
+}
+.bench-seats .chip {
+  min-width: 52px;
+}
+.bench-legend {
+  margin-left: auto;
+}
+.bench-legend .sfade-track {
+  gap: 14px;
+  align-items: center;
+}
+.bench-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fa-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.bench-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.bench-legend i.free {
+  background: var(--state-free);
+}
+.bench-legend i.reserved {
+  background: var(--state-reserved);
+}
+.bench-legend i.mine {
+  background: var(--state-reserved);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--state-reserved) 35%, transparent);
+}
+.bench-legend i.occupied {
+  background: var(--state-occupied);
+}
+.bench-legend i.cleaning {
+  background: var(--state-cleaning);
+}
+
+.bench-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(330px, 1fr);
+  align-items: stretch;
+}
+.bench-hall {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--fa-border);
+}
+.bench:not(.has-inspector) .bench-hall {
+  border-right: 0;
+}
+.bench-zoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--fa-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--fa-surface) 92%, transparent);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+.bench-zoom-btn {
+  min-width: 36px;
+  height: 34px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--fa-text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.bench-zoom-btn + .bench-zoom-btn {
+  border-left: 1px solid var(--fa-border);
+}
+.bench-zoom-btn.is-value {
+  min-width: 58px;
+  font-size: 0.8rem;
+}
+.bench-zoom-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fa-text) 7%, transparent);
+}
+.bench-zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.bench-zoom-btn:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: -2px;
+}
+.venue-page .venue-floor-stage .bench-stage.hall-stage {
+  flex: 1 1 auto;
+  padding: 58px 18px 12px;
+  border-top: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.bench-stage.is-zoomed {
+  max-height: min(620px, 72vh);
+  cursor: grab;
+}
+.bench-stage.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+.bench-stage.is-zoomed .hall-frame {
+  margin: 0;
+}
+.bench-hint {
+  align-self: flex-start;
+  max-width: calc(100% - 32px);
+  margin: 0 16px 14px;
+  padding: 6px 12px;
+  overflow: hidden;
+  border: 1px solid var(--fa-border);
+  border-radius: 999px;
+  color: var(--fa-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bench-hint .is-narrow {
+  display: none;
+}
+
+/* Tables: number + seats badge, dimmed when the seats filter rules them out. */
+.hall-canvas .fa-table.schematic > small.fa-table-seats {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 1px;
+  padding: 0 calc(4px * var(--hall-inv, 1));
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  font-size: max(9px, calc(8px * var(--hall-inv, 1)));
+  font-weight: 800;
+  line-height: 1.35;
+  pointer-events: none;
+}
+.hall-canvas .fa-table.schematic > small.fa-table-seats svg {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.hall-canvas .fa-table.schematic.reserved > small.fa-table-seats {
+  background: rgba(42, 26, 6, 0.24);
+  color: #2a1a06;
+}
+.hall-canvas .fa-table.schematic.oval > small.fa-table-seats {
+  display: none;
+}
+.fa-table.schematic.is-dimmed {
+  opacity: 0.26;
+  filter: grayscale(0.7);
+}
+.fa-table.schematic.is-dimmed.selected {
+  opacity: 0.6;
+}
+
+/* —— Inspector —— */
+.insp {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+}
+.insp-grab {
+  display: none;
+}
+.insp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.insp-head h3 {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.insp-head .fa-floor-tip-status {
+  white-space: nowrap;
+}
+.insp-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.insp-tiles > div {
+  padding: 10px 12px;
+  border: 1px solid var(--fa-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fa-text) 3%, transparent);
+}
+.insp-tiles dt {
+  color: var(--fa-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.insp-tiles dd {
+  margin: 2px 0 0;
+  font-weight: 750;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.insp-state {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--fa-border);
+  border-left: 3px solid var(--state-reserved);
+  border-radius: 12px;
+  background: var(--state-reserved-soft);
+  font-size: 0.88rem;
+}
+.insp-state.is-occupied {
+  border-left-color: var(--state-occupied);
+  background: var(--state-occupied-soft);
+}
+.insp-state.is-cleaning {
+  border-left-color: var(--state-cleaning);
+  background: var(--state-cleaning-soft);
+}
+.insp-state p {
+  margin: 0;
+  color: var(--fa-muted);
+  line-height: 1.4;
+}
+.insp-state .insp-lead {
+  color: var(--fa-text);
+  font-weight: 750;
+}
+.insp-state ul {
+  margin: 0;
+  padding-left: 1.05rem;
+  color: var(--fa-muted);
+  display: grid;
+  gap: 4px;
+}
+.insp-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+.insp-msg {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--state-free-soft);
+  color: var(--fa-text);
+  font-size: 0.86rem;
+}
+.venue-floor-stage.bench-stage-card {
+  --bench-bg: var(--fa-surface);
+}
+html[data-theme="light"] .venue-floor-stage.bench-stage-card {
+  --bench-bg: #ffffff;
+}
+/* The CTA stays in view while the inspector scrolls past; a soft fade keeps what is under it readable. */
+.insp-cta {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  margin: auto -18px -18px;
+  padding: 18px 18px 18px;
+  border-radius: 0 0 22px 0;
+  background: linear-gradient(to bottom, transparent, var(--bench-bg) 40%);
+}
+
+/* —— Table day calendar: vertical, Google Calendar-like —— */
+.dcal {
+  --dcal-hour: 48px;
+  --dcal-axis: 52px;
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--fa-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--fa-text) 2%, transparent);
+}
+.dcal-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+.dcal-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--fa-text);
+  font-size: 0.9rem;
+  font-weight: 750;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcal-scroll {
+  position: relative;
+  max-height: min(400px, 52vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  border-radius: 12px;
+  border: 1px solid var(--fa-border);
+  background: var(--bench-bg, var(--fa-surface));
+}
+.dcal-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--dcal-axis) minmax(0, 1fr);
+  margin: 10px 0;
+}
+.dcal-axis {
+  position: relative;
+}
+.dcal-hour {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  color: var(--fa-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dcal-lane {
+  position: relative;
+  margin-right: 8px;
+  border-left: 1px solid var(--fa-border);
+}
+.dcal-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid color-mix(in srgb, var(--fa-text) 9%, transparent);
+  pointer-events: none;
+}
+/* Background bands: closed, past, free */
+.dcal-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+.dcal-band-label {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  color: var(--fa-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dcal-band.is-closed {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--fa-text) 7%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}
+.dcal-band.is-past {
+  background: color-mix(in srgb, var(--fa-text) 4%, transparent);
+}
+.dcal-band.is-free {
+  background: var(--state-free-soft);
+  box-shadow: inset 3px 0 0 var(--state-free);
+}
+.dcal-band.is-free .dcal-band-label {
+  color: var(--state-free-ink);
+}
+.dcal-band.is-free.is-short {
+  background: color-mix(in srgb, var(--state-free) 7%, transparent);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--state-free) 45%, transparent);
+}
+/* Tap rows inside free time: hover / focus shows the start time. */
+.dcal-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--state-free) 22%, transparent);
+  background: transparent;
+  cursor: pointer;
+}
+.dcal-slot::after {
+  content: attr(data-time);
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--state-free-ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.dcal-slot:hover,
+.dcal-slot:focus-visible {
+  background: color-mix(in srgb, var(--state-free) 22%, transparent);
+}
+.dcal-slot:hover::after,
+.dcal-slot:focus-visible::after {
+  opacity: 1;
+}
+.dcal-slot:focus-visible {
+  outline: 2.5px solid var(--btn-focus-ring);
+  outline-offset: -2px;
+}
+/* Booked / seated blocks and the picked visit */
+.dcal-block,
+.dcal-pick {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 22px;
+  padding: 4px 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+.dcal-block {
+  border: 1px solid color-mix(in srgb, var(--state-reserved) 55%, transparent);
+  border-left: 4px solid var(--state-reserved);
+  background: color-mix(in srgb, var(--state-reserved) 24%, var(--bench-bg, var(--fa-surface)));
+  color: var(--state-reserved-ink);
+}
+.dcal-block.is-mine {
+  border-color: var(--state-reserved);
+  border-left-color: var(--state-reserved-deep);
+  background: color-mix(in srgb, var(--state-reserved) 38%, var(--bench-bg, var(--fa-surface)));
+}
+.dcal-block.is-seated {
+  border-color: color-mix(in srgb, var(--state-occupied) 55%, transparent);
+  border-left-color: var(--state-occupied);
+  background: color-mix(in srgb, var(--state-occupied) 22%, var(--bench-bg, var(--fa-surface)));
+  color: var(--state-occupied-ink);
+}
+.dcal-block.is-short {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-block: 2px;
+}
+.dcal-block-time {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dcal-block-label {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcal-pick {
+  z-index: 4;
+  border: 2px solid var(--btn-focus-ring);
+  background: color-mix(in srgb, var(--btn-focus-ring) 18%, var(--bench-bg, var(--fa-surface)));
+  color: var(--fa-text);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+/* NOW line */
+.dcal-now {
+  position: absolute;
+  left: -5px;
+  right: 0;
+  z-index: 5;
+  height: 0;
+  border-top: 2px solid #e0605a;
+  pointer-events: none;
+}
+.dcal-now::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e0605a;
+}
+.dcal-now span {
+  position: absolute;
+  right: 4px;
+  top: -10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #e0605a;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+html[data-theme="light"] .dcal-now,
+html[data-theme="light"] .dcal-now::before,
+html[data-theme="light"] .dcal-now span {
+  border-top-color: #c2412f;
+  background-color: #c2412f;
+}
+html[data-theme="light"] .dcal-now {
+  background: none;
+}
+.dcal-hint,
+.dcal-empty {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.8rem;
+}
+.dcal-hint {
+  min-height: 1.2em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dcal-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* —— Collapsed waitlist ("nothing free right now") —— */
+.venue-page .waitlist-card.is-collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+}
+.waitlist-card.is-collapsed p {
+  flex: 1 1 280px;
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.88rem;
+}
+.waitlist-collapsed-badge {
+  flex: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--state-occupied-soft);
+  color: var(--state-occupied-ink);
+  font-size: 0.8rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.waitlist-stepper {
+  display: grid;
+}
+
+/* —— Tablet / phone: hall on top, the inspector below as a sheet —— */
+@media (max-width: 960px) {
+  .bench-split {
+    grid-template-columns: 1fr;
+  }
+  .bench-hall {
+    border-right: 0;
+    border-bottom: 1px solid var(--fa-border);
+  }
+  .bench-hint .is-wide {
+    display: none;
+  }
+  .bench-hint .is-narrow {
+    display: inline;
+  }
+  .insp {
+    position: relative;
+    padding-top: 24px;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.12);
+  }
+  .insp-grab {
+    display: block;
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    width: 42px;
+    height: 4px;
+    margin-left: -21px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--fa-text) 22%, transparent);
+  }
+  .insp-cta {
+    border-radius: 0 0 22px 22px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 720px) {
+  .bench-toolbar {
+    padding: 12px;
+    gap: 8px;
+  }
+  .bench-toolbar > .sfade {
+    flex: 1 1 100%;
+  }
+  .bench-legend {
+    margin-left: 0;
+  }
+  .bench-legend .sfade-track {
+    gap: 12px;
+  }
+  .venue-page .venue-floor-stage .bench-stage.hall-stage {
+    padding: 52px 10px 10px;
+  }
+  .insp {
+    padding: 22px 14px 14px;
+  }
+  .insp-cta {
+    margin: auto -14px -14px;
+    padding-inline: 14px;
+  }
+  .dcal {
+    padding: 10px 8px 8px;
+    --dcal-axis: 46px;
+  }
+  .dcal-scroll {
+    max-height: min(360px, 48vh);
+  }
+}
+
+/* Desktop: the hall stays in view beside the taller inspector (day calendar). */
+@media (min-width: 961px) {
+  .bench.has-inspector .bench-hall {
+    position: sticky;
+    top: 84px;
+    align-self: start;
+    border-right: 0;
+  }
+  .bench.has-inspector .insp {
+    border-left: 1px solid var(--fa-border);
+  }
+}
+
+/* —— Location map (/venues/[id]) in the home map's look (tokens from .vmap in venue-map.css) —— */
+.vloc {
+  margin-top: 4px;
+}
+.vloc-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  min-height: 360px;
+}
+.vloc-shell > .vloc-canvas {
+  min-height: 360px;
+}
+.vloc-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border-left: 1px solid var(--vm-border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--vm-surface-2) 60%, var(--vm-surface)), var(--vm-surface));
+}
+.vloc-hours {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--vm-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vm-surface-2) 55%, transparent);
+}
+.vloc-hours span {
+  color: var(--vm-muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.vloc-hours strong {
+  color: var(--vm-fg);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.vloc-all {
+  align-self: flex-start;
+}
+@media (max-width: 860px) {
+  .vloc-shell {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .vloc-shell > .vloc-canvas {
+    min-height: 0;
+    height: 260px;
+  }
+  .vloc-side {
+    border-left: 0;
+    border-top: 1px solid var(--vm-border);
+  }
+}
+@media (max-width: 480px) {
+  .vloc-shell > .vloc-canvas {
+    height: 230px;
+  }
+  .vloc-side {
+    padding: 14px;
+  }
+}

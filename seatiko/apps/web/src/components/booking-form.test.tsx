@@ -95,6 +95,23 @@ describe("BookingForm confirm button", () => {
     expect(api.createReservation.mock.calls[0][0]).toMatchObject({ venue_id: "venue-12", table_id: table.id, guests: 2 });
   });
 
+  it("sends the optional comment as the booking's notes, capped at the limit", async () => {
+    api.fetchVenueSchedule.mockResolvedValue([]);
+    api.createReservation.mockResolvedValue({ id: "new-booking" });
+    await render();
+    const comment = container.querySelector<HTMLTextAreaElement>("textarea.bk-comment");
+    if (!comment) throw new Error("no comment field");
+    expect(comment.maxLength).toBe(300);
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!;
+    await act(async () => {
+      setValue.call(comment, "  Window seat, birthday  ");
+      comment.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(container.querySelector(".bk-counter")?.textContent?.replace(/\s/g, "")).toBe("25/300");
+    await act(async () => confirmButton().click());
+    expect(api.createReservation.mock.calls[0][0]).toMatchObject({ notes: "Window seat, birthday" });
+  });
+
   it("shows a network error instead of hanging when the request times out", async () => {
     api.fetchVenueSchedule.mockResolvedValue([]);
     api.createReservation.mockRejectedValue(new DOMException("signal timed out", "TimeoutError"));
@@ -104,7 +121,7 @@ describe("BookingForm confirm button", () => {
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(ru["error.network"]);
   });
 
-  it("brings the sign-in form into view when the session is missing or expired", async () => {
+  it("switches to the sign-in step, keeping the chosen slot, when the session is missing", async () => {
     const scrolled: Element[] = [];
     const scrollIntoView = vi.fn(function (this: Element) {
       scrolled.push(this);
@@ -114,8 +131,11 @@ describe("BookingForm confirm button", () => {
     api.fetchVenueSchedule.mockResolvedValue([]);
     await render();
     await act(async () => confirmButton().click());
+    // Step 2 of 2: the sign-in replaces the form in the same popup and takes focus.
     const auth = container.querySelector(".booking-popup-auth");
     expect(auth).not.toBeNull();
+    expect(container.textContent).toContain(ru["booking.auth_title"]);
+    expect(container.querySelector(".bk-slot-pill")?.textContent).toContain("Porto Mare");
     expect(scrolled.some((el) => el.contains(auth))).toBe(true);
     expect(auth?.contains(document.activeElement)).toBe(true);
     expect(api.createReservation).not.toHaveBeenCalled();
