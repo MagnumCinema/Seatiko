@@ -412,6 +412,7 @@ function VenueMapArea({
   const [retry, setRetry] = useState(0);
   const [snap, setSnap] = useState<SheetSnap>("peek");
   const [canvasHeight, setCanvasHeight] = useState(600);
+  const heights = sheetHeights(canvasHeight);
   const [fullscreen, setFullscreen] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
@@ -534,7 +535,9 @@ function VenueMapArea({
   const focusPlace = (place: MapPlace) => {
     const map = mapRef.current;
     if (map) {
-      map.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), FOCUS_ZOOM), duration: 520 });
+      // On phones the sheet covers the bottom of the canvas: centre the place in the part left above it.
+      const covered = window.matchMedia(PHONE_QUERY).matches ? heights.peek : 0;
+      map.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), FOCUS_ZOOM), offset: [0, -covered / 2], duration: 520 });
     } else if (useGoogle) {
       setFocus({ lat: place.lat, lng: place.lng });
     }
@@ -867,7 +870,6 @@ function VenueMapArea({
         : !loading && data && places.length === 0 ? "empty"
           : null;
   const showSheet = isPhone && state === null;
-  const heights = sheetHeights(canvasHeight);
   const sheetHeight = showSheet ? heights[snap] : 0;
   const showSearchArea = !useGoogle && mapState === "ready" && areaDirty && !loading && state === null;
 

@@ -917,14 +917,15 @@ html[data-theme="light"] .vmap-legend-heart {
 /* —— Rail (desktop): synced list + pinned selected card (QW3) —— */
 
 .vmap-rail {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--vm-border);
   background: var(--vm-surface);
 }
 
 .vmap-rail-head {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1159,7 +1160,12 @@ html[data-theme="light"] .vmap-heart {
   }
 }
 
+.vmap-rail .vmap-list {
+  flex: 1 1 auto;
+}
+
 .vmap-dock {
+  flex: none;
   padding: 12px 14px 14px;
   border-top: 1px solid var(--vm-border);
   background: linear-gradient(180deg, color-mix(in srgb, var(--vm-surface-2) 60%, var(--vm-surface)), var(--vm-surface));
@@ -1350,6 +1356,7 @@ html[data-theme="light"] .vmap-heart {
   }
 
   .vmap-rail .vmap-list {
+    flex: none;
     max-height: 340px;
   }
 }
