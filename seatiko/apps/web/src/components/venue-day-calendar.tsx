@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchVenueSchedule,
   listMyApplications,
@@ -11,9 +11,12 @@ import {
 import { useLocale } from "@/components/locale-provider";
 import { sameDay } from "@/lib/date-picker";
 import {
+  axisHours,
   buildTableTimeline,
-  hourlyPills,
+  gapSlots,
   minuteToDate,
+  minuteTop,
+  scrollTargetMin,
   type BusyBlock,
   type TableTimeline,
   type TimelineSegment,
@@ -154,7 +157,10 @@ export function busyBlocksFor(
     }));
 }
 
-type TimelineProps = {
+/** Pixels per hour in the table's day view (Google Calendar-like vertical grid). */
+export const DAY_HOUR_PX = 48;
+
+type DayCalendarProps = {
   timeline: TableTimeline;
   day: Date;
   now: Date;
@@ -164,18 +170,24 @@ type TimelineProps = {
   /** Picked start (minutes from midnight of `day`). */
   selectedMin: number | null;
   onPick: (min: number) => void;
+  /** Length of the visit a pick would book (drawn as the picked block). */
   minDurationMin: number;
   stepMin: number;
+  /** Opening time of `day` (minutes): tap rows follow the booking grid from it. */
+  openMin: number | null;
+  /** Changes when another table or day is shown: the view scrolls to now / the first free time. */
+  scrollKey: string;
   loading?: boolean;
   error?: boolean;
 };
 
 /**
- * The selected table's day: closed hours greyed, booked / seated blocks with their times,
- * a NOW line, free windows you can tap (they pick the window's first start) and hourly
- * start pills under it.
+ * The selected table's day as a vertical calendar (like Google Calendar): hours on the left,
+ * a scrolling grid with closed hours hatched, booked / seated blocks labelled with their
+ * start–end, free time in green where a tap picks the start, the picked visit drawn as a
+ * block and a NOW line. It scrolls to now (or the first free time) when it opens.
  */
-export function TableDayTimeline({
+export function TableDayCalendar({
   timeline,
   day,
   now,
@@ -186,14 +198,22 @@ export function TableDayTimeline({
   onPick,
   minDurationMin,
   stepMin,
+  openMin,
+  scrollKey,
   loading = false,
   error = false,
-}: TimelineProps) {
+}: DayCalendarProps) {
   const { locale, t } = useLocale();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const targetRef = useRef(0);
   const clock = (min: number) =>
     minuteToDate(day, min).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
-  const range = (segment: TimelineSegment) => `${clock(segment.startMin)}–${clock(segment.endMin)}`;
-  const pills = useMemo(() => hourlyPills({ timeline, minDurationMin, stepMin }), [timeline, minDurationMin, stepMin]);
+  const axisLabel = (min: number) =>
+    minuteToDate(day, min).toLocaleTimeString(locale, locale === "en" ? { hour: "numeric" } : { hour: "2-digit", minute: "2-digit" });
+  const top = (min: number) => minuteTop(min, timeline, DAY_HOUR_PX);
+  const height = (from: number, to: number) => ((to - from) / 60) * DAY_HOUR_PX;
+  const gridHeight = height(timeline.windowStartMin, timeline.windowEndMin);
+  const hours = useMemo(() => axisHours(timeline), [timeline]);
   const isToday = sameDay(day, now);
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const dayLabel = isToday
@@ -204,14 +224,36 @@ export function TableDayTimeline({
   const shift = (days: number) => onDayChange(new Date(day.getFullYear(), day.getMonth(), day.getDate() + days));
   const canPrev = day.getTime() > minDay.getTime();
   const canNext = day.getTime() < maxDay.getTime();
+  const hasBookable = timeline.segments.some((s) => s.kind === "free" && s.firstStartMin != null);
+  const pickedGap =
+    selectedMin != null
+      ? timeline.segments.find((s) => s.kind === "free" && selectedMin >= s.startMin && selectedMin < s.endMin)
+      : undefined;
+  const pickedEnd = pickedGap ? Math.min(pickedGap.endMin, (selectedMin ?? 0) + minDurationMin) : null;
 
-  function segmentRow(segment: TimelineSegment, index: number) {
+  // Scroll target follows every render; the scroll itself happens on open, on a new table / day,
+  // and once the schedule has loaded.
+  useEffect(() => {
+    targetRef.current = scrollTargetMin(timeline, selectedMin);
+  });
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || loading) return;
+    const y = minuteTop(targetRef.current, timeline, DAY_HOUR_PX);
+    el.scrollTop = Math.max(0, y - el.clientHeight * 0.3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a new table / day or after loading
+  }, [scrollKey, loading]);
+
+  function segmentBand(segment: TimelineSegment, index: number) {
+    const style = { top: top(segment.startMin), height: height(segment.startMin, segment.endMin) };
+    const tall = style.height >= 40;
     if (segment.kind === "closed" || segment.kind === "past") {
       return (
-        <li key={`${segment.kind}-${index}`} className={`tl-seg is-${segment.kind}`}>
-          <span className="tl-time">{range(segment)}</span>
-          <span className="tl-label">{t(segment.kind === "closed" ? "bench.seg_closed" : "bench.seg_past")}</span>
-        </li>
+        <div key={`${segment.kind}-${index}`} className={`dcal-band is-${segment.kind}`} style={style}>
+          {style.height >= 22 ? (
+            <span className="dcal-band-label">{t(segment.kind === "closed" ? "bench.seg_closed" : "bench.seg_past")}</span>
+          ) : null}
+        </div>
       );
     }
     if (segment.kind === "busy") {
@@ -219,64 +261,52 @@ export function TableDayTimeline({
         segment.label ||
         t(segment.busyKind === "seated" ? "bench.seg_seated" : segment.busyKind === "mine" ? "bench.seg_mine" : "bench.seg_reserved");
       return (
-        <li key={segment.id} className={`tl-seg is-busy is-${segment.busyKind}${segment.current ? " is-current" : ""}`}>
-          <span className="tl-time">{range(segment)}</span>
-          <span className="tl-label">{label}</span>
-        </li>
-      );
-    }
-    const first = segment.firstStartMin;
-    if (first == null) {
-      return (
-        <li key={`free-${index}`} className="tl-seg is-short">
-          <span className="tl-time">{range(segment)}</span>
-          <span className="tl-label">{t("bench.seg_short")}</span>
-        </li>
-      );
-    }
-    const picked = selectedMin != null && selectedMin >= segment.startMin && selectedMin < segment.endMin;
-    return (
-      <li key={`free-${index}`}>
-        <button
-          type="button"
-          className={`tl-seg is-free${picked ? " is-picked" : ""}`}
-          aria-pressed={picked}
-          onClick={() => onPick(first)}
+        <div
+          key={segment.id}
+          className={`dcal-block is-${segment.busyKind}${segment.current ? " is-current" : ""}${tall ? "" : " is-short"}`}
+          style={style}
+          title={`${clock(segment.startMin)}–${clock(segment.endMin)} · ${label}`}
         >
-          <span className="tl-time">{range(segment)}</span>
-          <span className="tl-label">
-            <i aria-hidden="true" />
-            {picked ? t("bench.seg_free_picked") : t("bench.seg_free")}
-          </span>
-        </button>
-      </li>
-    );
-  }
-
-  const rows: React.ReactNode[] = [];
-  timeline.segments.forEach((segment, index) => {
-    if (timeline.nowIndex === index && timeline.nowMin != null) {
-      rows.push(
-        <li key="now" className="tl-now" aria-hidden="true">
-          <i />
-          <span>{t("bench.now", { time: clock(timeline.nowMin) })}</span>
-        </li>,
+          <strong className="dcal-block-time">
+            {clock(segment.startMin)}–{clock(segment.endMin)}
+          </strong>
+          <span className="dcal-block-label">{label}</span>
+        </div>
       );
     }
-    rows.push(segmentRow(segment, index));
-  });
-  if (timeline.nowIndex === timeline.segments.length && timeline.nowMin != null) {
-    rows.push(
-      <li key="now" className="tl-now" aria-hidden="true">
-        <i />
-        <span>{t("bench.now", { time: clock(timeline.nowMin) })}</span>
-      </li>,
+    const slots = openMin == null ? [] : gapSlots(segment, { stepMin, minDurationMin, openMin });
+    return (
+      <div
+        key={`free-${index}`}
+        className={`dcal-band is-free${segment.firstStartMin == null ? " is-short" : ""}`}
+        style={style}
+      >
+        {style.height >= 22 ? (
+          <span className="dcal-band-label">
+            {segment.firstStartMin == null ? t("bench.seg_short") : t("bench.cal_free")}
+          </span>
+        ) : null}
+        {slots.map((slot) =>
+          slot.bookable ? (
+            <button
+              key={slot.min}
+              type="button"
+              className={`dcal-slot${selectedMin === slot.min ? " is-active" : ""}`}
+              style={{ top: top(slot.min) - style.top, height: height(slot.min, slot.min + stepMin) }}
+              data-time={clock(slot.min)}
+              aria-label={t("bench.slot_pick", { time: clock(slot.min) })}
+              aria-pressed={selectedMin === slot.min}
+              onClick={() => onPick(slot.min)}
+            />
+          ) : null,
+        )}
+      </div>
     );
   }
 
   return (
-    <section className="tl" aria-label={t("bench.schedule_head", { day: dayLabel })} aria-busy={loading}>
-      <header className="tl-head">
+    <section className="dcal" aria-label={t("bench.schedule_head", { day: dayLabel })} aria-busy={loading}>
+      <header className="dcal-head">
         <button
           type="button"
           className="btn btn--ghost btn--sm btn--icon"
@@ -286,7 +316,7 @@ export function TableDayTimeline({
         >
           ‹
         </button>
-        <span className="tl-title">{dayLabel}</span>
+        <span className="dcal-title">{dayLabel}</span>
         <button
           type="button"
           className="btn btn--ghost btn--sm btn--icon"
@@ -298,30 +328,50 @@ export function TableDayTimeline({
         </button>
       </header>
 
-      {error ? <p className="tl-empty">{t("common.error")}</p> : null}
+      {error ? <p className="dcal-empty">{t("common.error")}</p> : null}
       {timeline.closedDay ? (
-        <p className="tl-empty">{t("bench.day_closed")}</p>
+        <p className="dcal-empty">{t("bench.day_closed")}</p>
       ) : (
-        <ol className="tl-list">{rows}</ol>
+        <>
+          <div ref={scrollRef} className="dcal-scroll">
+            <div className="dcal-grid" style={{ height: gridHeight }}>
+              <div className="dcal-axis" aria-hidden="true">
+                {hours.map((min) => (
+                  <span key={min} className="dcal-hour" style={{ top: top(min) }}>
+                    {axisLabel(min)}
+                  </span>
+                ))}
+              </div>
+              <div className="dcal-lane">
+                {hours.map((min) => (
+                  <i key={min} className="dcal-line" style={{ top: top(min) }} aria-hidden="true" />
+                ))}
+                {timeline.segments.map(segmentBand)}
+                {selectedMin != null && pickedEnd != null ? (
+                  <div
+                    className="dcal-pick"
+                    style={{ top: top(selectedMin), height: height(selectedMin, pickedEnd) }}
+                    aria-hidden="true"
+                  >
+                    <strong className="dcal-block-time">
+                      {clock(selectedMin)}–{clock(pickedEnd)}
+                    </strong>
+                    <span className="dcal-block-label">{t("bench.seg_free_picked")}</span>
+                  </div>
+                ) : null}
+                {timeline.nowMin != null ? (
+                  <div className="dcal-now" style={{ top: top(timeline.nowMin) }} aria-hidden="true">
+                    <span>{t("bench.now", { time: clock(timeline.nowMin) })}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+          <p className="dcal-hint">
+            {hasBookable ? t("bench.cal_hint") : loading ? "" : t("bench.no_free_day")}
+          </p>
+        </>
       )}
-
-      {!timeline.closedDay && pills.length > 0 ? (
-        <div className="tl-pills" role="group" aria-label={t("res.time")}>
-          {pills.map((min) => (
-            <button
-              key={min}
-              type="button"
-              className={`chip${selectedMin === min ? " is-active" : ""}`}
-              aria-pressed={selectedMin === min}
-              onClick={() => onPick(min)}
-            >
-              {clock(min)}
-            </button>
-          ))}
-        </div>
-      ) : !timeline.closedDay && !loading ? (
-        <p className="tl-empty">{t("bench.no_free_day")}</p>
-      ) : null}
     </section>
   );
 }

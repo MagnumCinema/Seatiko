@@ -773,5 +773,8 @@
   "hero.fav_added": "Добавлено в избранное",
   "hero.fav_removed": "Удалено из избранного",
   "hero.fav_failed": "Не удалось обновить избранное",
-  "venue.event_tile_short": "Банкет"
+  "venue.event_tile_short": "Банкет",
+  "bench.cal_free": "Свободно",
+  "bench.cal_hint": "Нажмите на свободное время",
+  "bench.slot_pick": "Выбрать {time}"
 }

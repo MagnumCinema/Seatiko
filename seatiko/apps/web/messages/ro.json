@@ -773,5 +773,8 @@
   "hero.fav_added": "Adăugat la favorite",
   "hero.fav_removed": "Șters de la favorite",
   "hero.fav_failed": "Favoritele nu au putut fi actualizate",
-  "venue.event_tile_short": "Banchet"
+  "venue.event_tile_short": "Banchet",
+  "bench.cal_free": "Liber",
+  "bench.cal_hint": "Apasă pe o oră liberă",
+  "bench.slot_pick": "Alege {time}"
 }

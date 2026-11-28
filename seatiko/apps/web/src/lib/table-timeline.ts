@@ -198,27 +198,49 @@ export function minuteToDate(day: Date, min: number): Date {
   return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, min);
 }
 
+/** Vertical position (px) of a minute in the day view. */
+export function minuteTop(min: number, timeline: Pick<TableTimeline, "windowStartMin">, hourPx: number): number {
+  return ((min - timeline.windowStartMin) / 60) * hourPx;
+}
+
+/** Hours on the day view's left axis (minute offsets of each full hour in the window). */
+export function axisHours(timeline: Pick<TableTimeline, "windowStartMin" | "windowEndMin">): number[] {
+  const first = Math.ceil(timeline.windowStartMin / 60) * 60;
+  const hours: number[] = [];
+  for (let min = first; min < timeline.windowEndMin; min += 60) hours.push(min);
+  return hours;
+}
+
+export type GapSlot = { min: number; bookable: boolean };
+
 /**
- * Start-time pills under the timeline: every whole hour that can be booked, plus the first
- * bookable start of each free gap (e.g. 17:30 right after a booking ends).
+ * Tap rows of a free gap in the day view, one per booking step on the grid that starts
+ * at opening time. A row is bookable when a visit starting there fits before the gap ends
+ * and it is not earlier than the gap's first bookable start (lead time).
  */
-export function hourlyPills({
-  timeline,
-  minDurationMin,
-  stepMin,
-}: {
-  timeline: TableTimeline;
-  minDurationMin: number;
-  stepMin: number;
-}): number[] {
-  const pills = new Set<number>();
-  for (const segment of timeline.segments) {
-    if (segment.kind !== "free" || segment.firstStartMin == null) continue;
-    pills.add(segment.firstStartMin);
-    const step = stepMin > 0 ? stepMin : 30;
-    for (let min = segment.firstStartMin; min + minDurationMin <= segment.endMin; min += step) {
-      if (min % 60 === 0) pills.add(min);
-    }
+export function gapSlots(
+  segment: Extract<TimelineSegment, { kind: "free" }>,
+  { stepMin, minDurationMin, openMin }: { stepMin: number; minDurationMin: number; openMin: number },
+): GapSlot[] {
+  const step = stepMin > 0 ? stepMin : 30;
+  const slots: GapSlot[] = [];
+  for (let min = roundUpToStep(segment.startMin, openMin, step); min < segment.endMin; min += step) {
+    const bookable =
+      segment.firstStartMin != null && min >= segment.firstStartMin && min + minDurationMin <= segment.endMin;
+    slots.push({ min, bookable });
   }
-  return [...pills].sort((a, b) => a - b);
+  return slots;
+}
+
+/**
+ * Where the day view scrolls on open: to "now" when it is on today's grid, otherwise to the
+ * picked / first bookable start, otherwise to opening time.
+ */
+export function scrollTargetMin(timeline: TableTimeline, selectedMin: number | null): number {
+  if (timeline.nowMin != null) return timeline.nowMin;
+  if (selectedMin != null) return selectedMin;
+  const free = nextFreeStart(timeline);
+  if (free != null) return free;
+  const open = timeline.segments.find((segment) => segment.kind !== "closed");
+  return open?.startMin ?? timeline.windowStartMin;
 }

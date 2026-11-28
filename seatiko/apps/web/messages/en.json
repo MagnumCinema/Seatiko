@@ -773,5 +773,8 @@
   "hero.fav_added": "Added to favorites",
   "hero.fav_removed": "Removed from favorites",
   "hero.fav_failed": "Could not update favorites",
-  "venue.event_tile_short": "Banquet"
+  "venue.event_tile_short": "Banquet",
+  "bench.cal_free": "Free",
+  "bench.cal_hint": "Tap a free time",
+  "bench.slot_pick": "Pick {time}"
 }

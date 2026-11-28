@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildTableTimeline,
   clockLabel,
-  hourlyPills,
+  axisHours,
+  gapSlots,
+  minuteTop,
+  scrollTargetMin,
   minuteToDate,
   nextFreeStart,
   type BusyBlock,
@@ -106,12 +109,53 @@ describe("buildTableTimeline", () => {
   });
 });
 
-describe("hourlyPills", () => {
-  it("lists whole hours plus each gap's first start", () => {
-    const busy: BusyBlock[] = [{ id: "r1", startsAt: iso(14, 30), endsAt: iso(17, 30), kind: "RESERVATION" }];
+describe("day view layout", () => {
+  it("places minutes and hour labels on the vertical grid", () => {
+    const timeline = buildTableTimeline({ ...base, now: at(9), busy: [] });
+    expect(minuteTop(10 * 60, timeline, 44)).toBe(0);
+    expect(minuteTop(12 * 60 + 30, timeline, 44)).toBe(110);
+    expect(axisHours(timeline).map(clockLabel)).toEqual([
+      "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00",
+    ]);
+  });
+
+  it("splits a free gap into tap rows; only starts that fit a visit are bookable", () => {
+    const busy: BusyBlock[] = [{ id: "r1", startsAt: iso(14, 30), endsAt: iso(16), kind: "RESERVATION" }];
     const timeline = buildTableTimeline({ ...base, now: at(9), busy });
-    const pills = hourlyPills({ timeline, minDurationMin: 60, stepMin: 30 }).map(clockLabel);
-    expect(pills).toEqual(["12:00", "13:00", "17:30", "18:00", "19:00", "20:00", "21:00", "22:00"]);
+    const gap = timeline.segments[1];
+    if (gap.kind !== "free") throw new Error("expected a free gap");
+    const slots = gapSlots(gap, { stepMin: 30, minDurationMin: 60, openMin: 12 * 60 });
+    expect(slots.map((s) => `${clockLabel(s.min)}${s.bookable ? "" : "×"}`)).toEqual([
+      "12:00", "12:30", "13:00", "13:30", "14:00×",
+    ]);
+  });
+
+  it("starts tap rows on the step grid after now and keeps the lead time", () => {
+    const timeline = buildTableTimeline({ ...base, now: at(16, 20), busy: [] });
+    const gap = timeline.segments.find((s) => s.kind === "free");
+    if (!gap || gap.kind !== "free") throw new Error("expected a free gap");
+    const slots = gapSlots(gap, { stepMin: 30, minDurationMin: 60, openMin: 12 * 60 });
+    // 16:20 + 15 min lead → first bookable 17:00; the 16:30 row is too soon.
+    expect(slots.slice(0, 3).map((s) => [clockLabel(s.min), s.bookable])).toEqual([
+      ["16:30", false],
+      ["17:00", true],
+      ["17:30", true],
+    ]);
+    expect(slots.at(-1)).toEqual({ min: 22 * 60 + 30, bookable: false });
+  });
+
+  it("scrolls to now on today, else to the picked or first free start", () => {
+    const today = buildTableTimeline({ ...base, now: at(16, 20), busy: [] });
+    expect(scrollTargetMin(today, 19 * 60)).toBe(16 * 60 + 20);
+    const later = buildTableTimeline({ ...base, now: at(9), busy: [] });
+    expect(scrollTargetMin(later, 19 * 60)).toBe(19 * 60);
+    expect(scrollTargetMin(later, null)).toBe(12 * 60);
+    const full = buildTableTimeline({
+      ...base,
+      now: at(9),
+      busy: [{ id: "x", startsAt: iso(12), endsAt: iso(23), kind: "RESERVATION" }],
+    });
+    expect(scrollTargetMin(full, null)).toBe(12 * 60);
   });
 });
 

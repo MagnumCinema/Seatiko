@@ -69,9 +69,11 @@ const ok = await runSteps([
       await page.locator("#venue-floor").waitFor();
       await page.locator("#venue-floor").scrollIntoViewIfNeeded();
       await page.locator(".insp").waitFor();
-      const pill = page.locator(".tl-pills .chip").nth(1);
-      const time = (await pill.textContent()).trim();
-      await pill.click();
+      // Tap a free time in the vertical day calendar: it becomes the start of "Book #N · time".
+      const slot = page.locator(".dcal-slot").nth(2);
+      const time = (await slot.getAttribute("data-time")).trim();
+      await slot.click();
+      assert((await page.locator(".dcal-pick").textContent()).includes(time), "picked block drawn in the calendar");
       const cta = page.locator(".insp-cta button");
       assert((await cta.textContent()).includes(time), "inspector CTA names the picked time");
       await cta.click();

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Table } from "@/lib/api";
 import { useLocale, type MessageKey } from "@/components/locale-provider";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { TableDayTimeline, useTableTimeline, type VenueSchedule } from "@/components/venue-day-calendar";
+import { TableDayCalendar, useTableTimeline, type VenueSchedule } from "@/components/venue-day-calendar";
 import { BOOKING_DAYS_AHEAD, DEFAULT_SLOT_STEP_MIN, type OpeningHours } from "@/lib/booking-slots";
 import { addDays, dayKey, sameDay, startOfDay } from "@/lib/date-picker";
 import { normalizeZone, zoneLabel as fallbackZoneLabel } from "@/lib/floor-zones";
@@ -244,7 +244,7 @@ export function TableInspector({
         </div>
       ) : null}
 
-      <TableDayTimeline
+      <TableDayCalendar
         timeline={timeline}
         day={day}
         now={now}
@@ -255,6 +255,8 @@ export function TableInspector({
         onPick={(min) => setPick({ key, min })}
         minDurationMin={minDurationMin}
         stepMin={stepMin}
+        openMin={hoursOn(day)?.openMin ?? null}
+        scrollKey={key}
         loading={schedule.loading}
         error={schedule.error}
       />

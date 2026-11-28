@@ -416,184 +416,269 @@ html[data-theme="light"] .venue-floor-stage.bench-stage-card {
   background: linear-gradient(to bottom, transparent, var(--bench-bg) 40%);
 }
 
-/* —— Day timeline —— */
-.tl {
+/* —— Table day calendar: vertical, Google Calendar-like —— */
+.dcal {
+  --dcal-hour: 48px;
+  --dcal-axis: 52px;
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 12px 12px 10px;
   border: 1px solid var(--fa-border);
   border-radius: 16px;
   background: color-mix(in srgb, var(--fa-text) 2%, transparent);
 }
-.tl-head {
+.dcal-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
 }
-.tl-title {
+.dcal-title {
   min-width: 0;
   overflow: hidden;
   color: var(--fa-text);
   font-size: 0.9rem;
   font-weight: 750;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   text-align: center;
-}
-.tl-picked {
-  padding: 0 4px;
-  color: var(--btn-link-fg);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.tl-list {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.tl-list > li {
-  min-width: 0;
-}
-.tl-list > li:not(.tl-seg):not(.tl-now) {
-  display: block;
-}
-.tl-seg {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 12px;
-  border: 1px solid var(--fa-border);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--fa-text);
-  font: inherit;
-  font-size: 0.86rem;
-  text-align: left;
-}
-.tl-time {
-  flex: none;
-  font-weight: 750;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.tl-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
-  font-weight: 700;
-  white-space: nowrap;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.tl-seg.is-closed {
-  border-style: dashed;
+.dcal-scroll {
+  position: relative;
+  max-height: min(400px, 52vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  border-radius: 12px;
+  border: 1px solid var(--fa-border);
+  background: var(--bench-bg, var(--fa-surface));
+}
+.dcal-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--dcal-axis) minmax(0, 1fr);
+  margin: 10px 0;
+}
+.dcal-axis {
+  position: relative;
+}
+.dcal-hour {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
   color: var(--fa-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dcal-lane {
+  position: relative;
+  margin-right: 8px;
+  border-left: 1px solid var(--fa-border);
+}
+.dcal-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid color-mix(in srgb, var(--fa-text) 9%, transparent);
+  pointer-events: none;
+}
+/* Background bands: closed, past, free */
+.dcal-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+}
+.dcal-band-label {
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  color: var(--fa-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dcal-band.is-closed {
   background: repeating-linear-gradient(
     135deg,
-    color-mix(in srgb, var(--fa-text) 4%, transparent) 0 8px,
-    transparent 8px 16px
+    color-mix(in srgb, var(--fa-text) 7%, transparent) 0 6px,
+    transparent 6px 12px
   );
 }
-.tl-seg.is-past,
-.tl-seg.is-short {
-  border-style: dashed;
-  color: var(--fa-muted);
-  opacity: 0.8;
+.dcal-band.is-past {
+  background: color-mix(in srgb, var(--fa-text) 4%, transparent);
 }
-.tl-seg.is-free {
-  border-color: color-mix(in srgb, var(--state-free) 50%, transparent);
+.dcal-band.is-free {
   background: var(--state-free-soft);
+  box-shadow: inset 3px 0 0 var(--state-free);
+}
+.dcal-band.is-free .dcal-band-label {
   color: var(--state-free-ink);
+}
+.dcal-band.is-free.is-short {
+  background: color-mix(in srgb, var(--state-free) 7%, transparent);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--state-free) 45%, transparent);
+}
+/* Tap rows inside free time: hover / focus shows the start time. */
+.dcal-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--state-free) 22%, transparent);
+  background: transparent;
   cursor: pointer;
-  transition: background 140ms ease, box-shadow 140ms ease;
 }
-.tl-seg.is-free .tl-label i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--state-free);
+.dcal-slot::after {
+  content: attr(data-time);
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--state-free-ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 120ms ease;
 }
-.tl-seg.is-free:hover {
-  background: color-mix(in srgb, var(--state-free) 24%, transparent);
+.dcal-slot:hover,
+.dcal-slot:focus-visible {
+  background: color-mix(in srgb, var(--state-free) 22%, transparent);
 }
-.tl-seg.is-free:focus-visible {
+.dcal-slot:hover::after,
+.dcal-slot:focus-visible::after {
+  opacity: 1;
+}
+.dcal-slot:focus-visible {
   outline: 2.5px solid var(--btn-focus-ring);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
-.tl-seg.is-free.is-picked {
-  box-shadow: inset 0 0 0 2px var(--btn-focus-ring);
+/* Booked / seated blocks and the picked visit */
+.dcal-block,
+.dcal-pick {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 22px;
+  padding: 4px 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.25;
 }
-.tl-seg.is-busy {
-  border-color: color-mix(in srgb, var(--state-reserved) 45%, transparent);
-  background: var(--state-reserved-soft);
+.dcal-block {
+  border: 1px solid color-mix(in srgb, var(--state-reserved) 55%, transparent);
+  border-left: 4px solid var(--state-reserved);
+  background: color-mix(in srgb, var(--state-reserved) 24%, var(--bench-bg, var(--fa-surface)));
   color: var(--state-reserved-ink);
 }
-.tl-seg.is-busy.is-mine {
+.dcal-block.is-mine {
   border-color: var(--state-reserved);
-  box-shadow: inset 3px 0 0 var(--state-reserved);
+  border-left-color: var(--state-reserved-deep);
+  background: color-mix(in srgb, var(--state-reserved) 38%, var(--bench-bg, var(--fa-surface)));
 }
-.tl-seg.is-busy.is-seated {
-  border-color: color-mix(in srgb, var(--state-occupied) 45%, transparent);
-  background: var(--state-occupied-soft);
+.dcal-block.is-seated {
+  border-color: color-mix(in srgb, var(--state-occupied) 55%, transparent);
+  border-left-color: var(--state-occupied);
+  background: color-mix(in srgb, var(--state-occupied) 22%, var(--bench-bg, var(--fa-surface)));
   color: var(--state-occupied-ink);
 }
-.tl-seg.is-busy.is-current {
-  box-shadow: inset 3px 0 0 currentColor;
-}
-.tl-now {
-  display: flex;
+.dcal-block.is-short {
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
-  color: #e0605a;
-  font-size: 0.72rem;
+  gap: 6px;
+  padding-block: 2px;
+}
+.dcal-block-time {
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.tl-now i {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.tl-now span {
-  flex: none;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.tl-now::after {
+.dcal-block-label {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dcal-pick {
+  z-index: 4;
+  border: 2px solid var(--btn-focus-ring);
+  background: color-mix(in srgb, var(--btn-focus-ring) 18%, var(--bench-bg, var(--fa-surface)));
+  color: var(--fa-text);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+/* NOW line */
+.dcal-now {
+  position: absolute;
+  left: -5px;
+  right: 0;
+  z-index: 5;
+  height: 0;
+  border-top: 2px solid #e0605a;
+  pointer-events: none;
+}
+.dcal-now::before {
   content: "";
-  flex: 1 1 auto;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.6;
+  position: absolute;
+  left: 0;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e0605a;
 }
-html[data-theme="light"] .tl-now {
-  color: #c2412f;
+.dcal-now span {
+  position: absolute;
+  right: 4px;
+  top: -10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #e0605a;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
-.tl-empty {
+html[data-theme="light"] .dcal-now,
+html[data-theme="light"] .dcal-now::before,
+html[data-theme="light"] .dcal-now span {
+  border-top-color: #c2412f;
+  background-color: #c2412f;
+}
+html[data-theme="light"] .dcal-now {
+  background: none;
+}
+.dcal-hint,
+.dcal-empty {
   margin: 0;
   color: var(--fa-muted);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
 }
-.tl-pills {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+.dcal-hint {
+  min-height: 1.2em;
 }
-.tl-pills .chip {
-  width: 100%;
-  min-width: 0;
-  padding: 0 6px;
-  font-variant-numeric: tabular-nums;
-  border-radius: 10px;
+@media (prefers-reduced-motion: reduce) {
+  .dcal-scroll {
+    scroll-behavior: auto;
+  }
 }
 
 /* —— Collapsed waitlist ("nothing free right now") —— */
@@ -686,12 +771,24 @@ html[data-theme="light"] .tl-now {
     margin: auto -14px -14px;
     padding-inline: 14px;
   }
-  .tl {
-    padding: 10px;
+  .dcal {
+    padding: 10px 8px 8px;
+    --dcal-axis: 46px;
+  }
+  .dcal-scroll {
+    max-height: min(360px, 48vh);
   }
 }
-@media (max-width: 380px) {
-  .tl-pills {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+/* Desktop: the hall stays in view beside the taller inspector (day calendar). */
+@media (min-width: 961px) {
+  .bench.has-inspector .bench-hall {
+    position: sticky;
+    top: 84px;
+    align-self: start;
+    border-right: 0;
+  }
+  .bench.has-inspector .insp {
+    border-left: 1px solid var(--fa-border);
   }
 }
