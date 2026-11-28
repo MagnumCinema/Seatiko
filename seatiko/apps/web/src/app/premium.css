@@ -11977,10 +11977,6 @@ html[data-theme="light"] .venue-stars {
   display: flex;
   flex-wrap: wrap;
 }
-.venue-page-actions-secondary .venue-fav-action {
-  order: 3;
-  flex-basis: 100%;
-}
 
 /* —— Reviews —— */
 .venue-reviews {
@@ -12276,16 +12272,6 @@ html[data-theme="light"] .venue-tile-icon {
   color: var(--fa-muted);
 }
 
-/* Favorites: quiet full-width row */
-.venue-page-actions-secondary .venue-fav-action {
-  flex: 1 1 100%;
-  order: 3;
-}
-.venue-fav-action .venue-fav-icon {
-  display: inline-grid;
-  place-items: center;
-}
-.venue-fav-action .venue-fav-icon svg,
 .venue-fav-float .venue-fav-icon svg {
   width: 17px;
   height: 17px;
@@ -12386,11 +12372,6 @@ html[data-theme="light"] .venue-tile-icon {
 .venue-fav-float.is-on {
   --btn-secondary-fg: #f6d394;
   --btn-secondary-border: rgba(246, 211, 148, 0.7);
-}
-/* A favourited venue is a done state, not an unavailable one */
-.btn.venue-fav-float.is-on:disabled,
-.btn.venue-fav-action.is-on:disabled {
-  opacity: 1;
 }
 .photo-carousel-arrow.prev { left: 14px; }
 .photo-carousel-arrow.next { right: 14px; }
@@ -16994,4 +16975,135 @@ html[data-theme="light"] .floor-save-status.unsaved { color: #8a5a17; background
   /* The business column has the longer labels; give it more room so no link breaks onto a second line. */
   .footer-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); column-gap: 12px; }
   .footer-col li a { font-size: 0.78rem; }
+}
+
+/* ==========================================================================
+   /venues/[id] review fixes: empty/error state, "online booking soon",
+   rules grid, touch carousel arrows.
+   ========================================================================== */
+.venue-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 88px 16px 96px;
+}
+.venue-empty-state h1 {
+  margin: 4px 0 0;
+  color: var(--fa-text);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 550;
+  line-height: 1.15;
+}
+.venue-empty-state p {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+.venue-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 40%, transparent);
+  background: color-mix(in srgb, var(--fa-gold) 12%, transparent);
+  color: var(--fa-gold);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+.venue-empty-icon svg { width: 28px; height: 28px; }
+.venue-empty-icon.is-error {
+  border-color: color-mix(in srgb, #e07a6a 45%, transparent);
+  background: color-mix(in srgb, #e07a6a 12%, transparent);
+  color: #f0a090;
+}
+.venue-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.venue-empty-actions .btn { white-space: nowrap; }
+html[data-theme="light"] .venue-empty-icon { color: #8a6528; }
+html[data-theme="light"] .venue-empty-icon.is-error { color: #a4442f; }
+@media (max-width: 480px) {
+  .venue-empty-state { padding-top: 56px; }
+  .venue-empty-actions { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; max-width: 320px; }
+}
+
+/* Venue without tables in Seatiko yet: a status card instead of booking buttons. */
+.venue-booking-soon {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--fa-gold) 32%, var(--fa-border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--fa-gold) 8%, var(--fa-surface));
+}
+.venue-booking-soon strong {
+  color: var(--fa-text);
+  font-size: 1.02rem;
+}
+.venue-booking-soon p {
+  margin: 0;
+  color: var(--fa-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.venue-booking-soon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.venue-booking-soon-actions .btn { white-space: nowrap; }
+html[data-theme="light"] .venue-booking-soon {
+  background: #fbf4e6;
+  border-color: rgba(138, 101, 40, 0.28);
+}
+.venue-free-float.is-soon {
+  border-color: rgba(246, 211, 148, 0.4);
+  color: #f6d394;
+}
+.venue-free-float.is-soon span {
+  font-size: 0.78rem;
+  opacity: 1;
+  white-space: nowrap;
+}
+html[data-theme="light"] .venue-free-float.is-soon {
+  color: #7a5520;
+  border-color: rgba(138, 101, 40, 0.3);
+}
+
+/* Booking rules: six cards as 3 × 2 on desktop, 2 × 3 on tablets, one column on phones. */
+.venue-booking-rules-list:not(.compact) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+  .venue-booking-rules-list:not(.compact) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .venue-booking-rules-list:not(.compact) { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Touch screens have no hover: small, always-visible arrows (swipe still works). */
+@media (hover: none) {
+  .photo-carousel-arrow {
+    display: inline-flex;
+    opacity: 0.92;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    font-size: 1.15rem;
+  }
+  .btn.photo-carousel-arrow:disabled { visibility: hidden; }
+  .photo-carousel-arrow.prev { left: 10px; }
+  .photo-carousel-arrow.next { right: 10px; }
 }

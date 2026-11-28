@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Button, ButtonLink, IconButton, buttonClassName } from "@/components/ui/button";
+import { useCurrency } from "@/components/currency-provider";
 import { TableFloorPlan, TableReserveSheet, isMyTable } from "@/components/table-floor-plan";
 import { WaitlistPanel } from "@/components/waitlist-panel";
 import { BookingPopup } from "@/components/booking-popup";
@@ -30,7 +33,15 @@ import { getSiteCopy } from "@/lib/site-copy";
 import { apiErrorKey } from "@/lib/api-error-message";
 import { venueHoursOn } from "@/lib/venue-hours";
 import { AUTH_CHANGE_EVENT } from "@/lib/header-auth";
+import { formatBudgetAmount } from "@/lib/discover-preferences";
 import {
+  isVenueBookable,
+  reviewTimeLabel,
+  reviewsForLocale,
+  toggleFavoriteId,
+} from "@/lib/venue-page";
+import {
+  ApiError,
   fetchMe,
   fetchReservations,
   fetchTables,
@@ -40,6 +51,7 @@ import {
   mediaUrl,
   pickLocale,
   priceLevelLabel,
+  updateMe,
   watchTable,
   type Table,
   type User,
@@ -49,10 +61,29 @@ import {
 import {
   addFavoriteVenue,
   loadGuestLocalPrefs,
+  removeFavoriteVenue,
   saveGuestLocalPrefs,
 } from "@/lib/guest-local-prefs";
 
 const TABLES_POLL_MS = 30_000;
+/** Favorites of a guest who is not signed in (same storage as the /venues catalog). */
+const GUEST_FAVORITES_ID = "guest-local";
+
+type LoadError = "not_found" | "load_failed";
+
+/** Did the guest reach this page by navigating inside the site (so "Back" can return there)? */
+function cameFromInsideSite(): boolean {
+  if (typeof window === "undefined" || window.history.length < 2) return false;
+  const entry = performance.getEntriesByType?.("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  if (!entry) return false;
+  try {
+    return new URL(entry.name).pathname !== window.location.pathname;
+  } catch {
+    return false;
+  }
+}
 
 type PendingAuth = { reason: string; then?: (user: User) => void };
 
@@ -66,69 +97,29 @@ function Stars({ value }: { value: number }) {
   );
 }
 
-function FavoriteControl({
-  favorited,
-  href,
-  label,
-  onClick,
-  className = "",
-  iconOnly = false,
-}: {
-  favorited: boolean;
-  href?: string;
-  label: string;
-  onClick?: () => void;
-  className?: string;
-  iconOnly?: boolean;
-}) {
-  const content = (
-    <>
-      <span className="venue-fav-icon" aria-hidden>
-        <HeartIcon filled={favorited} />
-      </span>
-      {!iconOnly && <span className="venue-fav-label">{label}</span>}
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link className={className} href={href} aria-label={label} title={label}>
-        {content}
-      </Link>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      className={className}
-      disabled={favorited}
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-    >
-      {content}
-    </button>
-  );
-}
-
 export default function VenuePage() {
   const params = useParams<{ id: string }>();
   const venueId = params.id;
   const searchParams = useSearchParams();
   const [deepLink] = useState(() => parseBookingParams(searchParams));
+  const router = useRouter();
   const { locale, t } = useLocale();
-  const cuisineLabels: Record<string, string> = getSiteCopy(locale).catalog.cuisines;
+  const { currency } = useCurrency();
+  const siteCopy = getSiteCopy(locale);
+  const cuisineLabels: Record<string, string> = siteCopy.catalog.cuisines;
   const [venue, setVenue] = useState<Venue | null>(null);
   const [places, setPlaces] = useState<VenuePlaces | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LoadError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [myReservationIds, setMyReservationIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const [favorited, setFavorited] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<readonly string[]>([]);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const favorited = favoriteIds.includes(venueId);
   const [pendingAuth, setPendingAuth] = useState<PendingAuth | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null;
@@ -152,7 +143,8 @@ export default function VenuePage() {
     Promise.all([
       fetchVenue(venueId),
       fetchTables(venueId),
-      fetchVenuePlaces(venueId),
+      // Photos and reviews are extras: the page works without them.
+      fetchVenuePlaces(venueId).catch(() => null),
     ])
       .then(([v, tableList, p]) => {
         if (!active) return;
@@ -160,8 +152,9 @@ export default function VenuePage() {
         setTables(tableList);
         setPlaces(p);
       })
-      .catch(() => {
-        if (active) setError("not_found");
+      .catch((e: unknown) => {
+        if (!active) return;
+        setError(e instanceof ApiError && e.status === 404 ? "not_found" : "load_failed");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -169,12 +162,15 @@ export default function VenuePage() {
     return () => {
       active = false;
     };
-  }, [venueId]);
+  }, [venueId, reloadKey]);
 
   function applyUser(u: User | null) {
     setUser(u);
-    setFavorited(
-      u ? loadGuestLocalPrefs(u.id).favorites.some((f) => f.venueId === venueId) : false,
+    // Signed in: favorites live on the account (PATCH /me); otherwise in this browser only.
+    setFavoriteIds(
+      u
+        ? (u.favorite_venues ?? [])
+        : loadGuestLocalPrefs(GUEST_FAVORITES_ID).favorites.map((f) => f.venueId),
     );
     if (!u) {
       setMyReservationIds(new Set());
@@ -269,19 +265,40 @@ export default function VenuePage() {
   const freeCount = tables.filter((table) => table.status === "FREE").length;
   const zones = listZonesFromTables(tables);
 
-  function addToFavorites(forUser: User | null = user) {
+  /** Keep a browser favorites list in step with the heart on this page. */
+  function syncLocalFavorite(storageId: string, adding: boolean) {
     if (!venue) return;
-    if (!forUser) {
-      requireAuth(t("auth.reason_favorite"), (u) => addToFavorites(u));
+    const prefs = loadGuestLocalPrefs(storageId);
+    saveGuestLocalPrefs(
+      storageId,
+      adding
+        ? addFavoriteVenue(prefs, { venueId: venue.id, name: pickLocale(venue.name, locale) })
+        : removeFavoriteVenue(prefs, venue.id),
+    );
+  }
+
+  async function toggleFavorite() {
+    if (!venue || favoriteBusy) return;
+    const previous = favoriteIds;
+    const next = toggleFavoriteId(previous, venue.id);
+    const adding = next.length > previous.length;
+    setFavoriteIds(next);
+    if (!user) {
+      syncLocalFavorite(GUEST_FAVORITES_ID, adding);
       return;
     }
-    const prefs = loadGuestLocalPrefs(forUser.id);
-    const next = addFavoriteVenue(prefs, {
-      venueId: venue.id,
-      name: pickLocale(venue.name, locale),
-    });
-    saveGuestLocalPrefs(forUser.id, next);
-    setFavorited(true);
+    setFavoriteBusy(true);
+    try {
+      const updated = await updateMe({ favorite_venues: next });
+      setUser(updated);
+      setFavoriteIds(updated.favorite_venues ?? next);
+      // /account shows its cached list (with names) first, so keep it in step.
+      syncLocalFavorite(updated.id, adding);
+    } catch {
+      setFavoriteIds(previous);
+    } finally {
+      setFavoriteBusy(false);
+    }
   }
 
   function scrollToFloor() {
@@ -403,25 +420,54 @@ export default function VenuePage() {
             <span className="skeleton skeleton-media" style={{ height: 200 }} />
           </section>
         </div>
+        <SiteFooter />
       </div>
     );
   }
 
   if (error || !venue) {
+    const notFound = error !== "load_failed";
     return (
       <div className="venue-page">
         <SiteHeader variant="solid" />
-        <div className="venue-page-empty">
-          <h1>{error === "not_found" ? t("venue.not_found") : error || t("venue.not_found")}</h1>
-          <Link href="/">{t("venue.back_map")}</Link>
-        </div>
+        <main className="venue-page-empty venue-empty-state">
+          <span className={`venue-empty-icon${notFound ? "" : " is-error"}`} aria-hidden>
+            {notFound ? <MapPinIcon /> : "!"}
+          </span>
+          <h1>{notFound ? t("venue.not_found") : t("venue.load_error_title")}</h1>
+          <p>{notFound ? t("venue.not_found_body") : t("venue.load_error_body")}</p>
+          <div className="venue-empty-actions">
+            {notFound ? (
+              <>
+                <ButtonLink href="/venues" size="lg">
+                  {t("venue.to_catalog")}
+                </ButtonLink>
+                <ButtonLink href="/#map" variant="secondary" size="lg">
+                  {t("venue.to_map")}
+                </ButtonLink>
+              </>
+            ) : (
+              <>
+                <Button size="lg" onClick={() => setReloadKey((key) => key + 1)}>
+                  {t("venue.retry")}
+                </Button>
+                <ButtonLink href="/venues" variant="secondary" size="lg">
+                  {t("venue.to_catalog")}
+                </ButtonLink>
+              </>
+            )}
+          </div>
+        </main>
+        <SiteFooter />
       </div>
     );
   }
 
-  const favoriteLabel = favorited
-    ? t("profile.favorites_added")
-    : t("profile.favorites_add");
+  const favoriteLabel = favorited ? t("venue.fav_remove") : t("profile.favorites_add");
+  const bookable = isVenueBookable(venue, tables);
+  const visibleReviews = reviewsForLocale(reviews, locale);
+  const venuePhone = venue.phone?.trim();
+  const venueWebsite = venue.website?.trim();
   const bookingRules = resolveBookingRules(venue);
   const sessionStartBeforeMin = bookingRules.session_start_before_min;
   const releaseBeforeMin = bookingRules.release_before_min;
@@ -431,7 +477,17 @@ export default function VenuePage() {
       <SiteHeader variant="solid" />
       <div className="venue-page-wrap">
         <nav className="venue-breadcrumb" aria-label={t("nav.breadcrumb")}>
-          <Link href="/">← {t("nav.map")}</Link>
+          <Link
+            href="/venues"
+            onClick={(event) => {
+              // Back to the page the guest came from (catalog, map, search…); a direct visit goes to the catalog.
+              if (!cameFromInsideSite()) return;
+              event.preventDefault();
+              router.back();
+            }}
+          >
+            ← {t("venue.back")}
+          </Link>
           <span aria-hidden>/</span>
           <span>{pickLocale(venue.name, locale)}</span>
         </nav>
@@ -448,18 +504,30 @@ export default function VenuePage() {
                     <span className={`venue-status-badge ${venue.open_now ? "open" : "closed"}`}>
                       {venue.open_now ? t("venue.open") : t("venue.closed")}
                     </span>
-                    <FavoriteControl
-                      className={`btn btn--secondary btn--sm btn--icon venue-fav-float${favorited ? " is-on" : ""}`}
-                      favorited={favorited}
+                    <IconButton
+                      variant="secondary"
+                      size="sm"
+                      className={`venue-fav-float${favorited ? " is-on" : ""}`}
                       label={favoriteLabel}
-                      onClick={() => addToFavorites()}
-                      iconOnly
+                      aria-pressed={favorited}
+                      icon={
+                        <span className="venue-fav-icon">
+                          <HeartIcon filled={favorited} />
+                        </span>
+                      }
+                      onClick={() => void toggleFavorite()}
                     />
                   </div>
-                  <div className="venue-free-float">
-                    <b>{freeCount}</b>
-                    <span>{t("venue.free_tables")}</span>
-                  </div>
+                  {bookable ? (
+                    <div className="venue-free-float">
+                      <b>{freeCount}</b>
+                      <span>{t("venue.free_tables")}</span>
+                    </div>
+                  ) : (
+                    <div className="venue-free-float is-soon">
+                      <span>{t("venue.booking_soon_badge")}</span>
+                    </div>
+                  )}
                 </>
               }
             />
@@ -490,33 +558,85 @@ export default function VenuePage() {
                 <span key={item}>{cuisineLabels[item] ?? item}</span>
               ))}
               <span>{priceLevelLabel(venue.price_level)}</span>
-              <span>~{venue.average_check} MDL</span>
+              <span>
+                ~{formatBudgetAmount(venue.average_check, currency)}{" "}
+                {siteCopy.discover.budgetCurrencies[currency]}
+              </span>
             </div>
 
             <div className="venue-page-actions">
-              <div className="venue-page-actions-primary">
-                <button
-                  type="button"
-                  className="btn btn--primary btn--lg"
-                  onClick={() => {
-                    setQuickOpen(true);
-                    setBookingOpen(false);
-                    setComingOpen(false);
-                    setEventOpen(false);
-                  }}
-                >
-                  <BoltIcon />
-                  <span>{t("venue.quick_book")}</span>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--lg"
-                  onClick={scrollToFloor}
-                >
-                  <TableIcon />
-                  <span>{t("venue.book_scroll")}</span>
-                </button>
-              </div>
+              {bookable ? (
+                <div className="venue-page-actions-primary">
+                  <Button
+                    size="lg"
+                    leftIcon={<BoltIcon />}
+                    onClick={() => {
+                      setQuickOpen(true);
+                      setBookingOpen(false);
+                      setComingOpen(false);
+                      setEventOpen(false);
+                    }}
+                  >
+                    <span>{t("venue.quick_book")}</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    leftIcon={<TableIcon />}
+                    onClick={scrollToFloor}
+                  >
+                    <span>{t("venue.book_scroll")}</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="venue-booking-soon" role="status">
+                  <strong>{t("venue.booking_soon_title")}</strong>
+                  <p>
+                    {venuePhone || venueWebsite
+                      ? t("venue.booking_soon_body")
+                      : t("venue.booking_soon_no_contacts")}
+                  </p>
+                  <div className="venue-booking-soon-actions">
+                    {venuePhone ? (
+                      <a
+                        className={buttonClassName({ size: "md" })}
+                        href={`tel:${venuePhone.replace(/[^\d+]/g, "")}`}
+                      >
+                        <span className="btn-content">
+                          {t("venue.call")} {venuePhone}
+                        </span>
+                      </a>
+                    ) : null}
+                    {venueWebsite ? (
+                      <a
+                        className={buttonClassName({
+                          variant: venuePhone ? "secondary" : "primary",
+                          size: "md",
+                        })}
+                        href={venueWebsite}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="btn-content">{t("venue.website")}</span>
+                      </a>
+                    ) : null}
+                    {!venuePhone && !venueWebsite ? (
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        leftIcon={<MapPinIcon />}
+                        onClick={() =>
+                          document
+                            .getElementById(VENUE_LOCATION_ANCHOR)
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        }
+                      >
+                        <span>{t("venue.route")}</span>
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              )}
 
               <div className="venue-page-actions-secondary">
                 <Link className="venue-tile" href={`/venues/${venue.id}/menu`}>
@@ -564,181 +684,180 @@ export default function VenuePage() {
                     <span className="venue-tile-desc">{t("venue.event_tile_sub")}</span>
                   </span>
                 </button>
-                <FavoriteControl
-                  className={`btn btn--secondary btn--md venue-fav-action${favorited ? " is-on" : ""}`}
-                  favorited={favorited}
-                  label={favoriteLabel}
-                  onClick={() => addToFavorites()}
-                />
               </div>
             </div>
           </div>
         </div>
 
-        <VenueBookingRules rules={bookingRules} allowPreorder={venue.allow_preorder !== false} />
+        {/* No tables in Seatiko yet (online booking soon): no rules, hall or waitlist to show. */}
+        {bookable ? (
+          <>
+            <VenueBookingRules rules={bookingRules} allowPreorder={venue.allow_preorder !== false} />
 
-        <section id="venue-floor" className="venue-section venue-section-floor">
-          <div className="venue-section-head">
-            <div>
-              <h2>{t("venue.choose_table")}</h2>
-              <p>{t("floor.pick_hint")}</p>
-            </div>
-            <div className="venue-floor-legend">
-              <span>
-                <i className="free" /> {t("floor.leg_free")}
-              </span>
-              <span>
-                <i className="reserved" /> {t("floor.leg_res")}
-              </span>
-              {user ? (
-                <span>
-                  <i className="mine" /> {t("floor.leg_mine")}
-                </span>
-              ) : null}
-              <span>
-                <i className="occupied" /> {t("floor.leg_occ")}
-              </span>
-              <span>
-                <i className="cleaning" /> {t("floor.leg_clean")}
-              </span>
-            </div>
-          </div>
-          <div className="venue-floor-stage">
-            <TableFloorPlan
-              tables={tables}
-              selectedId={selectedTable?.id}
-              hideSheet
-              onTableClick={(table) => {
-                setSelectedTableId(table.id);
-                setSheetMessage(null);
-                setBookingOpen(false);
-                setComingOpen(false);
-                setQuickOpen(false);
-                setEventOpen(false);
-              }}
-              onReserve={openBooking}
-              onNotifyFree={(table) => void handleNotifyFree(table)}
-              onImComing={openComing}
-              notifySetIds={notifySetIds}
-              comingArrivalById={comingArrivalById}
-              sheetMessage={sheetMessage}
-              mineReservationIds={myReservationIds}
-            />
-          </div>
-
-          <div className="venue-floor-panels">
-            <div className="venue-floor-panel reserve">
-              {selectedTable ? (
-                <TableReserveSheet
-                  table={selectedTable}
-                  className="beside"
+            <section id="venue-floor" className="venue-section venue-section-floor">
+              <div className="venue-section-head">
+                <div>
+                  <h2>{t("venue.choose_table")}</h2>
+                  <p>{t("floor.pick_hint")}</p>
+                </div>
+                <div className="venue-floor-legend">
+                  <span>
+                    <i className="free" /> {t("floor.leg_free")}
+                  </span>
+                  <span>
+                    <i className="reserved" /> {t("floor.leg_res")}
+                  </span>
+                  {user ? (
+                    <span>
+                      <i className="mine" /> {t("floor.leg_mine")}
+                    </span>
+                  ) : null}
+                  <span>
+                    <i className="occupied" /> {t("floor.leg_occ")}
+                  </span>
+                  <span>
+                    <i className="cleaning" /> {t("floor.leg_clean")}
+                  </span>
+                </div>
+              </div>
+              <div className="venue-floor-stage">
+                <TableFloorPlan
+                  tables={tables}
+                  selectedId={selectedTable?.id}
+                  hideSheet
+                  onTableClick={(table) => {
+                    setSelectedTableId(table.id);
+                    setSheetMessage(null);
+                    setBookingOpen(false);
+                    setComingOpen(false);
+                    setQuickOpen(false);
+                    setEventOpen(false);
+                  }}
                   onReserve={openBooking}
                   onNotifyFree={(table) => void handleNotifyFree(table)}
                   onImComing={openComing}
-                  notifyDone={notifySetIds.has(selectedTable.id)}
-                  comingDone={Boolean(comingArrivalById[selectedTable.id])}
-                  comingTimeLabel={
-                    comingArrivalById[selectedTable.id]
-                      ? new Date(
-                          comingArrivalById[selectedTable.id],
-                        ).toLocaleTimeString(locale, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : undefined
-                  }
+                  notifySetIds={notifySetIds}
+                  comingArrivalById={comingArrivalById}
                   sheetMessage={sheetMessage}
-                  comingAccess={comingAccessFor(selectedTable)}
-                  onComingSignIn={() => requireAuth(t("auth.reason_coming"))}
+                  mineReservationIds={myReservationIds}
+                />
+              </div>
+
+              <div className="venue-floor-panels">
+                <div className="venue-floor-panel reserve">
+                  {selectedTable ? (
+                    <TableReserveSheet
+                      table={selectedTable}
+                      className="beside"
+                      onReserve={openBooking}
+                      onNotifyFree={(table) => void handleNotifyFree(table)}
+                      onImComing={openComing}
+                      notifyDone={notifySetIds.has(selectedTable.id)}
+                      comingDone={Boolean(comingArrivalById[selectedTable.id])}
+                      comingTimeLabel={
+                        comingArrivalById[selectedTable.id]
+                          ? new Date(
+                              comingArrivalById[selectedTable.id],
+                            ).toLocaleTimeString(locale, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : undefined
+                      }
+                      sheetMessage={sheetMessage}
+                      comingAccess={comingAccessFor(selectedTable)}
+                      onComingSignIn={() => requireAuth(t("auth.reason_coming"))}
+                      sessionStartBeforeMin={sessionStartBeforeMin}
+                      releaseBeforeMin={releaseBeforeMin}
+                      mine={isMyTable(selectedTable, myReservationIds)}
+                    />
+                  ) : (
+                    <p className="venue-floor-panel-empty">
+                      {t("venue.day_cal_pick_table")}
+                    </p>
+                  )}
+                </div>
+                <div className="venue-floor-panel schedule">
+                  <VenueDayCalendar
+                    venueId={venue.id}
+                    tables={tables}
+                    focusTableId={selectedTable?.id ?? null}
+                    compact
+                    staffEnabled={
+                      user?.role === "restaurant" || user?.role === "admin"
+                    }
+                    isAdmin={user?.role === "admin"}
+                    hoursOn={hoursOn}
+                    reloadKey={scheduleReloadKey}
+                    mineReservationIds={myReservationIds}
+                  />
+                </div>
+              </div>
+
+              <BookingPopup
+                venue={venue}
+                table={null}
+                tables={tables}
+                open={quickOpen}
+                onClose={() => setQuickOpen(false)}
+                initialGuests={deepLink.guests}
+                initialTime={deepLink.time}
+                initialDurationMin={deepLink.durationMin}
+                onBooked={() => {
+                  void refreshTables();
+                  refreshMyReservations();
+                  setScheduleReloadKey((key) => key + 1);
+                }}
+              />
+
+              {selectedTable && (
+                <BookingPopup
+                  venue={venue}
+                  table={selectedTable}
+                  open={bookingOpen}
+                  onClose={() => setBookingOpen(false)}
+                  onBooked={() => {
+                    void refreshTables();
+                    refreshMyReservations();
+                    setScheduleReloadKey((key) => key + 1);
+                  }}
+                />
+              )}
+
+              {selectedTable && (
+                <ComingPopup
+                  table={selectedTable}
+                  open={comingOpen}
                   sessionStartBeforeMin={sessionStartBeforeMin}
                   releaseBeforeMin={releaseBeforeMin}
-                  mine={isMyTable(selectedTable, myReservationIds)}
+                  maxLateArrivalMin={bookingRules.max_late_arrival_min}
+                  onAuthRequired={() => {
+                    setComingOpen(false);
+                    requireAuth(t("auth.reason_coming"));
+                  }}
+                  onClose={() => setComingOpen(false)}
+                  onConfirmed={(arrivalIso) => {
+                    setComingArrivalById((prev) => ({
+                      ...prev,
+                      [selectedTable.id]: arrivalIso,
+                    }));
+                    const time = new Date(arrivalIso).toLocaleTimeString(locale, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    setSheetMessage(t("table.im_coming_set", { time }));
+                  }}
                 />
-              ) : (
-                <p className="venue-floor-panel-empty">
-                  {t("venue.day_cal_pick_table")}
-                </p>
               )}
-            </div>
-            <div className="venue-floor-panel schedule">
-              <VenueDayCalendar
+
+              <WaitlistPanel
                 venueId={venue.id}
-                tables={tables}
-                focusTableId={selectedTable?.id ?? null}
-                compact
-                staffEnabled={
-                  user?.role === "restaurant" || user?.role === "admin"
-                }
-                isAdmin={user?.role === "admin"}
-                hoursOn={hoursOn}
-                reloadKey={scheduleReloadKey}
-                mineReservationIds={myReservationIds}
+                zones={zones}
+                onAuthRequired={() => requireAuth(t("auth.reason_waitlist"))}
               />
-            </div>
-          </div>
-
-          <BookingPopup
-            venue={venue}
-            table={null}
-            tables={tables}
-            open={quickOpen}
-            onClose={() => setQuickOpen(false)}
-            initialGuests={deepLink.guests}
-            initialTime={deepLink.time}
-            initialDurationMin={deepLink.durationMin}
-            onBooked={() => {
-              void refreshTables();
-              refreshMyReservations();
-              setScheduleReloadKey((key) => key + 1);
-            }}
-          />
-
-          {selectedTable && (
-            <BookingPopup
-              venue={venue}
-              table={selectedTable}
-              open={bookingOpen}
-              onClose={() => setBookingOpen(false)}
-              onBooked={() => {
-                void refreshTables();
-                refreshMyReservations();
-                setScheduleReloadKey((key) => key + 1);
-              }}
-            />
-          )}
-
-          {selectedTable && (
-            <ComingPopup
-              table={selectedTable}
-              open={comingOpen}
-              sessionStartBeforeMin={sessionStartBeforeMin}
-              releaseBeforeMin={releaseBeforeMin}
-              maxLateArrivalMin={bookingRules.max_late_arrival_min}
-              onAuthRequired={() => {
-                setComingOpen(false);
-                requireAuth(t("auth.reason_coming"));
-              }}
-              onClose={() => setComingOpen(false)}
-              onConfirmed={(arrivalIso) => {
-                setComingArrivalById((prev) => ({
-                  ...prev,
-                  [selectedTable.id]: arrivalIso,
-                }));
-                const time = new Date(arrivalIso).toLocaleTimeString(locale, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-                setSheetMessage(t("table.im_coming_set", { time }));
-              }}
-            />
-          )}
-
-          <WaitlistPanel
-            venueId={venue.id}
-            zones={zones}
-            onAuthRequired={() => requireAuth(t("auth.reason_waitlist"))}
-          />
-        </section>
+            </section>
+          </>
+        ) : null}
 
         <VenueLocationMap venue={venue} />
 
@@ -756,42 +875,49 @@ export default function VenuePage() {
           onSuccess={() => void handleAuthSuccess()}
         />
 
-        <section className="venue-section venue-section-reviews">
-          <div className="venue-section-head">
-            <div>
-              <h2>{t("venue.reviews_title")}</h2>
-              <p>
-                {places?.source === "google"
-                  ? t("venue.reviews_google")
-                  : t("venue.reviews_sample")}
-              </p>
+        {/* Reviews come untagged (BACKEND_TASKS №61): hide the block when none are in the guest's language. */}
+        {reviews.length === 0 || visibleReviews.length > 0 ? (
+          <section className="venue-section venue-section-reviews">
+            <div className="venue-section-head">
+              <div>
+                <h2>{t("venue.reviews_title")}</h2>
+                <p>
+                  {places?.source === "google"
+                    ? t("venue.reviews_google")
+                    : t("venue.reviews_sample")}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="venue-reviews">
-            {reviews.map((review, index) => (
-              <article key={`${review.author}-${index}`}>
-                <header>
-                  <span className="venue-review-avatar" aria-hidden>
-                    {review.author.trim().charAt(0).toUpperCase() || "·"}
-                  </span>
-                  <div>
-                    <strong>{review.author}</strong>
-                    {review.relative_time && <small>{review.relative_time}</small>}
-                  </div>
-                  <Stars value={review.rating} />
-                </header>
-                <p>{review.text}</p>
-                {review.source === "google" && (
-                  <span className="venue-review-source">Google</span>
-                )}
-              </article>
-            ))}
-            {reviews.length === 0 && (
-              <p className="venue-page-empty-inline">{t("venue.reviews_empty")}</p>
-            )}
-          </div>
-        </section>
+            <div className="venue-reviews">
+              {visibleReviews.map((review, index) => {
+                const when = reviewTimeLabel(review, locale);
+                return (
+                  <article key={`${review.author}-${index}`}>
+                    <header>
+                      <span className="venue-review-avatar" aria-hidden>
+                        {review.author.trim().charAt(0).toUpperCase() || "·"}
+                      </span>
+                      <div>
+                        <strong>{review.author}</strong>
+                        {when ? <small>{when}</small> : null}
+                      </div>
+                      <Stars value={review.rating} />
+                    </header>
+                    <p>{review.text}</p>
+                    {review.source === "google" && (
+                      <span className="venue-review-source">Google</span>
+                    )}
+                  </article>
+                );
+              })}
+              {reviews.length === 0 && (
+                <p className="venue-page-empty-inline">{t("venue.reviews_empty")}</p>
+              )}
+            </div>
+          </section>
+        ) : null}
       </div>
+      <SiteFooter />
     </div>
   );
 }

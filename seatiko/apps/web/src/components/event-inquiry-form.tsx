@@ -61,6 +61,8 @@ export function EventInquiryForm({
   const [eventError, setEventError] = useState<string | null>(null);
 
   const venueName = pickLocale(venue.name, locale);
+  const eventPhone = (venue.event_phone || venue.phone || "").trim();
+  const eventTelegram = (venue.event_telegram || "").trim().replace(/^@/, "");
 
   async function handleEventInquirySubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -131,27 +133,32 @@ export function EventInquiryForm({
             </p>
           ) : null}
 
-          <div className="event-success-contacts">
-            <span className="booking-field-label">{t("event.direct_contacts_title")}</span>
-            <div>
-              <a
-                href="https://t.me/seatiko_admin"
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn--secondary btn--md"
-              >
-                {t("event.telegram_btn")}
-              </a>
-              <a
-                href={`tel:${eventSuccess.admin_phone || "+37323124411"}`}
-                className="btn btn--secondary btn--md"
-              >
-                {t("event.call_admin", {
-                  phone: eventSuccess.admin_phone || "+373 (231) 2-44-11",
-                })}
-              </a>
+          {/* The venue's own event contacts (BACKEND_TASKS №62); no block until the venue has them. */}
+          {eventPhone || eventTelegram ? (
+            <div className="event-success-contacts">
+              <span className="booking-field-label">{t("event.venue_contacts_title")}</span>
+              <div>
+                {eventTelegram ? (
+                  <a
+                    href={`https://t.me/${eventTelegram}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn--secondary btn--md"
+                  >
+                    {t("event.telegram_btn")}
+                  </a>
+                ) : null}
+                {eventPhone ? (
+                  <a
+                    href={`tel:${eventPhone.replace(/[^\d+]/g, "")}`}
+                    className="btn btn--secondary btn--md"
+                  >
+                    {t("event.call_venue", { phone: eventPhone })}
+                  </a>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="event-success-actions">
             <button

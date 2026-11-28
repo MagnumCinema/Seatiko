@@ -1890,15 +1890,6 @@ a {
   gap: 8px;
   width: 100%;
 }
-.venue-fav-action .venue-fav-icon {
-  color: var(--fa-gold);
-  font-size: 0.95rem;
-  line-height: 1;
-}
-.venue-fav-action .venue-fav-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .venue-section {
   margin-top: 48px;
   padding-top: 34px;

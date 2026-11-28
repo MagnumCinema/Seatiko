@@ -68,6 +68,14 @@ export type Venue = {
   allow_preorder?: boolean;
   preorder_lead_min?: number;
   hours_text?: string;
+  /** Online booking on (BACKEND_TASKS №60); until the API sends it, the page derives it from the tables. */
+  bookable?: boolean;
+  table_count?: number;
+  booking_disabled_reason?: string;
+  /** Venue contacts (BACKEND_TASKS №62); blocks that need them stay hidden until the API sends them. */
+  phone?: string;
+  event_phone?: string;
+  event_telegram?: string;
 };
 
 export type VenueReview = {
@@ -75,6 +83,8 @@ export type VenueReview = {
   rating: number;
   text: string;
   relative_time?: string;
+  /** ISO time the review was written (BACKEND_TASKS №61); shown in the guest's language. */
+  published_at?: string;
   source?: string;
   profile_url?: string;
 };
