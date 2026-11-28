@@ -1,17 +1,28 @@
 "use client";
 
-import Link from "next/link";
+import "@/app/venue-map.css";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 import maplibregl, { type GeoJSONSource, type MapGeoJSONFeature } from "maplibre-gl";
 import {
   fetchMapConfig,
   fetchMapPlaces,
+  fetchMe,
+  fetchVenues,
+  getToken,
+  mediaUrl,
   pickLocale,
-  priceLevelLabel,
-  type LocaleCode,
-  type MapConfig,
   type MapBounds,
+  type MapConfig,
   type MapCoordinates,
   type MapPlace,
   type MapPlacesResponse,
@@ -19,29 +30,43 @@ import {
 import {
   encodePreferences,
   filterAndRankPlaces,
-  formatBudgetAmount,
   relaxPreference,
   type DiscoverPreferences,
 } from "@/lib/discover-preferences";
-import { getSiteCopy } from "@/lib/site-copy";
-import { venueHoursLabel } from "@/lib/venue-hours";
-import { useCurrency } from "@/components/currency-provider";
-import { useLocale } from "@/components/locale-provider";
-import { SelectMenu } from "@/components/ui/select-menu";
-import { venueBookingHref } from "@/lib/booking-link";
-import { googleMapDirections, googleMapSearch } from "@/lib/google-map";
-import { useTheme } from "@/components/theme-provider";
+import {
+  applyQuickFilters,
+  areaChanged,
+  clipBounds,
+  isSavedPlace,
+  placesInView,
+  sheetHeights,
+  shortPinName,
+  terraceFilterAvailable,
+  toggleQuickFilter,
+  validBounds,
+  type QuickFilter,
+  type SheetSnap,
+} from "@/lib/home-map";
+import { loadGuestLocalPrefs } from "@/lib/guest-local-prefs";
+import { googleMapSearch } from "@/lib/google-map";
 import { applyMapLibreLocalization, getMapLibreLocale } from "@/lib/maplibre-locale";
+import { useLocale } from "@/components/locale-provider";
+import { useTheme } from "@/components/theme-provider";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { GoogleVenueMap } from "@/components/google-venue-map";
+import {
+  MapSheet,
+  MapStateCard,
+  PlaceRow,
+  PopupCard,
+  RowSkeletons,
+  SelectedCard,
+  fill,
+  freeTablesLabel,
+  mapCopy,
+} from "@/components/venue-map-parts";
 
 type MapState = "loading" | "ready" | "error";
-type PlacePointProperties = {
-  placeId: string;
-  venueId: string;
-  inDatabase: boolean;
-  name: string;
-  selected: boolean;
-};
 
 const DEFAULT_CITY = "city-balti";
 const BALTI_BOUNDS: MapBounds = { south: 47.70, west: 27.84, north: 47.82, east: 28.02 };
@@ -51,46 +76,37 @@ const OPEN_FREE_MAP_STYLE = {
   dark: "https://tiles.openfreemap.org/styles/dark",
 } as const;
 const SOURCE_ID = "seatiko-venues";
-const VENUE_LAYER_ID = "seatiko-venue-pins";
-const DOT_LAYER_ID = "seatiko-venue-dots";
-/** Below this zoom (whole city) places are dots, so they don't pile up; closer they become pins. */
+const CLUSTER_HALO_LAYER = "seatiko-cluster-halo";
+const CLUSTER_LAYER = "seatiko-clusters";
+const CLUSTER_COUNT_LAYER = "seatiko-cluster-count";
+const OPEN_DOT_LAYER = "seatiko-open-dots";
+const PARTNER_DOT_LAYER = "seatiko-partner-dots";
+const CLICK_LAYERS = [CLUSTER_LAYER, OPEN_DOT_LAYER, PARTNER_DOT_LAYER];
+/** From this zoom partners are pill pins (free tables + name) and nothing is clustered. */
 const PIN_MIN_ZOOM = 14;
-/** Site palette: partners deep green, other places sage, the selected one gold (lighter greens on dark tiles). */
-const PIN_THEME_COLORS = {
-  light: { partner: "#175f43", other: "#7fa792", selected: "#d99a3e" },
-  dark: { partner: "#3aa877", other: "#8fae9d", selected: "#e9b96e" },
-} as const;
-/** Place names drawn on the map: dark on the light tiles, light on the dark ones. */
-const NAME_COLORS = {
-  light: { text: "#183e31", halo: "rgba(255, 253, 248, 0.97)" },
-  dark: { text: "#f3ead9", halo: "rgba(12, 22, 18, 0.92)" },
-} as const;
-
-/** Search for an open-data place by name and address (it has no Google place id). */
-function placeSearchUrl(place: MapPlace, locale: LocaleCode) {
-  return googleMapSearch([pickLocale(place.name, locale), pickLocale(place.address, locale)].filter(Boolean).join(", "), place.google_place_id);
-}
-
-/** Map strings live in site-copy (RU/EN/RO). */
-function mapText(locale: LocaleCode) {
-  return getSiteCopy(locale).venueMap;
-}
-
-function formatFreeTablesLabel(locale: LocaleCode, count: number): string {
-  const forms = mapText(locale).freeTables;
-  const rule = new Intl.PluralRules(locale).select(count);
-  return rule === "one" || rule === "few" || rule === "many" ? forms[rule] : forms.other;
-}
-
+/** Zoom a selected place is shown at (never zooms out a closer view). */
+const FOCUS_ZOOM = 15.2;
+const SEARCH_DEBOUNCE_MS = 350;
 const RECOMMENDED_LIST_COUNT = 3;
+const COMPACT_LIST_COUNT = 6;
+const PHONE_QUERY = "(max-width: 720px)";
+/** Site palette on the map: partners green, open data sage, the selected place gold. */
+const MAP_COLORS = {
+  light: { partner: "#175f43", cluster: "#1f6848", other: "#6f8679", selected: "#d99a3e", stroke: "#fffdf8" },
+  dark: { partner: "#2f9468", cluster: "#1f6848", other: "#7d9486", selected: "#e9b96e", stroke: "#f3efe6" },
+} as const;
 
-function getVenueHours(place: MapPlace, locale: LocaleCode): string {
-  if (place.venue_id) {
-    // The owner's own hours from the API; the bundled demo hours only when none are set.
-    return venueHoursLabel({ id: place.venue_id, hours_text: place.hours_text }, locale);
-  }
-  // Open-data places: only what OpenStreetMap knows, never a made-up default.
-  return place.opening_hours ?? "";
+type PointProps = { placeId: string; inDatabase: boolean };
+
+function placeCollection(places: MapPlace[]): GeoJSON.FeatureCollection<GeoJSON.Point, PointProps> {
+  return {
+    type: "FeatureCollection",
+    features: places.map((place) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [place.lng, place.lat] },
+      properties: { placeId: place.id, inDatabase: place.in_database },
+    })),
+  };
 }
 
 function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
@@ -105,69 +121,68 @@ function sortPlaces(places: MapPlace[], searching: boolean): MapPlace[] {
   });
 }
 
-/** Draws a map pin (teardrop with a white dot) once per map, at 2× for sharp screens. */
-function addPinImage(map: maplibregl.Map, id: string, color: string) {
-  if (map.hasImage(id)) return;
-  const ratio = 2;
-  const w = 26;
-  const h = 34;
-  const canvas = document.createElement("canvas");
-  canvas.width = w * ratio;
-  canvas.height = h * ratio;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  ctx.scale(ratio, ratio);
-  const cx = w / 2;
-  const r = 11;
-  const cy = r + 1.5;
-  ctx.beginPath();
-  ctx.moveTo(cx, h - 1);
-  ctx.bezierCurveTo(cx - 2, h - 8, cx - r, cy + 7, cx - r, cy);
-  ctx.arc(cx, cy, r, Math.PI, 0);
-  ctx.bezierCurveTo(cx + r, cy + 7, cx + 2, h - 8, cx, h - 1);
-  ctx.closePath();
-  ctx.shadowColor = "rgba(0, 0, 0, 0.28)";
-  ctx.shadowBlur = 3;
-  ctx.shadowOffsetY = 1;
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = "#ffffff";
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx, cy, 4.2, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-  map.addImage(id, ctx.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: ratio });
+function boundsOf(map: maplibregl.Map): MapBounds {
+  const b = map.getBounds();
+  return { south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast() };
 }
 
-function placeCollection(
-  places: MapPlace[],
-  locale: LocaleCode,
-  selectedId: string | null,
-): GeoJSON.FeatureCollection<GeoJSON.Point, PlacePointProperties> {
-  return {
-    type: "FeatureCollection",
-    features: places.map((place) => ({
-      type: "Feature",
-      id: place.id,
-      geometry: {
-        type: "Point",
-        coordinates: [place.lng, place.lat],
-      },
-      properties: {
-        placeId: place.id,
-        venueId: place.venue_id ?? "",
-        inDatabase: place.in_database,
-        name: pickLocale(place.name, locale),
-        selected: place.id === selectedId,
-      },
-    })),
-  };
+function subscribeMedia(callback: () => void) {
+  const media = window.matchMedia(PHONE_QUERY);
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+
+function useIsPhone(): boolean {
+  return useSyncExternalStore(subscribeMedia, () => window.matchMedia(PHONE_QUERY).matches, () => false);
+}
+
+/** Favourite venue ids: the guest's local list plus `User.favorite_venues` when signed in. */
+function useSavedVenues(): ReadonlySet<string> {
+  const [saved, setSaved] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      const token = getToken();
+      const user = token ? fetchMe().catch(() => null) : Promise.resolve(null);
+      void user.then((me) => {
+        if (!alive) return;
+        const local = loadGuestLocalPrefs(me?.id ?? "guest-local").favorites.map((fav) => fav.venueId);
+        setSaved(new Set([...local, ...(me?.favorite_venues ?? [])]));
+      });
+    };
+    load();
+    window.addEventListener("storage", load);
+    return () => {
+      alive = false;
+      window.removeEventListener("storage", load);
+    };
+  }, []);
+  return saved;
+}
+
+/** Partner photos until `MapPlace.cover_url` exists (BACKEND_TASKS №70): one `/venues` call per city. */
+function useVenueCovers(cityId: string): Record<string, string> {
+  const [covers, setCovers] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    fetchVenues(cityId === "all" ? "all" : cityId)
+      .then((venues) => {
+        if (!alive) return;
+        const next: Record<string, string> = {};
+        for (const venue of venues) {
+          const url = venue.photo_urls?.[0] || venue.image_url;
+          if (url) next[venue.id] = mediaUrl(url);
+        }
+        setCovers(next);
+      })
+      .catch(() => { /* no photos: cards use the compact layout */ });
+    return () => { alive = false; };
+  }, [cityId]);
+  return covers;
 }
 
 type VenueMapProps = { compact?: boolean; preferences?: DiscoverPreferences };
+type AreaStats = { shown: number; total: number; terrace: boolean; loading: boolean };
 
 export function VenueMap(props: VenueMapProps) {
   const { locale } = useLocale();
@@ -175,7 +190,10 @@ export function VenueMap(props: VenueMapProps) {
   const [cityId, setCityId] = useState(DEFAULT_CITY);
   const [searchText, setSearchText] = useState("");
   const [query, setQuery] = useState("");
-  const [bookableOnly, setBookableOnly] = useState(false);
+  const [filters, setFilters] = useState<ReadonlySet<QuickFilter>>(() => new Set());
+  const [stats, setStats] = useState<AreaStats>({ shown: 0, total: 0, terrace: false, loading: true });
+  const saved = useSavedVenues();
+
   useEffect(() => {
     let active = true;
     fetchMapConfig()
@@ -184,116 +202,151 @@ export function VenueMap(props: VenueMapProps) {
     return () => { active = false; };
   }, []);
 
-  const labels = mapText(locale);
+  // Search as you type (M3); Enter applies at once.
+  useEffect(() => {
+    const next = searchText.trim();
+    if (next === query) return;
+    const timer = window.setTimeout(() => setQuery(next), next ? SEARCH_DEBOUNCE_MS : 0);
+    return () => window.clearTimeout(timer);
+  }, [searchText, query]);
+
+  const { vm, hm } = mapCopy(locale);
   const cities = (config?.cities ?? []).filter((city) => city.country === "MD" && city.bounds);
   const city = cities.find((item) => item.id === cityId);
-  const name = cityId === "all" ? labels.countryName : city ? pickLocale(city.name, locale) : labels.defaultCity;
-  const bounds = cityId === "all"
-    ? config?.country_bounds ?? MOLDOVA_BOUNDS
-    : city?.bounds ?? BALTI_BOUNDS;
-  // Cities the API marks available:false have no venues yet: shown as "Скоро".
+  const name = cityId === "all" ? vm.countryName : city ? pickLocale(city.name, locale) : vm.defaultCity;
+  const bounds = cityId === "all" ? config?.country_bounds ?? MOLDOVA_BOUNDS : city?.bounds ?? BALTI_BOUNDS;
   const comingSoon = Boolean(city && !city.available);
-  const externalUrl = googleMapSearch(`${searchText.trim() || labels.food} ${name}`);
+  const externalUrl = googleMapSearch(`${searchText.trim() || vm.food} ${name}`);
+  const chips: { id: QuickFilter; label: string }[] = [
+    { id: "bookable", label: hm.chipBookable },
+    { id: "openNow", label: hm.chipOpenNow },
+    ...(stats.terrace || filters.has("terrace") ? [{ id: "terrace" as const, label: hm.chipTerrace }] : []),
+    { id: "saved", label: hm.chipSaved },
+  ];
+  const resetFilters = useCallback(() => {
+    setFilters(new Set());
+    setSearchText("");
+    setQuery("");
+  }, []);
 
   return (
-    <div>
+    <div className={`vmap${props.compact ? " is-compact" : ""}`}>
       <form
-        className="venue-map-areas"
+        className="vmap-toolbar"
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
           setQuery(searchText.trim());
         }}
       >
-        <label className="venue-map-area-field">
-          <span className="venue-map-area-label">{labels.area}</span>
-          <span className="venue-map-select-wrap">
-            <SelectMenu
-              buttonClassName="venue-map-select-trigger"
-              value={cityId}
-              onChange={setCityId}
-              options={[
-                ...(!cities.some((item) => item.id === DEFAULT_CITY)
-                  ? [{ value: DEFAULT_CITY, label: labels.defaultCity }]
-                  : []),
-                ...cities.map((item) => ({
-                  value: item.id,
-                  label: pickLocale(item.name, locale),
-                  badge: item.available ? undefined : labels.soon,
-                })),
-                { value: "all", label: labels.country },
-              ]}
-            />
-          </span>
-        </label>
-        <div className="venue-map-search">
-          <span className="venue-map-search-field">
+        <div className="vmap-toolbar-main">
+          <SelectMenu
+            className="vmap-city"
+            buttonClassName="vmap-city-trigger"
+            ariaLabel={hm.cityAria}
+            value={cityId}
+            onChange={setCityId}
+            options={[
+              ...(!cities.some((item) => item.id === DEFAULT_CITY) ? [{ value: DEFAULT_CITY, label: vm.defaultCity }] : []),
+              ...cities.map((item) => ({
+                value: item.id,
+                label: pickLocale(item.name, locale),
+                badge: item.available ? undefined : vm.soon,
+              })),
+              { value: "all", label: vm.country },
+            ]}
+          />
+          <label className="vmap-search">
+            <svg className="vmap-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7.5" />
+              <path d="m20.5 20.5-4.2-4.2" />
+            </svg>
+            <span className="sr-only">{vm.query}</span>
             <input
               type="search"
-              aria-label={labels.query}
-              placeholder={labels.query}
+              placeholder={hm.searchPlaceholder}
               value={searchText}
               maxLength={100}
-              onChange={(event) => {
-                const value = event.target.value;
-                setSearchText(value);
-                if (!value.trim()) setQuery("");
-              }}
+              enterKeyHint="search"
+              onChange={(event) => setSearchText(event.target.value)}
             />
             {searchText ? (
               <button
                 type="button"
-                className="btn btn--ghost btn--sm btn--icon venue-map-search-clear"
-                aria-label={labels.clearSearch}
-                title={labels.clearSearch}
-                onClick={() => {
-                  setSearchText("");
-                  setQuery("");
-                }}
+                className="btn btn--ghost btn--icon btn--sm vmap-search-clear"
+                aria-label={vm.clearSearch}
+                title={vm.clearSearch}
+                onClick={() => { setSearchText(""); setQuery(""); }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
               </button>
             ) : null}
-          </span>
-          <button type="submit" className="btn btn--primary btn--sm venue-map-search-submit">{labels.find}</button>
+          </label>
+          <a
+            className="btn btn--ghost btn--md vmap-external"
+            href={externalUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={hm.googleMapsAria}
+            title={hm.googleMapsAria}
+          >
+            <span className="vmap-external-label">{hm.googleMaps}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M7 17 17 7M8 7h9v9" />
+            </svg>
+          </a>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={bookableOnly}
-          className={`chip venue-map-bookable${bookableOnly ? " is-on" : ""}`}
-          onClick={() => setBookableOnly((value) => !value)}
-        >
-          <span className="venue-map-switch" aria-hidden="true"><i /></span>
-          <span>{labels.bookableOnly}</span>
-        </button>
-        <a
-          className="btn btn--link venue-map-external"
-          href={externalUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {labels.openExternal} <span aria-hidden="true">↗</span>
-        </a>
+        <div className="vmap-toolbar-chips">
+          <div className="vmap-chips" role="group" aria-label={hm.filtersAria}>
+            <button type="button" className="chip" aria-pressed={filters.size === 0} onClick={() => setFilters(new Set())}>
+              {hm.chipAll}
+            </button>
+            {chips.map((chip) => (
+              <button
+                key={chip.id}
+                type="button"
+                className="chip"
+                aria-pressed={filters.has(chip.id)}
+                onClick={() => setFilters((current) => toggleQuickFilter(current, chip.id))}
+              >
+                {chip.id === "saved" ? (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 21.2 3.9 13.3a5.2 5.2 0 0 1 7.4-7.4l.7.7.7-.7a5.2 5.2 0 0 1 7.4 7.4z" />
+                  </svg>
+                ) : null}
+                {chip.label}
+              </button>
+            ))}
+          </div>
+          <span className="vmap-count" aria-live="polite">
+            <i aria-hidden="true" />
+            {stats.loading ? vm.loadingVenues : fill(hm.shownOf, { shown: stats.shown, total: stats.total })}
+          </span>
+        </div>
       </form>
       {config === undefined ? (
-        <div className="venue-map-canvas" role="status">
-          <div className="live-map-loading"><span /><p>{labels.loadingMap}</p></div>
+        <div className="vmap-shell">
+          <div className="vmap-canvas" role="status">
+            <div className="vmap-loading"><span /><p>{vm.loadingMap}</p></div>
+          </div>
         </div>
       ) : (
         <VenueMapArea
           key={cityId}
           {...props}
           cityId={cityId}
+          cityName={name}
           bounds={bounds}
           config={config}
           externalUrl={externalUrl}
           query={query}
-          bookableOnly={bookableOnly}
+          filters={filters}
+          saved={saved}
           comingSoon={comingSoon}
+          onStats={setStats}
+          onResetFilters={resetFilters}
           onShowDefaultCity={() => setCityId(DEFAULT_CITY)}
         />
       )}
@@ -301,65 +354,91 @@ export function VenueMap(props: VenueMapProps) {
   );
 }
 
-function VenueMapArea({
-  compact = false, preferences, cityId, bounds, config, externalUrl, query, bookableOnly, comingSoon, onShowDefaultCity,
-}: VenueMapProps & {
+type AreaProps = VenueMapProps & {
   cityId: string;
+  cityName: string;
   bounds: MapBounds;
   config: MapConfig | null;
   externalUrl: string;
   query: string;
-  bookableOnly: boolean;
+  filters: ReadonlySet<QuickFilter>;
+  saved: ReadonlySet<string>;
   comingSoon: boolean;
+  onStats: (stats: AreaStats) => void;
+  onResetFilters: () => void;
   onShowDefaultCity: () => void;
-}) {
+};
+
+function VenueMapArea({
+  compact = false, preferences, cityId, cityName, bounds, config, externalUrl, query, filters, saved, comingSoon,
+  onStats, onResetFilters, onShowDefaultCity,
+}: AreaProps) {
   const { locale, t } = useLocale();
   const router = useRouter();
-  const { currency } = useCurrency();
   const { theme } = useTheme();
-  const copy = mapText(locale);
-  const labels = copy;
-  const siteCopy = getSiteCopy(locale);
-  const discoverCopy = siteCopy.discover;
-  const currencyLabel = siteCopy.discover.budgetCurrencies[currency];
+  const isPhone = useIsPhone();
+  const { vm, hm, site } = mapCopy(locale);
+  const discoverCopy = site.discover;
+  const covers = useVenueCovers(cityId);
+
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const mapNodeRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const geolocateRef = useRef<maplibregl.GeolocateControl | null>(null);
   const placesRef = useRef<MapPlace[]>([]);
   const localeRef = useRef(locale);
-  const [userGeo, setUserGeo] = useState<{ lat: number; lng: number } | null>(
-    null,
-  );
+  const markersRef = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLButtonElement }>());
+  const baselineRef = useRef<MapBounds | null>(null);
+  const scrollOnSelectRef = useRef(false);
+  const stateRef = useRef<{ selected: string | null; hovered: string | null }>({ selected: null, hovered: null });
+
+  const [userGeo, setUserGeo] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyDenied, setNearbyDenied] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [popupId, setPopupId] = useState<string | null>(null);
+  const [popupNode] = useState<HTMLDivElement | null>(() => (typeof document === "undefined" ? null : document.createElement("div")));
   const [mapState, setMapState] = useState<MapState>("loading");
-  /** The MapLibre map whose style has loaded; a theme switch rebuilds the map and the layers follow. */
   const [loadedMap, setLoadedMap] = useState<maplibregl.Map | null>(null);
+  const [pinZoom, setPinZoom] = useState(false);
+  const [viewBounds, setViewBounds] = useState<MapBounds | null>(null);
+  const [areaDirty, setAreaDirty] = useState(false);
   const [googleFailed, setGoogleFailed] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [viewport, setViewport] = useState<MapBounds>();
   const [focus, setFocus] = useState<MapCoordinates | null>(null);
   const [retry, setRetry] = useState(0);
+  const [snap, setSnap] = useState<SheetSnap>("peek");
+  const [canvasHeight, setCanvasHeight] = useState(600);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
   const googleKey = config?.google_maps_key;
   const useGoogle = Boolean(googleKey) && !googleFailed;
+  const bookableOnly = filters.has("bookable");
   // Without a Google key the API still adds open-data places (OpenStreetMap, Overture).
   const includeGoogle = (useGoogle ? googleReady : true) && !bookableOnly;
-  const validViewport = useGoogle && viewport &&
-    viewport.south < viewport.north && viewport.west < viewport.east ? viewport : undefined;
-  const filters = preferences ? encodePreferences(preferences) : "";
+  const validViewport = validBounds(viewport) ? viewport : undefined;
+  const encodedPrefs = preferences ? encodePreferences(preferences) : "";
   const near = preferences?.practical.includes("nearby") ? userGeo : null;
   const request = useMemo(
-    () => ({ cityId, includeGoogle, locale, bounds: validViewport, query, bookableOnly, filters, near, retry }),
-    [cityId, includeGoogle, locale, validViewport, query, bookableOnly, filters, near, retry],
+    () => ({ cityId, includeGoogle, locale, bounds: validViewport, query, bookableOnly, filters: encodedPrefs, near, retry }),
+    [cityId, includeGoogle, locale, validViewport, query, bookableOnly, encodedPrefs, near, retry],
   );
-  const [result, setResult] = useState<{
-    request: typeof request;
-    data: MapPlacesResponse | null;
-  }>();
+  const [result, setResult] = useState<{ request: typeof request; data: MapPlacesResponse | null }>();
   const loading = result?.request !== request;
-  const data = loading ? undefined : result.data;
-  const loadError = data === null;
+  // While a new request runs the previous places stay on the map (no flash of the empty state).
+  const data = result?.data ?? undefined;
+  const loadError = !loading && result?.data === null;
   const googleStatus = data?.source.google_status;
+
+  // "Открыто · до 23:00" follows the clock.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const googleLoaded = useCallback(() => {
     setGoogleReady(true);
@@ -371,30 +450,27 @@ function VenueMapArea({
   }, []);
   const searchArea = useCallback((next: MapBounds) => {
     // The API clips the visible area to the currently selected city or country.
-    setViewport({
-      south: Math.max(next.south, bounds.south), west: Math.max(next.west, bounds.west),
-      north: Math.min(next.north, bounds.north), east: Math.min(next.east, bounds.east),
-    });
+    setViewport(clipBounds(next, bounds));
   }, [bounds]);
 
   const ranked = useMemo(() => {
     const visible = data?.places ?? [];
     if (!preferences) return visible.map((place) => ({ place, score: 0 }));
-    return filterAndRankPlaces(visible, preferences, {
-      userLat: userGeo?.lat,
-      userLng: userGeo?.lng,
-    });
+    return filterAndRankPlaces(visible, preferences, { userLat: userGeo?.lat, userLng: userGeo?.lng });
   }, [data, preferences, userGeo]);
-
-  const places = useMemo(() => ranked.map((r) => r.place), [ranked]);
+  const totalCount = ranked.length;
+  const places = useMemo(
+    () => applyQuickFilters(ranked.map((r) => r.place), filters, saved),
+    [ranked, filters, saved],
+  );
+  const terraceAvailable = useMemo(() => terraceFilterAvailable(data?.places ?? []), [data]);
 
   useEffect(() => {
-    placesRef.current = places;
-  }, [places]);
+    onStats({ shown: places.length, total: totalCount, terrace: terraceAvailable, loading: loading && !data });
+  }, [places.length, totalCount, terraceAvailable, loading, data, onStats]);
 
-  useEffect(() => {
-    localeRef.current = locale;
-  }, [locale]);
+  useEffect(() => { placesRef.current = places; }, [places]);
+  useEffect(() => { localeRef.current = locale; }, [locale]);
 
   useEffect(() => {
     if (!preferences?.practical.includes("nearby")) {
@@ -422,158 +498,101 @@ function VenueMapArea({
     );
   }, [preferences]);
 
-  function showVenuePopup(place: MapPlace, map: maplibregl.Map) {
-    const labels = mapText(localeRef.current);
-    const name = pickLocale(place.name, localeRef.current);
-    const venueId = place.in_database ? place.venue_id : undefined;
-    const hours = getVenueHours(place, localeRef.current);
-
-    const root = document.createElement("div");
-    root.className = "venue-map-popup-card";
-
-    // Header: title + rating
-    const head = document.createElement("div");
-    head.className = "venue-map-popup-head";
-
-    const title = document.createElement("strong");
-    title.textContent = name;
-    head.appendChild(title);
-
-    if (typeof place.rating === "number") {
-      const rating = document.createElement("span");
-      rating.className = "venue-map-popup-rating";
-      rating.textContent = `★ ${place.rating.toFixed(1)}`;
-      head.appendChild(rating);
-    }
-    root.appendChild(head);
-
-    // Schedule & open status row (open-data places: hours only, when known)
-    const schedule = document.createElement("div");
-    schedule.className = "venue-map-popup-schedule";
-
-    if (venueId) {
-      const dot = document.createElement("span");
-      dot.className = `status-dot ${place.open_now ? "open" : "closed"}`;
-      schedule.appendChild(dot);
-
-      const status = document.createElement("span");
-      status.className = "popup-status-text";
-      status.textContent = place.open_now ? labels.open : labels.closed;
-      schedule.appendChild(status);
-    }
-
-    if (hours) {
-      const hoursSpan = document.createElement("span");
-      hoursSpan.className = "popup-hours-text";
-      hoursSpan.textContent = venueId ? `· ${hours}` : hours;
-      schedule.appendChild(hoursSpan);
-    }
-
-    if (schedule.childElementCount > 0) root.appendChild(schedule);
-
-    const addLink = (parent: HTMLElement, href: string, text: string, className: string, external = false) => {
-      const link = document.createElement("a");
-      link.href = href;
-      link.className = className;
-      link.textContent = text;
-      if (external) {
-        link.target = "_blank";
-        link.rel = "noreferrer";
-      }
-      parent.appendChild(link);
-    };
-
-    if (venueId) {
-      if (place.bookable && typeof place.free_tables === "number") {
-        const free = document.createElement("div");
-        free.className = "venue-map-popup-free";
-
-        const freeDot = document.createElement("span");
-        freeDot.className = "popup-free-dot";
-        free.appendChild(freeDot);
-
-        const freeCount = document.createElement("b");
-        freeCount.textContent = String(place.free_tables);
-        free.appendChild(freeCount);
-
-        const freeText = document.createElement("span");
-        freeText.textContent = ` ${formatFreeTablesLabel(localeRef.current, place.free_tables)}`;
-        free.appendChild(freeText);
-
-        root.appendChild(free);
-      } else if (!place.bookable) {
-        const note = document.createElement("div");
-        note.className = "venue-map-popup-note";
-        note.textContent = labels.notBookableNote;
-        root.appendChild(note);
-      }
-
-      const actions = document.createElement("div");
-      actions.className = "venue-map-popup-actions";
-      if (place.bookable) addLink(actions, venueBookingHref(venueId), labels.popupBook, "primary");
-      addLink(actions, `/venues/${encodeURIComponent(venueId)}`, labels.openPage, place.bookable ? "secondary" : "primary");
-      root.appendChild(actions);
-    } else {
-      const address = pickLocale(place.address, localeRef.current);
-      if (address) {
-        const addressRow = document.createElement("div");
-        addressRow.className = "venue-map-popup-address";
-        addressRow.textContent = address;
-        root.appendChild(addressRow);
-      }
-
-      const badge = document.createElement("div");
-      badge.className = "venue-map-popup-opendata";
-      badge.textContent = labels.openData;
-      root.appendChild(badge);
-
-      const note = document.createElement("div");
-      note.className = "venue-map-popup-note";
-      note.textContent = labels.openDataNote;
-      root.appendChild(note);
-
-      // Open-data places always get a way to go there, plus a call when the phone is known.
-      const actions = document.createElement("div");
-      actions.className = "venue-map-popup-actions";
-      addLink(actions, googleMapDirections(place), labels.route, "primary", true);
-      if (place.phone) {
-        addLink(actions, `tel:${place.phone.replace(/[^+\d]/g, "")}`, labels.callVenue, "secondary");
-      } else {
-        addLink(actions, placeSearchUrl(place, localeRef.current), labels.findInMaps, "secondary", true);
-      }
-      root.appendChild(actions);
-    }
-
-    popupRef.current?.remove();
-    popupRef.current = new maplibregl.Popup({
-      offset: 18,
-      closeButton: true,
-      maxWidth: "300px",
-      className: "venue-map-popup",
-      anchor: "bottom",
-    })
-      .setLngLat([place.lng, place.lat])
-      .setDOMContent(root)
-      .addTo(map);
-  }
-
   useEffect(() => {
     const controller = new AbortController();
-    popupRef.current?.remove();
     fetchMapPlaces(request.cityId, { ...request, signal: controller.signal })
-      .then((data) => {
+      .then((response) => {
         if (controller.signal.aborted) return;
-        const sorted = sortPlaces(data.places ?? [], Boolean(request.query));
-        setResult({ request, data: { ...data, places: sorted } });
-        setSelectedId((previous) => sorted.some((place) => place.id === previous) ? previous : sorted[0]?.id ?? null);
+        const sorted = sortPlaces(response.places ?? [], Boolean(request.query));
+        setResult({ request, data: { ...response, places: sorted } });
       })
       .catch(() => { if (!controller.signal.aborted) setResult({ request, data: null }); });
     return () => controller.abort();
   }, [request]);
 
+  const selected = useMemo(
+    () => places.find((place) => place.id === selectedId) ?? places[0] ?? null,
+    [selectedId, places],
+  );
+  const popupPlace = useMemo(() => (popupId ? places.find((place) => place.id === popupId) ?? null : null), [popupId, places]);
+  const coverOf = useCallback(
+    (place: MapPlace) => place.cover_url ? mediaUrl(place.cover_url) : place.venue_id ? covers[place.venue_id] : undefined,
+    [covers],
+  );
+
+  /** Scrolls the list (rail or sheet) so the row is visible, without moving the page. */
+  const revealRow = useCallback((id: string) => {
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-place-id="${CSS.escape(id)}"]`);
+    if (!list || !row) return;
+    // .vmap-list is position: relative, so offsetTop is measured from the list.
+    const top = row.offsetTop;
+    const target = top - (list.clientHeight - row.offsetHeight) / 2;
+    list.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+  }, []);
+
+  const focusPlace = (place: MapPlace) => {
+    const map = mapRef.current;
+    if (map) {
+      map.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), FOCUS_ZOOM), duration: 520 });
+    } else if (useGoogle) {
+      setFocus({ lat: place.lat, lng: place.lng });
+    }
+  };
+
+  /** A pin or dot on the map: select, open the popup (desktop), bring the list row into view. */
+  const selectFromMap = (place: MapPlace) => {
+    setSelectedId(place.id);
+    scrollOnSelectRef.current = true;
+    focusPlace(place);
+    if (window.matchMedia(PHONE_QUERY).matches) {
+      setSnap("peek");
+      setPopupId(null);
+    } else {
+      setPopupId(place.id);
+    }
+  };
+
+  /** A list row: select, centre the map on it and open its popup (desktop). */
+  const selectFromList = (place: MapPlace) => {
+    setSelectedId(place.id);
+    focusPlace(place);
+    if (isPhone) {
+      setSnap("peek");
+      setPopupId(null);
+    } else if (!useGoogle) {
+      setPopupId(place.id);
+    }
+  };
+
+  useEffect(() => {
+    if (!scrollOnSelectRef.current || !selected) return;
+    scrollOnSelectRef.current = false;
+    revealRow(selected.id);
+  }, [selected, revealRow]);
+
+  // Phone sheet heights follow the canvas.
+  useEffect(() => {
+    const node = canvasRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => setCanvasHeight(Math.round(entry.contentRect.height)));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(document.fullscreenElement === shellRef.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  // Event handlers registered once per map read the latest callback through a ref.
+  const selectFromMapRef = useRef(selectFromMap);
+  useEffect(() => { selectFromMapRef.current = selectFromMap; });
+
+  /* —— MapLibre: map, clustered source, layers and events —— */
   useEffect(() => {
     if (useGoogle || !mapNodeRef.current) return;
-
     let map: maplibregl.Map;
     try {
       map = new maplibregl.Map({
@@ -592,521 +611,510 @@ function VenueMapArea({
       return;
     }
     mapRef.current = map;
-
-    if (!compact) {
-      map.addControl(new maplibregl.FullscreenControl(), "top-right");
-    }
-    // Bottom right, as on Google Maps: credits strip, zoom +/−, then "my location" above.
+    // ODbL: OpenStreetMap data (tiles and places) must be credited; folded into an (i) button.
     map.addControl(
-      // ODbL: OpenStreetMap data (tiles and places) must be credited; folded into an (i) button.
       new maplibregl.AttributionControl({ compact: true, customAttribution: "Places: © OpenStreetMap contributors, Overture Maps Foundation" }),
       "bottom-right",
     );
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-      }),
-      "bottom-right",
-    );
+    // The stock control draws the "you are here" dot; our own button triggers it.
+    const geolocate = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, trackUserLocation: false });
+    map.addControl(geolocate, "bottom-left");
+    geolocateRef.current = geolocate;
+    const colors = MAP_COLORS[theme];
 
     map.once("load", () => {
-      // Start with the credits folded; the (i) button opens them.
       map.getContainer().querySelectorAll(".maplibregl-compact-show").forEach((el) => el.classList.remove("maplibregl-compact-show"));
       applyMapLibreLocalization(map, localeRef.current);
+      map.addSource(SOURCE_ID, {
+        type: "geojson",
+        data: placeCollection(placesRef.current),
+        cluster: true,
+        clusterMaxZoom: PIN_MIN_ZOOM - 1,
+        clusterRadius: 46,
+        clusterProperties: { partners: ["+", ["case", ["==", ["get", "inDatabase"], true], 1, 0]] },
+        promoteId: "placeId",
+      });
+      const isCluster: maplibregl.FilterSpecification = ["has", "point_count"];
+      const clusterColor: maplibregl.ExpressionSpecification = ["case", [">", ["get", "partners"], 0], colors.cluster, colors.other];
+      const clusterSize: maplibregl.ExpressionSpecification = ["step", ["get", "point_count"], 17, 10, 21, 25, 26];
+      map.addLayer({
+        id: CLUSTER_HALO_LAYER, type: "circle", source: SOURCE_ID, filter: isCluster,
+        paint: { "circle-color": clusterColor, "circle-opacity": 0.28, "circle-radius": ["+", clusterSize, 6] },
+      });
+      map.addLayer({
+        id: CLUSTER_LAYER, type: "circle", source: SOURCE_ID, filter: isCluster,
+        paint: { "circle-color": clusterColor, "circle-radius": clusterSize, "circle-stroke-width": 2, "circle-stroke-color": colors.stroke, "circle-stroke-opacity": 0.9 },
+      });
+      map.addLayer({
+        id: CLUSTER_COUNT_LAYER, type: "symbol", source: SOURCE_ID, filter: isCluster,
+        layout: {
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-font": ["Noto Sans Bold"],
+          "text-size": 12.5,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+        },
+        paint: { "text-color": "#ffffff" },
+      });
+      const selectedState: maplibregl.ExpressionSpecification = ["boolean", ["feature-state", "selected"], false];
+      const hoverState: maplibregl.ExpressionSpecification = ["boolean", ["feature-state", "hover"], false];
+      map.addLayer({
+        id: OPEN_DOT_LAYER, type: "circle", source: SOURCE_ID,
+        filter: ["all", ["!", ["has", "point_count"]], ["!=", ["get", "inDatabase"], true]],
+        paint: {
+          "circle-color": ["case", selectedState, colors.selected, colors.other],
+          "circle-radius": ["case", selectedState, 9, hoverState, 9, 7],
+          "circle-opacity": ["case", selectedState, 1, hoverState, 1, 0.85],
+          "circle-stroke-width": 1.5,
+          "circle-stroke-color": colors.stroke,
+        },
+      });
+      map.addLayer({
+        id: PARTNER_DOT_LAYER, type: "circle", source: SOURCE_ID, maxzoom: PIN_MIN_ZOOM,
+        filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "inDatabase"], true]],
+        paint: {
+          "circle-color": ["case", selectedState, colors.selected, colors.partner],
+          "circle-radius": ["case", selectedState, 10, hoverState, 10, 8],
+          "circle-stroke-width": 2,
+          "circle-stroke-color": colors.stroke,
+        },
+      });
+
+      map.on("click", CLUSTER_LAYER, (event) => {
+        const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
+        const clusterId = Number(feature?.properties?.cluster_id);
+        const source = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+        if (!feature || !source || Number.isNaN(clusterId)) return;
+        void source.getClusterExpansionZoom(clusterId).then((zoom) => {
+          const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+          map.easeTo({ center: [lng, lat], zoom: Math.min(zoom + 0.2, 18), duration: 480 }, { userAction: true });
+        }).catch(() => {});
+      });
+      const onDotClick = (event: maplibregl.MapLayerMouseEvent) => {
+        const placeId = String(event.features?.[0]?.properties?.placeId ?? "");
+        const place = placesRef.current.find((item) => item.id === placeId);
+        if (place) selectFromMapRef.current(place);
+      };
+      map.on("click", OPEN_DOT_LAYER, onDotClick);
+      map.on("click", PARTNER_DOT_LAYER, onDotClick);
+      map.on("click", (event) => {
+        const target = event.originalEvent.target as HTMLElement | null;
+        if (target?.closest(".vmap-pin")) return;
+        if (map.queryRenderedFeatures(event.point, { layers: CLICK_LAYERS }).length === 0) setPopupId(null);
+      });
+      CLICK_LAYERS.forEach((layerId) => {
+        map.on("mouseenter", layerId, (event) => {
+          map.getCanvas().style.cursor = "pointer";
+          const placeId = event.features?.[0]?.properties?.placeId;
+          if (placeId) setHoveredId(String(placeId));
+        });
+        map.on("mouseleave", layerId, () => {
+          map.getCanvas().style.cursor = "";
+          setHoveredId(null);
+        });
+      });
+
+      setPinZoom(map.getZoom() >= PIN_MIN_ZOOM);
+      baselineRef.current = boundsOf(map);
+      setViewBounds(boundsOf(map));
       setMapState("ready");
       setLoadedMap(map);
+    });
+    map.on("zoom", () => setPinZoom(map.getZoom() >= PIN_MIN_ZOOM));
+    map.on("moveend", (event: maplibregl.MapLibreEvent & { userAction?: boolean }) => {
+      const current = boundsOf(map);
+      setViewBounds(current);
+      const user = Boolean(event.originalEvent) || event.userAction === true;
+      if (user && baselineRef.current && areaChanged(current, baselineRef.current)) setAreaDirty(true);
     });
     map.on("error", () => {
       if (!map.loaded()) setMapState("error");
     });
 
+    const markers = markersRef.current;
     return () => {
-      popupRef.current?.remove();
-      popupRef.current = null;
+      markers.forEach(({ marker }) => marker.remove());
+      markers.clear();
       mapRef.current = null;
+      geolocateRef.current = null;
+      setLoadedMap(null);
       map.remove();
     };
     // A theme switch rebuilds the map on the matching (light or dark) tiles.
-  }, [bounds, compact, useGoogle, theme]);
+  }, [bounds, useGoogle, theme]);
 
+  // Places → clustered source.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || mapState !== "ready" || map !== loadedMap) return;
+    const map = loadedMap;
+    if (!map) return;
     applyMapLibreLocalization(map, locale);
-    const effectiveSelectedId =
-      places.find((place) => place.id === selectedId)?.id ?? places[0]?.id ?? null;
-    const data = placeCollection(places, locale, effectiveSelectedId);
-    const PIN_COLORS = PIN_THEME_COLORS[theme];
-    const existingSource = map.getSource(SOURCE_ID) as GeoJSONSource | undefined;
+    (map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(placeCollection(places));
+  }, [loadedMap, places, locale]);
 
-    if (existingSource) {
-      existingSource.setData(data);
-    } else {
-      map.addSource(SOURCE_ID, {
-        type: "geojson",
-        data,
-      });
+  // Selected / hovered → feature state of the dots.
+  useEffect(() => {
+    const map = loadedMap;
+    if (!map || !map.getSource(SOURCE_ID)) return;
+    const prev = stateRef.current;
+    const nextSelected = selected?.id ?? null;
+    if (prev.selected && prev.selected !== nextSelected) map.removeFeatureState({ source: SOURCE_ID, id: prev.selected }, "selected");
+    if (prev.hovered && prev.hovered !== hoveredId) map.removeFeatureState({ source: SOURCE_ID, id: prev.hovered }, "hover");
+    if (nextSelected) map.setFeatureState({ source: SOURCE_ID, id: nextSelected }, { selected: true });
+    if (hoveredId) map.setFeatureState({ source: SOURCE_ID, id: hoveredId }, { hover: true });
+    stateRef.current = { selected: nextSelected, hovered: hoveredId };
+  }, [loadedMap, selected, hoveredId, places]);
 
-      // City view: small dots. Zoomed in: location pins (teardrops).
-      const sortKey = ["case", ["boolean", ["get", "selected"], false], 2, ["boolean", ["get", "inDatabase"], false], 1, 0];
-      map.addLayer({
-        id: DOT_LAYER_ID,
-        type: "circle",
-        source: SOURCE_ID,
-        maxzoom: PIN_MIN_ZOOM,
-        layout: { "circle-sort-key": sortKey as maplibregl.ExpressionSpecification },
-        paint: {
-          "circle-color": [
-            "case",
-            ["boolean", ["get", "selected"], false],
-            PIN_COLORS.selected,
-            ["boolean", ["get", "inDatabase"], false],
-            PIN_COLORS.partner,
-            PIN_COLORS.other,
-          ],
-          "circle-radius": ["case", ["boolean", ["get", "selected"], false], 8, ["boolean", ["get", "inDatabase"], false], 6.5, 5],
-          "circle-stroke-width": 1.5,
-          "circle-stroke-color": "#fffdf8",
-        },
+  // Partner pill pins (M1): free tables + short name, ♥ when saved; shown from PIN_MIN_ZOOM.
+  useEffect(() => {
+    const map = loadedMap;
+    const markers = markersRef.current;
+    markers.forEach(({ marker }) => marker.remove());
+    markers.clear();
+    if (!map) return;
+    for (const place of places) {
+      if (!place.in_database) continue;
+      const name = pickLocale(place.name, locale);
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "vmap-pin";
+      el.dataset.placeId = place.id;
+      const bookable = place.bookable && typeof place.free_tables === "number";
+      const parts: string[] = [name];
+      if (bookable) parts.push(`${place.free_tables} ${freeTablesLabel(locale, place.free_tables ?? 0)}`);
+      if (isSavedPlace(place, saved)) {
+        el.classList.add("is-saved");
+        parts.push(mapCopy(locale).hm.saved);
+        const heart = document.createElement("span");
+        heart.className = "vmap-pin-heart";
+        heart.setAttribute("aria-hidden", "true");
+        heart.textContent = "♥";
+        el.appendChild(heart);
+      }
+      if (bookable) {
+        const free = document.createElement("span");
+        free.className = "vmap-pin-free";
+        free.textContent = String(place.free_tables);
+        if (!place.free_tables) el.classList.add("is-full");
+        el.appendChild(free);
+      } else {
+        el.classList.add("is-quiet");
+      }
+      const label = document.createElement("span");
+      label.className = "vmap-pin-name";
+      label.textContent = shortPinName(name);
+      el.appendChild(label);
+      el.setAttribute("aria-label", parts.join(", "));
+      el.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectFromMapRef.current(place);
       });
-      addPinImage(map, "seatiko-pin-partner", PIN_COLORS.partner);
-      addPinImage(map, "seatiko-pin-other", PIN_COLORS.other);
-      addPinImage(map, "seatiko-pin-selected", PIN_COLORS.selected);
-      map.addLayer({
-        id: VENUE_LAYER_ID,
-        type: "symbol",
-        source: SOURCE_ID,
-        minzoom: PIN_MIN_ZOOM,
-        layout: {
-          "icon-image": [
-            "case",
-            ["boolean", ["get", "selected"], false],
-            "seatiko-pin-selected",
-            ["boolean", ["get", "inDatabase"], false],
-            "seatiko-pin-partner",
-            "seatiko-pin-other",
-          ],
-          "icon-size": ["case", ["boolean", ["get", "selected"], false], 1.25, 1],
-          "icon-anchor": "bottom",
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-          // Partners and the selected place are drawn above the other pins.
-          "symbol-sort-key": sortKey as maplibregl.ExpressionSpecification,
-        },
-      });
-      map.addLayer({
-        id: "seatiko-venue-name",
-        type: "symbol",
-        source: SOURCE_ID,
-        minzoom: PIN_MIN_ZOOM,
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": 11,
-          "text-font": ["Noto Sans Regular"],
-          "text-offset": [0, 0.3],
-          "text-anchor": "top",
-          "text-optional": true,
-          "text-padding": 5,
-          "text-max-width": 12,
-        },
-        paint: {
-          "text-color": NAME_COLORS[theme].text,
-          "text-halo-color": NAME_COLORS[theme].halo,
-          "text-halo-width": 2,
-          "text-halo-blur": 0.4,
-        },
-      });
-
-      const onPlaceClick = (event: maplibregl.MapLayerMouseEvent) => {
-        const feature = event.features?.[0] as MapGeoJSONFeature | undefined;
-        const placeId = String(feature?.properties?.placeId ?? "");
-        const place = placesRef.current.find((item) => item.id === placeId);
-        if (!place) return;
-        setSelectedId(place.id);
-        map.easeTo({ center: [place.lng, place.lat], zoom: 15.2, duration: 520 });
-        showVenuePopup(place, map);
-      };
-      map.on("click", VENUE_LAYER_ID, onPlaceClick);
-      map.on("click", DOT_LAYER_ID, onPlaceClick);
-      [VENUE_LAYER_ID, DOT_LAYER_ID].forEach((layerId) => {
-        map.on("mouseenter", layerId, () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", layerId, () => {
-          map.getCanvas().style.cursor = "";
-        });
-      });
+      el.addEventListener("mouseenter", () => setHoveredId(place.id));
+      el.addEventListener("mouseleave", () => setHoveredId(null));
+      const marker = new maplibregl.Marker({ element: el, anchor: "bottom", offset: [0, -6] })
+        .setLngLat([place.lng, place.lat])
+        .addTo(map);
+      markers.set(place.id, { marker, el });
     }
+  }, [loadedMap, places, locale, saved]);
 
-  }, [locale, mapState, loadedMap, selectedId, places, theme]);
+  // Pill classes follow selection and list hover without rebuilding the markers.
+  useEffect(() => {
+    markersRef.current.forEach(({ el, marker }, id) => {
+      const active = id === selected?.id;
+      el.classList.toggle("is-active", active);
+      el.classList.toggle("is-hovered", id === hoveredId);
+      el.setAttribute("aria-pressed", String(active));
+      marker.getElement().style.zIndex = active ? "3" : id === hoveredId ? "2" : "";
+    });
+  }, [selected, hoveredId, places, saved, locale, loadedMap]);
 
-  const selected = useMemo(
-    () => places.find((place) => place.id === selectedId) ?? places[0],
-    [selectedId, places],
+  // Desktop popup: a MapLibre popup whose content is rendered by React (portal).
+  useEffect(() => {
+    const map = loadedMap;
+    if (!map || !popupPlace || isPhone || !popupNode) return;
+    const popup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      focusAfterOpen: false,
+      maxWidth: "none",
+      className: "vmap-popup",
+      offset: popupPlace.in_database ? 36 : 12,
+    })
+      .setLngLat([popupPlace.lng, popupPlace.lat])
+      .setDOMContent(popupNode)
+      .addTo(map);
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setPopupId(null); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      popup.remove();
+    };
+    // Re-anchor only when another place opens (not on every list refresh).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedMap, popupPlace?.id, isPhone, popupNode]);
+
+  const listPlaces = useMemo(() => {
+    const inView = useGoogle ? places : placesInView(places, viewBounds);
+    return compact ? inView.slice(0, COMPACT_LIST_COUNT) : inView;
+  }, [places, viewBounds, useGoogle, compact]);
+  const recommendCount = preferences ? Math.min(RECOMMENDED_LIST_COUNT, listPlaces.length) : 0;
+  const filtersActive = filters.size > 0 || Boolean(query) || Boolean(preferences);
+
+  // Which centred state covers the map canvas, if any.
+  const state: "soon" | "error" | "empty" | null =
+    comingSoon && !loading && places.length === 0 ? "soon"
+      : loadError ? "error"
+        : !loading && data && places.length === 0 ? "empty"
+          : null;
+  const showSheet = isPhone && state === null;
+  const heights = sheetHeights(canvasHeight);
+  const sheetHeight = showSheet ? heights[snap] : 0;
+  const showSearchArea = !useGoogle && mapState === "ready" && areaDirty && !loading && state === null;
+
+  const applySearchArea = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const current = boundsOf(map);
+    baselineRef.current = current;
+    setAreaDirty(false);
+    setPopupId(null);
+    searchArea(current);
+  };
+  const showWholeCity = () => {
+    setViewport(undefined);
+    setAreaDirty(false);
+    const map = mapRef.current;
+    map?.fitBounds([[bounds.west, bounds.south], [bounds.east, bounds.north]], { padding: 24, duration: 480 });
+    if (map) baselineRef.current = null;
+  };
+
+  const emptyBody = query ? hm.emptySearchBody : hm.emptyBody;
+  const relax = preferences && data?.filters?.relax ? data.filters.relax : null;
+  const relaxLabel = relax
+    ? t("map.relax", {
+      filter:
+        relax.filter === "cuisine" || relax.filter === "budget"
+          ? discoverCopy.steps[relax.filter]
+          : (discoverCopy.chips[relax.filter as keyof typeof discoverCopy.chips] ?? relax.filter),
+      count: relax.matched,
+    })
+    : null;
+
+  const renderRows = () => (
+    <>
+      {listPlaces.map((place, index) => (
+        <div key={place.id} className="vmap-row-wrap">
+          {preferences && index === 0 && recommendCount > 0 ? (
+            <div className="vmap-list-heading" role="presentation">{discoverCopy.recommended}</div>
+          ) : null}
+          {preferences && index === recommendCount && recommendCount > 0 ? (
+            <div className="vmap-list-heading is-more" role="presentation">{vm.listPartners}</div>
+          ) : null}
+          <PlaceRow
+            place={place}
+            cover={coverOf(place)}
+            locale={locale}
+            saved={saved}
+            active={place.id === selected?.id}
+            hovered={place.id === hoveredId}
+            recommended={index < recommendCount}
+            onSelect={selectFromList}
+            onHover={isPhone ? undefined : setHoveredId}
+          />
+        </div>
+      ))}
+    </>
   );
 
-  function selectPlace(place: MapPlace) {
-    setSelectedId(place.id);
-    if (useGoogle) setFocus({ lat: place.lat, lng: place.lng });
-    const map = mapRef.current;
-    map?.easeTo({
-      center: [place.lng, place.lat],
-      zoom: 15.2,
-      duration: 520,
-    });
-    popupRef.current?.remove();
-  }
+  const listNotes = (
+    <>
+      {!loading && preferences && data?.filters ? (
+        <p className="vmap-note is-accent" role="status">{t("map.found", { matched: data.filters.matched, total: data.filters.total })}</p>
+      ) : null}
+      {useGoogle && (googleStatus === "unavailable" || googleStatus === "disabled") ? <p className="vmap-note" role="status">{vm.providerError}</p> : null}
+      {nearbyDenied ? <p className="vmap-note" role="status">{discoverCopy.nearbyDenied}</p> : null}
+    </>
+  );
 
-  const selectedVenueId = selected?.in_database ? selected.venue_id : undefined;
-  const selectedBookable = Boolean(selected?.bookable && selectedVenueId);
-  const emptyMessage = preferences && (data?.places.length || (!query && !bookableOnly))
-    ? discoverCopy.filtersEmpty
-    : query ? labels.noMatches
-      : bookableOnly ? labels.noBookable : copy.empty;
-  const hasMeta =
-    !!selected &&
-    ((selected.cuisine && selected.cuisine.length > 0) ||
-      typeof selected.price_level === "number" ||
-      typeof selected.average_check === "number");
-
-  const visiblePlaces = compact ? places.slice(0, 4) : places;
-  const recommendCount = preferences
-    ? Math.min(RECOMMENDED_LIST_COUNT, visiblePlaces.length)
-    : 0;
-  const recommendedPlaces = visiblePlaces.slice(0, recommendCount);
-  const otherPlaces = visiblePlaces.slice(recommendCount);
-  const showPartnerHeading =
-    recommendedPlaces.length > 0 && otherPlaces.length > 0;
-
-  function renderListItem(
-    place: MapPlace,
-    index: number,
-    recommendedRow: boolean,
-  ) {
-    const isSelected = place.id === selected?.id;
-    return (
-      <button
-        type="button"
-        key={place.id}
-        aria-pressed={isSelected}
-        className={[
-          "venue-map-item",
-          isSelected ? "active" : "",
-          recommendedRow ? "is-recommended" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        onClick={() => selectPlace(place)}
-      >
-        <b aria-hidden="true" className={`venue-num venue-dot ${place.in_database ? "is-partner" : ""} ${isSelected ? "active" : ""}`} />
-        <span className="venue-name">{pickLocale(place.name, locale)}</span>
-        {place.in_database && place.bookable && place.venue_id ? (
-          // Short "9 своб." so the venue name keeps the room; the full label is for screen readers.
-          <small
-            className="venue-status-pill"
-            title={`${place.free_tables ?? 0} ${formatFreeTablesLabel(locale, place.free_tables ?? 0)}`}
-          >
-            <span className={`status-dot ${place.open_now ? "open" : "closed"}`} />
-            <span aria-hidden="true">{place.free_tables ?? 0} {copy.freeShort}</span>
-            <span className="sr-only">{place.free_tables ?? 0} {formatFreeTablesLabel(locale, place.free_tables ?? 0)}</span>
-          </small>
-        ) : place.in_database ? (
-          <small className="venue-status-pill">{labels.partner}</small>
-        ) : typeof place.rating === "number" ? (
-          <small className="venue-status-pill">★ {place.rating.toFixed(1)}</small>
-        ) : (
-          <small className="venue-status-pill is-open-data">{copy.openData}</small>
-        )}
-      </button>
-    );
-  }
+  const toggleFullscreen = () => {
+    const node = shellRef.current;
+    if (!node) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void node.requestFullscreen?.().catch(() => {});
+  };
+  const canFullscreen = !compact && typeof document !== "undefined" && Boolean(document.fullscreenEnabled);
 
   return (
-    <div className={`venue-map-shell ${compact ? "compact" : ""}`}>
+    <div ref={shellRef} className={`vmap-shell${fullscreen ? " is-fullscreen" : ""}${state ? " has-state" : ""}`}>
       <div
-        className={`venue-map-canvas live-map-canvas${useGoogle ? " is-google" : ""}`}
-        aria-label={copy.aria}
+        ref={canvasRef}
+        className={`vmap-canvas${useGoogle ? " is-google" : ""}`}
+        data-pin-zoom={pinZoom ? "" : undefined}
+        data-state={state ?? undefined}
+        style={{ "--vmap-sheet-h": `${sheetHeight}px` } as CSSProperties}
+        aria-label={vm.aria}
+        aria-busy={loading}
       >
         {useGoogle && googleKey ? (
           <GoogleVenueMap
             apiKey={googleKey} mapId={config?.google_maps_id ?? ""} bounds={bounds}
-            places={places} locale={locale} focus={focus} compact={compact} searchLabel={labels.search}
+            places={places} locale={locale} focus={focus} compact={compact} searchLabel={hm.searchArea}
             onReady={googleLoaded} onError={useFallback} onSelect={setSelectedId} onSearch={searchArea}
           />
         ) : (
-          <div ref={mapNodeRef} className="live-map-surface" />
+          <div ref={mapNodeRef} className="vmap-surface" />
         )}
-        {mapState === "error" && (
-          <div className="live-map-fallback" role="status">
-            <div className="live-map-fallback-card">
-              <div><strong>{copy.unavailable}</strong><p>{copy.unavailableBody}</p>
-                <a className="btn btn--secondary btn--sm" href={externalUrl} target="_blank" rel="noreferrer">{copy.openExternal} ↗</a>
-              </div>
-            </div>
-          </div>
-        )}
-        {mapState === "loading" && (
-          <div className="live-map-loading">
-            <span />
-            <p>{copy.loadingMap}</p>
-          </div>
-        )}
-        {mapState === "ready" && (
-          <>
-            <div className="live-map-status">
-              {comingSoon ? (
-                <span className="is-soon">{copy.soonTitle}</span>
-              ) : !loading && places.length === 0 ? (
-                <span className="is-empty">{copy.emptyArea}</span>
-              ) : (
-                <span>
-                  <i /> {loading ? copy.loadingVenues : `${places.length} ${copy.online}`}
-                </span>
-              )}
-              {!loading && preferences && data?.filters ? (
-                <span className="live-map-found" role="status">
-                  {t("map.found", { matched: data.filters.matched, total: data.filters.total })}
-                </span>
-              ) : null}
-              {!useGoogle && !comingSoon && places.length > 0 && <small>{copy.updated}</small>}
-            </div>
-            {places.length > 0 && <div className="venue-map-legend" aria-label={copy.legendAria}>
-              <span><i className="legend-dot legend-dot-ours" /> {copy.legendOurs}</span>
-              {!bookableOnly && places.some((place) => !place.in_database) && <span><i className="legend-dot legend-dot-other" /> {copy.legendOther}</span>}
-            </div>}
-          </>
-        )}
-      </div>
 
-      <div className="venue-map-panel" aria-busy={loading}>
-        {loadError && (
-          <p role="status" className="venue-map-address">
-            {labels.loadError}{" "}<button type="button" className="btn btn--link live-map-relax" onClick={() => setRetry((attempt) => attempt + 1)}>{labels.retry}</button>
-          </p>
-        )}
-        {useGoogle && (googleStatus === "unavailable" || googleStatus === "disabled") && <p role="status" className="venue-map-address">{labels.providerError}</p>}
-        {comingSoon && !loading && places.length === 0 ? (
-          <div className="venue-map-soon" role="status">
-            <span className="venue-map-soon-badge">{copy.soon}</span>
-            <strong>{copy.soonTitle}</strong>
-            <p>{copy.soonBody}</p>
-            <button type="button" className="btn btn--primary btn--md" onClick={onShowDefaultCity}>
-              {copy.soonAction} <span aria-hidden="true">→</span>
-            </button>
+        {mapState === "loading" ? (
+          <div className="vmap-loading" role="status"><span /><p>{vm.loadingMap}</p></div>
+        ) : null}
+
+        {mapState === "error" ? (
+          <div className="vmap-fallback" role="status">
+            <div className="vmap-fallback-card">
+              <strong>{vm.unavailable}</strong>
+              <p>{vm.unavailableBody}</p>
+              <a className="btn btn--secondary btn--sm" href={externalUrl} target="_blank" rel="noreferrer">
+                <span>{hm.googleMaps}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg>
+              </a>
+            </div>
           </div>
         ) : null}
-        {visiblePlaces.length > 0 && <div className="venue-map-list" aria-label={copy.cityVenues}>
-          {recommendedPlaces.length > 0 ? (
-            <>
-              <div className="venue-map-list-heading" role="presentation">
-                {discoverCopy.recommended}
-              </div>
-              {recommendedPlaces.map((place, index) =>
-                renderListItem(place, index, true),
-              )}
-            </>
-          ) : null}
-          {otherPlaces.length > 0 ? (
-            <>
-              {showPartnerHeading ? (
-                <div
-                  className="venue-map-list-heading is-more"
-                  role="presentation"
-                >
-                  {copy.listPartners}
-                </div>
-              ) : null}
-              {otherPlaces.map((place, index) =>
-                renderListItem(place, recommendCount + index, false),
-              )}
-            </>
-          ) : null}
-        </div>}
 
-        {selected ? (
-          <div className="venue-card-details">
-            <div className="venue-card-header">
-              <div>
-                <span className="eyebrow">{copy.nearby}</span>
-                <h3>{pickLocale(selected.name, locale)}</h3>
-              </div>
-              <div className="venue-card-badges">
-                {selectedBookable ? (
-                  <span className="venue-bookable-badge">{copy.bookableBadge}</span>
-                ) : selectedVenueId ? (
-                  <span className="venue-bookable-badge is-off">{copy.notBookableBadge}</span>
-                ) : (
-                  <span className="venue-bookable-badge is-open-data">{copy.openData}</span>
-                )}
-                {typeof selected.rating === "number" && (
-                  <span className="venue-rating">★ {selected.rating.toFixed(1)}</span>
-                )}
-              </div>
-            </div>
-
-            <p className="venue-card-address">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span>{pickLocale(selected.address, locale)}</span>
-            </p>
-
-            {hasMeta && (
-              <div className="venue-map-meta">
-                {selected.cuisine && selected.cuisine.length > 0 && (
-                  <span>
-                    {selected.cuisine
-                      .slice(0, 2)
-                      .map((item) => siteCopy.catalog.cuisines[item as keyof typeof siteCopy.catalog.cuisines] ?? item)
-                      .join(" · ")}
-                  </span>
-                )}
-                {typeof selected.price_level === "number" && (
-                  <span>{priceLevelLabel(selected.price_level)}</span>
-                )}
-                {typeof selected.average_check === "number" && (
-                  <span>
-                    ~{formatBudgetAmount(selected.average_check, currency)}{" "}
-                    {currencyLabel}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {selectedVenueId ? (
-              <div className={`venue-availability ${selected.open_now ? "is-open" : "is-closed"}`}>
-                <div className="venue-availability-status">
-                  <span className="venue-status-indicator">
-                    <i /> {selected.open_now ? copy.open : copy.closed}
-                  </span>
-                  <span className="venue-hours-badge">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    {getVenueHours(selected, locale)}
-                  </span>
-                </div>
-                {selectedBookable ? (
-                  <strong>{selected.free_tables ?? 0} {formatFreeTablesLabel(locale, selected.free_tables ?? 0)}</strong>
-                ) : (
-                  <p className="venue-availability-note">{copy.notBookableNote}</p>
-                )}
-              </div>
-            ) : null}
-
-            {!selected.in_database ? (
-              <>
-                {selected.opening_hours || selected.phone ? (
-                  <div className="venue-map-meta">
-                    {selected.opening_hours && <span>{selected.opening_hours}</span>}
-                    {selected.phone && <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>}
-                  </div>
-                ) : null}
-                <p className="venue-open-data-note">{copy.openDataNote}</p>
-              </>
-            ) : null}
-
-            <div className="venue-card-footer">
-              {!selected.in_database && (
-                <div className="venue-map-actions">
-                  <a
-                    className="btn btn--primary btn--md btn--block"
-                    href={googleMapDirections(selected)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {copy.route} <span aria-hidden="true">↗</span>
-                  </a>
-                  <a
-                    className="btn btn--secondary btn--md btn--block"
-                    href={placeSearchUrl(selected, locale)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {copy.findInMaps}
-                  </a>
-                </div>
-              )}
-              {selected.in_database && selected.google_place_id && (
-                <a
-                  className="venue-map-website"
-                  href={googleMapSearch(pickLocale(selected.name, locale), selected.google_place_id)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span>{copy.openExternal}</span> <span aria-hidden="true">↗</span>
-                </a>
-              )}
-              {selected.website && (
-                <a
-                  className="venue-map-website"
-                  href={selected.website}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
+        {mapState === "ready" && !useGoogle ? (
+          <div className="vmap-controls">
+            <div className="vmap-control-stack">
+              {canFullscreen ? (
+                <button type="button" className="vmap-control" onClick={toggleFullscreen} aria-label={fullscreen ? hm.exitFullscreen : hm.fullscreen} title={fullscreen ? hm.exitFullscreen : hm.fullscreen}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {fullscreen ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
                   </svg>
-                  <span>{copy.websiteLabel}</span>
-                </a>
-              )}
-
-              {selectedVenueId && (
-                <div className="venue-map-actions">
-                  {selectedBookable && (
-                    <Link href={venueBookingHref(selectedVenueId)} className="btn btn--primary btn--md btn--block">
-                      {copy.action} <span>→</span>
-                    </Link>
-                  )}
-                  <Link
-                    href={`/venues/${encodeURIComponent(selectedVenueId)}`}
-                    className="btn btn--secondary btn--md btn--block"
-                  >
-                    {copy.openPage}
-                  </Link>
-                </div>
-              )}
+                </button>
+              ) : null}
+              <button type="button" className="vmap-control" onClick={() => geolocateRef.current?.trigger()} aria-label={hm.locate} title={hm.locate}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" fill="currentColor" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                </svg>
+              </button>
+            </div>
+            <div className="vmap-control-stack">
+              <button type="button" className="vmap-control" onClick={() => mapRef.current?.zoomIn({ duration: 240 }, { userAction: true })} aria-label={hm.zoomIn} title={hm.zoomIn}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              </button>
+              <button type="button" className="vmap-control" onClick={() => mapRef.current?.zoomOut({ duration: 240 }, { userAction: true })} aria-label={hm.zoomOut} title={hm.zoomOut}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M5 12h14" /></svg>
+              </button>
             </div>
           </div>
-        ) : !loadError && !(comingSoon && !loading) ? (
-          <p className="venue-map-address" role="status">
-            {loading ? copy.loadingVenues : emptyMessage}
-            {!loading && preferences && data?.filters?.relax ? (
-              <>
-                {" "}
+        ) : null}
+
+        {showSearchArea ? (
+          <button type="button" className="vmap-search-area" onClick={applySearchArea}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
+            </svg>
+            <span>{hm.searchArea}</span>
+          </button>
+        ) : null}
+
+        {mapState === "ready" && state === null && places.length > 0 ? (
+          <div className="vmap-legend" aria-label={hm.legendAria}>
+            <span><i className="vmap-legend-dot is-partner" /> {hm.legendPartner}</span>
+            {places.some((place) => !place.in_database) ? <span><i className="vmap-legend-dot is-open" /> {hm.legendOpen}</span> : null}
+            {places.some((place) => isSavedPlace(place, saved)) ? <span><i className="vmap-legend-heart" aria-hidden="true">♥</i> {hm.legendSaved}</span> : null}
+          </div>
+        ) : null}
+
+        {state === "soon" ? (
+          <MapStateCard tone="soon" badge={fill(hm.soonBadge, { city: cityName })} title={hm.soonTitle} body={hm.soonBody}>
+            <button type="button" className="btn btn--primary btn--md" onClick={onShowDefaultCity}>
+              <span>{vm.soonAction}</span><span aria-hidden="true">→</span>
+            </button>
+            <a className="btn btn--secondary btn--md" href={externalUrl} target="_blank" rel="noreferrer">
+              <span>{hm.googleMaps}</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9" /></svg>
+            </a>
+          </MapStateCard>
+        ) : null}
+        {state === "error" ? (
+          <MapStateCard badge={vm.unavailable} title={vm.loadError} body={vm.unavailableBody}>
+            <button type="button" className="btn btn--primary btn--md" onClick={() => setRetry((attempt) => attempt + 1)}>{vm.retry}</button>
+          </MapStateCard>
+        ) : null}
+        {state === "empty" ? (
+          filtersActive || validViewport ? (
+            <MapStateCard badge={hm.emptyBadge} title={hm.emptyTitle} body={emptyBody}>
+              {relax && relaxLabel ? (
                 <button
                   type="button"
-                  className="btn btn--link live-map-relax"
+                  className="btn btn--primary btn--md"
                   onClick={() => {
-                    const next = encodePreferences(relaxPreference(preferences, data.filters!.relax!.filter));
+                    const next = encodePreferences(relaxPreference(preferences!, relax.filter));
                     router.replace(next ? `/?${next}#map` : "/#map", { scroll: false });
                   }}
                 >
-                  {t("map.relax", {
-                    filter:
-                      data.filters.relax.filter === "cuisine" || data.filters.relax.filter === "budget"
-                        ? discoverCopy.steps[data.filters.relax.filter]
-                        : (discoverCopy.chips[data.filters.relax.filter as keyof typeof discoverCopy.chips] ?? data.filters.relax.filter),
-                    count: data.filters.relax.matched,
-                  })}
+                  {relaxLabel}
                 </button>
-              </>
-            ) : null}
-          </p>
+              ) : filters.size > 0 || query ? (
+                <button type="button" className="btn btn--primary btn--md" onClick={onResetFilters}>{hm.resetFilters}</button>
+              ) : null}
+              {validViewport ? (
+                <button type="button" className="btn btn--secondary btn--md" onClick={showWholeCity}>{hm.wholeCity}</button>
+              ) : null}
+            </MapStateCard>
+          ) : (
+            <MapStateCard badge={vm.emptyArea} title={vm.emptyArea} body={vm.empty} />
+          )
         ) : null}
 
-        {nearbyDenied && (
-          <p className="venue-map-address" role="status">
-            {discoverCopy.nearbyDenied}
-          </p>
-        )}
+        {showSheet ? (
+          <MapSheet locale={locale} snap={snap} heights={heights} count={listPlaces.length} onSnap={setSnap}>
+            {snap === "peek" ? (
+              selected ? (
+                <SelectedCard place={selected} cover={coverOf(selected)} locale={locale} now={now} compact />
+              ) : (
+                <p className="vmap-note">{loading ? vm.loadingVenues : hm.selectHint}</p>
+              )
+            ) : (
+              <>
+                {snap === "half" && selected ? (
+                  <SelectedCard place={selected} cover={coverOf(selected)} locale={locale} now={now} />
+                ) : null}
+                {listNotes}
+                <div ref={listRef} className="vmap-list" aria-label={hm.railAria}>
+                  {loading && !data ? <RowSkeletons /> : renderRows()}
+                </div>
+              </>
+            )}
+          </MapSheet>
+        ) : null}
       </div>
+
+      {!isPhone && !state ? (
+        <aside className="vmap-rail" aria-label={hm.railAria}>
+          <div className="vmap-rail-head">
+            <span>{hm.railTitle}</span>
+            <span className="vmap-rail-count">{listPlaces.length} / {places.length}</span>
+          </div>
+          {listNotes}
+          <div ref={listRef} className="vmap-list" aria-busy={loading}>
+            {loading && !data ? <RowSkeletons /> : renderRows()}
+          </div>
+          {selected && state === null ? (
+            <div className="vmap-dock">
+              <SelectedCard place={selected} cover={coverOf(selected)} locale={locale} now={now} />
+            </div>
+          ) : null}
+        </aside>
+      ) : null}
+
+      {popupNode && popupPlace && !isPhone
+        ? createPortal(
+          <PopupCard place={popupPlace} cover={coverOf(popupPlace)} locale={locale} now={now} saved={saved} onClose={() => setPopupId(null)} />,
+          popupNode,
+        )
+        : null}
     </div>
   );
 }
