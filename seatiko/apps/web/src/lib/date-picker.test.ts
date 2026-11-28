@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   PICKER_MODE_KEY,
+  ROLLING_WEEKS,
+  addDays,
   calendarView,
   dayCellState,
   dayKey,
@@ -89,16 +91,23 @@ describe("calendarView", () => {
     expect(view.toMonth.getMonth()).toBe(11);
   });
 
-  it("pages a long range by month and clamps the anchor", () => {
+  it("shows a long range as rolling weeks from the anchor's week and clamps it", () => {
     const min = d(2026, 11, 28);
     const max = d(2027, 11, 28);
     const first = calendarView(min, max, d(2026, 1, 1));
     expect(first.paged).toBe(true);
+    expect(first.weeks).toHaveLength(ROLLING_WEEKS);
+    // Starts with the week of today (Mon 23 Nov), not with a month of past days.
+    expect(dayKey(first.weeks[0][0])).toBe("2026-11-23");
     expect(first.fromMonth.getMonth()).toBe(10);
+    expect(first.toMonth.getMonth()).toBe(11);
     expect(first.canPrev).toBe(false);
     expect(first.canNext).toBe(true);
+    const next = calendarView(min, max, addDays(first.weeks[0][0], ROLLING_WEEKS * 7));
+    expect(dayKey(next.weeks[0][0])).toBe("2026-12-28");
+    expect(next.canPrev).toBe(true);
     const last = calendarView(min, max, d(2030, 1, 1));
-    expect(dayKey(last.fromMonth)).toBe("2027-11-01");
+    expect(dayKey(last.weeks[ROLLING_WEEKS - 1][6])).toBe("2027-11-28");
     expect(last.canNext).toBe(false);
   });
 });

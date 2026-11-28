@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { useLocale } from "@/components/locale-provider";
 import { ScrollerFade } from "@/components/ui/scroller-fade";
 import {
+  ROLLING_WEEKS,
   addDays,
-  addMonths,
   calendarView,
   dayCellState,
   dayKey,
@@ -128,7 +128,7 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
               className="btn btn--ghost btn--sm btn--icon"
               aria-label={t("picker.prev_month")}
               disabled={!view.canPrev}
-              onClick={() => setAnchor((a) => addMonths(a, -1))}
+              onClick={() => setAnchor(addDays(view.weeks[0][0], -ROLLING_WEEKS * 7))}
             >
               ‹
             </button>
@@ -138,7 +138,7 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
               className="btn btn--ghost btn--sm btn--icon"
               aria-label={t("picker.next_month")}
               disabled={!view.canNext}
-              onClick={() => setAnchor((a) => addMonths(a, 1))}
+              onClick={() => setAnchor(addDays(view.weeks[0][0], ROLLING_WEEKS * 7))}
             >
               ›
             </button>
@@ -162,7 +162,6 @@ export function DayPicker({ label, min, max, value, onChange, isClosed, hasFree,
                     selected: value,
                     isClosed,
                     hasFree,
-                    month: view.paged ? view.fromMonth : undefined,
                   });
                   return (
                     <span key={cell.key} role="gridcell" className="day-picker-cell-wrap">

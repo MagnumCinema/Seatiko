@@ -94,18 +94,29 @@ export function monthWeeks(month: Date, weekStartsOn: 0 | 1 = 1): Date[][] {
 
 export type CalendarView = {
   weeks: Date[][];
-  /** First and last month the grid is about (for the title "Ноябрь – Декабрь 2026"). */
+  /** First and last month the grid shows (for the title "Ноябрь – Декабрь 2026"). */
   fromMonth: Date;
   toMonth: Date;
-  /** Month paging (long ranges only). */
+  /** Long ranges page by ROLLING_WEEKS weeks. */
   paged: boolean;
   canPrev: boolean;
   canNext: boolean;
 };
 
+/** A long range (banquet dates a year ahead) shows this many weeks at a time. */
+export const ROLLING_WEEKS = 5;
+
+function clampDay(day: Date, min: Date, max: Date): Date {
+  const d = startOfDay(day);
+  if (d.getTime() < startOfDay(min).getTime()) return startOfDay(min);
+  if (d.getTime() > startOfDay(max).getTime()) return startOfDay(max);
+  return d;
+}
+
 /**
  * What the calendar grid shows: a short range (≤ 6 weeks, like the 7-day booking window)
- * as one grid across months; a long range (banquet dates a year ahead) month by month.
+ * as one grid across months; a long range as a rolling window of whole weeks that starts
+ * with the week of `anchor`, so there are no rows of past days at a month's end.
  */
 export function calendarView(min: Date, max: Date, anchor: Date, weekStartsOn: 0 | 1 = 1): CalendarView {
   const span = weeksBetween(min, max, weekStartsOn);
@@ -119,22 +130,23 @@ export function calendarView(min: Date, max: Date, anchor: Date, weekStartsOn: 0
       canNext: false,
     };
   }
-  const month = clampMonth(anchor, min, max);
+  const firstWeek = startOfWeek(min, weekStartsOn);
+  const latestStart = addDays(startOfWeek(max, weekStartsOn), -(ROLLING_WEEKS - 1) * 7);
+  let start = startOfWeek(clampDay(anchor, min, max), weekStartsOn);
+  if (start.getTime() > latestStart.getTime()) start = latestStart;
+  if (start.getTime() < firstWeek.getTime()) start = firstWeek;
+  const weeks = Array.from({ length: ROLLING_WEEKS }, (_, w) =>
+    Array.from({ length: 7 }, (_, d) => addDays(start, w * 7 + d)),
+  );
+  const lastShown = weeks[ROLLING_WEEKS - 1][6];
   return {
-    weeks: monthWeeks(month, weekStartsOn),
-    fromMonth: month,
-    toMonth: month,
+    weeks,
+    fromMonth: monthStart(clampDay(start, min, max)),
+    toMonth: monthStart(clampDay(lastShown, min, max)),
     paged: true,
-    canPrev: month.getTime() > monthStart(min).getTime(),
-    canNext: month.getTime() < monthStart(max).getTime(),
+    canPrev: start.getTime() > firstWeek.getTime(),
+    canNext: lastShown.getTime() < startOfDay(max).getTime(),
   };
-}
-
-export function clampMonth(anchor: Date, min: Date, max: Date): Date {
-  const month = monthStart(anchor);
-  if (month.getTime() < monthStart(min).getTime()) return monthStart(min);
-  if (month.getTime() > monthStart(max).getTime()) return monthStart(max);
-  return month;
 }
 
 export type DayCellState = {

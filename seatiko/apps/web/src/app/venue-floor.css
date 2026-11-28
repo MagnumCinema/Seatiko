@@ -79,6 +79,12 @@
   .venue-tiles .venue-tile-desc {
     display: none;
   }
+  .venue-tiles .venue-tile {
+    padding: 10px;
+  }
+  .venue-tiles .venue-tile-name {
+    font-size: 0.84rem;
+  }
 }
 
 /* —— Floor workbench —— */
@@ -393,11 +399,21 @@
   color: var(--fa-text);
   font-size: 0.86rem;
 }
+.venue-floor-stage.bench-stage-card {
+  --bench-bg: var(--fa-surface);
+}
+html[data-theme="light"] .venue-floor-stage.bench-stage-card {
+  --bench-bg: #ffffff;
+}
+/* The CTA stays in view while the inspector scrolls past; a soft fade keeps what is under it readable. */
 .insp-cta {
   position: sticky;
-  bottom: 12px;
+  bottom: 0;
   z-index: 4;
-  margin-top: auto;
+  margin: auto -18px -18px;
+  padding: 18px 18px 18px;
+  border-radius: 0 0 22px 0;
+  background: linear-gradient(to bottom, transparent, var(--bench-bg) 40%);
 }
 
 /* —— Day timeline —— */
@@ -411,15 +427,15 @@
 }
 .tl-head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
 }
 .tl-title {
   min-width: 0;
   overflow: hidden;
-  color: var(--fa-muted);
-  font-size: 0.86rem;
+  color: var(--fa-text);
+  font-size: 0.9rem;
   font-weight: 750;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -642,7 +658,8 @@ html[data-theme="light"] .tl-now {
     background: color-mix(in srgb, var(--fa-text) 22%, transparent);
   }
   .insp-cta {
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    border-radius: 0 0 22px 22px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
 }
 @media (max-width: 720px) {
@@ -664,6 +681,10 @@ html[data-theme="light"] .tl-now {
   }
   .insp {
     padding: 22px 14px 14px;
+  }
+  .insp-cta {
+    margin: auto -14px -14px;
+    padding-inline: 14px;
   }
   .tl {
     padding: 10px;

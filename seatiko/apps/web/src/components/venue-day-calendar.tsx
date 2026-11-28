@@ -246,7 +246,7 @@ export function TableDayTimeline({
           <span className="tl-time">{range(segment)}</span>
           <span className="tl-label">
             <i aria-hidden="true" />
-            {picked ? t("bench.seg_free_picked", { time: clock(selectedMin) }) : t("bench.seg_free")}
+            {picked ? t("bench.seg_free_picked") : t("bench.seg_free")}
           </span>
         </button>
       </li>
@@ -286,7 +286,7 @@ export function TableDayTimeline({
         >
           ‹
         </button>
-        <span className="tl-title">{t("bench.schedule_head", { day: dayLabel })}</span>
+        <span className="tl-title">{dayLabel}</span>
         <button
           type="button"
           className="btn btn--ghost btn--sm btn--icon"
@@ -296,7 +296,6 @@ export function TableDayTimeline({
         >
           ›
         </button>
-        {selectedMin != null ? <strong className="tl-picked">{clock(selectedMin)}</strong> : null}
       </header>
 
       {error ? <p className="tl-empty">{t("common.error")}</p> : null}
