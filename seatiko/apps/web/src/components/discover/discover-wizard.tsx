@@ -22,7 +22,7 @@ import { useSearchParams } from "next/navigation";
 function scrollMapIntoView() {
   const canvas =
     (document.querySelector(
-      "#discover-map-view .venue-map-canvas",
+      "#discover-map-view .vmap-canvas",
     ) as HTMLElement | null) ??
     document.getElementById("discover-map-view") ??
     document.getElementById("discover-map");
