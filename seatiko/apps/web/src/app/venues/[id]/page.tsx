@@ -7,7 +7,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button, ButtonLink, IconButton, buttonClassName } from "@/components/ui/button";
 import { useCurrency } from "@/components/currency-provider";
-import { TableFloorPlan, TableReserveSheet, isMyTable } from "@/components/table-floor-plan";
+import { TableFloorPlan, isMyTable } from "@/components/table-floor-plan";
+import { TableInspector } from "@/components/table-inspector";
 import { WaitlistPanel } from "@/components/waitlist-panel";
 import { BookingPopup } from "@/components/booking-popup";
 import { EventPopup } from "@/components/event-popup";
@@ -24,9 +25,13 @@ import {
   HeartIcon,
   MapPinIcon,
   MenuBookIcon,
+  ShareIcon,
   TableIcon,
 } from "@/components/venue-icons";
-import { VenueDayCalendar } from "@/components/venue-day-calendar";
+import { useVenueSchedule } from "@/components/venue-day-calendar";
+import { ScrollerFade } from "@/components/ui/scroller-fade";
+import { useToast } from "@/components/ui/toast-provider";
+import { defaultTable } from "@/lib/floor-picks";
 import { useLocale } from "@/components/locale-provider";
 import { listZonesFromTables } from "@/lib/floor-zones";
 import { getSiteCopy } from "@/lib/site-copy";
@@ -132,6 +137,9 @@ export default function VenuePage() {
     Record<string, string>
   >({});
   const [sheetMessage, setSheetMessage] = useState<string | null>(null);
+  /** Start picked on the table's timeline; the table popup opens on it. */
+  const [bookingStartIso, setBookingStartIso] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     let active = true;
@@ -258,12 +266,20 @@ export default function VenuePage() {
     [venueId, venueHoursText],
   );
   const [scheduleReloadKey, setScheduleReloadKey] = useState(0);
+  const schedule = useVenueSchedule({
+    venueId,
+    staffEnabled: user?.role === "restaurant" || user?.role === "admin",
+    isAdmin: user?.role === "admin",
+    reloadKey: scheduleReloadKey,
+  });
 
   const reviews = places?.reviews?.length ? places.reviews : venue?.reviews ?? [];
   const rating = places?.rating || venue?.rating || 0;
   const reviewCount = places?.review_count || venue?.review_count || reviews.length;
   const freeCount = tables.filter((table) => table.status === "FREE").length;
   const zones = listZonesFromTables(tables);
+  // A table is always selected, so the inspector opens on its day instead of an empty panel.
+  const shownTable = selectedTable ?? defaultTable(tables, zones);
 
   /** Keep a browser favorites list in step with the heart on this page. */
   function syncLocalFavorite(storageId: string, adding: boolean) {
@@ -277,14 +293,23 @@ export default function VenuePage() {
     );
   }
 
-  async function toggleFavorite() {
+  async function toggleFavorite(undo = false) {
     if (!venue || favoriteBusy) return;
     const previous = favoriteIds;
     const next = toggleFavoriteId(previous, venue.id);
     const adding = next.length > previous.length;
     setFavoriteIds(next);
+    const announce = () => {
+      if (undo) return;
+      toast.show(
+        adding
+          ? { message: t("hero.fav_added"), tone: "success", duration: 2500 }
+          : { message: t("hero.fav_removed"), actionLabel: t("booking.undo"), onAction: () => void toggleFavorite(true) },
+      );
+    };
     if (!user) {
       syncLocalFavorite(GUEST_FAVORITES_ID, adding);
+      announce();
       return;
     }
     setFavoriteBusy(true);
@@ -294,10 +319,28 @@ export default function VenuePage() {
       setFavoriteIds(updated.favorite_venues ?? next);
       // /account shows its cached list (with names) first, so keep it in step.
       syncLocalFavorite(updated.id, adding);
+      announce();
     } catch {
       setFavoriteIds(previous);
+      toast.show({ message: t("hero.fav_failed"), tone: "error" });
     } finally {
       setFavoriteBusy(false);
+    }
+  }
+
+  async function shareVenue() {
+    if (!venue) return;
+    const url = `${window.location.origin}/venues/${encodeURIComponent(venue.id)}`;
+    const title = pickLocale(venue.name, locale);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast.show({ message: t("hero.share_copied"), tone: "success", duration: 2500 });
+    } catch {
+      /* the guest closed the share sheet */
     }
   }
 
@@ -308,8 +351,9 @@ export default function VenuePage() {
     });
   }
 
-  function openBooking(table: Table) {
+  function openBooking(table: Table, startIso: string | null = null) {
     setSelectedTableId(table.id);
+    setBookingStartIso(startIso);
     setBookingOpen(true);
     setComingOpen(false);
     setEventOpen(false);
@@ -504,19 +548,6 @@ export default function VenuePage() {
                     <span className={`venue-status-badge ${venue.open_now ? "open" : "closed"}`}>
                       {venue.open_now ? t("venue.open") : t("venue.closed")}
                     </span>
-                    <IconButton
-                      variant="secondary"
-                      size="sm"
-                      className={`venue-fav-float${favorited ? " is-on" : ""}`}
-                      label={favoriteLabel}
-                      aria-pressed={favorited}
-                      icon={
-                        <span className="venue-fav-icon">
-                          <HeartIcon filled={favorited} />
-                        </span>
-                      }
-                      onClick={() => void toggleFavorite()}
-                    />
                   </div>
                   {bookable ? (
                     <div className="venue-free-float">
@@ -564,128 +595,170 @@ export default function VenuePage() {
               </span>
             </div>
 
-            <div className="venue-page-actions">
-              {bookable ? (
-                <div className="venue-page-actions-primary">
-                  <Button
-                    size="lg"
-                    leftIcon={<BoltIcon />}
-                    onClick={() => {
-                      setQuickOpen(true);
-                      setBookingOpen(false);
-                      setComingOpen(false);
-                      setEventOpen(false);
-                    }}
-                  >
-                    <span>{t("venue.quick_book")}</span>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    leftIcon={<TableIcon />}
-                    onClick={scrollToFloor}
-                  >
-                    <span>{t("venue.book_scroll")}</span>
-                  </Button>
-                </div>
-              ) : (
-                <div className="venue-booking-soon" role="status">
-                  <strong>{t("venue.booking_soon_title")}</strong>
-                  <p>
-                    {venuePhone || venueWebsite
-                      ? t("venue.booking_soon_body")
-                      : t("venue.booking_soon_no_contacts")}
-                  </p>
-                  <div className="venue-booking-soon-actions">
-                    {venuePhone ? (
-                      <a
-                        className={buttonClassName({ size: "md" })}
-                        href={`tel:${venuePhone.replace(/[^\d+]/g, "")}`}
-                      >
-                        <span className="btn-content">
-                          {t("venue.call")} {venuePhone}
-                        </span>
-                      </a>
-                    ) : null}
-                    {venueWebsite ? (
-                      <a
-                        className={buttonClassName({
-                          variant: venuePhone ? "secondary" : "primary",
-                          size: "md",
-                        })}
-                        href={venueWebsite}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <span className="btn-content">{t("venue.website")}</span>
-                      </a>
-                    ) : null}
-                    {!venuePhone && !venueWebsite ? (
-                      <Button
-                        variant="secondary"
-                        size="md"
-                        leftIcon={<MapPinIcon />}
-                        onClick={() =>
-                          document
-                            .getElementById(VENUE_LOCATION_ANCHOR)
-                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                        }
-                      >
-                        <span>{t("venue.route")}</span>
-                      </Button>
-                    ) : null}
-                  </div>
-                </div>
-              )}
+          </div>
+        </div>
 
-              <div className="venue-page-actions-secondary">
-                <Link className="venue-tile" href={`/venues/${venue.id}/menu`}>
-                  <span className="venue-tile-icon">
-                    <MenuBookIcon />
-                  </span>
-                  <span className="venue-tile-text">
-                    <span className="venue-tile-name">{t("venue.menu")}</span>
-                    <span className="venue-tile-desc">{t("venue.menu_sub")}</span>
-                  </span>
-                </Link>
-                <a
-                  className="venue-tile"
-                  href={`#${VENUE_LOCATION_ANCHOR}`}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    document
-                      .getElementById(VENUE_LOCATION_ANCHOR)
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                >
-                  <span className="venue-tile-icon">
-                    <MapPinIcon />
-                  </span>
-                  <span className="venue-tile-text">
-                    <span className="venue-tile-name">{t("venue.location_tile")}</span>
-                    <span className="venue-tile-desc">{pickLocale(venue.address, locale)}</span>
-                  </span>
-                </a>
-                <button
-                  type="button"
-                  className="venue-tile"
-                  onClick={() => {
-                    setEventOpen(true);
-                    setQuickOpen(false);
-                    setBookingOpen(false);
-                    setComingOpen(false);
-                  }}
-                >
-                  <span className="venue-tile-icon">
-                    <CelebrationIcon />
-                  </span>
-                  <span className="venue-tile-text">
-                    <span className="venue-tile-name">{t("venue.event_tile")}</span>
-                    <span className="venue-tile-desc">{t("venue.event_tile_sub")}</span>
-                  </span>
-                </button>
-              </div>
+        {/* One aligned action row under the hero: [Quick] [Hall] [♡] [Share] + three equal tiles. */}
+        <div className="venue-page-actions">
+          {bookable ? (
+            <div className="venue-action-bar">
+              <Button
+                size="lg"
+                className="venue-action-main"
+                leftIcon={<BoltIcon />}
+                onClick={() => {
+                  setQuickOpen(true);
+                  setBookingOpen(false);
+                  setComingOpen(false);
+                  setEventOpen(false);
+                }}
+              >
+                <span>{t("venue.quick_book")}</span>
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="venue-action-main"
+                leftIcon={<TableIcon />}
+                onClick={scrollToFloor}
+              >
+                <span>{t("venue.book_scroll")}</span>
+              </Button>
+              <IconButton
+                variant="secondary"
+                size="lg"
+                className={`venue-action-icon venue-fav-btn${favorited ? " is-on" : ""}`}
+                label={favoriteLabel}
+                aria-pressed={favorited}
+                icon={<HeartIcon filled={favorited} />}
+                onClick={() => void toggleFavorite()}
+              />
+              <IconButton
+                variant="secondary"
+                size="lg"
+                className="venue-action-icon"
+                label={t("hero.share")}
+                icon={<ShareIcon />}
+                onClick={() => void shareVenue()}
+              />
             </div>
+          ) : (
+            <>
+              <div className="venue-booking-soon" role="status">
+                <strong>{t("venue.booking_soon_title")}</strong>
+                <p>
+                  {venuePhone || venueWebsite
+                    ? t("venue.booking_soon_body")
+                    : t("venue.booking_soon_no_contacts")}
+                </p>
+                <div className="venue-booking-soon-actions">
+                  {venuePhone ? (
+                    <a
+                      className={buttonClassName({ size: "md" })}
+                      href={`tel:${venuePhone.replace(/[^\d+]/g, "")}`}
+                    >
+                      <span className="btn-content">
+                        {t("venue.call")} {venuePhone}
+                      </span>
+                    </a>
+                  ) : null}
+                  {venueWebsite ? (
+                    <a
+                      className={buttonClassName({
+                        variant: venuePhone ? "secondary" : "primary",
+                        size: "md",
+                      })}
+                      href={venueWebsite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span className="btn-content">{t("venue.website")}</span>
+                    </a>
+                  ) : null}
+                  {!venuePhone && !venueWebsite ? (
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      leftIcon={<MapPinIcon />}
+                      onClick={() =>
+                        document
+                          .getElementById(VENUE_LOCATION_ANCHOR)
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }
+                    >
+                      <span>{t("venue.route")}</span>
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              <div className="venue-action-bar is-icons">
+              <IconButton
+                variant="secondary"
+                size="lg"
+                className={`venue-action-icon venue-fav-btn${favorited ? " is-on" : ""}`}
+                label={favoriteLabel}
+                aria-pressed={favorited}
+                icon={<HeartIcon filled={favorited} />}
+                onClick={() => void toggleFavorite()}
+              />
+              <IconButton
+                variant="secondary"
+                size="lg"
+                className="venue-action-icon"
+                label={t("hero.share")}
+                icon={<ShareIcon />}
+                onClick={() => void shareVenue()}
+              />
+              </div>
+            </>
+          )}
+
+          <div className="venue-page-actions-secondary venue-tiles">
+            <Link className="venue-tile" href={`/venues/${venue.id}/menu`}>
+              <span className="venue-tile-icon">
+                <MenuBookIcon />
+              </span>
+              <span className="venue-tile-text">
+                <span className="venue-tile-name">{t("venue.menu")}</span>
+                <span className="venue-tile-desc">{t("venue.menu_sub")}</span>
+              </span>
+            </Link>
+            <a
+              className="venue-tile"
+              href={`#${VENUE_LOCATION_ANCHOR}`}
+              onClick={(event) => {
+                event.preventDefault();
+                document
+                  .getElementById(VENUE_LOCATION_ANCHOR)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              <span className="venue-tile-icon">
+                <MapPinIcon />
+              </span>
+              <span className="venue-tile-text">
+                <span className="venue-tile-name">{t("venue.location_tile")}</span>
+                <span className="venue-tile-desc">{pickLocale(venue.address, locale)}</span>
+              </span>
+            </a>
+            <button
+              type="button"
+              className="venue-tile"
+              onClick={() => {
+                setEventOpen(true);
+                setQuickOpen(false);
+                setBookingOpen(false);
+                setComingOpen(false);
+              }}
+            >
+              <span className="venue-tile-icon">
+                <CelebrationIcon />
+              </span>
+              <span className="venue-tile-text">
+                <span className="venue-tile-name">{t("venue.event_tile_short")}</span>
+                <span className="venue-tile-desc">{t("venue.event_tile_sub")}</span>
+              </span>
+            </button>
           </div>
         </div>
 
@@ -700,31 +773,21 @@ export default function VenuePage() {
                   <h2>{t("venue.choose_table")}</h2>
                   <p>{t("floor.pick_hint")}</p>
                 </div>
-                <div className="venue-floor-legend">
-                  <span>
-                    <i className="free" /> {t("floor.leg_free")}
-                  </span>
-                  <span>
-                    <i className="reserved" /> {t("floor.leg_res")}
-                  </span>
-                  {user ? (
-                    <span>
-                      <i className="mine" /> {t("floor.leg_mine")}
-                    </span>
-                  ) : null}
-                  <span>
-                    <i className="occupied" /> {t("floor.leg_occ")}
-                  </span>
-                  <span>
-                    <i className="cleaning" /> {t("floor.leg_clean")}
-                  </span>
-                </div>
               </div>
-              <div className="venue-floor-stage">
+
+              {/* Nothing free right now: a collapsed waitlist card above the hall (the hall stays for later times). */}
+              <WaitlistPanel
+                venueId={venue.id}
+                zones={zones}
+                collapsible
+                onAuthRequired={() => requireAuth(t("auth.reason_waitlist"))}
+              />
+
+              <div className="venue-floor-stage bench-stage-card">
                 <TableFloorPlan
                   tables={tables}
-                  selectedId={selectedTable?.id}
-                  hideSheet
+                  selectedId={shownTable?.id}
+                  mineReservationIds={myReservationIds}
                   onTableClick={(table) => {
                     setSelectedTableId(table.id);
                     setSheetMessage(null);
@@ -733,65 +796,61 @@ export default function VenuePage() {
                     setQuickOpen(false);
                     setEventOpen(false);
                   }}
-                  onReserve={openBooking}
-                  onNotifyFree={(table) => void handleNotifyFree(table)}
-                  onImComing={openComing}
-                  notifySetIds={notifySetIds}
-                  comingArrivalById={comingArrivalById}
-                  sheetMessage={sheetMessage}
-                  mineReservationIds={myReservationIds}
+                  legend={
+                    <ScrollerFade className="bench-legend" ariaLabel={t("bench.legend")}>
+                      <span>
+                        <i className="free" /> {t("floor.leg_free")}
+                      </span>
+                      <span>
+                        <i className="reserved" /> {t("floor.leg_res")}
+                      </span>
+                      {user ? (
+                        <span>
+                          <i className="mine" /> {t("floor.leg_mine")}
+                        </span>
+                      ) : null}
+                      <span>
+                        <i className="occupied" /> {t("floor.leg_occ")}
+                      </span>
+                      <span>
+                        <i className="cleaning" /> {t("floor.leg_clean")}
+                      </span>
+                    </ScrollerFade>
+                  }
+                  inspector={
+                    shownTable ? (
+                      <TableInspector
+                        table={shownTable}
+                        tables={tables}
+                        rules={bookingRules}
+                        hoursOn={hoursOn}
+                        schedule={schedule}
+                        mineReservationIds={myReservationIds}
+                        mine={isMyTable(shownTable, myReservationIds)}
+                        onBook={openBooking}
+                        onPickTable={(table) => {
+                          setSelectedTableId(table.id);
+                          setSheetMessage(null);
+                        }}
+                        onNotifyFree={(table) => void handleNotifyFree(table)}
+                        notifyDone={notifySetIds.has(shownTable.id)}
+                        onImComing={openComing}
+                        comingAccess={comingAccessFor(shownTable)}
+                        comingDone={Boolean(comingArrivalById[shownTable.id])}
+                        comingTimeLabel={
+                          comingArrivalById[shownTable.id]
+                            ? new Date(comingArrivalById[shownTable.id]).toLocaleTimeString(locale, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : undefined
+                        }
+                        onComingSignIn={() => requireAuth(t("auth.reason_coming"))}
+                        message={selectedTable?.id === shownTable.id || !selectedTable ? sheetMessage : null}
+                      />
+                    ) : null
+                  }
                 />
-              </div>
-
-              <div className="venue-floor-panels">
-                <div className="venue-floor-panel reserve">
-                  {selectedTable ? (
-                    <TableReserveSheet
-                      table={selectedTable}
-                      className="beside"
-                      onReserve={openBooking}
-                      onNotifyFree={(table) => void handleNotifyFree(table)}
-                      onImComing={openComing}
-                      notifyDone={notifySetIds.has(selectedTable.id)}
-                      comingDone={Boolean(comingArrivalById[selectedTable.id])}
-                      comingTimeLabel={
-                        comingArrivalById[selectedTable.id]
-                          ? new Date(
-                              comingArrivalById[selectedTable.id],
-                            ).toLocaleTimeString(locale, {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : undefined
-                      }
-                      sheetMessage={sheetMessage}
-                      comingAccess={comingAccessFor(selectedTable)}
-                      onComingSignIn={() => requireAuth(t("auth.reason_coming"))}
-                      sessionStartBeforeMin={sessionStartBeforeMin}
-                      releaseBeforeMin={releaseBeforeMin}
-                      mine={isMyTable(selectedTable, myReservationIds)}
-                    />
-                  ) : (
-                    <p className="venue-floor-panel-empty">
-                      {t("venue.day_cal_pick_table")}
-                    </p>
-                  )}
-                </div>
-                <div className="venue-floor-panel schedule">
-                  <VenueDayCalendar
-                    venueId={venue.id}
-                    tables={tables}
-                    focusTableId={selectedTable?.id ?? null}
-                    compact
-                    staffEnabled={
-                      user?.role === "restaurant" || user?.role === "admin"
-                    }
-                    isAdmin={user?.role === "admin"}
-                    hoursOn={hoursOn}
-                    reloadKey={scheduleReloadKey}
-                    mineReservationIds={myReservationIds}
-                  />
-                </div>
               </div>
 
               <BookingPopup
@@ -815,6 +874,7 @@ export default function VenuePage() {
                   venue={venue}
                   table={selectedTable}
                   open={bookingOpen}
+                  initialTime={bookingStartIso}
                   onClose={() => setBookingOpen(false)}
                   onBooked={() => {
                     void refreshTables();
@@ -850,11 +910,6 @@ export default function VenuePage() {
                 />
               )}
 
-              <WaitlistPanel
-                venueId={venue.id}
-                zones={zones}
-                onAuthRequired={() => requireAuth(t("auth.reason_waitlist"))}
-              />
             </section>
           </>
         ) : null}

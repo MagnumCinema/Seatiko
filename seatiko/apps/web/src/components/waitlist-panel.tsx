@@ -18,6 +18,7 @@ import {
 } from "@/lib/api";
 import { FLOOR_ZONE_PRESETS, zoneLabel } from "@/lib/floor-zones";
 import { SelectMenu } from "@/components/ui/select-menu";
+import { Button } from "@/components/ui/button";
 
 const POLL_MS = 20000;
 
@@ -47,11 +48,14 @@ export function WaitlistPanel({
   zones = [],
   onAuthRequired,
   forceShow = false,
+  collapsible = false,
 }: {
   venueId: string;
   zones?: string[];
   onAuthRequired?: () => void;
   forceShow?: boolean;
+  /** Start as a one-card notice ("nothing free") that opens the form on demand. */
+  collapsible?: boolean;
 }) {
   const { locale, t } = useLocale();
   const [summary, setSummary] = useState<WaitlistSummary | null>(null);
@@ -61,6 +65,7 @@ export function WaitlistPanel({
   const [zone, setZone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -177,14 +182,9 @@ export function WaitlistPanel({
         )}
         <p className="waitlist-hint">{t("waitlist.hint")}</p>
         {error && <p className="waitlist-error">{error}</p>}
-        <button
-          type="button"
-          className="btn btn--secondary btn--md"
-          disabled={busy}
-          onClick={() => void leave()}
-        >
+        <Button variant="secondary" size="md" loading={busy} onClick={() => void leave()}>
           {t("waitlist.leave")}
-        </button>
+        </Button>
       </section>
     );
   }
@@ -199,6 +199,20 @@ export function WaitlistPanel({
 
   const quotedWait = summary?.quoted_wait_min ?? 0;
   const inQueueKey = `waitlist.in_queue_${new Intl.PluralRules(locale).select(waiting)}` as MessageKey;
+
+  if (collapsible && !expanded) {
+    return (
+      <section className="waitlist-card is-collapsed" role="status">
+        <span className="waitlist-collapsed-badge">
+          {waiting > 0 ? t(inQueueKey, { count: waiting }) : t("bench.waitlist_title")}
+        </span>
+        <p>{t("bench.waitlist_body")}</p>
+        <Button size="md" onClick={() => setExpanded(true)}>
+          🔔 {t("bench.waitlist_cta")}
+        </Button>
+      </section>
+    );
+  }
 
   return (
     <section className="waitlist-card">
@@ -232,13 +246,32 @@ export function WaitlistPanel({
       <div className="waitlist-form">
         <label>
           {t("waitlist.label_guests")}
-          <input
-            type="number"
-            min={1}
-            max={20}
-            value={guests}
-            onChange={(e) => setGuests(Number(e.target.value) || 1)}
-          />
+          <span className="booking-stepper bk-stepper waitlist-stepper">
+            <button
+              type="button"
+              className="stepper-btn"
+              aria-label={t("res.guests_less")}
+              disabled={guests <= 1}
+              onClick={() => setGuests((g) => Math.max(1, g - 1))}
+            >
+              −
+            </button>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={guests}
+              onChange={(e) => setGuests(Math.max(1, Math.min(20, Number(e.target.value.replace(/\D/g, "")) || 1)))}
+            />
+            <button
+              type="button"
+              className="stepper-btn"
+              aria-label={t("res.guests_more")}
+              disabled={guests >= 20}
+              onClick={() => setGuests((g) => Math.min(20, g + 1))}
+            >
+              +
+            </button>
+          </span>
         </label>
         <label>
           {t("waitlist.label_phone")}
@@ -265,14 +298,9 @@ export function WaitlistPanel({
         </label>
       </div>
       {error && <p className="waitlist-error">{error}</p>}
-      <button
-        type="button"
-        className="btn btn--primary btn--md"
-        disabled={busy}
-        onClick={() => void join()}
-      >
-        {busy ? t("waitlist.joining") : t("waitlist.join")}
-      </button>
+      <Button size="md" loading={busy} onClick={() => void join()}>
+        {t("waitlist.join")}
+      </Button>
     </section>
   );
 }

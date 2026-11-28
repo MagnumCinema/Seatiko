@@ -5,6 +5,7 @@ import "./globals.css";
 import "./premium.css";
 import "./buttons.css";
 import "./modals.css";
+import "./venue-floor.css";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { ThemeProvider } from "@/components/theme-provider";
